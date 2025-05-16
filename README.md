@@ -1,10 +1,11 @@
 **This project is currently under active development. Features and documentation may change rapidly.**
 
 # mcp-commit-story
-mcp-commit-story is a Model Context Protocol (MCP) server designed to capture and generate engineering journal entries within a 
-code repository. The journal captures technical progress, decision-making context, and emotional tone, with the goal of 
-understanding larger-scale patterns and producing content that can later be reused for storytelling (e.g., blog posts, conference 
-talks).
+mcp-commit-story is a Model Context Protocol (MCP) server designed to generate engineering journal entries within a code repository. The journal records technical progress, decision-making context, and emotional tone, with the goal of understanding larger-scale patterns and producing content that can later be reused for storytelling (e.g., blog posts, conference talks).
+
+**Primary Usage Notice:**
+
+This project is designed to be used primarily by AI agents (such as Cursor or other MCP-compatible tools) via the Model Context Protocol (MCP). Human users may use the CLI for manual operations, but the main workflow is agent-driven.
 
 ## Quick Start
 
