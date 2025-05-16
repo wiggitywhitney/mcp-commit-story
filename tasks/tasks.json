@@ -1,0 +1,1180 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Setup Project Structure and Dependencies",
+      "description": "Initialize the project repository with proper structure and dependencies as specified in the PRD.",
+      "details": "Create the project structure according to the PRD:\n\n```\nmcp-journal/\n├── src/\n│   └── mcp_journal/\n│       ├── __init__.py\n│       ├── cli.py\n│       ├── server.py\n│       ├── journal.py\n│       ├── git_utils.py\n│       └── config.py\n├── tests/\n│   ├── unit/\n│   ├── integration/\n│   └── fixtures/\n├── pyproject.toml\n├── README.md\n└── .mcp-journalrc.yaml\n```\n\nSetup pyproject.toml with the following dependencies:\n- Python 3.9+\n- Anthropic MCP Python SDK\n- Click (CLI)\n- PyYAML (config)\n- GitPython\n- python-dateutil\n- Development dependencies: pytest, pytest-mock, pytest-cov, pytest-watch, black, flake8, mypy\n\nCreate initial README.md with project overview and basic usage instructions.",
+      "testStrategy": "Verify project structure is created correctly with all required files and directories. Ensure pyproject.toml contains all required dependencies. Validate that the package can be installed in development mode with `pip install -e .`.",
+      "priority": "high",
+      "dependencies": [],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Create Project Directory Structure and Initial Files",
+          "description": "Set up the basic project directory structure with empty placeholder files according to the PRD specification.",
+          "dependencies": [],
+          "details": "Create the directory structure including src/mcp_journal with empty __init__.py, cli.py, server.py, journal.py, git_utils.py, and config.py files. Create tests directory with unit, integration, and fixtures subdirectories. Add empty README.md and .mcp-journalrc.yaml files at the root level.\n<info added on 2025-05-16T17:22:41.772Z>\nCreate the directory structure including src/mcp_journal with empty __init__.py, cli.py, server.py, journal.py, git_utils.py, and config.py files. Create tests directory with unit, integration, and fixtures subdirectories. Add empty README.md and .mcp-journalrc.yaml files at the root level.\n\nImplementation Plan:\n1. Follow Test-Driven Development approach by first creating a test file at tests/unit/test_structure.py\n2. The test should verify the existence of:\n   - Directory structure: src/mcp_journal/, tests/unit/, tests/integration/, tests/fixtures/\n   - Files in src/mcp_journal/: __init__.py, cli.py, server.py, journal.py, git_utils.py, config.py\n   - Root files: README.md and .mcp-journalrc.yaml\n3. After writing the test (which should initially fail), create the actual directories and files\n4. Run the test to confirm all required elements exist\n5. Document any deviations from the PRD or engineering specifications\n6. Ensure the test is comprehensive and will catch any missing components\n\nThis implementation prepares the foundation for the next subtask of configuring pyproject.toml with dependencies.\n</info added on 2025-05-16T17:22:41.772Z>",
+          "status": "done",
+          "testStrategy": "Write a simple test that verifies all expected directories and files exist in the correct structure."
+        },
+        {
+          "id": 2,
+          "title": "Configure pyproject.toml with Dependencies",
+          "description": "Create and configure the pyproject.toml file with all required dependencies and project metadata.",
+          "dependencies": [
+            1
+          ],
+          "details": "Set up pyproject.toml with project name, version, description, and author information. Configure build system (e.g., setuptools). Add all runtime dependencies (Python 3.9+, Anthropic MCP SDK, Click, PyYAML, GitPython, python-dateutil) and development dependencies (pytest, pytest-mock, pytest-cov, pytest-watch, black, flake8, mypy) with appropriate version constraints.\n<info added on 2025-05-16T17:34:52.685Z>\nSet up pyproject.toml with project name, version, description, and author information. Configure build system (e.g., setuptools). Add all runtime dependencies (Python 3.9+, Anthropic MCP SDK, Click, PyYAML, GitPython, python-dateutil) and development dependencies (pytest, pytest-mock, pytest-cov, pytest-watch, black, flake8, mypy) with appropriate version constraints.\n\nImplementation Plan:\n1. First, review the PRD and engineering specification to confirm all required dependencies and metadata.\n2. Create a test file at tests/unit/test_pyproject.py following TDD principles:\n   - Write tests that parse pyproject.toml and verify all required metadata fields\n   - Test for presence of correct build system configuration\n   - Verify all runtime dependencies with appropriate version constraints\n   - Verify all development dependencies with appropriate version constraints\n3. Create the pyproject.toml file with the following sections:\n   - [build-system]: Configure with setuptools or poetry as specified in engineering docs\n   - [project]: Include name, version, description, authors, readme, requires-python (>=3.9)\n   - [project.dependencies]: List all runtime dependencies with version constraints\n   - [project.optional-dependencies.dev]: Include all development dependencies\n   - [project.scripts]: Configure any CLI entry points if needed\n4. Run the tests to verify the pyproject.toml meets all requirements\n5. Document any deviations from the spec or questions that arose during implementation\n6. Ensure compatibility with the next subtask (1.3) which will implement the basic package structure\n\nNote: If using Poetry instead of setuptools, adjust the format accordingly while maintaining the same dependencies.\n</info added on 2025-05-16T17:34:52.685Z>",
+          "status": "done",
+          "testStrategy": "Write a test that parses pyproject.toml and verifies all required dependencies are present with appropriate versions."
+        },
+        {
+          "id": 3,
+          "title": "Implement Basic Package Structure and Imports",
+          "description": "Implement the basic package structure with proper imports and minimal module definitions to ensure the package can be imported.",
+          "dependencies": [
+            2
+          ],
+          "details": "Update __init__.py with version and package metadata. Create skeleton implementations for each module with proper imports, docstrings, and type hints. Define the main interfaces and classes for each module without full implementation. Ensure circular imports are avoided and the package can be successfully imported.\n<info added on 2025-05-16T17:39:02.466Z>\nUpdate __init__.py with version and package metadata. Create skeleton implementations for each module with proper imports, docstrings, and type hints. Define the main interfaces and classes for each module without full implementation. Ensure circular imports are avoided and the package can be successfully imported.\n\nImplementation Plan:\n1. Review the PRD and engineering spec to identify all required modules and their relationships\n2. Update src/mcp_journal/__init__.py with:\n   - Version information (__version__)\n   - Package metadata (author, description)\n   - Expose key classes/functions at package level\n3. Create skeleton implementations with proper structure for:\n   - cli.py: Command-line interface entry points\n   - server.py: Server functionality for remote operations\n   - journal.py: Core journaling functionality\n   - git_utils.py: Git integration utilities\n   - config.py: Configuration management\n4. For each module:\n   - Add comprehensive module docstrings\n   - Define interfaces with type hints\n   - Create empty class/function implementations with pass statements\n   - Add proper imports with explicit imports (avoid wildcard imports)\n5. Implement dependency management between modules to prevent circular imports\n6. Create test_imports.py in tests/unit/ directory\n   - Write tests that verify each module can be imported\n   - Verify key classes and variables exist in each module\n7. Follow TDD approach: write tests first, then implement modules to pass tests\n8. Document any questions or deviations for future review\n</info added on 2025-05-16T17:39:02.466Z>",
+          "status": "done",
+          "testStrategy": "Write tests that import each module and verify basic functionality like module-level variables and class definitions exist."
+        },
+        {
+          "id": 4,
+          "title": "Write Comprehensive README.md Documentation",
+          "description": "Create detailed README.md with project overview, installation instructions, usage examples, and development setup.",
+          "dependencies": [
+            2
+          ],
+          "details": "Write a comprehensive README.md that includes: project title and description, installation instructions (pip install, development setup), basic usage examples for CLI and programmatic use, configuration options, contribution guidelines, and license information. Include badges for build status, test coverage, etc.\n<info added on 2025-05-16T17:46:24.601Z>\nThe README.md documentation should be comprehensive and follow this implementation plan:\n\n1. Begin with a thorough review of the PRD and engineering specifications to identify all required documentation sections and ensure alignment with project goals.\n\n2. Structure the README.md with these essential sections:\n   - Project title with a clear, concise description of the MCP Journal project\n   - Installation instructions, including:\n     * Standard pip installation method\n     * Development setup with git clone and dependency installation\n     * Any environment configuration needed\n   - Usage documentation with:\n     * CLI command examples with expected outputs\n     * Programmatic usage patterns with code snippets\n     * Common use cases and workflows\n   - Configuration section detailing:\n     * All available options in .mcp-journalrc.yaml\n     * Example configuration file with comments\n     * Environment variable overrides if applicable\n   - Contribution guidelines explaining:\n     * Code style and standards\n     * Pull request process\n     * Issue reporting procedure\n   - License information with appropriate disclaimers\n   - Status badges for build status, test coverage, and other relevant metrics\n\n3. Include specific references to:\n   - How the project uses Taskmaster-AI for development\n   - Test-Driven Development approach used in the project\n   - Project structure overview with key directories and files\n\n4. After drafting, conduct a manual review against PRD requirements to ensure:\n   - All required functionality is documented\n   - Instructions are clear and accurate\n   - Examples are working and helpful\n   - No critical information is missing\n\n5. Document any questions, uncertainties, or potential deviations from the PRD for future team discussion.\n\nThe README should serve as both a quick-start guide for users and a comprehensive reference for developers contributing to the project.\n</info added on 2025-05-16T17:46:24.601Z>",
+          "status": "done",
+          "testStrategy": "No automated tests needed, but manually review for completeness against PRD requirements."
+        },
+        {
+          "id": 5,
+          "title": "Set Up Test Infrastructure and Write Initial Tests",
+          "description": "Configure the test infrastructure and write initial tests for the project structure and basic functionality.",
+          "dependencies": [
+            3
+          ],
+          "details": "Set up pytest configuration in pyproject.toml or pytest.ini. Create test fixtures and helpers in tests/fixtures. Write initial unit tests for each module that verify the basic structure and interfaces. Set up GitHub Actions or similar CI workflow for automated testing. Include test coverage reporting configuration.",
+          "status": "pending",
+          "testStrategy": "Meta-testing: ensure pytest runs successfully and reports test coverage. Verify that all initial tests fail appropriately (following TDD principles) and are ready for implementation."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Implement Configuration System",
+      "description": "Create the configuration module to handle loading and validating configuration from .mcp-journalrc.yaml files.",
+      "details": "Implement the config.py module with the following functionality:\n\n1. Load configuration from multiple sources with precedence:\n   - Local config (.mcp-journalrc.yaml in repo root)\n   - Global config (~/.mcp-journalrc.yaml)\n   - Built-in defaults\n\n2. Validate configuration structure and values\n   - Missing/invalid fields use defaults and continue with warnings\n   - Malformed YAML logs error but continues with defaults\n   - Invalid sections are ignored with warnings\n\n3. Provide a Config class with properties for all configuration options\n\nExample configuration structure:\n```yaml\njournal:\n  path: journal/\n  auto_generate: true\n  include_terminal: true\n  include_chat: true\n  include_mood: true\n  section_order:\n    - summary\n    - accomplishments\n    - frustrations\n    - tone\n    - commit_details\n    - reflections\n```\n\nImplement functions for:\n- Loading config from file\n- Merging configs with proper precedence\n- Validating config structure\n- Providing default values for missing fields",
+      "testStrategy": "Write unit tests for:\n- Loading config from file\n- Merging configs with proper precedence\n- Handling missing or invalid configuration files\n- Validating config structure\n- Default value application\n- Error handling for malformed YAML\n\nTest with various valid and invalid configuration files to ensure robust error handling.",
+      "priority": "high",
+      "dependencies": [
+        1
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Create Config class with default configuration values",
+          "description": "Implement the Config class with properties for all configuration options and define default values for each setting.",
+          "dependencies": [],
+          "details": "Create a config.py module with a Config class that defines all configuration properties with type hints. Implement properties for journal path, auto-generation settings, included sections, and section order. Define a method that returns a complete default configuration dictionary that will be used when no config files are found or when fields are missing.",
+          "status": "pending",
+          "testStrategy": "Write tests that verify the Config class initializes with proper default values when no configuration is provided. Test that all expected properties are accessible and return the correct default values."
+        },
+        {
+          "id": 2,
+          "title": "Implement configuration file loading from multiple locations",
+          "description": "Create functions to load configuration files from local and global locations with proper error handling.",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement functions to load YAML configuration from both local (.mcp-journalrc.yaml in repo root) and global (~/.mcp-journalrc.yaml) locations. Handle file not found errors gracefully. For malformed YAML, log errors but continue with defaults. Use the pathlib module for cross-platform path handling and PyYAML for parsing YAML files.",
+          "status": "pending",
+          "testStrategy": "Write tests with mock file systems to verify correct loading from different locations. Include tests for handling missing files and malformed YAML content. Verify appropriate warning/error messages are logged."
+        },
+        {
+          "id": 3,
+          "title": "Implement configuration merging with proper precedence",
+          "description": "Create a function to merge configurations from multiple sources respecting the precedence order: defaults < global < local.",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Implement a merge_configs function that takes multiple configuration dictionaries and combines them with the correct precedence. Local config should override global config, which should override defaults. Implement deep merging for nested configuration sections. Ensure that partial configurations only override the specified values.",
+          "status": "pending",
+          "testStrategy": "Write tests that verify configurations merge correctly with the proper precedence. Test scenarios with partial configurations at different levels and verify that the resulting configuration has the expected values from each source."
+        },
+        {
+          "id": 4,
+          "title": "Implement configuration validation",
+          "description": "Create validation functions to check the structure and values of loaded configurations, providing warnings for invalid entries.",
+          "dependencies": [
+            1,
+            3
+          ],
+          "details": "Implement validation for all configuration sections and fields. Check types, allowed values, and required fields. For invalid or missing fields, use default values and log appropriate warnings. For completely invalid sections, ignore them with warnings. Create a validate_config function that returns a sanitized configuration with all invalid values replaced with defaults.",
+          "status": "pending",
+          "testStrategy": "Write tests for various validation scenarios including missing fields, invalid types, and invalid sections. Verify that appropriate warnings are logged and that the resulting configuration uses default values where needed."
+        },
+        {
+          "id": 5,
+          "title": "Create public API for configuration system",
+          "description": "Implement the main load_config function that orchestrates the entire configuration loading process and returns a fully initialized Config object.",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "details": "Create a public load_config function that: 1) Loads configurations from all sources, 2) Merges them with proper precedence, 3) Validates the merged configuration, and 4) Returns a Config object initialized with the final configuration. Add optional parameters to specify custom config file paths. Implement proper logging throughout the process.",
+          "status": "pending",
+          "testStrategy": "Write integration tests that verify the entire configuration loading process works correctly. Test with various combinations of existing/non-existing config files, valid/invalid configurations, and verify the final Config object has the expected values."
+        },
+        {
+          "id": 6,
+          "title": "Review and update README/docs",
+          "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 2
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Implement Git Utilities Module",
+      "description": "Create the git_utils.py module to handle all Git-related operations required for journal entry generation.",
+      "details": "Implement the git_utils.py module with the following functionality:\n\n1. Repository detection and validation\n   - Find Git repository from current directory\n   - Validate repository state\n\n2. Commit information retrieval\n   - Get current commit details (hash, message, author, timestamp)\n   - Get previous commit details\n   - Get commits between two points in time\n\n3. Diff processing\n   - Get file diffs for a commit\n   - Generate simplified summaries with line counts\n   - Handle binary files\n   - Truncate large diffs\n\n4. Hook management\n   - Install post-commit hook\n   - Check for existing hooks\n   - Backup existing hooks\n\nUse GitPython library for all Git operations. Implement proper error handling for common Git errors (repository not found, corrupted repository, etc.).\n\nExample implementation for commit retrieval:\n```python\nfrom git import Repo\nfrom pathlib import Path\nfrom typing import Optional, Dict, Any\n\ndef find_repo(path: Optional[Path] = None) -> Repo:\n    \"\"\"Find Git repository from path or current directory.\"\"\"\n    try:\n        return Repo(path or Path.cwd(), search_parent_directories=True)\n    except Exception as e:\n        raise ValueError(f\"Git repository not found: {e}\")\n\ndef get_current_commit(repo: Optional[Repo] = None) -> Dict[str, Any]:\n    \"\"\"Get details of the current commit.\"\"\"\n    repo = repo or find_repo()\n    commit = repo.head.commit\n    return {\n        'hash': commit.hexsha,\n        'short_hash': commit.hexsha[:7],\n        'message': commit.message,\n        'author': commit.author.name,\n        'email': commit.author.email,\n        'timestamp': commit.committed_datetime,\n    }\n```",
+      "testStrategy": "Write unit tests for:\n- Repository detection and validation\n- Commit information retrieval\n- Diff processing\n- Hook management\n\nUse mock Git repositories as test fixtures. Test error handling for various Git error conditions.",
+      "priority": "high",
+      "dependencies": [
+        1
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Repository Detection and Validation",
+          "description": "Create functions to detect and validate Git repositories, including finding repositories from the current directory and validating repository state.",
+          "dependencies": [],
+          "details": "Implement `find_repo()` function that accepts an optional path parameter and returns a GitPython Repo object. Add a `validate_repo_state()` function that checks if the repository is in a valid state (not corrupt, has commits, etc.). Handle common exceptions like repository not found or invalid repository state with clear error messages.",
+          "status": "pending",
+          "testStrategy": "Write tests that verify: 1) Repository detection from valid paths, 2) Error handling for invalid paths, 3) Repository state validation for both valid and invalid states. Use temporary test repositories and mock objects where appropriate."
+        },
+        {
+          "id": 2,
+          "title": "Implement Commit Information Retrieval",
+          "description": "Create functions to retrieve commit information, including current commit details, previous commit details, and commits between time periods.",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement `get_current_commit()`, `get_previous_commit()`, and `get_commits_between()` functions. Each function should return structured data with commit hash, message, author, timestamp, etc. Handle edge cases like repositories with only one commit or no commits.",
+          "status": "pending",
+          "testStrategy": "Write tests for: 1) Retrieving current commit details, 2) Getting previous commit information, 3) Fetching commits between time periods, 4) Edge cases like repositories with minimal history. Use fixture repositories with known commit history."
+        },
+        {
+          "id": 3,
+          "title": "Implement Diff Processing Functions",
+          "description": "Create functions to process and format Git diffs, including retrieving file diffs for commits and generating simplified summaries.",
+          "dependencies": [
+            2
+          ],
+          "details": "Implement `get_file_diffs()` to retrieve diffs for a specific commit, `summarize_diff()` to create simplified summaries with line counts, `handle_binary_files()` to properly process binary files, and `truncate_large_diff()` to handle oversized diffs. Return structured data that can be easily formatted for display.",
+          "status": "pending",
+          "testStrategy": "Write tests for: 1) Retrieving diffs for various file types, 2) Summarizing diffs with accurate line counts, 3) Proper handling of binary files, 4) Truncation of large diffs to reasonable sizes. Test with repositories containing various file types and change patterns."
+        },
+        {
+          "id": 4,
+          "title": "Implement Git Hook Management",
+          "description": "Create functions to manage Git hooks, specifically for installing, checking, and backing up post-commit hooks.",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement `install_post_commit_hook()` to add the journal's hook to a repository, `check_existing_hook()` to detect if hooks already exist, and `backup_existing_hook()` to preserve any existing hooks. Ensure hooks have proper permissions and handle path differences across operating systems.",
+          "status": "pending",
+          "testStrategy": "Write tests for: 1) Installing hooks in repositories without existing hooks, 2) Detecting existing hooks, 3) Backing up existing hooks without data loss, 4) Verifying hook permissions are set correctly. Use temporary repositories and mock filesystem operations where appropriate."
+        },
+        {
+          "id": 5,
+          "title": "Integrate Error Handling and Create Module Interface",
+          "description": "Implement comprehensive error handling throughout the module and create a clean, well-documented public interface.",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "details": "Create custom exception classes for different Git-related errors. Implement consistent error handling patterns across all functions. Define a clear public API by marking internal functions with underscores and documenting public functions with comprehensive docstrings. Create a module-level `__all__` list to explicitly define the public interface.",
+          "status": "pending",
+          "testStrategy": "Write tests for: 1) Error handling for each type of expected exception, 2) Integration tests that use the public API to accomplish common tasks, 3) Edge cases that might cause unexpected errors. Ensure all public functions have appropriate doctest examples."
+        },
+        {
+          "id": 6,
+          "title": "Review and update README/docs",
+          "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 3
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Implement Journal Entry Generation",
+      "description": "Create the journal.py module to handle journal entry generation, formatting, and file management.",
+      "details": "Implement the journal.py module with the following functionality:\n\n1. Journal directory management\n   - Create journal directory structure if not exists\n   - Validate paths and permissions\n\n2. Entry generation\n   - Generate journal entry from commit data\n   - Format entry according to template\n   - Include all required sections (Summary, Accomplishments, etc.)\n   - Handle missing data gracefully\n\n3. File management\n   - Create/append to daily files (YYYY-MM-DD.md)\n   - Handle file locking for concurrent writes\n   - Ensure proper file permissions\n\n4. Terminal and chat history processing\n   - Process terminal history if available\n   - Extract decision context from chat history\n   - Format commands with deduplication\n\nImplement the journal entry structure as specified in the PRD:\n```markdown\n### 2:17 PM — Commit def456\n\n## Summary\nA friendly, succinct summary that captures what was accomplished.\n\n## Accomplishments\n- Facts based on file diffs and chat context\n\n## Frustrations or Roadblocks\n- Inferred from repeated terminal commands, failure messages, or explicit mentions in chat\n\n## Terminal Commands (AI Session)\nCommands executed by AI during this work session:\n- `git add . && git status`\n- `npm test` x3\n- `git diff auth.js`\n- `git commit -m \"fix: update validation logic\"`\n\n## Discussion Notes (from chat)\n> \"Should we use PostgreSQL or MongoDB? I'm leaning toward PostgreSQL because we need ACID compliance for financial data...\"\n\n## Tone + Mood (inferred)\n> Mood: Focused and energized  \n> Indicators: \"finally\", rapid commits, lack of errors\n\n## Behind the Commit\n- Commit hash, message, files touched\n\n## Reflections\n- Only include reflections manually added by human\n```\n\nImplement functions for collecting AI terminal history as specified in the PRD.",
+      "testStrategy": "Write unit tests for:\n- Journal directory creation and validation\n- Entry generation from mock commit data\n- File creation and appending\n- Terminal and chat history processing\n- Error handling for missing data\n\nTest with various input data combinations to ensure robust handling of all cases.",
+      "priority": "high",
+      "dependencies": [
+        2,
+        3
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Journal Directory Management",
+          "description": "Create the foundation of the journal.py module with directory management functionality to ensure proper journal storage structure.",
+          "dependencies": [],
+          "details": "Create a JournalManager class with methods to: 1) Check if journal directory exists, 2) Create directory structure if missing, 3) Validate write permissions, 4) Handle path configuration. Implement utility functions for path normalization and validation. Use pathlib for cross-platform compatibility.",
+          "status": "pending",
+          "testStrategy": "Write tests that verify: directory creation works correctly, permission errors are handled gracefully, paths are properly validated, and configuration is correctly loaded. Mock filesystem operations to test error conditions."
+        },
+        {
+          "id": 2,
+          "title": "Implement Journal Entry Generation and Formatting",
+          "description": "Create functionality to generate and format journal entries from commit data according to the specified template.",
+          "dependencies": [],
+          "details": "Implement EntryGenerator class with methods to: 1) Parse commit data, 2) Format entry sections (Summary, Accomplishments, etc.), 3) Apply markdown template, 4) Handle missing data gracefully with appropriate placeholders. Create helper functions for formatting timestamps and section headers. Use a template-based approach for flexibility.",
+          "status": "pending",
+          "testStrategy": "Write tests for each section of the journal entry template. Test with complete data, partial data, and edge cases. Verify markdown formatting is correct and consistent. Test timestamp formatting and section ordering."
+        },
+        {
+          "id": 3,
+          "title": "Implement File Management for Journal Entries",
+          "description": "Create functionality to manage journal entry files, including creation, appending, and handling concurrent writes.",
+          "dependencies": [],
+          "details": "Implement FileManager class with methods to: 1) Create or append to daily files (YYYY-MM-DD.md), 2) Implement file locking mechanism for concurrent writes, 3) Set appropriate file permissions, 4) Handle I/O errors gracefully. Use fcntl for file locking on Unix systems and msvcrt for Windows.",
+          "status": "pending",
+          "testStrategy": "Test file creation, appending to existing files, concurrent write handling, and error conditions. Mock file system operations to test edge cases. Verify file naming convention and content structure. Test file locking mechanism with simulated concurrent access."
+        },
+        {
+          "id": 4,
+          "title": "Implement Terminal and Chat History Processing",
+          "description": "Create functionality to process terminal commands and chat history for inclusion in journal entries.",
+          "dependencies": [],
+          "details": "Implement HistoryProcessor class with methods to: 1) Extract and parse terminal command history, 2) Process chat history to extract decision context, 3) Deduplicate terminal commands, 4) Format commands for readability. Create utility functions to detect command patterns and infer frustrations/roadblocks from repeated commands or error messages.",
+          "status": "pending",
+          "testStrategy": "Test with various terminal history formats, chat logs with different structures, and edge cases. Verify command deduplication works correctly. Test inference of frustrations from command patterns. Verify formatting of extracted content matches template requirements."
+        },
+        {
+          "id": 5,
+          "title": "Integrate Components and Implement Main Journal API",
+          "description": "Integrate all components and create the main API for the journal.py module that will be used by other parts of the system.",
+          "dependencies": [],
+          "details": "Create the main Journal class that integrates all components. Implement public methods: 1) create_entry(commit_data, terminal_history, chat_history), 2) get_entry(date), 3) update_entry(date, content). Create a clean, documented API that handles all error conditions gracefully. Implement proper logging throughout the module.",
+          "status": "pending",
+          "testStrategy": "Write integration tests that verify the complete workflow from commit data to saved journal entry. Test API methods with various inputs and edge cases. Verify error handling and logging. Create end-to-end tests that simulate the actual usage of the module in the larger system."
+        },
+        {
+          "id": 6,
+          "title": "Review and update README/docs",
+          "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 4
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Implement MCP Server Core",
+      "description": "Create the server.py module to implement the Model Context Protocol (MCP) server using Anthropic's Python SDK.",
+      "details": "Implement the server.py module with the following functionality:\n\n1. MCP server initialization\n   - Set up MCP server using Anthropic's Python SDK\n   - Configure server with appropriate settings\n\n2. Tool registration\n   - Register all journal operations as MCP tools\n   - Define tool schemas and handlers\n\n3. Request handling\n   - Process incoming MCP requests\n   - Route to appropriate tool handlers\n   - Format responses\n\n4. Error handling\n   - Handle MCP-specific errors\n   - Provide meaningful error messages\n\nExample implementation:\n```python\nfrom mcp import MCPServer, Tool, ToolParameter\nfrom typing import Dict, Any, List\n\nclass JournalMCPServer:\n    def __init__(self, config):\n        self.config = config\n        self.server = MCPServer()\n        self._register_tools()\n    \n    def _register_tools(self):\n        # Register all journal operations as tools\n        self.server.register_tool(\n            Tool(\n                name=\"journal/new-entry\",\n                description=\"Create a new journal entry from current git state\",\n                parameters=[\n                    ToolParameter(name=\"debug\", type=\"boolean\", required=False)\n                ],\n                handler=self._handle_new_entry\n            )\n        )\n        # Register other tools...\n    \n    def _handle_new_entry(self, params: Dict[str, Any]) -> Dict[str, Any]:\n        # Implementation of new-entry handler\n        debug = params.get(\"debug\", False)\n        try:\n            # Generate and save journal entry\n            # Return success response\n        except Exception as e:\n            # Handle error\n            return {\"status\": \"error\", \"message\": str(e)}\n```",
+      "testStrategy": "Write unit tests for:\n- MCP server initialization\n- Tool registration\n- Request handling\n- Error handling\n\nMock the Anthropic SDK to test server behavior without making actual API calls. Test all tool handlers with various input parameters.",
+      "priority": "high",
+      "dependencies": [
+        1
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Create MCP Server Test Suite",
+          "description": "Develop a comprehensive test suite for the MCP server implementation using pytest. This will establish the expected behavior and interfaces before implementation begins.",
+          "dependencies": [],
+          "details": "Create tests for server initialization, tool registration, request handling, and error handling. Mock the Anthropic SDK components to isolate testing. Include test cases for successful operations and various error conditions. Define expected input/output contracts for all tool handlers.",
+          "status": "pending",
+          "testStrategy": "Use pytest fixtures to set up test environments. Mock external dependencies including Anthropic's SDK. Create parameterized tests to cover multiple scenarios for each functionality."
+        },
+        {
+          "id": 2,
+          "title": "Implement MCP Server Initialization",
+          "description": "Implement the core server initialization functionality with proper configuration handling based on the test specifications.",
+          "dependencies": [
+            1
+          ],
+          "details": "Create the JournalMCPServer class with initialization logic. Implement configuration parsing and validation. Set up the connection to Anthropic's SDK with appropriate authentication. Include logging setup and server lifecycle management. Ensure all tests for initialization pass.",
+          "status": "pending",
+          "testStrategy": "Verify server initializes with various configuration options. Test error handling for invalid configurations. Confirm proper resource allocation and cleanup."
+        },
+        {
+          "id": 3,
+          "title": "Implement Tool Registration System",
+          "description": "Develop the tool registration system that will allow journal operations to be registered as MCP tools with proper schemas.",
+          "dependencies": [
+            2
+          ],
+          "details": "Implement the _register_tools method to define and register all journal operations. Create schema definitions for each tool's parameters and return values. Implement the registration mechanism that connects tools to their handlers. Support tool categorization and documentation generation.",
+          "status": "pending",
+          "testStrategy": "Test registration of multiple tools with different parameter types. Verify schema validation works correctly. Ensure tools can be discovered and introspected properly."
+        },
+        {
+          "id": 4,
+          "title": "Implement Request Handling Logic",
+          "description": "Create the core request processing pipeline that receives MCP requests, routes them to the appropriate tool handlers, and formats responses.",
+          "dependencies": [
+            3
+          ],
+          "details": "Implement request parsing and validation against tool schemas. Create the routing mechanism to dispatch requests to the correct handler functions. Implement response formatting according to MCP specifications. Add request/response logging for debugging. Handle authentication and authorization if required.",
+          "status": "pending",
+          "testStrategy": "Test request routing with various input formats. Verify parameter validation works correctly. Test response formatting meets MCP specifications. Test performance with simulated load."
+        },
+        {
+          "id": 5,
+          "title": "Implement Error Handling and Tool Handlers",
+          "description": "Develop the error handling system and implement the actual tool handler functions for journal operations.",
+          "dependencies": [
+            4
+          ],
+          "details": "Create a comprehensive error handling system that catches exceptions and translates them to appropriate MCP error responses. Implement all tool handlers including journal/new-entry, ensuring they interact correctly with the journal system. Add detailed logging for troubleshooting. Implement retry logic for transient failures.",
+          "status": "pending",
+          "testStrategy": "Test error handling with various exception types. Verify error messages are informative but don't leak sensitive information. Test each tool handler with valid and invalid inputs. Test integration with the actual journal system components."
+        },
+        {
+          "id": 6,
+          "title": "Review and update README/docs",
+          "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 5
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Implement CLI Interface",
+      "description": "Create the cli.py module to implement the command-line interface using Click.",
+      "details": "Implement the cli.py module with the following functionality:\n\n1. Command structure\n   - Define main command group\n   - Add subcommands for all operations\n\n2. Command options\n   - Add global options (--config, --dry-run, --verbose, --debug)\n   - Add command-specific options\n\n3. Command handlers\n   - Implement handlers for all commands\n   - Connect to MCP server for operations\n\n4. Output formatting\n   - Format success and error messages\n   - Handle verbose and debug output\n\nImplement the following commands:\n- `mcp-journal init` - Initialize journal in current repository\n- `mcp-journal new-entry [--debug]` - Create journal entry for current commit\n- `mcp-journal add-reflection \"text\"` - Add manual reflection to today's journal\n- `mcp-journal summarize --week [--debug]` - Generate summary for most recent week\n- `mcp-journal summarize --month [--debug]` - Generate summary for most recent month\n- `mcp-journal summarize --week 2025-01-13` - Week containing specific date\n- `mcp-journal summarize --range \"2025-01-01:2025-01-31\"` - Arbitrary range\n- `mcp-journal blogify <file1> [file2] ...` - Convert to blog post\n- `mcp-journal install-hook` - Install git post-commit hook\n- `mcp-journal backfill [--debug]` - Manually trigger missed commit check\n\nExample implementation:\n```python\nimport click\nfrom pathlib import Path\nfrom .server import JournalMCPServer\nfrom .config import load_config\n\n@click.group()\ndef cli():\n    \"\"\"MCP Journal - Engineering journal integrated with Git.\"\"\"\n    pass\n\n@cli.command()\n@click.option('--debug', is_flag=True, help='Show debug information')\ndef init(debug):\n    \"\"\"Initialize journal in current repository.\"\"\"\n    config = load_config()\n    server = JournalMCPServer(config)\n    result = server.server.invoke_tool(\"journal/init\", {\"debug\": debug})\n    click.echo(result[\"message\"])\n\n@cli.command()\n@click.option('--debug', is_flag=True, help='Show debug information')\ndef new_entry(debug):\n    \"\"\"Create journal entry for current commit.\"\"\"\n    config = load_config()\n    server = JournalMCPServer(config)\n    result = server.server.invoke_tool(\"journal/new-entry\", {\"debug\": debug})\n    click.echo(result[\"message\"])\n```",
+      "testStrategy": "Write unit tests for:\n- Command parsing\n- Option handling\n- Command execution\n- Output formatting\n\nUse Click's testing utilities to simulate command invocation. Test all commands with various options and arguments.",
+      "priority": "medium",
+      "dependencies": [
+        2,
+        5
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Create CLI command structure and tests",
+          "description": "Implement the basic CLI command structure with the main command group and subcommands using Click, following TDD principles.",
+          "dependencies": [],
+          "details": "1. Write tests for the CLI command structure that verify:\n   - Main command group exists\n   - All required subcommands are registered\n   - Command help text is properly displayed\n2. Implement the main command group and register all subcommands (init, new-entry, add-reflection, summarize, blogify, install-hook, backfill)\n3. Add docstrings and help text for all commands\n4. Ensure tests pass for the command structure",
+          "status": "pending",
+          "testStrategy": "Use Click's testing utilities to verify command registration, help text display, and basic command structure. Create test fixtures that mock the command invocation and verify the expected command structure is present."
+        },
+        {
+          "id": 2,
+          "title": "Implement global and command-specific options with tests",
+          "description": "Add global options (--config, --dry-run, --verbose, --debug) and command-specific options to all commands, with appropriate tests.",
+          "dependencies": [
+            1
+          ],
+          "details": "1. Write tests for global options that verify:\n   - Global options are available across all commands\n   - Options are correctly parsed and passed to handlers\n2. Write tests for command-specific options that verify:\n   - Each command has its required options\n   - Options correctly handle different input formats (dates, ranges, etc.)\n3. Implement global options in the main command group\n4. Add command-specific options to each subcommand\n5. Ensure all tests pass for option handling",
+          "status": "pending",
+          "testStrategy": "Create parameterized tests that verify option parsing for different input combinations. Test edge cases like invalid date formats, missing required options, and option conflicts."
+        },
+        {
+          "id": 3,
+          "title": "Implement command handlers and server connection",
+          "description": "Create handler functions for all commands that connect to the MCP server and invoke the appropriate tools.",
+          "dependencies": [
+            2
+          ],
+          "details": "1. Write tests for command handlers that verify:\n   - Handlers correctly invoke the MCP server with proper parameters\n   - Server responses are properly processed\n   - Error handling works as expected\n2. Implement handler functions for each command that:\n   - Load configuration\n   - Initialize MCP server connection\n   - Invoke appropriate server tools with command parameters\n   - Process server responses\n3. Add error handling for server connection issues\n4. Ensure all tests pass for command handlers",
+          "status": "pending",
+          "testStrategy": "Use mocks to simulate MCP server responses and verify correct parameter passing. Test both success and error scenarios, including network errors, server errors, and invalid responses."
+        },
+        {
+          "id": 4,
+          "title": "Implement output formatting and logging",
+          "description": "Add output formatting for command results, including success and error messages, and implement verbose and debug output handling.",
+          "dependencies": [
+            3
+          ],
+          "details": "1. Write tests for output formatting that verify:\n   - Success messages are properly formatted\n   - Error messages include appropriate details\n   - Verbose and debug flags control output detail level\n2. Implement output formatting functions for different result types\n3. Add verbose output handling that shows additional information when --verbose is used\n4. Implement debug output that shows detailed information when --debug is used\n5. Ensure consistent formatting across all commands\n6. Make sure all tests pass for output formatting",
+          "status": "pending",
+          "testStrategy": "Use Click's testing utilities to capture command output and verify formatting. Test different verbosity levels and ensure appropriate information is displayed in each mode."
+        },
+        {
+          "id": 5,
+          "title": "Implement integration tests and finalize CLI module",
+          "description": "Create end-to-end integration tests for the CLI module and finalize the implementation with comprehensive documentation.",
+          "dependencies": [
+            4
+          ],
+          "details": "1. Write integration tests that verify:\n   - Complete command workflows function correctly\n   - Commands interact properly with the MCP server\n   - Error scenarios are handled gracefully\n2. Refactor the CLI implementation based on test results\n3. Add comprehensive docstrings and comments\n4. Ensure consistent error handling across all commands\n5. Verify all unit and integration tests pass\n6. Create example usage documentation for each command",
+          "status": "pending",
+          "testStrategy": "Create test scenarios that simulate real-world usage patterns. Test complete workflows like initializing a journal, creating entries, and generating summaries. Use temporary directories to test file-based operations."
+        },
+        {
+          "id": 6,
+          "title": "Review and update README/docs",
+          "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 6
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Implement Journal Initialization",
+      "description": "Implement the journal/init operation to initialize the journal in a Git repository.",
+      "details": "Implement the journal/init operation with the following functionality:\n\n1. Directory creation\n   - Create journal directory structure (journal/daily/, journal/summaries/)\n   - Create default configuration file (.mcp-journalrc.yaml)\n\n2. Git hook installation\n   - Prompt for git hook installation\n   - Install post-commit hook if confirmed\n\n3. Validation\n   - Check if journal is already initialized\n   - Validate git repository\n\n4. Output\n   - Return initialization status\n   - Return paths of created files/directories\n\nExample implementation:\n```python\ndef handle_init(params):\n    \"\"\"Handle journal/init operation.\"\"\"\n    debug = params.get(\"debug\", False)\n    try:\n        # Check if journal is already initialized\n        config_path = Path(\".mcp-journalrc.yaml\")\n        if config_path.exists():\n            return {\n                \"status\": \"warning\",\n                \"message\": \"Journal already initialized. Use --force to reinitialize.\"\n            }\n        \n        # Create journal directory structure\n        journal_dir = Path(\"journal\")\n        daily_dir = journal_dir / \"daily\"\n        summaries_dir = journal_dir / \"summaries\"\n        \n        journal_dir.mkdir(exist_ok=True)\n        daily_dir.mkdir(exist_ok=True)\n        summaries_dir.mkdir(exist_ok=True)\n        \n        # Create default configuration file\n        with open(config_path, \"w\") as f:\n            f.write(DEFAULT_CONFIG)\n        \n        # Install git hook if confirmed\n        hook_status = \"not installed\"\n        if params.get(\"install_hook\", False):\n            install_git_hook()\n            hook_status = \"installed\"\n        \n        return {\n            \"status\": \"success\",\n            \"message\": f\"Journal initialized successfully. Git hook {hook_status}.\",\n            \"paths\": {\n                \"journal\": str(journal_dir),\n                \"daily\": str(daily_dir),\n                \"summaries\": str(summaries_dir),\n                \"config\": str(config_path)\n            }\n        }\n    except Exception as e:\n        if debug:\n            return {\"status\": \"error\", \"message\": f\"Initialization failed: {str(e)}\"}\n        return {\"status\": \"error\", \"message\": \"Initialization failed. Use --debug for details.\"}\n```",
+      "testStrategy": "Write unit tests for:\n- Directory creation\n- Configuration file creation\n- Git hook installation\n- Validation of existing journal\n- Error handling\n\nTest with various repository states (existing journal, missing git repository, etc.).",
+      "priority": "medium",
+      "dependencies": [
+        4,
+        5,
+        6
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Create test suite for journal initialization validation",
+          "description": "Develop comprehensive tests for validating journal initialization conditions, including checking if the journal is already initialized and validating the git repository.",
+          "dependencies": [],
+          "details": "Write tests that verify: 1) Detection of existing journal configuration, 2) Proper handling when journal is already initialized, 3) Validation of git repository existence, 4) Error handling for non-git repositories. Include both positive and negative test cases.",
+          "status": "pending",
+          "testStrategy": "Use pytest fixtures to set up temporary directories with and without git repositories. Mock git commands where necessary. Test both success and failure scenarios."
+        },
+        {
+          "id": 2,
+          "title": "Implement journal directory structure creation with TDD",
+          "description": "Create tests and implement functionality for creating the journal directory structure, including the main journal directory and subdirectories for daily entries and summaries.",
+          "dependencies": [
+            1
+          ],
+          "details": "First, write tests that verify the creation of the journal directory structure (journal/, journal/daily/, journal/summaries/). Then implement the directory creation logic that passes these tests. Ensure proper error handling for permission issues and existing directories.",
+          "status": "pending",
+          "testStrategy": "Use temporary directory fixtures to test directory creation. Verify directory existence and permissions after creation. Test edge cases like existing directories and permission errors."
+        },
+        {
+          "id": 3,
+          "title": "Implement configuration file creation with TDD",
+          "description": "Develop tests and implement functionality for creating the default journal configuration file (.mcp-journalrc.yaml).",
+          "dependencies": [
+            2
+          ],
+          "details": "Write tests that verify the creation and content of the configuration file. Then implement the configuration file creation logic. The configuration file should contain default settings for the journal, including paths, templates, and other configurable options.",
+          "status": "pending",
+          "testStrategy": "Test that the configuration file is created with the correct content, structure, and permissions. Verify that the file is valid YAML and contains all required default settings."
+        },
+        {
+          "id": 4,
+          "title": "Implement Git hook installation with TDD",
+          "description": "Create tests and implement functionality for prompting and installing the Git post-commit hook.",
+          "dependencies": [
+            3
+          ],
+          "details": "Write tests for the Git hook installation process, including user prompting logic and the actual hook installation. Then implement the hook installation functionality that passes these tests. The hook should be installed in the .git/hooks directory and should be executable.",
+          "status": "pending",
+          "testStrategy": "Mock user input for testing prompts. Use temporary git repositories to test actual hook installation. Verify hook file existence, content, and permissions after installation."
+        },
+        {
+          "id": 5,
+          "title": "Implement initialization status reporting with TDD",
+          "description": "Develop tests and implement functionality for reporting the status of the journal initialization process, including success/failure messages and paths of created files/directories.",
+          "dependencies": [
+            4
+          ],
+          "details": "Write tests that verify the correct reporting of initialization status, including success messages, warning messages for already initialized journals, error messages for failures, and the correct reporting of created file/directory paths. Then implement the reporting functionality that passes these tests.",
+          "status": "pending",
+          "testStrategy": "Test various initialization scenarios and verify that the correct status, messages, and paths are returned. Include tests for successful initialization, already initialized journals, and various error conditions."
+        },
+        {
+          "id": 6,
+          "title": "Review and update README/docs",
+          "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 7
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Implement New Entry Generation",
+      "description": "Implement the journal/new-entry operation to create a new journal entry from the current Git state.",
+      "details": "Implement the journal/new-entry operation with the following functionality:\n\n1. Git state retrieval\n   - Get current commit details\n   - Get file diffs\n\n2. Context collection\n   - Collect terminal history if available\n   - Collect chat history if available\n   - Extract decision context from chat history\n\n3. Entry generation\n   - Generate journal entry with all sections\n   - Format according to template\n\n4. File management\n   - Determine daily file path (YYYY-MM-DD.md)\n   - Create or append to file\n\n5. Backfill check\n   - Check for missed commits\n   - Trigger backfill if needed\n\nExample implementation:\n```python\ndef handle_new_entry(params):\n    \"\"\"Handle journal/new-entry operation.\"\"\"\n    debug = params.get(\"debug\", False)\n    try:\n        # Get current commit details\n        repo = find_repo()\n        commit = get_current_commit(repo)\n        \n        # Check for missed commits and backfill if needed\n        missed_commits = check_missed_commits(repo)\n        if missed_commits:\n            backfill_entries(repo, missed_commits, debug=debug)\n        \n        # Collect context\n        terminal_history = collect_terminal_history()\n        chat_history = collect_chat_history()\n        decision_context = extract_decision_context(chat_history)\n        \n        # Generate entry\n        entry = generate_journal_entry(\n            commit=commit,\n            terminal_history=terminal_history,\n            chat_history=chat_history,\n            decision_context=decision_context,\n            debug=debug\n        )\n        \n        # Save entry to daily file\n        today = datetime.now().strftime(\"%Y-%m-%d\")\n        file_path = Path(\"journal/daily\") / f\"{today}.md\"\n        append_to_journal_file(file_path, entry)\n        \n        return {\n            \"status\": \"success\",\n            \"message\": f\"Journal entry created for commit {commit['short_hash']}.\",\n            \"path\": str(file_path)\n        }\n    except Exception as e:\n        if debug:\n            return {\"status\": \"error\", \"message\": f\"Entry creation failed: {str(e)}\"}\n        return {\"status\": \"error\", \"message\": \"Entry creation failed. Use --debug for details.\"}\n```",
+      "testStrategy": "Write unit tests for:\n- Git state retrieval\n- Context collection\n- Entry generation\n- File management\n- Backfill check\n\nTest with various git states and context availability scenarios.",
+      "priority": "high",
+      "dependencies": [
+        4,
+        5,
+        6
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Git State Retrieval Functions",
+          "description": "Create functions to retrieve the current Git commit details and file diffs from the repository.",
+          "dependencies": [],
+          "details": "Implement `find_repo()` to locate the Git repository, `get_current_commit(repo)` to extract commit metadata (hash, author, timestamp, message), and `get_file_diffs(repo, commit)` to retrieve the changes made in the commit. Handle edge cases like no repository found or no commits.",
+          "status": "pending",
+          "testStrategy": "Write tests that mock Git repository interactions to verify correct data extraction. Test scenarios: valid repository with commits, repository with no commits, and no repository found."
+        },
+        {
+          "id": 2,
+          "title": "Implement Context Collection Functions",
+          "description": "Create functions to collect terminal history, chat history, and extract decision context from available sources.",
+          "dependencies": [],
+          "details": "Implement `collect_terminal_history()` to retrieve recent shell commands, `collect_chat_history()` to get AI assistant interactions, and `extract_decision_context(chat_history)` to identify key decisions from the chat. Each function should handle missing data gracefully and return structured information.",
+          "status": "pending",
+          "testStrategy": "Create tests with mock data for terminal and chat histories. Test extraction of decision context with various chat patterns. Verify behavior when sources are unavailable."
+        },
+        {
+          "id": 3,
+          "title": "Implement Journal Entry Generation",
+          "description": "Create the core function to generate a formatted journal entry from Git and context data.",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Implement `generate_journal_entry()` that takes commit details, terminal history, chat history, and decision context as inputs. Format the entry according to the template with sections for commit details, changes summary, context, and decisions. Include debug mode to provide verbose output.",
+          "status": "pending",
+          "testStrategy": "Test with various combinations of input data to ensure proper formatting. Verify all sections are included when data is available and gracefully handled when missing. Test debug mode output."
+        },
+        {
+          "id": 4,
+          "title": "Implement File Management Functions",
+          "description": "Create functions to determine the daily journal file path and append entries to the file.",
+          "dependencies": [
+            3
+          ],
+          "details": "Implement `get_daily_file_path()` to generate the path for today's journal file (YYYY-MM-DD.md) and `append_to_journal_file(file_path, entry)` to create or append to the file. Ensure directories exist and handle file operations safely.",
+          "status": "pending",
+          "testStrategy": "Test file path generation for different dates. Use temporary directories to test file creation and appending. Verify content is correctly written and directories are created as needed."
+        },
+        {
+          "id": 5,
+          "title": "Implement Backfill Check and Main Handler",
+          "description": "Create the backfill check functionality and integrate all components into the main handler function.",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "details": "Implement `check_missed_commits(repo)` to identify commits without journal entries, `backfill_entries(repo, missed_commits)` to generate entries for past commits, and complete the `handle_new_entry(params)` function to orchestrate the entire process. Include proper error handling and status reporting.",
+          "status": "pending",
+          "testStrategy": "Test missed commit detection with various repository states. Test backfill functionality with mock repositories. Integration test the full handler with different parameter combinations and error conditions."
+        },
+        {
+          "id": 6,
+          "title": "Review and update README/docs",
+          "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 8
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Implement Summarization",
+      "description": "Implement the journal/summarize operation to generate weekly and monthly summaries.",
+      "details": "Implement the journal/summarize operation with the following functionality:\n\n1. Date range determination\n   - Handle --week, --month, and --range options\n   - Calculate date ranges for relative periods (e.g., \"this week\")\n   - Parse specific dates (e.g., \"2025-01-13\")\n\n2. Entry collection\n   - Find all daily entries within date range\n   - Parse entries for relevant information\n\n3. Summary generation\n   - Generate summary of activities across entries\n   - Highlight key accomplishments and challenges\n   - Include emotional tone analysis\n\n4. File management\n   - Determine summary file path (e.g., 2025-05-week2.md, 2025-05-month.md)\n   - Create or overwrite summary file\n\nExample implementation:\n```python\ndef handle_summarize(params):\n    \"\"\"Handle journal/summarize operation.\"\"\"\n    debug = params.get(\"debug\", False)\n    try:\n        # Determine date range\n        if \"week\" in params:\n            start_date, end_date, period_name = get_week_range(params[\"week\"])\n            summary_type = \"week\"\n        elif \"month\" in params:\n            start_date, end_date, period_name = get_month_range(params[\"month\"])\n            summary_type = \"month\"\n        elif \"range\" in params:\n            start_date, end_date = parse_date_range(params[\"range\"])\n            period_name = f\"{start_date.strftime('%Y-%m-%d')}-to-{end_date.strftime('%Y-%m-%d')}\"\n            summary_type = \"custom\"\n        else:\n            # Default to current week\n            start_date, end_date, period_name = get_week_range(None)\n            summary_type = \"week\"\n        \n        # Collect entries within date range\n        entries = collect_entries(start_date, end_date)\n        if not entries:\n            return {\n                \"status\": \"warning\",\n                \"message\": f\"No journal entries found for {period_name}.\"\n            }\n        \n        # Generate summary\n        summary = generate_summary(entries, start_date, end_date, summary_type)\n        \n        # Save summary to file\n        if summary_type == \"week\":\n            file_name = f\"{start_date.strftime('%Y-%m')}-week{start_date.strftime('%V')}.md\"\n        elif summary_type == \"month\":\n            file_name = f\"{start_date.strftime('%Y-%m')}-month.md\"\n        else:\n            file_name = f\"{period_name}.md\"\n        \n        file_path = Path(\"journal/summaries\") / file_name\n        save_summary_file(file_path, summary)\n        \n        return {\n            \"status\": \"success\",\n            \"message\": f\"Summary generated for {period_name}.\",\n            \"path\": str(file_path)\n        }\n    except Exception as e:\n        if debug:\n            return {\"status\": \"error\", \"message\": f\"Summarization failed: {str(e)}\"}\n        return {\"status\": \"error\", \"message\": \"Summarization failed. Use --debug for details.\"}\n```",
+      "testStrategy": "Write unit tests for:\n- Date range determination\n- Entry collection\n- Summary generation\n- File management\n\nTest with various date ranges and entry availability scenarios.",
+      "priority": "medium",
+      "dependencies": [
+        4,
+        5,
+        6
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement date range determination functions",
+          "description": "Create functions to determine date ranges for weekly, monthly, and custom periods based on user input",
+          "dependencies": [],
+          "details": "Implement `get_week_range()`, `get_month_range()`, and `parse_date_range()` functions that handle relative periods (e.g., 'this week', 'last month') and specific dates. Each function should return start_date, end_date, and a human-readable period_name. Include support for ISO week numbers and proper month boundaries.",
+          "status": "pending",
+          "testStrategy": "Write tests for each function with various inputs: None (current period), relative periods ('last', 'this', 'next'), specific dates ('2025-01-13'), and invalid inputs. Verify correct date calculations and period naming."
+        },
+        {
+          "id": 2,
+          "title": "Implement entry collection and parsing",
+          "description": "Create a function to collect and parse journal entries within a specified date range",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement `collect_entries()` function that finds all daily journal entries within the given date range. The function should locate entry files, parse their content, and extract relevant information (activities, accomplishments, challenges, emotional tone). Return a structured collection of entry data for further processing.",
+          "status": "pending",
+          "testStrategy": "Create test fixtures with sample journal entries across different dates. Test collection with various date ranges, including empty ranges, ranges with no entries, and ranges with multiple entries. Verify correct parsing of entry content."
+        },
+        {
+          "id": 3,
+          "title": "Implement summary generation logic",
+          "description": "Create a function to generate comprehensive summaries from collected journal entries",
+          "dependencies": [
+            2
+          ],
+          "details": "Implement `generate_summary()` function that processes collected entries to create a structured summary. The summary should include: 1) Overview of the period, 2) List of key activities grouped by category, 3) Notable accomplishments, 4) Challenges faced, 5) Emotional tone analysis across entries. Format the summary as markdown with appropriate sections and formatting.",
+          "status": "pending",
+          "testStrategy": "Test with various collections of parsed entries, including edge cases (empty collection, single entry, entries with missing fields). Verify the summary structure, content aggregation, and markdown formatting."
+        },
+        {
+          "id": 4,
+          "title": "Implement summary file management",
+          "description": "Create functions to determine summary file paths and save generated summaries",
+          "dependencies": [
+            3
+          ],
+          "details": "Implement `save_summary_file()` function that creates the necessary directory structure (journal/summaries/) if it doesn't exist, determines the appropriate file name based on summary type (weekly, monthly, custom), and writes the summary content to the file. Handle file overwriting and permissions appropriately.",
+          "status": "pending",
+          "testStrategy": "Test file path generation for different summary types. Test file creation, overwriting existing files, and handling of permission errors. Use temporary directories for testing to avoid affecting real data."
+        },
+        {
+          "id": 5,
+          "title": "Implement main summarize handler function",
+          "description": "Integrate all components into the main handler function for the journal/summarize operation",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "details": "Implement the `handle_summarize()` function that orchestrates the entire summarization process: 1) Parse command parameters, 2) Determine date range using functions from subtask 1, 3) Collect entries using function from subtask 2, 4) Generate summary using function from subtask 3, 5) Save summary using function from subtask 4, 6) Return appropriate response object with status, message, and file path. Include proper error handling and debug information.",
+          "status": "pending",
+          "testStrategy": "Write integration tests that verify the entire summarization workflow with various parameter combinations (--week, --month, --range). Test error handling with invalid inputs and edge cases. Mock dependencies as needed to isolate testing of the handler function."
+        },
+        {
+          "id": 6,
+          "title": "Review and update README/docs",
+          "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 9
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Implement Blog Post Conversion",
+      "description": "Implement the journal/blogify operation to convert journal entries to blog post format.",
+      "details": "Implement the journal/blogify operation with the following functionality:\n\n1. File processing\n   - Accept single or multiple file paths\n   - Read and parse journal entries\n\n2. Content transformation\n   - Convert to natural, readable blog post\n   - Remove headers, timestamps, code references\n   - Add transitions, rewrite for narrative flow\n\n3. Output generation\n   - Generate blog post in Markdown format\n   - Save to new file or return as string\n\nExample implementation:\n```python\ndef handle_blogify(params):\n    \"\"\"Handle journal/blogify operation.\"\"\"\n    debug = params.get(\"debug\", False)\n    try:\n        # Get file paths\n        file_paths = params.get(\"files\", [])\n        if not file_paths:\n            return {\n                \"status\": \"error\",\n                \"message\": \"No files specified for blogify operation.\"\n            }\n        \n        # Read and parse journal entries\n        entries = []\n        for file_path in file_paths:\n            path = Path(file_path)\n            if not path.exists():\n                return {\n                    \"status\": \"error\",\n                    \"message\": f\"File not found: {file_path}\"\n                }\n            \n            with open(path, \"r\") as f:\n                content = f.read()\n            \n            entries.append({\"path\": file_path, \"content\": content})\n        \n        # Transform content to blog post\n        blog_post = transform_to_blog_post(entries)\n        \n        # Save to new file or return as string\n        if params.get(\"output\"):\n            output_path = Path(params[\"output\"])\n            with open(output_path, \"w\") as f:\n                f.write(blog_post)\n            \n            return {\n                \"status\": \"success\",\n                \"message\": f\"Blog post generated and saved to {output_path}.\",\n                \"path\": str(output_path)\n            }\n        else:\n            return {\n                \"status\": \"success\",\n                \"message\": \"Blog post generated.\",\n                \"content\": blog_post\n            }\n    except Exception as e:\n        if debug:\n            return {\"status\": \"error\", \"message\": f\"Blogify operation failed: {str(e)}\"}\n        return {\"status\": \"error\", \"message\": \"Blogify operation failed. Use --debug for details.\"}\n```",
+      "testStrategy": "Write unit tests for:\n- File processing\n- Content transformation\n- Output generation\n\nTest with various journal entry formats and content types.",
+      "priority": "low",
+      "dependencies": [
+        4,
+        5,
+        6
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement File Processing Module",
+          "description": "Create a module to handle file processing for the blogify operation, including accepting single or multiple file paths, validating their existence, and reading their contents.",
+          "dependencies": [],
+          "details": "Create a `file_processor.py` module with functions to validate file paths and read journal entries. Implement a main function `process_files(file_paths)` that takes a list of file paths, validates each path exists, reads the content, and returns a list of dictionaries with 'path' and 'content' keys.",
+          "status": "pending",
+          "testStrategy": "Write tests that verify: 1) Function correctly handles valid file paths, 2) Function properly reports errors for non-existent files, 3) Function correctly processes multiple files, 4) Function handles empty file list appropriately."
+        },
+        {
+          "id": 2,
+          "title": "Implement Content Transformation Logic",
+          "description": "Create the core transformation logic to convert journal entries into natural, readable blog post format by removing technical elements and improving narrative flow.",
+          "dependencies": [
+            1
+          ],
+          "details": "Create a `content_transformer.py` module with a main function `transform_to_blog_post(entries)` that takes the output from the file processor and converts it to blog format. Implement helper functions to: remove headers and timestamps, strip code references, add natural transitions between paragraphs, and rewrite content for better narrative flow. Consider using NLP techniques or rule-based transformations.",
+          "status": "pending",
+          "testStrategy": "Write tests that verify: 1) Headers and timestamps are properly removed, 2) Code references are appropriately handled, 3) Transitions are added between paragraphs, 4) The overall narrative flow is improved, 5) The function handles various journal entry formats."
+        },
+        {
+          "id": 3,
+          "title": "Implement Output Generation Module",
+          "description": "Create a module to handle the output generation of the transformed blog post, either saving to a file or returning as a string.",
+          "dependencies": [
+            2
+          ],
+          "details": "Create an `output_generator.py` module with a main function `generate_output(blog_post, output_path=None)` that takes the transformed blog post content and an optional output path. If an output path is provided, save the content to that file and return a success message with the path. If no output path is provided, return the content as a string.",
+          "status": "pending",
+          "testStrategy": "Write tests that verify: 1) Content is correctly saved to a file when output path is provided, 2) Function returns content as string when no output path is provided, 3) Function handles file writing errors appropriately, 4) Output is properly formatted in Markdown."
+        },
+        {
+          "id": 4,
+          "title": "Implement Main Blogify Handler Function",
+          "description": "Implement the main handler function that orchestrates the entire blogify operation by calling the file processing, content transformation, and output generation modules.",
+          "dependencies": [
+            1,
+            2,
+            3
+          ],
+          "details": "Create the `handle_blogify(params)` function in the main module that: 1) Extracts parameters like file paths, debug mode, and output path, 2) Calls the file processor to read entries, 3) Passes entries to the content transformer, 4) Uses the output generator to produce the final result, 5) Handles exceptions and returns appropriate response objects with status and messages.",
+          "status": "pending",
+          "testStrategy": "Write tests that verify: 1) Function correctly orchestrates the workflow, 2) Function properly handles various parameter combinations, 3) Error handling works as expected, 4) Debug mode provides detailed error information, 5) Success responses contain the expected data."
+        },
+        {
+          "id": 5,
+          "title": "Integrate and Test End-to-End Functionality",
+          "description": "Integrate all components and perform end-to-end testing of the blogify operation with various input scenarios and edge cases.",
+          "dependencies": [
+            4
+          ],
+          "details": "Create integration tests that test the complete blogify workflow with various inputs: 1) Single file conversion, 2) Multiple file conversion, 3) Different journal formats, 4) Edge cases like empty files or malformed content. Update the main module to expose the blogify functionality through the appropriate API or command-line interface. Document usage examples and expected outputs.",
+          "status": "pending",
+          "testStrategy": "Create integration tests that verify: 1) End-to-end functionality works with real files, 2) CLI or API interface correctly passes parameters to the handler, 3) Error scenarios are properly handled and reported, 4) Output matches expected blog post format for various inputs, 5) Performance is acceptable for larger files or multiple files."
+        },
+        {
+          "id": 6,
+          "title": "Review and update README/docs",
+          "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 10
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Implement Backfill Mechanism",
+      "description": "Implement the journal/backfill operation to check for missed commits and create entries for them.",
+      "details": "Implement the journal/backfill operation with the following functionality:\n\n1. Missed commit detection\n   - Find last journal entry timestamp\n   - Get all commits since that timestamp\n   - Filter out commits that already have entries\n\n2. Entry generation for missed commits\n   - Generate entries for each missed commit\n   - Mark entries as backfilled\n   - Skip terminal/chat history for backfilled entries\n\n3. File management\n   - Determine appropriate daily file for each commit\n   - Append entries in chronological order\n\nExample implementation:\n```python\ndef handle_backfill(params):\n    \"\"\"Handle journal/backfill operation.\"\"\"\n    debug = params.get(\"debug\", False)\n    try:\n        # Find last journal entry timestamp\n        last_entry_timestamp = find_last_entry_timestamp()\n        \n        # Get all commits since that timestamp\n        repo = find_repo()\n        commits = get_commits_since(repo, last_entry_timestamp)\n        \n        # Filter out commits that already have entries\n        existing_entries = get_existing_entries()\n        missed_commits = filter_missed_commits(commits, existing_entries)\n        \n        if not missed_commits:\n            return {\n                \"status\": \"success\",\n                \"message\": \"No missed commits found.\"\n            }\n        \n        # Generate entries for missed commits\n        backfilled_entries = []\n        for commit in missed_commits:\n            # Generate entry (skip terminal/chat history)\n            entry = generate_journal_entry(\n                commit=commit,\n                is_backfilled=True,\n                debug=debug\n            )\n            \n            # Determine appropriate daily file\n            commit_date = commit[\"timestamp\"].strftime(\"%Y-%m-%d\")\n            file_path = Path(\"journal/daily\") / f\"{commit_date}.md\"\n            \n            # Append entry to file\n            append_to_journal_file(file_path, entry)\n            backfilled_entries.append({\n                \"commit\": commit[\"short_hash\"],\n                \"date\": commit_date,\n                \"path\": str(file_path)\n            })\n        \n        return {\n            \"status\": \"success\",\n            \"message\": f\"Backfilled {len(backfilled_entries)} missed commits.\",\n            \"backfilled\": backfilled_entries\n        }\n    except Exception as e:\n        if debug:\n            return {\"status\": \"error\", \"message\": f\"Backfill failed: {str(e)}\"}\n        return {\"status\": \"error\", \"message\": \"Backfill failed. Use --debug for details.\"}\n```",
+      "testStrategy": "Write unit tests for:\n- Missed commit detection\n- Entry generation for missed commits\n- File management\n\nTest with various repository states and commit histories.",
+      "priority": "medium",
+      "dependencies": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Last Entry Timestamp Detection",
+          "description": "Create functions to find the last journal entry timestamp to determine the starting point for backfill operations.",
+          "dependencies": [],
+          "details": "Implement the `find_last_entry_timestamp()` function that scans through existing journal files to find the most recent entry. This should handle cases where journal files might be missing or empty. Return a default timestamp (e.g., project start date) if no entries are found. Include proper error handling and logging.",
+          "status": "pending",
+          "testStrategy": "Write tests that verify: 1) Correct timestamp is found when entries exist, 2) Default timestamp is returned when no entries exist, 3) Function handles malformed journal files gracefully."
+        },
+        {
+          "id": 2,
+          "title": "Implement Commit Retrieval and Filtering",
+          "description": "Create functions to retrieve commits since a given timestamp and filter out those that already have journal entries.",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement `get_commits_since()` to retrieve all commits after the last entry timestamp, and `filter_missed_commits()` to identify commits without corresponding journal entries. The filtering should compare commit hashes with existing entries to determine which commits were missed. Include proper error handling for repository access issues.",
+          "status": "pending",
+          "testStrategy": "Write tests for: 1) Retrieving commits within a date range, 2) Correctly identifying missed commits when some entries exist, 3) Edge cases like empty repositories or no new commits."
+        },
+        {
+          "id": 3,
+          "title": "Implement Backfilled Entry Generation",
+          "description": "Create functionality to generate journal entries for missed commits with appropriate backfill markers.",
+          "dependencies": [
+            2
+          ],
+          "details": "Modify the existing `generate_journal_entry()` function to support a backfill mode that skips terminal/chat history collection. Add an `is_backfilled` parameter that, when true, adds a backfill marker to the entry and simplifies the entry format. Ensure the entry contains commit metadata, diff summary, and backfill timestamp.",
+          "status": "pending",
+          "testStrategy": "Test that: 1) Backfilled entries are correctly marked, 2) Terminal/chat history is skipped for backfilled entries, 3) All required commit metadata is included in backfilled entries."
+        },
+        {
+          "id": 4,
+          "title": "Implement Journal File Management",
+          "description": "Create functions to determine the appropriate daily journal file for each commit and append entries in chronological order.",
+          "dependencies": [
+            3
+          ],
+          "details": "Implement `append_to_journal_file()` to handle writing entries to the correct daily file based on commit timestamp. Ensure entries are added in chronological order within each file. Create any missing directories or files as needed. Handle file locking to prevent concurrent write issues during backfill operations.",
+          "status": "pending",
+          "testStrategy": "Test: 1) Entries are written to the correct date-based files, 2) Directory/file creation works properly, 3) Entries maintain chronological order when appended, 4) Concurrent write operations are handled safely."
+        },
+        {
+          "id": 5,
+          "title": "Implement Main Backfill Handler Function",
+          "description": "Integrate all components into the main backfill handler function with proper error handling and reporting.",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "details": "Implement the main `handle_backfill()` function that orchestrates the entire backfill process. It should call the previously implemented functions in sequence, handle any errors gracefully, and return appropriate success/error responses with detailed information about the backfill operation. Include debug mode support for detailed error reporting.",
+          "status": "pending",
+          "testStrategy": "Create integration tests that verify: 1) Complete backfill workflow succeeds with missed commits, 2) Appropriate response when no missed commits exist, 3) Error handling works correctly in various failure scenarios, 4) Debug mode provides detailed error information."
+        },
+        {
+          "id": 6,
+          "title": "Review and update README/docs",
+          "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 11
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Implement Git Hook Installation",
+      "description": "Implement the journal/install-hook operation to install the Git post-commit hook.",
+      "details": "Implement the journal/install-hook operation with the following functionality:\n\n1. Hook file creation\n   - Create post-commit hook file\n   - Make hook executable\n   - Set hook content to run `mcp-journal new-entry`\n\n2. Existing hook handling\n   - Check for existing post-commit hook\n   - Backup existing hook if found\n   - Prompt for action (replace, append, cancel)\n\n3. Validation\n   - Verify hook installation\n   - Test hook permissions\n\nExample implementation:\n```python\ndef handle_install_hook(params):\n    \"\"\"Handle journal/install-hook operation.\"\"\"\n    debug = params.get(\"debug\", False)\n    try:\n        # Find git repository\n        repo = find_repo()\n        hook_path = Path(repo.git_dir) / \"hooks\" / \"post-commit\"\n        \n        # Check for existing hook\n        if hook_path.exists():\n            # Backup existing hook\n            backup_path = hook_path.with_suffix(\".bak\")\n            hook_path.rename(backup_path)\n            \n            action = params.get(\"action\", \"replace\")\n            if action == \"cancel\":\n                # Restore backup and exit\n                backup_path.rename(hook_path)\n                return {\n                    \"status\": \"warning\",\n                    \"message\": \"Hook installation cancelled. Existing hook preserved.\"\n                }\n        \n        # Create hook file\n        hook_content = \"#!/bin/sh\\nmcp-journal new-entry\\n\"\n        \n        if params.get(\"action\") == \"append\" and backup_path.exists():\n            # Append to existing hook\n            with open(backup_path, \"r\") as f:\n                existing_content = f.read()\n            \n            hook_content = existing_content + \"\\n\" + hook_content\n        \n        with open(hook_path, \"w\") as f:\n            f.write(hook_content)\n        \n        # Make hook executable\n        hook_path.chmod(0o755)\n        \n        # Verify hook installation\n        if not hook_path.exists() or not os.access(hook_path, os.X_OK):\n            return {\n                \"status\": \"error\",\n                \"message\": \"Failed to install hook. Check file permissions.\"\n            }\n        \n        return {\n            \"status\": \"success\",\n            \"message\": \"Git post-commit hook installed successfully.\",\n            \"path\": str(hook_path)\n        }\n    except Exception as e:\n        if debug:\n            return {\"status\": \"error\", \"message\": f\"Hook installation failed: {str(e)}\"}\n        return {\"status\": \"error\", \"message\": \"Hook installation failed. Use --debug for details.\"}\n```",
+      "testStrategy": "Write unit tests for:\n- Hook file creation\n- Existing hook handling\n- Validation\n\nTest with various repository states and existing hook scenarios.",
+      "priority": "medium",
+      "dependencies": [
+        3,
+        6
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Git Repository Detection",
+          "description": "Create functionality to detect the current Git repository and determine the hooks directory path.",
+          "dependencies": [],
+          "details": "Implement the `find_repo()` function that uses GitPython to detect the current Git repository. The function should traverse up from the current directory to find the repository root. If no repository is found, raise an appropriate exception with a clear error message. Also implement a helper function to determine the hooks directory path from the repository object.",
+          "status": "pending",
+          "testStrategy": "Write tests that verify: 1) Repository detection works in a valid Git repo, 2) Appropriate exception is raised when not in a Git repo, 3) Hook directory path is correctly determined."
+        },
+        {
+          "id": 2,
+          "title": "Implement Existing Hook Detection and Backup",
+          "description": "Create functionality to check for an existing post-commit hook and create a backup if one exists.",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement functions to check if a post-commit hook already exists, and if so, create a backup with a .bak extension. Include logic to handle the different action parameters (replace, append, cancel) and implement the appropriate behavior for each case. For 'cancel', restore the backup and return an appropriate message.",
+          "status": "pending",
+          "testStrategy": "Write tests that verify: 1) Existing hook detection works correctly, 2) Backup creation functions properly, 3) Each action parameter (replace, append, cancel) behaves as expected."
+        },
+        {
+          "id": 3,
+          "title": "Implement Hook Creation and Permission Setting",
+          "description": "Create functionality to write the hook file with appropriate content and set executable permissions.",
+          "dependencies": [
+            2
+          ],
+          "details": "Implement functions to create the post-commit hook file with the correct content. For 'replace' action, use the standard hook content. For 'append' action, read the backup file and append the new hook command. Set the appropriate executable permissions (0o755) on the hook file. Include proper error handling for file operations.",
+          "status": "pending",
+          "testStrategy": "Write tests that verify: 1) Hook file is created with correct content for 'replace' action, 2) Hook file correctly appends to existing content for 'append' action, 3) Executable permissions are properly set."
+        },
+        {
+          "id": 4,
+          "title": "Implement Hook Validation",
+          "description": "Create functionality to verify the hook installation was successful.",
+          "dependencies": [
+            3
+          ],
+          "details": "Implement validation functions to verify that the hook was installed correctly. Check that the file exists and has executable permissions. Return appropriate success or error messages based on the validation results. Include detailed error information when debug mode is enabled.",
+          "status": "pending",
+          "testStrategy": "Write tests that verify: 1) Validation correctly identifies a successfully installed hook, 2) Validation correctly identifies issues with file existence or permissions, 3) Debug mode provides detailed error information."
+        },
+        {
+          "id": 5,
+          "title": "Integrate Components into handle_install_hook Function",
+          "description": "Combine all the implemented components into the main handle_install_hook function with proper error handling.",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "details": "Integrate all the previously implemented components into the main handle_install_hook function. Implement comprehensive error handling throughout the function. Ensure the function returns the appropriate response structure with status, message, and path (when successful). Handle the debug parameter to provide detailed error information when enabled.",
+          "status": "pending",
+          "testStrategy": "Write integration tests that verify: 1) The complete workflow functions correctly for each action type, 2) Error handling works properly for various failure scenarios, 3) The function returns the expected response structure in all cases."
+        },
+        {
+          "id": 6,
+          "title": "Review and update README/docs",
+          "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 12
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "title": "Implement Manual Reflection Addition",
+      "description": "Implement the journal/add-reflection operation to add manual reflections to the journal.",
+      "details": "Implement the journal/add-reflection operation with the following functionality:\n\n1. Reflection formatting\n   - Format reflection text with timestamp\n   - Support markdown formatting in reflection\n\n2. File management\n   - Determine today's journal file\n   - Create file if it doesn't exist\n   - Append reflection to file\n\n3. Validation\n   - Validate reflection text (non-empty)\n   - Ensure journal is initialized\n\nExample implementation:\n```python\ndef handle_add_reflection(params):\n    \"\"\"Handle journal/add-reflection operation.\"\"\"\n    debug = params.get(\"debug\", False)\n    try:\n        # Get reflection text\n        reflection_text = params.get(\"text\")\n        if not reflection_text:\n            return {\n                \"status\": \"error\",\n                \"message\": \"Reflection text cannot be empty.\"\n            }\n        \n        # Format reflection with timestamp\n        timestamp = datetime.now().strftime(\"%I:%M %p\")\n        formatted_reflection = f\"### {timestamp} — Manual Reflection\\n\\n{reflection_text}\\n\"\n        \n        # Determine today's journal file\n        today = datetime.now().strftime(\"%Y-%m-%d\")\n        file_path = Path(\"journal/daily\") / f\"{today}.md\"\n        \n        # Create file if it doesn't exist\n        file_path.parent.mkdir(parents=True, exist_ok=True)\n        if not file_path.exists():\n            with open(file_path, \"w\") as f:\n                f.write(f\"# Journal Entry for {today}\\n\\n\")\n        \n        # Append reflection to file\n        with open(file_path, \"a\") as f:\n            f.write(\"\\n\" + formatted_reflection)\n        \n        return {\n            \"status\": \"success\",\n            \"message\": \"Reflection added to journal.\",\n            \"path\": str(file_path)\n        }\n    except Exception as e:\n        if debug:\n            return {\"status\": \"error\", \"message\": f\"Adding reflection failed: {str(e)}\"}\n        return {\"status\": \"error\", \"message\": \"Adding reflection failed. Use --debug for details.\"}\n```",
+      "testStrategy": "Write unit tests for:\n- Reflection formatting\n- File management\n- Validation\n\nTest with various reflection texts and file states.",
+      "priority": "low",
+      "dependencies": [
+        4,
+        5,
+        6
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Write tests for reflection validation",
+          "description": "Create unit tests for validating reflection text and journal initialization checks",
+          "dependencies": [],
+          "details": "Implement test cases that verify: 1) Empty reflection text returns appropriate error, 2) Missing journal directory returns initialization error, 3) Valid reflection text passes validation. Use pytest fixtures to set up test environments with and without initialized journal directories.",
+          "status": "pending",
+          "testStrategy": "Unit tests focusing on input validation logic, using mocked file system when necessary to test journal initialization checks."
+        },
+        {
+          "id": 2,
+          "title": "Implement reflection validation logic",
+          "description": "Create the validation functions to check reflection text and journal initialization",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement functions to: 1) Validate that reflection text is non-empty, 2) Check that journal directory exists and is properly initialized. Extract these as separate functions for better testability. Return appropriate error messages for validation failures.",
+          "status": "pending",
+          "testStrategy": "Ensure all tests from subtask 1 pass after implementation. Add additional edge case tests if discovered during implementation."
+        },
+        {
+          "id": 3,
+          "title": "Write tests for reflection formatting and file determination",
+          "description": "Create tests for timestamp formatting, markdown handling, and journal file path determination",
+          "dependencies": [
+            2
+          ],
+          "details": "Implement test cases that verify: 1) Timestamp is correctly formatted in reflections, 2) Markdown in reflection text is preserved, 3) Journal file path is correctly determined based on current date, 4) New journal files get proper headers.",
+          "status": "pending",
+          "testStrategy": "Use pytest with freezegun to mock datetime for consistent timestamp testing. Test file path generation with different date scenarios."
+        },
+        {
+          "id": 4,
+          "title": "Implement reflection formatting and file determination logic",
+          "description": "Create functions to format reflections with timestamps and determine the correct journal file path",
+          "dependencies": [
+            3
+          ],
+          "details": "Implement functions to: 1) Format reflection text with current timestamp in the specified format, 2) Determine today's journal file path, 3) Create journal file with appropriate header if it doesn't exist. Extract these as separate functions for better testability.",
+          "status": "pending",
+          "testStrategy": "Ensure all tests from subtask 3 pass after implementation. Add tests for edge cases like special characters in reflection text."
+        },
+        {
+          "id": 5,
+          "title": "Implement the complete handle_add_reflection function with file operations",
+          "description": "Integrate all components into the main handler function with proper file operations",
+          "dependencies": [
+            4
+          ],
+          "details": "Implement the complete handle_add_reflection function that: 1) Uses the validation logic from subtask 2, 2) Uses the formatting and file determination logic from subtask 4, 3) Handles file operations to append the formatted reflection to the journal file, 4) Implements proper error handling with debug mode support, 5) Returns appropriate success/error responses.",
+          "status": "pending",
+          "testStrategy": "Integration tests that verify the complete workflow from input to file writing. Use temporary directories to test actual file operations. Test error handling with various failure scenarios."
+        },
+        {
+          "id": 6,
+          "title": "Review and update README/docs",
+          "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 13
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "title": "Implement Chat History Processing",
+      "description": "Implement the chat history processing functionality to extract decision context and emotional tone.",
+      "details": "Implement the chat history processing functionality with the following features:\n\n1. Chat history collection\n   - Scan backward through current conversation\n   - Look back until finding previous commit reference OR 18-hour limit\n\n2. Decision context extraction\n   - Use simple keyword matching for decision-related discussions\n   - Include context around matched keywords\n   - Extract relevant conversation snippets\n\n3. Emotional tone analysis\n   - Identify language cues indicating mood/tone\n   - Extract indicators (\"ugh\", \"finally\", etc.)\n   - Infer mood only when evidence exists\n\n4. Anti-hallucination safeguards\n   - Never infer *why* something was done unless evidence exists\n   - Mood/tone must be backed by language cues\n   - Omit sections when data is unavailable\n\nExample implementation:\n```python\ndef collect_chat_history():\n    \"\"\"Collect chat history from current conversation.\"\"\"\n    try:\n        # This would be implemented by the MCP server\n        # to access its own chat history\n        return ai_session.get_chat_history()\n    except Exception:\n        return None\n\ndef extract_decision_context(chat_history):\n    \"\"\"Extract decision context from chat history.\"\"\"\n    if not chat_history:\n        return []\n    \n    decision_keywords = [\n        \"should we\", \"let's use\", \"I think\", \"better to\",\n        \"decided to\", \"going with\", \"chose to\", \"instead of\"\n    ]\n    \n    context_snippets = []\n    for message in chat_history:\n        for keyword in decision_keywords:\n            if keyword.lower() in message.content.lower():\n                # Extract context (3 sentences around keyword)\n                context = extract_context_around_keyword(message.content, keyword)\n                if context:\n                    context_snippets.append(context)\n    \n    return context_snippets\n\ndef analyze_emotional_tone(chat_history):\n    \"\"\"Analyze emotional tone from chat history.\"\"\"\n    if not chat_history:\n        return None\n    \n    # Mood indicators\n    positive_indicators = [\n        \"finally\", \"great\", \"awesome\", \"works\", \"fixed\",\n        \"solved\", \"happy\", \"glad\", \"excited\"\n    ]\n    \n    negative_indicators = [\n        \"ugh\", \"damn\", \"frustrating\", \"annoying\", \"stuck\",\n        \"can't figure out\", \"not working\", \"failing\"\n    ]\n    \n    focused_indicators = [\n        \"concentrate\", \"focus\", \"deep work\", \"flow\",\n        \"productive\", \"progress\", \"moving forward\"\n    ]\n    \n    # Count indicators\n    positive_count = 0\n    negative_count = 0\n    focused_count = 0\n    \n    found_indicators = []\n    \n    for message in chat_history:\n        content = message.content.lower()\n        \n        for indicator in positive_indicators:\n            if indicator in content:\n                positive_count += 1\n                found_indicators.append(indicator)\n        \n        for indicator in negative_indicators:\n            if indicator in content:\n                negative_count += 1\n                found_indicators.append(indicator)\n        \n        for indicator in focused_indicators:\n            if indicator in content:\n                focused_count += 1\n                found_indicators.append(indicator)\n    \n    # Determine overall mood\n    if positive_count > negative_count and positive_count > 0:\n        mood = \"Positive and energized\"\n    elif negative_count > positive_count and negative_count > 0:\n        mood = \"Frustrated or challenged\"\n    elif focused_count > 0:\n        mood = \"Focused and determined\"\n    else:\n        return None  # No clear mood indicators\n    \n    return {\n        \"mood\": mood,\n        \"indicators\": list(set(found_indicators))  # Deduplicate\n    }\n```",
+      "testStrategy": "Write unit tests for:\n- Chat history collection\n- Decision context extraction\n- Emotional tone analysis\n- Anti-hallucination safeguards\n\nTest with various chat history samples containing different decision contexts and emotional indicators.",
+      "priority": "medium",
+      "dependencies": [
+        4,
+        8
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Chat History Collection Module",
+          "description": "Create a module that collects chat history from the current conversation, scanning backward until finding a previous commit reference or reaching an 18-hour limit.",
+          "dependencies": [],
+          "details": "Create a ChatHistoryCollector class with methods to retrieve messages from the conversation history. Implement logic to determine the cutoff point based on either a commit reference or time limit. Include proper error handling for cases where history cannot be accessed. The module should return a structured format of messages with sender, timestamp, and content.",
+          "status": "pending",
+          "testStrategy": "Write tests that mock the AI session interface and verify the collector correctly applies time-based and commit-reference-based cutoffs. Test error handling by simulating failed access to chat history."
+        },
+        {
+          "id": 2,
+          "title": "Implement Decision Context Extraction",
+          "description": "Create a module that analyzes chat history to extract decision-related discussions using keyword matching and contextual analysis.",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement a DecisionContextExtractor class that takes chat history as input. Define a comprehensive list of decision-related keywords and phrases. Create methods to identify messages containing these keywords, extract surrounding context (3-5 sentences), and compile relevant snippets. Include logic to avoid duplicate or overlapping contexts. The extractor should return an array of context snippets with metadata about where they were found.",
+          "status": "pending",
+          "testStrategy": "Write tests with sample conversations containing decision-related discussions. Verify the extractor correctly identifies keywords, extracts appropriate context, and handles edge cases like short messages or messages with multiple decision points."
+        },
+        {
+          "id": 3,
+          "title": "Implement Emotional Tone Analysis",
+          "description": "Create a module that analyzes chat history to identify language cues indicating mood and emotional tone.",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement an EmotionalToneAnalyzer class that processes chat history to detect emotional indicators. Define comprehensive lists of positive, negative, and focused mood indicators. Create methods to scan messages for these indicators, track their occurrences, and determine the overall emotional tone. Include safeguards to only infer mood when sufficient evidence exists. The analyzer should return the detected mood along with the specific indicators found.",
+          "status": "pending",
+          "testStrategy": "Write tests with sample conversations containing various emotional tones. Verify the analyzer correctly identifies indicators, determines the appropriate overall mood, and returns null when insufficient evidence exists."
+        },
+        {
+          "id": 4,
+          "title": "Implement Anti-Hallucination Safeguards",
+          "description": "Create a validation layer that ensures all extracted information is evidence-based and prevents inference without supporting data.",
+          "dependencies": [
+            2,
+            3
+          ],
+          "details": "Implement a ChatHistoryValidator class that applies safeguards to the extracted decision context and emotional tone. Create methods to verify that mood/tone assessments are backed by actual language cues, decision contexts contain relevant keywords, and no unsupported inferences are made. Implement logic to filter out or flag low-confidence extractions. The validator should sanitize the outputs from previous modules to ensure they meet evidence standards.",
+          "status": "pending",
+          "testStrategy": "Write tests that verify the validator correctly identifies and removes unsupported inferences. Test with both valid and invalid inputs to ensure proper filtering. Include edge cases where evidence is ambiguous."
+        },
+        {
+          "id": 5,
+          "title": "Integrate Components into Chat History Processor",
+          "description": "Create a unified ChatHistoryProcessor that orchestrates all components and provides a clean API for the rest of the application.",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "details": "Implement a ChatHistoryProcessor class that integrates all previously created components. Create a main process method that executes the full workflow: collecting history, extracting decision context, analyzing emotional tone, and applying validation safeguards. Implement proper error handling throughout the pipeline. The processor should return a structured object containing validated decision context and emotional tone information, with clear indicators when certain data is unavailable.",
+          "status": "pending",
+          "testStrategy": "Write integration tests that verify the end-to-end processing pipeline. Test with various input scenarios including complete conversations, conversations with missing data, and error conditions. Verify the processor correctly handles all edge cases and returns properly structured output."
+        },
+        {
+          "id": 6,
+          "title": "Review and update README/docs",
+          "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 14
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "title": "Implement Comprehensive Testing Suite",
+      "description": "Create a comprehensive testing suite for all components of the MCP journal system.",
+      "details": "Implement a comprehensive testing suite with the following components:\n\n1. Unit tests\n   - Test all individual functions and classes\n   - Use pytest fixtures for test data\n   - Mock external dependencies\n\n2. Integration tests\n   - Test end-to-end workflows\n   - Test CLI commands\n   - Test file creation and management\n\n3. Test fixtures\n   - Sample git repositories\n   - Mock terminal histories\n   - Sample chat histories\n   - Various configuration files\n\n4. Test utilities\n   - Helper functions for test setup and teardown\n   - Mock classes for external dependencies\n\n5. Coverage reporting\n   - Configure pytest-cov for coverage reporting\n   - Aim for >90% test coverage\n\nExample test implementation:\n```python\nimport pytest\nfrom pathlib import Path\nfrom unittest.mock import patch, MagicMock\nfrom mcp_journal.config import load_config, merge_configs\nfrom mcp_journal.git_utils import find_repo, get_current_commit\nfrom mcp_journal.journal import generate_journal_entry\n\n@pytest.fixture\ndef mock_git_repo():\n    \"\"\"Create a mock git repository for testing.\"\"\"\n    repo_mock = MagicMock()\n    commit_mock = MagicMock()\n    commit_mock.hexsha = \"abcdef1234567890\"\n    commit_mock.message = \"Test commit message\"\n    commit_mock.author.name = \"Test Author\"\n    commit_mock.author.email = \"test@example.com\"\n    commit_mock.committed_datetime = datetime.now()\n    \n    repo_mock.head.commit = commit_mock\n    return repo_mock\n\n@pytest.fixture\ndef sample_config():\n    \"\"\"Create a sample configuration for testing.\"\"\"\n    return {\n        \"journal\": {\n            \"path\": \"journal/\",\n            \"auto_generate\": True,\n            \"include_terminal\": True,\n            \"include_chat\": True,\n            \"include_mood\": True,\n            \"section_order\": [\n                \"summary\",\n                \"accomplishments\",\n                \"frustrations\",\n                \"tone\",\n                \"commit_details\",\n                \"reflections\"\n            ]\n        }\n    }\n\ndef test_load_config(tmp_path, sample_config):\n    \"\"\"Test loading configuration from file.\"\"\"\n    config_path = tmp_path / \".mcp-journalrc.yaml\"\n    with open(config_path, \"w\") as f:\n        yaml.dump(sample_config, f)\n    \n    with patch(\"pathlib.Path.cwd\", return_value=tmp_path):\n        config = load_config()\n    \n    assert config[\"journal\"][\"path\"] == \"journal/\"\n    assert config[\"journal\"][\"auto_generate\"] is True\n\ndef test_generate_journal_entry(mock_git_repo, sample_config):\n    \"\"\"Test journal entry generation.\"\"\"\n    commit = get_current_commit(mock_git_repo)\n    \n    with patch(\"mcp_journal.journal.collect_terminal_history\", return_value=None):\n        with patch(\"mcp_journal.journal.collect_chat_history\", return_value=None):\n            entry = generate_journal_entry(\n                commit=commit,\n                config=sample_config,\n                debug=True\n            )\n    \n    assert \"Test commit message\" in entry\n    assert commit[\"short_hash\"] in entry\n    assert \"## Summary\" in entry\n```",
+      "testStrategy": "Ensure all tests are properly organized and documented. Use pytest's built-in features for test discovery and execution. Configure CI/CD to run tests automatically. Maintain high test coverage (>90%) across all modules.",
+      "priority": "high",
+      "dependencies": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Unit Testing Framework and Base Fixtures",
+          "description": "Set up the pytest framework with initial test fixtures for unit testing core components of the MCP journal system.",
+          "dependencies": [],
+          "details": "Create a tests/ directory with proper structure (tests/unit/, tests/integration/, etc.). Implement base fixtures including mock_git_repo, sample_config, and temp_directory. Write initial test configuration in conftest.py with pytest markers. Set up pytest.ini with configuration for test discovery and reporting. Following TDD, write failing tests for core utility functions before implementing any actual test code.",
+          "status": "pending",
+          "testStrategy": "Start with meta-tests that verify the testing infrastructure itself works correctly. Ensure fixtures can be properly accessed and provide expected mock objects."
+        },
+        {
+          "id": 2,
+          "title": "Implement Unit Tests for Core Modules",
+          "description": "Create comprehensive unit tests for all core modules including config, git_utils, and journal generation functions.",
+          "dependencies": [
+            1
+          ],
+          "details": "Following TDD principles, write failing tests first for each function in core modules. Implement tests for config loading/merging, git repository interaction, and journal entry generation. Mock all external dependencies including filesystem, git repositories, and user input. Organize tests by module with clear naming conventions. Include edge cases and error conditions. Implement test parameterization for functions that need to be tested with multiple inputs.",
+          "status": "pending",
+          "testStrategy": "Use pytest's parametrize decorator for testing functions with multiple input combinations. Verify both happy paths and error handling. Aim for >95% unit test coverage of core modules."
+        },
+        {
+          "id": 3,
+          "title": "Implement Integration Tests and Workflow Testing",
+          "description": "Create integration tests that verify end-to-end workflows and CLI command functionality.",
+          "dependencies": [
+            2
+          ],
+          "details": "Following TDD, write failing integration tests for complete workflows. Test CLI commands using pytest-click or similar tools. Create tests for journal generation from git commits, terminal history collection, and chat history integration. Test file creation and management workflows. Implement tests for configuration loading from various locations. Create integration tests that verify multiple components work together correctly.",
+          "status": "pending",
+          "testStrategy": "Use temporary directories to create isolated environments for each test. Create small but realistic test scenarios that exercise multiple components together. Test the CLI interface directly rather than just the underlying functions."
+        },
+        {
+          "id": 4,
+          "title": "Implement Advanced Test Fixtures and Mocks",
+          "description": "Create comprehensive test fixtures for complex test scenarios and mock external dependencies.",
+          "dependencies": [
+            3
+          ],
+          "details": "Expand the basic fixtures with more sophisticated test data. Create fixtures for sample git repositories with commit history. Implement mock terminal histories with various commands and outputs. Create sample chat histories in different formats. Generate various configuration files for testing different settings. Implement mock classes for all external dependencies including git, filesystem, and user interfaces. Create helper functions for test setup and teardown.",
+          "status": "pending",
+          "testStrategy": "Test the fixtures themselves to ensure they provide consistent and realistic test data. Document each fixture clearly to make tests more maintainable."
+        },
+        {
+          "id": 5,
+          "title": "Implement Test Coverage Reporting and Documentation",
+          "description": "Configure coverage reporting tools and create comprehensive test documentation.",
+          "dependencies": [
+            4
+          ],
+          "details": "Configure pytest-cov for coverage reporting. Set up coverage thresholds (aim for >90% overall). Create HTML and XML coverage reports. Implement CI integration for automated test running and coverage reporting. Document the testing approach, fixtures, and patterns in a TESTING.md file. Add test-related information to the project README. Create examples of how to run specific test suites. Document how to add new tests when implementing new features.",
+          "status": "pending",
+          "testStrategy": "Create meta-tests that verify coverage is being correctly calculated. Ensure coverage reports correctly identify untested code paths."
+        },
+        {
+          "id": 6,
+          "title": "Review and update README/docs",
+          "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 15
+        }
+      ]
+    }
+  ]
+}

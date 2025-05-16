@@ -1,0 +1,110 @@
+# Task ID: 13
+# Title: Implement Manual Reflection Addition
+# Status: pending
+# Dependencies: 4, 5, 6
+# Priority: low
+# Description: Implement the journal/add-reflection operation to add manual reflections to the journal.
+# Details:
+Implement the journal/add-reflection operation with the following functionality:
+
+1. Reflection formatting
+   - Format reflection text with timestamp
+   - Support markdown formatting in reflection
+
+2. File management
+   - Determine today's journal file
+   - Create file if it doesn't exist
+   - Append reflection to file
+
+3. Validation
+   - Validate reflection text (non-empty)
+   - Ensure journal is initialized
+
+Example implementation:
+```python
+def handle_add_reflection(params):
+    """Handle journal/add-reflection operation."""
+    debug = params.get("debug", False)
+    try:
+        # Get reflection text
+        reflection_text = params.get("text")
+        if not reflection_text:
+            return {
+                "status": "error",
+                "message": "Reflection text cannot be empty."
+            }
+        
+        # Format reflection with timestamp
+        timestamp = datetime.now().strftime("%I:%M %p")
+        formatted_reflection = f"### {timestamp} — Manual Reflection\n\n{reflection_text}\n"
+        
+        # Determine today's journal file
+        today = datetime.now().strftime("%Y-%m-%d")
+        file_path = Path("journal/daily") / f"{today}.md"
+        
+        # Create file if it doesn't exist
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        if not file_path.exists():
+            with open(file_path, "w") as f:
+                f.write(f"# Journal Entry for {today}\n\n")
+        
+        # Append reflection to file
+        with open(file_path, "a") as f:
+            f.write("\n" + formatted_reflection)
+        
+        return {
+            "status": "success",
+            "message": "Reflection added to journal.",
+            "path": str(file_path)
+        }
+    except Exception as e:
+        if debug:
+            return {"status": "error", "message": f"Adding reflection failed: {str(e)}"}
+        return {"status": "error", "message": "Adding reflection failed. Use --debug for details."}
+```
+
+# Test Strategy:
+Write unit tests for:
+- Reflection formatting
+- File management
+- Validation
+
+Test with various reflection texts and file states.
+
+# Subtasks:
+## 1. Write tests for reflection validation [pending]
+### Dependencies: None
+### Description: Create unit tests for validating reflection text and journal initialization checks
+### Details:
+Implement test cases that verify: 1) Empty reflection text returns appropriate error, 2) Missing journal directory returns initialization error, 3) Valid reflection text passes validation. Use pytest fixtures to set up test environments with and without initialized journal directories.
+
+## 2. Implement reflection validation logic [pending]
+### Dependencies: 13.1
+### Description: Create the validation functions to check reflection text and journal initialization
+### Details:
+Implement functions to: 1) Validate that reflection text is non-empty, 2) Check that journal directory exists and is properly initialized. Extract these as separate functions for better testability. Return appropriate error messages for validation failures.
+
+## 3. Write tests for reflection formatting and file determination [pending]
+### Dependencies: 13.2
+### Description: Create tests for timestamp formatting, markdown handling, and journal file path determination
+### Details:
+Implement test cases that verify: 1) Timestamp is correctly formatted in reflections, 2) Markdown in reflection text is preserved, 3) Journal file path is correctly determined based on current date, 4) New journal files get proper headers.
+
+## 4. Implement reflection formatting and file determination logic [pending]
+### Dependencies: 13.3
+### Description: Create functions to format reflections with timestamps and determine the correct journal file path
+### Details:
+Implement functions to: 1) Format reflection text with current timestamp in the specified format, 2) Determine today's journal file path, 3) Create journal file with appropriate header if it doesn't exist. Extract these as separate functions for better testability.
+
+## 5. Implement the complete handle_add_reflection function with file operations [pending]
+### Dependencies: 13.4
+### Description: Integrate all components into the main handler function with proper file operations
+### Details:
+Implement the complete handle_add_reflection function that: 1) Uses the validation logic from subtask 2, 2) Uses the formatting and file determination logic from subtask 4, 3) Handles file operations to append the formatted reflection to the journal file, 4) Implements proper error handling with debug mode support, 5) Returns appropriate success/error responses.
+
+## 6. Review and update README/docs [pending]
+### Dependencies: None
+### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
+### Details:
+
+

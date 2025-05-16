@@ -1,0 +1,154 @@
+# Task ID: 6
+# Title: Implement CLI Interface
+# Status: pending
+# Dependencies: 2, 5
+# Priority: medium
+# Description: Create the cli.py module to implement the command-line interface using Click.
+# Details:
+Implement the cli.py module with the following functionality:
+
+1. Command structure
+   - Define main command group
+   - Add subcommands for all operations
+
+2. Command options
+   - Add global options (--config, --dry-run, --verbose, --debug)
+   - Add command-specific options
+
+3. Command handlers
+   - Implement handlers for all commands
+   - Connect to MCP server for operations
+
+4. Output formatting
+   - Format success and error messages
+   - Handle verbose and debug output
+
+Implement the following commands:
+- `mcp-journal init` - Initialize journal in current repository
+- `mcp-journal new-entry [--debug]` - Create journal entry for current commit
+- `mcp-journal add-reflection "text"` - Add manual reflection to today's journal
+- `mcp-journal summarize --week [--debug]` - Generate summary for most recent week
+- `mcp-journal summarize --month [--debug]` - Generate summary for most recent month
+- `mcp-journal summarize --week 2025-01-13` - Week containing specific date
+- `mcp-journal summarize --range "2025-01-01:2025-01-31"` - Arbitrary range
+- `mcp-journal blogify <file1> [file2] ...` - Convert to blog post
+- `mcp-journal install-hook` - Install git post-commit hook
+- `mcp-journal backfill [--debug]` - Manually trigger missed commit check
+
+Example implementation:
+```python
+import click
+from pathlib import Path
+from .server import JournalMCPServer
+from .config import load_config
+
+@click.group()
+def cli():
+    """MCP Journal - Engineering journal integrated with Git."""
+    pass
+
+@cli.command()
+@click.option('--debug', is_flag=True, help='Show debug information')
+def init(debug):
+    """Initialize journal in current repository."""
+    config = load_config()
+    server = JournalMCPServer(config)
+    result = server.server.invoke_tool("journal/init", {"debug": debug})
+    click.echo(result["message"])
+
+@cli.command()
+@click.option('--debug', is_flag=True, help='Show debug information')
+def new_entry(debug):
+    """Create journal entry for current commit."""
+    config = load_config()
+    server = JournalMCPServer(config)
+    result = server.server.invoke_tool("journal/new-entry", {"debug": debug})
+    click.echo(result["message"])
+```
+
+# Test Strategy:
+Write unit tests for:
+- Command parsing
+- Option handling
+- Command execution
+- Output formatting
+
+Use Click's testing utilities to simulate command invocation. Test all commands with various options and arguments.
+
+# Subtasks:
+## 1. Create CLI command structure and tests [pending]
+### Dependencies: None
+### Description: Implement the basic CLI command structure with the main command group and subcommands using Click, following TDD principles.
+### Details:
+1. Write tests for the CLI command structure that verify:
+   - Main command group exists
+   - All required subcommands are registered
+   - Command help text is properly displayed
+2. Implement the main command group and register all subcommands (init, new-entry, add-reflection, summarize, blogify, install-hook, backfill)
+3. Add docstrings and help text for all commands
+4. Ensure tests pass for the command structure
+
+## 2. Implement global and command-specific options with tests [pending]
+### Dependencies: 6.1
+### Description: Add global options (--config, --dry-run, --verbose, --debug) and command-specific options to all commands, with appropriate tests.
+### Details:
+1. Write tests for global options that verify:
+   - Global options are available across all commands
+   - Options are correctly parsed and passed to handlers
+2. Write tests for command-specific options that verify:
+   - Each command has its required options
+   - Options correctly handle different input formats (dates, ranges, etc.)
+3. Implement global options in the main command group
+4. Add command-specific options to each subcommand
+5. Ensure all tests pass for option handling
+
+## 3. Implement command handlers and server connection [pending]
+### Dependencies: 6.2
+### Description: Create handler functions for all commands that connect to the MCP server and invoke the appropriate tools.
+### Details:
+1. Write tests for command handlers that verify:
+   - Handlers correctly invoke the MCP server with proper parameters
+   - Server responses are properly processed
+   - Error handling works as expected
+2. Implement handler functions for each command that:
+   - Load configuration
+   - Initialize MCP server connection
+   - Invoke appropriate server tools with command parameters
+   - Process server responses
+3. Add error handling for server connection issues
+4. Ensure all tests pass for command handlers
+
+## 4. Implement output formatting and logging [pending]
+### Dependencies: 6.3
+### Description: Add output formatting for command results, including success and error messages, and implement verbose and debug output handling.
+### Details:
+1. Write tests for output formatting that verify:
+   - Success messages are properly formatted
+   - Error messages include appropriate details
+   - Verbose and debug flags control output detail level
+2. Implement output formatting functions for different result types
+3. Add verbose output handling that shows additional information when --verbose is used
+4. Implement debug output that shows detailed information when --debug is used
+5. Ensure consistent formatting across all commands
+6. Make sure all tests pass for output formatting
+
+## 5. Implement integration tests and finalize CLI module [pending]
+### Dependencies: 6.4
+### Description: Create end-to-end integration tests for the CLI module and finalize the implementation with comprehensive documentation.
+### Details:
+1. Write integration tests that verify:
+   - Complete command workflows function correctly
+   - Commands interact properly with the MCP server
+   - Error scenarios are handled gracefully
+2. Refactor the CLI implementation based on test results
+3. Add comprehensive docstrings and comments
+4. Ensure consistent error handling across all commands
+5. Verify all unit and integration tests pass
+6. Create example usage documentation for each command
+
+## 6. Review and update README/docs [pending]
+### Dependencies: None
+### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
+### Details:
+
+

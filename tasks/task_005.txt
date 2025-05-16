@@ -1,0 +1,108 @@
+# Task ID: 5
+# Title: Implement MCP Server Core
+# Status: pending
+# Dependencies: 1
+# Priority: high
+# Description: Create the server.py module to implement the Model Context Protocol (MCP) server using Anthropic's Python SDK.
+# Details:
+Implement the server.py module with the following functionality:
+
+1. MCP server initialization
+   - Set up MCP server using Anthropic's Python SDK
+   - Configure server with appropriate settings
+
+2. Tool registration
+   - Register all journal operations as MCP tools
+   - Define tool schemas and handlers
+
+3. Request handling
+   - Process incoming MCP requests
+   - Route to appropriate tool handlers
+   - Format responses
+
+4. Error handling
+   - Handle MCP-specific errors
+   - Provide meaningful error messages
+
+Example implementation:
+```python
+from mcp import MCPServer, Tool, ToolParameter
+from typing import Dict, Any, List
+
+class JournalMCPServer:
+    def __init__(self, config):
+        self.config = config
+        self.server = MCPServer()
+        self._register_tools()
+    
+    def _register_tools(self):
+        # Register all journal operations as tools
+        self.server.register_tool(
+            Tool(
+                name="journal/new-entry",
+                description="Create a new journal entry from current git state",
+                parameters=[
+                    ToolParameter(name="debug", type="boolean", required=False)
+                ],
+                handler=self._handle_new_entry
+            )
+        )
+        # Register other tools...
+    
+    def _handle_new_entry(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        # Implementation of new-entry handler
+        debug = params.get("debug", False)
+        try:
+            # Generate and save journal entry
+            # Return success response
+        except Exception as e:
+            # Handle error
+            return {"status": "error", "message": str(e)}
+```
+
+# Test Strategy:
+Write unit tests for:
+- MCP server initialization
+- Tool registration
+- Request handling
+- Error handling
+
+Mock the Anthropic SDK to test server behavior without making actual API calls. Test all tool handlers with various input parameters.
+
+# Subtasks:
+## 1. Create MCP Server Test Suite [pending]
+### Dependencies: None
+### Description: Develop a comprehensive test suite for the MCP server implementation using pytest. This will establish the expected behavior and interfaces before implementation begins.
+### Details:
+Create tests for server initialization, tool registration, request handling, and error handling. Mock the Anthropic SDK components to isolate testing. Include test cases for successful operations and various error conditions. Define expected input/output contracts for all tool handlers.
+
+## 2. Implement MCP Server Initialization [pending]
+### Dependencies: 5.1
+### Description: Implement the core server initialization functionality with proper configuration handling based on the test specifications.
+### Details:
+Create the JournalMCPServer class with initialization logic. Implement configuration parsing and validation. Set up the connection to Anthropic's SDK with appropriate authentication. Include logging setup and server lifecycle management. Ensure all tests for initialization pass.
+
+## 3. Implement Tool Registration System [pending]
+### Dependencies: 5.2
+### Description: Develop the tool registration system that will allow journal operations to be registered as MCP tools with proper schemas.
+### Details:
+Implement the _register_tools method to define and register all journal operations. Create schema definitions for each tool's parameters and return values. Implement the registration mechanism that connects tools to their handlers. Support tool categorization and documentation generation.
+
+## 4. Implement Request Handling Logic [pending]
+### Dependencies: 5.3
+### Description: Create the core request processing pipeline that receives MCP requests, routes them to the appropriate tool handlers, and formats responses.
+### Details:
+Implement request parsing and validation against tool schemas. Create the routing mechanism to dispatch requests to the correct handler functions. Implement response formatting according to MCP specifications. Add request/response logging for debugging. Handle authentication and authorization if required.
+
+## 5. Implement Error Handling and Tool Handlers [pending]
+### Dependencies: 5.4
+### Description: Develop the error handling system and implement the actual tool handler functions for journal operations.
+### Details:
+Create a comprehensive error handling system that catches exceptions and translates them to appropriate MCP error responses. Implement all tool handlers including journal/new-entry, ensuring they interact correctly with the journal system. Add detailed logging for troubleshooting. Implement retry logic for transient failures.
+
+## 6. Review and update README/docs [pending]
+### Dependencies: None
+### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
+### Details:
+
+

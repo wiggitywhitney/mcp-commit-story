@@ -1,0 +1,121 @@
+# Task ID: 7
+# Title: Implement Journal Initialization
+# Status: pending
+# Dependencies: 4, 5, 6
+# Priority: medium
+# Description: Implement the journal/init operation to initialize the journal in a Git repository.
+# Details:
+Implement the journal/init operation with the following functionality:
+
+1. Directory creation
+   - Create journal directory structure (journal/daily/, journal/summaries/)
+   - Create default configuration file (.mcp-journalrc.yaml)
+
+2. Git hook installation
+   - Prompt for git hook installation
+   - Install post-commit hook if confirmed
+
+3. Validation
+   - Check if journal is already initialized
+   - Validate git repository
+
+4. Output
+   - Return initialization status
+   - Return paths of created files/directories
+
+Example implementation:
+```python
+def handle_init(params):
+    """Handle journal/init operation."""
+    debug = params.get("debug", False)
+    try:
+        # Check if journal is already initialized
+        config_path = Path(".mcp-journalrc.yaml")
+        if config_path.exists():
+            return {
+                "status": "warning",
+                "message": "Journal already initialized. Use --force to reinitialize."
+            }
+        
+        # Create journal directory structure
+        journal_dir = Path("journal")
+        daily_dir = journal_dir / "daily"
+        summaries_dir = journal_dir / "summaries"
+        
+        journal_dir.mkdir(exist_ok=True)
+        daily_dir.mkdir(exist_ok=True)
+        summaries_dir.mkdir(exist_ok=True)
+        
+        # Create default configuration file
+        with open(config_path, "w") as f:
+            f.write(DEFAULT_CONFIG)
+        
+        # Install git hook if confirmed
+        hook_status = "not installed"
+        if params.get("install_hook", False):
+            install_git_hook()
+            hook_status = "installed"
+        
+        return {
+            "status": "success",
+            "message": f"Journal initialized successfully. Git hook {hook_status}.",
+            "paths": {
+                "journal": str(journal_dir),
+                "daily": str(daily_dir),
+                "summaries": str(summaries_dir),
+                "config": str(config_path)
+            }
+        }
+    except Exception as e:
+        if debug:
+            return {"status": "error", "message": f"Initialization failed: {str(e)}"}
+        return {"status": "error", "message": "Initialization failed. Use --debug for details."}
+```
+
+# Test Strategy:
+Write unit tests for:
+- Directory creation
+- Configuration file creation
+- Git hook installation
+- Validation of existing journal
+- Error handling
+
+Test with various repository states (existing journal, missing git repository, etc.).
+
+# Subtasks:
+## 1. Create test suite for journal initialization validation [pending]
+### Dependencies: None
+### Description: Develop comprehensive tests for validating journal initialization conditions, including checking if the journal is already initialized and validating the git repository.
+### Details:
+Write tests that verify: 1) Detection of existing journal configuration, 2) Proper handling when journal is already initialized, 3) Validation of git repository existence, 4) Error handling for non-git repositories. Include both positive and negative test cases.
+
+## 2. Implement journal directory structure creation with TDD [pending]
+### Dependencies: 7.1
+### Description: Create tests and implement functionality for creating the journal directory structure, including the main journal directory and subdirectories for daily entries and summaries.
+### Details:
+First, write tests that verify the creation of the journal directory structure (journal/, journal/daily/, journal/summaries/). Then implement the directory creation logic that passes these tests. Ensure proper error handling for permission issues and existing directories.
+
+## 3. Implement configuration file creation with TDD [pending]
+### Dependencies: 7.2
+### Description: Develop tests and implement functionality for creating the default journal configuration file (.mcp-journalrc.yaml).
+### Details:
+Write tests that verify the creation and content of the configuration file. Then implement the configuration file creation logic. The configuration file should contain default settings for the journal, including paths, templates, and other configurable options.
+
+## 4. Implement Git hook installation with TDD [pending]
+### Dependencies: 7.3
+### Description: Create tests and implement functionality for prompting and installing the Git post-commit hook.
+### Details:
+Write tests for the Git hook installation process, including user prompting logic and the actual hook installation. Then implement the hook installation functionality that passes these tests. The hook should be installed in the .git/hooks directory and should be executable.
+
+## 5. Implement initialization status reporting with TDD [pending]
+### Dependencies: 7.4
+### Description: Develop tests and implement functionality for reporting the status of the journal initialization process, including success/failure messages and paths of created files/directories.
+### Details:
+Write tests that verify the correct reporting of initialization status, including success messages, warning messages for already initialized journals, error messages for failures, and the correct reporting of created file/directory paths. Then implement the reporting functionality that passes these tests.
+
+## 6. Review and update README/docs [pending]
+### Dependencies: None
+### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
+### Details:
+
+

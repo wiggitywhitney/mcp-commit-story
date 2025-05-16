@@ -1,0 +1,128 @@
+# Task ID: 9
+# Title: Implement Summarization
+# Status: pending
+# Dependencies: 4, 5, 6
+# Priority: medium
+# Description: Implement the journal/summarize operation to generate weekly and monthly summaries.
+# Details:
+Implement the journal/summarize operation with the following functionality:
+
+1. Date range determination
+   - Handle --week, --month, and --range options
+   - Calculate date ranges for relative periods (e.g., "this week")
+   - Parse specific dates (e.g., "2025-01-13")
+
+2. Entry collection
+   - Find all daily entries within date range
+   - Parse entries for relevant information
+
+3. Summary generation
+   - Generate summary of activities across entries
+   - Highlight key accomplishments and challenges
+   - Include emotional tone analysis
+
+4. File management
+   - Determine summary file path (e.g., 2025-05-week2.md, 2025-05-month.md)
+   - Create or overwrite summary file
+
+Example implementation:
+```python
+def handle_summarize(params):
+    """Handle journal/summarize operation."""
+    debug = params.get("debug", False)
+    try:
+        # Determine date range
+        if "week" in params:
+            start_date, end_date, period_name = get_week_range(params["week"])
+            summary_type = "week"
+        elif "month" in params:
+            start_date, end_date, period_name = get_month_range(params["month"])
+            summary_type = "month"
+        elif "range" in params:
+            start_date, end_date = parse_date_range(params["range"])
+            period_name = f"{start_date.strftime('%Y-%m-%d')}-to-{end_date.strftime('%Y-%m-%d')}"
+            summary_type = "custom"
+        else:
+            # Default to current week
+            start_date, end_date, period_name = get_week_range(None)
+            summary_type = "week"
+        
+        # Collect entries within date range
+        entries = collect_entries(start_date, end_date)
+        if not entries:
+            return {
+                "status": "warning",
+                "message": f"No journal entries found for {period_name}."
+            }
+        
+        # Generate summary
+        summary = generate_summary(entries, start_date, end_date, summary_type)
+        
+        # Save summary to file
+        if summary_type == "week":
+            file_name = f"{start_date.strftime('%Y-%m')}-week{start_date.strftime('%V')}.md"
+        elif summary_type == "month":
+            file_name = f"{start_date.strftime('%Y-%m')}-month.md"
+        else:
+            file_name = f"{period_name}.md"
+        
+        file_path = Path("journal/summaries") / file_name
+        save_summary_file(file_path, summary)
+        
+        return {
+            "status": "success",
+            "message": f"Summary generated for {period_name}.",
+            "path": str(file_path)
+        }
+    except Exception as e:
+        if debug:
+            return {"status": "error", "message": f"Summarization failed: {str(e)}"}
+        return {"status": "error", "message": "Summarization failed. Use --debug for details."}
+```
+
+# Test Strategy:
+Write unit tests for:
+- Date range determination
+- Entry collection
+- Summary generation
+- File management
+
+Test with various date ranges and entry availability scenarios.
+
+# Subtasks:
+## 1. Implement date range determination functions [pending]
+### Dependencies: None
+### Description: Create functions to determine date ranges for weekly, monthly, and custom periods based on user input
+### Details:
+Implement `get_week_range()`, `get_month_range()`, and `parse_date_range()` functions that handle relative periods (e.g., 'this week', 'last month') and specific dates. Each function should return start_date, end_date, and a human-readable period_name. Include support for ISO week numbers and proper month boundaries.
+
+## 2. Implement entry collection and parsing [pending]
+### Dependencies: 9.1
+### Description: Create a function to collect and parse journal entries within a specified date range
+### Details:
+Implement `collect_entries()` function that finds all daily journal entries within the given date range. The function should locate entry files, parse their content, and extract relevant information (activities, accomplishments, challenges, emotional tone). Return a structured collection of entry data for further processing.
+
+## 3. Implement summary generation logic [pending]
+### Dependencies: 9.2
+### Description: Create a function to generate comprehensive summaries from collected journal entries
+### Details:
+Implement `generate_summary()` function that processes collected entries to create a structured summary. The summary should include: 1) Overview of the period, 2) List of key activities grouped by category, 3) Notable accomplishments, 4) Challenges faced, 5) Emotional tone analysis across entries. Format the summary as markdown with appropriate sections and formatting.
+
+## 4. Implement summary file management [pending]
+### Dependencies: 9.3
+### Description: Create functions to determine summary file paths and save generated summaries
+### Details:
+Implement `save_summary_file()` function that creates the necessary directory structure (journal/summaries/) if it doesn't exist, determines the appropriate file name based on summary type (weekly, monthly, custom), and writes the summary content to the file. Handle file overwriting and permissions appropriately.
+
+## 5. Implement main summarize handler function [pending]
+### Dependencies: 9.1, 9.2, 9.3, 9.4
+### Description: Integrate all components into the main handler function for the journal/summarize operation
+### Details:
+Implement the `handle_summarize()` function that orchestrates the entire summarization process: 1) Parse command parameters, 2) Determine date range using functions from subtask 1, 3) Collect entries using function from subtask 2, 4) Generate summary using function from subtask 3, 5) Save summary using function from subtask 4, 6) Return appropriate response object with status, message, and file path. Include proper error handling and debug information.
+
+## 6. Review and update README/docs [pending]
+### Dependencies: None
+### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
+### Details:
+
+

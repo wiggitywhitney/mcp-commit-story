@@ -1,0 +1,122 @@
+# Task ID: 8
+# Title: Implement New Entry Generation
+# Status: pending
+# Dependencies: 4, 5, 6
+# Priority: high
+# Description: Implement the journal/new-entry operation to create a new journal entry from the current Git state.
+# Details:
+Implement the journal/new-entry operation with the following functionality:
+
+1. Git state retrieval
+   - Get current commit details
+   - Get file diffs
+
+2. Context collection
+   - Collect terminal history if available
+   - Collect chat history if available
+   - Extract decision context from chat history
+
+3. Entry generation
+   - Generate journal entry with all sections
+   - Format according to template
+
+4. File management
+   - Determine daily file path (YYYY-MM-DD.md)
+   - Create or append to file
+
+5. Backfill check
+   - Check for missed commits
+   - Trigger backfill if needed
+
+Example implementation:
+```python
+def handle_new_entry(params):
+    """Handle journal/new-entry operation."""
+    debug = params.get("debug", False)
+    try:
+        # Get current commit details
+        repo = find_repo()
+        commit = get_current_commit(repo)
+        
+        # Check for missed commits and backfill if needed
+        missed_commits = check_missed_commits(repo)
+        if missed_commits:
+            backfill_entries(repo, missed_commits, debug=debug)
+        
+        # Collect context
+        terminal_history = collect_terminal_history()
+        chat_history = collect_chat_history()
+        decision_context = extract_decision_context(chat_history)
+        
+        # Generate entry
+        entry = generate_journal_entry(
+            commit=commit,
+            terminal_history=terminal_history,
+            chat_history=chat_history,
+            decision_context=decision_context,
+            debug=debug
+        )
+        
+        # Save entry to daily file
+        today = datetime.now().strftime("%Y-%m-%d")
+        file_path = Path("journal/daily") / f"{today}.md"
+        append_to_journal_file(file_path, entry)
+        
+        return {
+            "status": "success",
+            "message": f"Journal entry created for commit {commit['short_hash']}.",
+            "path": str(file_path)
+        }
+    except Exception as e:
+        if debug:
+            return {"status": "error", "message": f"Entry creation failed: {str(e)}"}
+        return {"status": "error", "message": "Entry creation failed. Use --debug for details."}
+```
+
+# Test Strategy:
+Write unit tests for:
+- Git state retrieval
+- Context collection
+- Entry generation
+- File management
+- Backfill check
+
+Test with various git states and context availability scenarios.
+
+# Subtasks:
+## 1. Implement Git State Retrieval Functions [pending]
+### Dependencies: None
+### Description: Create functions to retrieve the current Git commit details and file diffs from the repository.
+### Details:
+Implement `find_repo()` to locate the Git repository, `get_current_commit(repo)` to extract commit metadata (hash, author, timestamp, message), and `get_file_diffs(repo, commit)` to retrieve the changes made in the commit. Handle edge cases like no repository found or no commits.
+
+## 2. Implement Context Collection Functions [pending]
+### Dependencies: None
+### Description: Create functions to collect terminal history, chat history, and extract decision context from available sources.
+### Details:
+Implement `collect_terminal_history()` to retrieve recent shell commands, `collect_chat_history()` to get AI assistant interactions, and `extract_decision_context(chat_history)` to identify key decisions from the chat. Each function should handle missing data gracefully and return structured information.
+
+## 3. Implement Journal Entry Generation [pending]
+### Dependencies: 8.1, 8.2
+### Description: Create the core function to generate a formatted journal entry from Git and context data.
+### Details:
+Implement `generate_journal_entry()` that takes commit details, terminal history, chat history, and decision context as inputs. Format the entry according to the template with sections for commit details, changes summary, context, and decisions. Include debug mode to provide verbose output.
+
+## 4. Implement File Management Functions [pending]
+### Dependencies: 8.3
+### Description: Create functions to determine the daily journal file path and append entries to the file.
+### Details:
+Implement `get_daily_file_path()` to generate the path for today's journal file (YYYY-MM-DD.md) and `append_to_journal_file(file_path, entry)` to create or append to the file. Ensure directories exist and handle file operations safely.
+
+## 5. Implement Backfill Check and Main Handler [pending]
+### Dependencies: 8.1, 8.2, 8.3, 8.4
+### Description: Create the backfill check functionality and integrate all components into the main handler function.
+### Details:
+Implement `check_missed_commits(repo)` to identify commits without journal entries, `backfill_entries(repo, missed_commits)` to generate entries for past commits, and complete the `handle_new_entry(params)` function to orchestrate the entire process. Include proper error handling and status reporting.
+
+## 6. Review and update README/docs [pending]
+### Dependencies: None
+### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
+### Details:
+
+

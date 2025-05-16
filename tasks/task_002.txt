@@ -1,0 +1,92 @@
+# Task ID: 2
+# Title: Implement Configuration System
+# Status: pending
+# Dependencies: 1
+# Priority: high
+# Description: Create the configuration module to handle loading and validating configuration from .mcp-journalrc.yaml files.
+# Details:
+Implement the config.py module with the following functionality:
+
+1. Load configuration from multiple sources with precedence:
+   - Local config (.mcp-journalrc.yaml in repo root)
+   - Global config (~/.mcp-journalrc.yaml)
+   - Built-in defaults
+
+2. Validate configuration structure and values
+   - Missing/invalid fields use defaults and continue with warnings
+   - Malformed YAML logs error but continues with defaults
+   - Invalid sections are ignored with warnings
+
+3. Provide a Config class with properties for all configuration options
+
+Example configuration structure:
+```yaml
+journal:
+  path: journal/
+  auto_generate: true
+  include_terminal: true
+  include_chat: true
+  include_mood: true
+  section_order:
+    - summary
+    - accomplishments
+    - frustrations
+    - tone
+    - commit_details
+    - reflections
+```
+
+Implement functions for:
+- Loading config from file
+- Merging configs with proper precedence
+- Validating config structure
+- Providing default values for missing fields
+
+# Test Strategy:
+Write unit tests for:
+- Loading config from file
+- Merging configs with proper precedence
+- Handling missing or invalid configuration files
+- Validating config structure
+- Default value application
+- Error handling for malformed YAML
+
+Test with various valid and invalid configuration files to ensure robust error handling.
+
+# Subtasks:
+## 1. Create Config class with default configuration values [pending]
+### Dependencies: None
+### Description: Implement the Config class with properties for all configuration options and define default values for each setting.
+### Details:
+Create a config.py module with a Config class that defines all configuration properties with type hints. Implement properties for journal path, auto-generation settings, included sections, and section order. Define a method that returns a complete default configuration dictionary that will be used when no config files are found or when fields are missing.
+
+## 2. Implement configuration file loading from multiple locations [pending]
+### Dependencies: 2.1
+### Description: Create functions to load configuration files from local and global locations with proper error handling.
+### Details:
+Implement functions to load YAML configuration from both local (.mcp-journalrc.yaml in repo root) and global (~/.mcp-journalrc.yaml) locations. Handle file not found errors gracefully. For malformed YAML, log errors but continue with defaults. Use the pathlib module for cross-platform path handling and PyYAML for parsing YAML files.
+
+## 3. Implement configuration merging with proper precedence [pending]
+### Dependencies: 2.1, 2.2
+### Description: Create a function to merge configurations from multiple sources respecting the precedence order: defaults < global < local.
+### Details:
+Implement a merge_configs function that takes multiple configuration dictionaries and combines them with the correct precedence. Local config should override global config, which should override defaults. Implement deep merging for nested configuration sections. Ensure that partial configurations only override the specified values.
+
+## 4. Implement configuration validation [pending]
+### Dependencies: 2.1, 2.3
+### Description: Create validation functions to check the structure and values of loaded configurations, providing warnings for invalid entries.
+### Details:
+Implement validation for all configuration sections and fields. Check types, allowed values, and required fields. For invalid or missing fields, use default values and log appropriate warnings. For completely invalid sections, ignore them with warnings. Create a validate_config function that returns a sanitized configuration with all invalid values replaced with defaults.
+
+## 5. Create public API for configuration system [pending]
+### Dependencies: 2.1, 2.2, 2.3, 2.4
+### Description: Implement the main load_config function that orchestrates the entire configuration loading process and returns a fully initialized Config object.
+### Details:
+Create a public load_config function that: 1) Loads configurations from all sources, 2) Merges them with proper precedence, 3) Validates the merged configuration, and 4) Returns a Config object initialized with the final configuration. Add optional parameters to specify custom config file paths. Implement proper logging throughout the process.
+
+## 6. Review and update README/docs [pending]
+### Dependencies: None
+### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
+### Details:
+
+

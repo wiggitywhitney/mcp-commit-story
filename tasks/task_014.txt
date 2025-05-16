@@ -1,0 +1,168 @@
+# Task ID: 14
+# Title: Implement Chat History Processing
+# Status: pending
+# Dependencies: 4, 8
+# Priority: medium
+# Description: Implement the chat history processing functionality to extract decision context and emotional tone.
+# Details:
+Implement the chat history processing functionality with the following features:
+
+1. Chat history collection
+   - Scan backward through current conversation
+   - Look back until finding previous commit reference OR 18-hour limit
+
+2. Decision context extraction
+   - Use simple keyword matching for decision-related discussions
+   - Include context around matched keywords
+   - Extract relevant conversation snippets
+
+3. Emotional tone analysis
+   - Identify language cues indicating mood/tone
+   - Extract indicators ("ugh", "finally", etc.)
+   - Infer mood only when evidence exists
+
+4. Anti-hallucination safeguards
+   - Never infer *why* something was done unless evidence exists
+   - Mood/tone must be backed by language cues
+   - Omit sections when data is unavailable
+
+Example implementation:
+```python
+def collect_chat_history():
+    """Collect chat history from current conversation."""
+    try:
+        # This would be implemented by the MCP server
+        # to access its own chat history
+        return ai_session.get_chat_history()
+    except Exception:
+        return None
+
+def extract_decision_context(chat_history):
+    """Extract decision context from chat history."""
+    if not chat_history:
+        return []
+    
+    decision_keywords = [
+        "should we", "let's use", "I think", "better to",
+        "decided to", "going with", "chose to", "instead of"
+    ]
+    
+    context_snippets = []
+    for message in chat_history:
+        for keyword in decision_keywords:
+            if keyword.lower() in message.content.lower():
+                # Extract context (3 sentences around keyword)
+                context = extract_context_around_keyword(message.content, keyword)
+                if context:
+                    context_snippets.append(context)
+    
+    return context_snippets
+
+def analyze_emotional_tone(chat_history):
+    """Analyze emotional tone from chat history."""
+    if not chat_history:
+        return None
+    
+    # Mood indicators
+    positive_indicators = [
+        "finally", "great", "awesome", "works", "fixed",
+        "solved", "happy", "glad", "excited"
+    ]
+    
+    negative_indicators = [
+        "ugh", "damn", "frustrating", "annoying", "stuck",
+        "can't figure out", "not working", "failing"
+    ]
+    
+    focused_indicators = [
+        "concentrate", "focus", "deep work", "flow",
+        "productive", "progress", "moving forward"
+    ]
+    
+    # Count indicators
+    positive_count = 0
+    negative_count = 0
+    focused_count = 0
+    
+    found_indicators = []
+    
+    for message in chat_history:
+        content = message.content.lower()
+        
+        for indicator in positive_indicators:
+            if indicator in content:
+                positive_count += 1
+                found_indicators.append(indicator)
+        
+        for indicator in negative_indicators:
+            if indicator in content:
+                negative_count += 1
+                found_indicators.append(indicator)
+        
+        for indicator in focused_indicators:
+            if indicator in content:
+                focused_count += 1
+                found_indicators.append(indicator)
+    
+    # Determine overall mood
+    if positive_count > negative_count and positive_count > 0:
+        mood = "Positive and energized"
+    elif negative_count > positive_count and negative_count > 0:
+        mood = "Frustrated or challenged"
+    elif focused_count > 0:
+        mood = "Focused and determined"
+    else:
+        return None  # No clear mood indicators
+    
+    return {
+        "mood": mood,
+        "indicators": list(set(found_indicators))  # Deduplicate
+    }
+```
+
+# Test Strategy:
+Write unit tests for:
+- Chat history collection
+- Decision context extraction
+- Emotional tone analysis
+- Anti-hallucination safeguards
+
+Test with various chat history samples containing different decision contexts and emotional indicators.
+
+# Subtasks:
+## 1. Implement Chat History Collection Module [pending]
+### Dependencies: None
+### Description: Create a module that collects chat history from the current conversation, scanning backward until finding a previous commit reference or reaching an 18-hour limit.
+### Details:
+Create a ChatHistoryCollector class with methods to retrieve messages from the conversation history. Implement logic to determine the cutoff point based on either a commit reference or time limit. Include proper error handling for cases where history cannot be accessed. The module should return a structured format of messages with sender, timestamp, and content.
+
+## 2. Implement Decision Context Extraction [pending]
+### Dependencies: 14.1
+### Description: Create a module that analyzes chat history to extract decision-related discussions using keyword matching and contextual analysis.
+### Details:
+Implement a DecisionContextExtractor class that takes chat history as input. Define a comprehensive list of decision-related keywords and phrases. Create methods to identify messages containing these keywords, extract surrounding context (3-5 sentences), and compile relevant snippets. Include logic to avoid duplicate or overlapping contexts. The extractor should return an array of context snippets with metadata about where they were found.
+
+## 3. Implement Emotional Tone Analysis [pending]
+### Dependencies: 14.1
+### Description: Create a module that analyzes chat history to identify language cues indicating mood and emotional tone.
+### Details:
+Implement an EmotionalToneAnalyzer class that processes chat history to detect emotional indicators. Define comprehensive lists of positive, negative, and focused mood indicators. Create methods to scan messages for these indicators, track their occurrences, and determine the overall emotional tone. Include safeguards to only infer mood when sufficient evidence exists. The analyzer should return the detected mood along with the specific indicators found.
+
+## 4. Implement Anti-Hallucination Safeguards [pending]
+### Dependencies: 14.2, 14.3
+### Description: Create a validation layer that ensures all extracted information is evidence-based and prevents inference without supporting data.
+### Details:
+Implement a ChatHistoryValidator class that applies safeguards to the extracted decision context and emotional tone. Create methods to verify that mood/tone assessments are backed by actual language cues, decision contexts contain relevant keywords, and no unsupported inferences are made. Implement logic to filter out or flag low-confidence extractions. The validator should sanitize the outputs from previous modules to ensure they meet evidence standards.
+
+## 5. Integrate Components into Chat History Processor [pending]
+### Dependencies: 14.1, 14.2, 14.3, 14.4
+### Description: Create a unified ChatHistoryProcessor that orchestrates all components and provides a clean API for the rest of the application.
+### Details:
+Implement a ChatHistoryProcessor class that integrates all previously created components. Create a main process method that executes the full workflow: collecting history, extracting decision context, analyzing emotional tone, and applying validation safeguards. Implement proper error handling throughout the pipeline. The processor should return a structured object containing validated decision context and emotional tone information, with clear indicators when certain data is unavailable.
+
+## 6. Review and update README/docs [pending]
+### Dependencies: None
+### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
+### Details:
+
+

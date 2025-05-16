@@ -1,0 +1,127 @@
+# Task ID: 12
+# Title: Implement Git Hook Installation
+# Status: pending
+# Dependencies: 3, 6
+# Priority: medium
+# Description: Implement the journal/install-hook operation to install the Git post-commit hook.
+# Details:
+Implement the journal/install-hook operation with the following functionality:
+
+1. Hook file creation
+   - Create post-commit hook file
+   - Make hook executable
+   - Set hook content to run `mcp-journal new-entry`
+
+2. Existing hook handling
+   - Check for existing post-commit hook
+   - Backup existing hook if found
+   - Prompt for action (replace, append, cancel)
+
+3. Validation
+   - Verify hook installation
+   - Test hook permissions
+
+Example implementation:
+```python
+def handle_install_hook(params):
+    """Handle journal/install-hook operation."""
+    debug = params.get("debug", False)
+    try:
+        # Find git repository
+        repo = find_repo()
+        hook_path = Path(repo.git_dir) / "hooks" / "post-commit"
+        
+        # Check for existing hook
+        if hook_path.exists():
+            # Backup existing hook
+            backup_path = hook_path.with_suffix(".bak")
+            hook_path.rename(backup_path)
+            
+            action = params.get("action", "replace")
+            if action == "cancel":
+                # Restore backup and exit
+                backup_path.rename(hook_path)
+                return {
+                    "status": "warning",
+                    "message": "Hook installation cancelled. Existing hook preserved."
+                }
+        
+        # Create hook file
+        hook_content = "#!/bin/sh\nmcp-journal new-entry\n"
+        
+        if params.get("action") == "append" and backup_path.exists():
+            # Append to existing hook
+            with open(backup_path, "r") as f:
+                existing_content = f.read()
+            
+            hook_content = existing_content + "\n" + hook_content
+        
+        with open(hook_path, "w") as f:
+            f.write(hook_content)
+        
+        # Make hook executable
+        hook_path.chmod(0o755)
+        
+        # Verify hook installation
+        if not hook_path.exists() or not os.access(hook_path, os.X_OK):
+            return {
+                "status": "error",
+                "message": "Failed to install hook. Check file permissions."
+            }
+        
+        return {
+            "status": "success",
+            "message": "Git post-commit hook installed successfully.",
+            "path": str(hook_path)
+        }
+    except Exception as e:
+        if debug:
+            return {"status": "error", "message": f"Hook installation failed: {str(e)}"}
+        return {"status": "error", "message": "Hook installation failed. Use --debug for details."}
+```
+
+# Test Strategy:
+Write unit tests for:
+- Hook file creation
+- Existing hook handling
+- Validation
+
+Test with various repository states and existing hook scenarios.
+
+# Subtasks:
+## 1. Implement Git Repository Detection [pending]
+### Dependencies: None
+### Description: Create functionality to detect the current Git repository and determine the hooks directory path.
+### Details:
+Implement the `find_repo()` function that uses GitPython to detect the current Git repository. The function should traverse up from the current directory to find the repository root. If no repository is found, raise an appropriate exception with a clear error message. Also implement a helper function to determine the hooks directory path from the repository object.
+
+## 2. Implement Existing Hook Detection and Backup [pending]
+### Dependencies: 12.1
+### Description: Create functionality to check for an existing post-commit hook and create a backup if one exists.
+### Details:
+Implement functions to check if a post-commit hook already exists, and if so, create a backup with a .bak extension. Include logic to handle the different action parameters (replace, append, cancel) and implement the appropriate behavior for each case. For 'cancel', restore the backup and return an appropriate message.
+
+## 3. Implement Hook Creation and Permission Setting [pending]
+### Dependencies: 12.2
+### Description: Create functionality to write the hook file with appropriate content and set executable permissions.
+### Details:
+Implement functions to create the post-commit hook file with the correct content. For 'replace' action, use the standard hook content. For 'append' action, read the backup file and append the new hook command. Set the appropriate executable permissions (0o755) on the hook file. Include proper error handling for file operations.
+
+## 4. Implement Hook Validation [pending]
+### Dependencies: 12.3
+### Description: Create functionality to verify the hook installation was successful.
+### Details:
+Implement validation functions to verify that the hook was installed correctly. Check that the file exists and has executable permissions. Return appropriate success or error messages based on the validation results. Include detailed error information when debug mode is enabled.
+
+## 5. Integrate Components into handle_install_hook Function [pending]
+### Dependencies: 12.1, 12.2, 12.3, 12.4
+### Description: Combine all the implemented components into the main handle_install_hook function with proper error handling.
+### Details:
+Integrate all the previously implemented components into the main handle_install_hook function. Implement comprehensive error handling throughout the function. Ensure the function returns the appropriate response structure with status, message, and path (when successful). Handle the debug parameter to provide detailed error information when enabled.
+
+## 6. Review and update README/docs [pending]
+### Dependencies: None
+### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
+### Details:
+
+

@@ -1,0 +1,104 @@
+# Task ID: 3
+# Title: Implement Git Utilities Module
+# Status: pending
+# Dependencies: 1
+# Priority: high
+# Description: Create the git_utils.py module to handle all Git-related operations required for journal entry generation.
+# Details:
+Implement the git_utils.py module with the following functionality:
+
+1. Repository detection and validation
+   - Find Git repository from current directory
+   - Validate repository state
+
+2. Commit information retrieval
+   - Get current commit details (hash, message, author, timestamp)
+   - Get previous commit details
+   - Get commits between two points in time
+
+3. Diff processing
+   - Get file diffs for a commit
+   - Generate simplified summaries with line counts
+   - Handle binary files
+   - Truncate large diffs
+
+4. Hook management
+   - Install post-commit hook
+   - Check for existing hooks
+   - Backup existing hooks
+
+Use GitPython library for all Git operations. Implement proper error handling for common Git errors (repository not found, corrupted repository, etc.).
+
+Example implementation for commit retrieval:
+```python
+from git import Repo
+from pathlib import Path
+from typing import Optional, Dict, Any
+
+def find_repo(path: Optional[Path] = None) -> Repo:
+    """Find Git repository from path or current directory."""
+    try:
+        return Repo(path or Path.cwd(), search_parent_directories=True)
+    except Exception as e:
+        raise ValueError(f"Git repository not found: {e}")
+
+def get_current_commit(repo: Optional[Repo] = None) -> Dict[str, Any]:
+    """Get details of the current commit."""
+    repo = repo or find_repo()
+    commit = repo.head.commit
+    return {
+        'hash': commit.hexsha,
+        'short_hash': commit.hexsha[:7],
+        'message': commit.message,
+        'author': commit.author.name,
+        'email': commit.author.email,
+        'timestamp': commit.committed_datetime,
+    }
+```
+
+# Test Strategy:
+Write unit tests for:
+- Repository detection and validation
+- Commit information retrieval
+- Diff processing
+- Hook management
+
+Use mock Git repositories as test fixtures. Test error handling for various Git error conditions.
+
+# Subtasks:
+## 1. Implement Repository Detection and Validation [pending]
+### Dependencies: None
+### Description: Create functions to detect and validate Git repositories, including finding repositories from the current directory and validating repository state.
+### Details:
+Implement `find_repo()` function that accepts an optional path parameter and returns a GitPython Repo object. Add a `validate_repo_state()` function that checks if the repository is in a valid state (not corrupt, has commits, etc.). Handle common exceptions like repository not found or invalid repository state with clear error messages.
+
+## 2. Implement Commit Information Retrieval [pending]
+### Dependencies: 3.1
+### Description: Create functions to retrieve commit information, including current commit details, previous commit details, and commits between time periods.
+### Details:
+Implement `get_current_commit()`, `get_previous_commit()`, and `get_commits_between()` functions. Each function should return structured data with commit hash, message, author, timestamp, etc. Handle edge cases like repositories with only one commit or no commits.
+
+## 3. Implement Diff Processing Functions [pending]
+### Dependencies: 3.2
+### Description: Create functions to process and format Git diffs, including retrieving file diffs for commits and generating simplified summaries.
+### Details:
+Implement `get_file_diffs()` to retrieve diffs for a specific commit, `summarize_diff()` to create simplified summaries with line counts, `handle_binary_files()` to properly process binary files, and `truncate_large_diff()` to handle oversized diffs. Return structured data that can be easily formatted for display.
+
+## 4. Implement Git Hook Management [pending]
+### Dependencies: 3.1
+### Description: Create functions to manage Git hooks, specifically for installing, checking, and backing up post-commit hooks.
+### Details:
+Implement `install_post_commit_hook()` to add the journal's hook to a repository, `check_existing_hook()` to detect if hooks already exist, and `backup_existing_hook()` to preserve any existing hooks. Ensure hooks have proper permissions and handle path differences across operating systems.
+
+## 5. Integrate Error Handling and Create Module Interface [pending]
+### Dependencies: 3.1, 3.2, 3.3, 3.4
+### Description: Implement comprehensive error handling throughout the module and create a clean, well-documented public interface.
+### Details:
+Create custom exception classes for different Git-related errors. Implement consistent error handling patterns across all functions. Define a clear public API by marking internal functions with underscores and documenting public functions with comprehensive docstrings. Create a module-level `__all__` list to explicitly define the public interface.
+
+## 6. Review and update README/docs [pending]
+### Dependencies: None
+### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
+### Details:
+
+

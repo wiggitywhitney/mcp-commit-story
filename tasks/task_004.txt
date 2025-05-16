@@ -1,0 +1,112 @@
+# Task ID: 4
+# Title: Implement Journal Entry Generation
+# Status: pending
+# Dependencies: 2, 3
+# Priority: high
+# Description: Create the journal.py module to handle journal entry generation, formatting, and file management.
+# Details:
+Implement the journal.py module with the following functionality:
+
+1. Journal directory management
+   - Create journal directory structure if not exists
+   - Validate paths and permissions
+
+2. Entry generation
+   - Generate journal entry from commit data
+   - Format entry according to template
+   - Include all required sections (Summary, Accomplishments, etc.)
+   - Handle missing data gracefully
+
+3. File management
+   - Create/append to daily files (YYYY-MM-DD.md)
+   - Handle file locking for concurrent writes
+   - Ensure proper file permissions
+
+4. Terminal and chat history processing
+   - Process terminal history if available
+   - Extract decision context from chat history
+   - Format commands with deduplication
+
+Implement the journal entry structure as specified in the PRD:
+```markdown
+### 2:17 PM — Commit def456
+
+## Summary
+A friendly, succinct summary that captures what was accomplished.
+
+## Accomplishments
+- Facts based on file diffs and chat context
+
+## Frustrations or Roadblocks
+- Inferred from repeated terminal commands, failure messages, or explicit mentions in chat
+
+## Terminal Commands (AI Session)
+Commands executed by AI during this work session:
+- `git add . && git status`
+- `npm test` x3
+- `git diff auth.js`
+- `git commit -m "fix: update validation logic"`
+
+## Discussion Notes (from chat)
+> "Should we use PostgreSQL or MongoDB? I'm leaning toward PostgreSQL because we need ACID compliance for financial data..."
+
+## Tone + Mood (inferred)
+> Mood: Focused and energized  
+> Indicators: "finally", rapid commits, lack of errors
+
+## Behind the Commit
+- Commit hash, message, files touched
+
+## Reflections
+- Only include reflections manually added by human
+```
+
+Implement functions for collecting AI terminal history as specified in the PRD.
+
+# Test Strategy:
+Write unit tests for:
+- Journal directory creation and validation
+- Entry generation from mock commit data
+- File creation and appending
+- Terminal and chat history processing
+- Error handling for missing data
+
+Test with various input data combinations to ensure robust handling of all cases.
+
+# Subtasks:
+## 1. Implement Journal Directory Management [pending]
+### Dependencies: None
+### Description: Create the foundation of the journal.py module with directory management functionality to ensure proper journal storage structure.
+### Details:
+Create a JournalManager class with methods to: 1) Check if journal directory exists, 2) Create directory structure if missing, 3) Validate write permissions, 4) Handle path configuration. Implement utility functions for path normalization and validation. Use pathlib for cross-platform compatibility.
+
+## 2. Implement Journal Entry Generation and Formatting [pending]
+### Dependencies: None
+### Description: Create functionality to generate and format journal entries from commit data according to the specified template.
+### Details:
+Implement EntryGenerator class with methods to: 1) Parse commit data, 2) Format entry sections (Summary, Accomplishments, etc.), 3) Apply markdown template, 4) Handle missing data gracefully with appropriate placeholders. Create helper functions for formatting timestamps and section headers. Use a template-based approach for flexibility.
+
+## 3. Implement File Management for Journal Entries [pending]
+### Dependencies: None
+### Description: Create functionality to manage journal entry files, including creation, appending, and handling concurrent writes.
+### Details:
+Implement FileManager class with methods to: 1) Create or append to daily files (YYYY-MM-DD.md), 2) Implement file locking mechanism for concurrent writes, 3) Set appropriate file permissions, 4) Handle I/O errors gracefully. Use fcntl for file locking on Unix systems and msvcrt for Windows.
+
+## 4. Implement Terminal and Chat History Processing [pending]
+### Dependencies: None
+### Description: Create functionality to process terminal commands and chat history for inclusion in journal entries.
+### Details:
+Implement HistoryProcessor class with methods to: 1) Extract and parse terminal command history, 2) Process chat history to extract decision context, 3) Deduplicate terminal commands, 4) Format commands for readability. Create utility functions to detect command patterns and infer frustrations/roadblocks from repeated commands or error messages.
+
+## 5. Integrate Components and Implement Main Journal API [pending]
+### Dependencies: None
+### Description: Integrate all components and create the main API for the journal.py module that will be used by other parts of the system.
+### Details:
+Create the main Journal class that integrates all components. Implement public methods: 1) create_entry(commit_data, terminal_history, chat_history), 2) get_entry(date), 3) update_entry(date, content). Create a clean, documented API that handles all error conditions gracefully. Implement proper logging throughout the module.
+
+## 6. Review and update README/docs [pending]
+### Dependencies: None
+### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
+### Details:
+
+

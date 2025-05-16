@@ -1,0 +1,124 @@
+# Task ID: 11
+# Title: Implement Backfill Mechanism
+# Status: pending
+# Dependencies: 3, 4, 5, 6
+# Priority: medium
+# Description: Implement the journal/backfill operation to check for missed commits and create entries for them.
+# Details:
+Implement the journal/backfill operation with the following functionality:
+
+1. Missed commit detection
+   - Find last journal entry timestamp
+   - Get all commits since that timestamp
+   - Filter out commits that already have entries
+
+2. Entry generation for missed commits
+   - Generate entries for each missed commit
+   - Mark entries as backfilled
+   - Skip terminal/chat history for backfilled entries
+
+3. File management
+   - Determine appropriate daily file for each commit
+   - Append entries in chronological order
+
+Example implementation:
+```python
+def handle_backfill(params):
+    """Handle journal/backfill operation."""
+    debug = params.get("debug", False)
+    try:
+        # Find last journal entry timestamp
+        last_entry_timestamp = find_last_entry_timestamp()
+        
+        # Get all commits since that timestamp
+        repo = find_repo()
+        commits = get_commits_since(repo, last_entry_timestamp)
+        
+        # Filter out commits that already have entries
+        existing_entries = get_existing_entries()
+        missed_commits = filter_missed_commits(commits, existing_entries)
+        
+        if not missed_commits:
+            return {
+                "status": "success",
+                "message": "No missed commits found."
+            }
+        
+        # Generate entries for missed commits
+        backfilled_entries = []
+        for commit in missed_commits:
+            # Generate entry (skip terminal/chat history)
+            entry = generate_journal_entry(
+                commit=commit,
+                is_backfilled=True,
+                debug=debug
+            )
+            
+            # Determine appropriate daily file
+            commit_date = commit["timestamp"].strftime("%Y-%m-%d")
+            file_path = Path("journal/daily") / f"{commit_date}.md"
+            
+            # Append entry to file
+            append_to_journal_file(file_path, entry)
+            backfilled_entries.append({
+                "commit": commit["short_hash"],
+                "date": commit_date,
+                "path": str(file_path)
+            })
+        
+        return {
+            "status": "success",
+            "message": f"Backfilled {len(backfilled_entries)} missed commits.",
+            "backfilled": backfilled_entries
+        }
+    except Exception as e:
+        if debug:
+            return {"status": "error", "message": f"Backfill failed: {str(e)}"}
+        return {"status": "error", "message": "Backfill failed. Use --debug for details."}
+```
+
+# Test Strategy:
+Write unit tests for:
+- Missed commit detection
+- Entry generation for missed commits
+- File management
+
+Test with various repository states and commit histories.
+
+# Subtasks:
+## 1. Implement Last Entry Timestamp Detection [pending]
+### Dependencies: None
+### Description: Create functions to find the last journal entry timestamp to determine the starting point for backfill operations.
+### Details:
+Implement the `find_last_entry_timestamp()` function that scans through existing journal files to find the most recent entry. This should handle cases where journal files might be missing or empty. Return a default timestamp (e.g., project start date) if no entries are found. Include proper error handling and logging.
+
+## 2. Implement Commit Retrieval and Filtering [pending]
+### Dependencies: 11.1
+### Description: Create functions to retrieve commits since a given timestamp and filter out those that already have journal entries.
+### Details:
+Implement `get_commits_since()` to retrieve all commits after the last entry timestamp, and `filter_missed_commits()` to identify commits without corresponding journal entries. The filtering should compare commit hashes with existing entries to determine which commits were missed. Include proper error handling for repository access issues.
+
+## 3. Implement Backfilled Entry Generation [pending]
+### Dependencies: 11.2
+### Description: Create functionality to generate journal entries for missed commits with appropriate backfill markers.
+### Details:
+Modify the existing `generate_journal_entry()` function to support a backfill mode that skips terminal/chat history collection. Add an `is_backfilled` parameter that, when true, adds a backfill marker to the entry and simplifies the entry format. Ensure the entry contains commit metadata, diff summary, and backfill timestamp.
+
+## 4. Implement Journal File Management [pending]
+### Dependencies: 11.3
+### Description: Create functions to determine the appropriate daily journal file for each commit and append entries in chronological order.
+### Details:
+Implement `append_to_journal_file()` to handle writing entries to the correct daily file based on commit timestamp. Ensure entries are added in chronological order within each file. Create any missing directories or files as needed. Handle file locking to prevent concurrent write issues during backfill operations.
+
+## 5. Implement Main Backfill Handler Function [pending]
+### Dependencies: 11.1, 11.2, 11.3, 11.4
+### Description: Integrate all components into the main backfill handler function with proper error handling and reporting.
+### Details:
+Implement the main `handle_backfill()` function that orchestrates the entire backfill process. It should call the previously implemented functions in sequence, handle any errors gracefully, and return appropriate success/error responses with detailed information about the backfill operation. Include debug mode support for detailed error reporting.
+
+## 6. Review and update README/docs [pending]
+### Dependencies: None
+### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
+### Details:
+
+
