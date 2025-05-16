@@ -29,3 +29,7 @@ node_modules/
 # Task files
 # tasks.json
 # tasks/ 
+
+# Python cache and build artifacts
+__pycache__/
+*.egg-info/ 
