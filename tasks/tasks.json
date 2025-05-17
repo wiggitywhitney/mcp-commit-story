@@ -518,6 +518,8 @@
           "id": 6,
           "title": "Prevent journal-entry-only commits from triggering new journal entries",
           "description": "Implement logic in the post-commit hook and/or MCP server to detect when a commit only modifies files in the journal directory (e.g., 'journal/'). If so, skip generating a new journal entry to prevent infinite loops.",
+          "dependencies": [],
+          "details": "Implement logic in the post-commit hook and/or MCP server to detect when a commit only modifies files in the journal directory (e.g., 'journal/'). If so, skip generating a new journal entry to prevent infinite loops. Write tests and/or manual checks to ensure that committing only journal files does not trigger another journal entry.",
           "status": "pending",
           "testStrategy": "Write tests and/or manual checks to ensure that committing only journal files does not trigger another journal entry."
         },
@@ -526,15 +528,6 @@
           "title": "Review and update README/docs",
           "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
           "details": "",
-          "status": "pending",
-          "dependencies": [],
-          "parentTaskId": 7
-        },
-        {
-          "id": 8,
-          "title": "Prevent journal-entry-only commits from triggering new journal entries",
-          "description": "Implement logic in the post-commit hook and/or MCP server to detect when a commit only modifies files in the journal directory (e.g., 'journal/'). If so, skip generating a new journal entry to prevent infinite loops.",
-          "details": "Implement logic in the post-commit hook and/or MCP server to detect when a commit only modifies files in the journal directory (e.g., 'journal/'). If so, skip generating a new journal entry to prevent infinite loops. Write tests and/or manual checks to ensure that committing only journal files does not trigger another journal entry.",
           "status": "pending",
           "dependencies": [],
           "parentTaskId": 7
