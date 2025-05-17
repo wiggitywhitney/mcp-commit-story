@@ -76,9 +76,9 @@ The MCP server configuration (how it is launched and discovered) is separate fro
 
 ## User Story: Real-World Impact (Fictional Example)
 
-In this fictional scenario, Sarah—a senior engineer—transformed her daily work into a powerful resource for professional growth using the MCP Journal tool. Instead of scrambling to remember what happened during a project, she could quickly generate blog posts, spot recurring themes, and prepare compelling stories for conference talks using her automatically organized engineering journal.
+In this fictional scenario, Bonnie—a senior engineer—transformed her daily work into a powerful resource for professional growth using the MCP Journal tool. Instead of scrambling to remember what happened during a project, she could quickly generate blog posts, spot recurring themes, and prepare compelling stories for conference talks using her automatically organized engineering journal.
 
-The tool made it easy for Sarah to become a thought leader: she always had concrete examples and lessons learned at her fingertips. When her team faced new challenges, they could review past journal entries to avoid repeating mistakes and to build on previous solutions. Over time, Sarah's journal became a springboard for content creation, knowledge sharing, and continuous improvement—turning everyday engineering into lasting impact.
+The tool made it easy for Bonnie to become a thought leader: she always had concrete examples and lessons learned at her fingertips. When her team faced new challenges, they could review past journal entries to avoid repeating mistakes and to build on previous solutions. Over time, Bonnie's journal became a springboard for content creation, knowledge sharing, and continuous improvement—turning everyday engineering into lasting impact.
 
 ---
 

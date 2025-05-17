@@ -1,12 +1,12 @@
-Sarah's Engineering Journal Journey
+Bonnie's Engineering Journal Journey
 
 The Developer
 
-Sarah is a senior software engineer at a fintech startup. She's been coding for 10 years, but recently noticed she's losing track of her work's narrative. "Why did I make that architecture decision three months ago?" became a frustrating refrain during code reviews.
+Bonnie is a senior software engineer at a fintech startup. She's been coding for 10 years, but recently noticed she's losing track of her work's narrative. "Why did I make that architecture decision three months ago?" became a frustrating refrain during code reviews.
 
 One Minute In
 
-Sarah runs mcp-journal init after reading about the tool on Hacker News. She installs the git hook and makes a small commit.
+Bonnie runs mcp-journal init after reading about the tool on Hacker News. She installs the git hook and makes a small commit.
 
 ### 3:15 PM — Commit e4b7c9a
 
@@ -27,11 +27,11 @@ Fixed validation bug where empty email addresses were being accepted in the user
 - Commit: e4b7c9a
 - Message: "fix: validate email addresses properly"
 - Files: src/auth.js, tests/auth.test.js
-Sarah reads it and smiles. "Huh, this actually captures what I did perfectly. I can already see the terminal commands the AI ran for me."
+Bonnie reads it and smiles. "Huh, this actually captures what I did perfectly. I can already see the terminal commands the AI ran for me."
 
 One Day Later
 
-Sarah's made 6 commits today, working on a complex feature for merchant onboarding. She opens today's journal file:
+Bonnie's made 6 commits today, working on a complex feature for merchant onboarding. She opens today's journal file:
 
 # Daily Journal - 2025-05-16
 
@@ -52,13 +52,13 @@ Sarah's made 6 commits today, working on a complex feature for merchant onboardi
 
 ### 6:45 PM — Commit 5d8b7c2
 [bug fix for edge case]
-Sarah scrolls through, remembering her day. "Oh right, that's when Cursor and I went back and forth about the schema design in the chat. And here's when I got stuck on that validation bug - I can see I ran npm test five times in a row!"
+Bonnie scrolls through, remembering her day. "Oh right, that's when Cursor and I went back and forth about the schema design in the chat. And here's when I got stuck on that validation bug - I can see I ran npm test five times in a row!"
 
 She adds a reflection: mcp-journal add-reflection "The merchant schema needs to handle international addresses better. This will be tricky but important for our Q3 global expansion."
 
 One Week Later
 
-Sarah uses the summarization feature: mcp-journal summarize --week
+Bonnie uses the summarization feature: mcp-journal summarize --week
 
 # Week Summary - May 12-18, 2025
 
@@ -84,11 +84,11 @@ Major progress on the merchant onboarding system, completing the core workflow a
 ## Related Entries
 - Daily entries: 2025-05-12 through 2025-05-18
 - Key commits: d2f4a1b, 7f3b9e2, 3a8c5d1, 9b6e4f8
-Sarah feels energized reading this. "I haven't felt this clear about my work in years. Look at everything I accomplished! And I love how it captured that decision about JSONB - future me will thank me for documenting that reasoning."
+Bonnie feels energized reading this. "I haven't felt this clear about my work in years. Look at everything I accomplished! And I love how it captured that decision about JSONB - future me will thank me for documenting that reasoning."
 
 One Month Later
 
-Sarah's manager asks her to write a post for the engineering blog about the merchant onboarding project. She runs: mcp-journal blogify journal/daily/2025-05-*.md
+Bonnie's manager asks her to write a post for the engineering blog about the merchant onboarding project. She runs: mcp-journal blogify journal/daily/2025-05-*.md
 
 # Building Global Merchant Onboarding: A Month-Long Journey
 
@@ -103,15 +103,15 @@ Sometimes the smallest features lead to the biggest insights. A seemingly simple
 
 ## Lessons Learned
 Building for a global audience requires constant questioning of assumptions. Every field we thought was "standard" - phone numbers, postal codes, business names - had international variations we hadn't considered...
-Sarah reads through the generated blog post. "This is amazing! It turned my daily grind into a coherent narrative. I just need to polish a few sentences and add some code examples."
+Bonnie reads through the generated blog post. "This is amazing! It turned my daily grind into a coherent narrative. I just need to polish a few sentences and add some code examples."
 
-Her manager reads the draft: "Sarah, this is exactly the kind of technical storytelling we want more of. How did you remember all these details so clearly?"
+Her manager reads the draft: "Bonnie, this is exactly the kind of technical storytelling we want more of. How did you remember all these details so clearly?"
 
 One Year Later
 
-Sarah is now using the journal for performance reviews, job interviews, and conference talk proposals. She runs mcp-journal summarize --range "2024-05-01:2025-05-01" to see her full year.
+Bonnie is now using the journal for performance reviews, job interviews, and conference talk proposals. She runs mcp-journal summarize --range "2024-05-01:2025-05-01" to see her full year.
 
-What Sarah Does With the Output:
+What Bonnie Does With the Output:
 
 1. Performance Reviews
 
@@ -127,14 +127,14 @@ She submits a talk proposal: "The Hidden Complexity of Global Merchant Onboardin
 
 4. Knowledge Transfer
 
-New team members read relevant journal sections to understand why systems were built certain ways. "Sarah, why did you use JSONB here?" "Let me show you the journal entry from when we made that decision..."
+New team members read relevant journal sections to understand why systems were built certain ways. "Bonnie, why did you use JSONB here?" "Let me show you the journal entry from when we made that decision..."
 
 5. Blog Posts
 
-Sarah becomes known as a great technical writer, publishing monthly posts derived from her journal entries. Her posts get shared widely because they include real struggles and decision-making context.
+Bonnie becomes known as a great technical writer, publishing monthly posts derived from her journal entries. Her posts get shared widely because they include real struggles and decision-making context.
 
 
-Sarah's Final Reflection (After One Year):
+Bonnie's Final Reflection (After One Year):
 
 "This tool changed how I work. I'm more intentional about my decisions because I know they'll be documented. I commit more frequently because each commit tells part of the story. Most importantly, I've recovered the narrative thread of my career. When people ask what I've been working on, I don't just remember the last sprint - I can tell them the entire story of how we built our merchant platform, including all the dead ends and breakthroughs.
 
@@ -144,6 +144,6 @@ Sarah's Final Reflection (After One Year):
 
 The Broader Impact
 
-Sarah's team adopts the tool after seeing her success. During retrospectives, they reference journal entries to identify patterns. During P0 incidents, they quickly find relevant past decisions. During architecture reviews, they cite specific journal entries as supporting evidence.
+Bonnie's team adopts the tool after seeing her success. During retrospectives, they reference journal entries to identify patterns. During P0 incidents, they quickly find relevant past decisions. During architecture reviews, they cite specific journal entries as supporting evidence.
 
 The journal entries become part of the company's institutional knowledge. As people leave and join, the stories stay. The context remains. The engineering narrative continues.
