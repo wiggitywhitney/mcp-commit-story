@@ -1,6 +1,6 @@
 # Task ID: 2
 # Title: Implement Configuration System
-# Status: pending
+# Status: in-progress
 # Dependencies: 1
 # Priority: high
 # Description: Create the configuration module to handle loading and validating configuration from .mcp-journalrc.yaml files.
@@ -63,11 +63,62 @@ Write unit tests for:
 Test with various valid and invalid configuration files to ensure robust error handling.
 
 # Subtasks:
-## 1. Create Config class with default configuration values [pending]
+## 1. Create Config class with default configuration values [done]
 ### Dependencies: None
 ### Description: Implement the Config class with properties for all configuration options and define default values for each setting.
 ### Details:
 Create a config.py module with a Config class that defines all configuration properties with type hints. Implement properties for journal path, auto-generation settings, included sections, and section order. Define a method that returns a complete default configuration dictionary that will be used when no config files are found or when fields are missing.
+<info added on 2025-05-17T22:18:09.946Z>
+Create a config.py module with a Config class that defines all configuration properties with type hints. Implement properties for journal path, auto-generation settings, included sections, and section order. Define a method that returns a complete default configuration dictionary that will be used when no config files are found or when fields are missing.
+
+Implementation Plan:
+
+1. Set up the test file first (test_config.py):
+   - Create tests for Config class initialization with no parameters
+   - Test default values for all expected configuration properties
+   - Test the get_default_config method returns a complete dictionary
+   - Test type annotations are correct for all properties
+
+2. Create the config.py module:
+   - Import necessary typing modules (Dict, List, Optional, etc.)
+   - Define a Config class with appropriate docstrings
+   - Implement __init__ method that accepts an optional configuration dictionary
+   - Add type hints to all parameters and return values
+
+3. Define core configuration properties:
+   - journal_path: Path to store journal files (default: ~/journal)
+   - auto_generate: Boolean flag for auto-generating entries (default: True)
+   - included_sections: List of section names to include (default: ["Summary", "Tasks", "Notes", "Ideas"])
+   - section_order: Dictionary mapping section names to display order (default order for the included sections)
+   - date_format: String format for dates (default: "%Y-%m-%d")
+   - file_extension: String for journal file extension (default: ".md")
+
+4. Implement property getters and setters:
+   - For each configuration option, create a property with getter
+   - Add validation in setters where appropriate (e.g., journal_path must be a valid path)
+   - Ensure type safety through annotations and runtime checks
+
+5. Create the get_default_config method:
+   - Return a dictionary with all default configuration values
+   - Ensure the dictionary structure matches what will be loaded from config files
+   - Include nested configurations if necessary
+
+6. Add helper methods:
+   - as_dict(): Returns the current configuration as a dictionary
+   - is_valid(): Validates the current configuration
+   - reset_to_defaults(): Resets all properties to default values
+
+7. Implement proper error handling:
+   - Create custom exceptions for configuration errors
+   - Add validation methods to check configuration integrity
+
+8. Add documentation:
+   - Document each property and method with docstrings
+   - Include examples of usage in the class docstring
+   - Document the expected format of the configuration dictionary
+
+This implementation should be designed with the next subtask in mind, which involves loading configuration from multiple locations. The Config class should be easily extendable to support merging configurations from different sources, with later sources overriding earlier ones.
+</info added on 2025-05-17T22:18:09.946Z>
 
 ## 2. Implement configuration file loading from multiple locations [pending]
 ### Dependencies: 2.1

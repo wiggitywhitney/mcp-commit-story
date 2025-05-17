@@ -4,6 +4,39 @@
 # Dependencies: None
 # Priority: high
 # Description: Initialize the project repository with proper structure and dependencies as specified in the PRD.
+
+Project goals include:
+- Record accurate, structured engineering activity and emotional context
+- Enable narrative storytelling across daily, weekly, and monthly timelines
+- Identify patterns and trends in development work over time
+- Keep entries truthful (anti-hallucination), useful, and minimally intrusive
+- Integrate seamlessly with Git workflows and existing dev tools
+
+Commit processing logic:
+- Skip commits that only modify journal files
+- For mixed commits (code + journal files), exclude journal files from analysis
+
+Configuration example:
+```yaml
+journal:
+  path: journal/
+  auto_generate: true
+  include_terminal: true
+  include_chat: true
+  include_mood: true
+  section_order:
+    - summary
+    - accomplishments
+    - frustrations
+    - tone
+    - commit_details
+    - reflections
+  auto_summarize:
+    daily: true
+    weekly: true
+    monthly: true
+    yearly: true
+```
 # Details:
 Create the project structure according to the PRD:
 
