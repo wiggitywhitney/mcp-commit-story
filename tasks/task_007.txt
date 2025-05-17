@@ -128,7 +128,6 @@ Write tests that verify the correct reporting of initialization status, includin
 ### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
 ### Details:
 
-
 ## 8. Prevent journal-entry-only commits from triggering new journal entries [pending]
 ### Dependencies: None
 ### Description: Implement logic in the post-commit hook and/or MCP server to detect when a commit only modifies files in the journal directory (e.g., 'journal/'). If so, skip generating a new journal entry to prevent infinite loops.
