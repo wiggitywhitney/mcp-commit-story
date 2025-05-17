@@ -10,6 +10,36 @@ This document specifies a Model Context Protocol (MCP) server designed to captur
 - Keep entries truthful (anti-hallucination), useful, and minimally intrusive
 - Integrate seamlessly with Git workflows and existing dev tools
 
+## MCP Server Configuration and Integration
+
+The MCP server must be launchable as a standalone process and expose the required journal operations (e.g., `journal/new-entry`, `journal/summarize`, etc.) as specified in this document. The server should be discoverable by compatible clients (such as AI-powered editors, agents, or other tools) via a standard configuration mechanism.
+
+- **Server Launch:**
+  - The method for launching the MCP server is not prescribed by this specification. It may be started via a CLI command, Python entry point, or any other mechanism appropriate to the environment.
+  - The server must remain running and accessible to clients for the duration of its use.
+
+- **Client/Editor Integration:**
+  - Clients (such as editors or agents) should be able to connect to the MCP server using a configuration block similar to the following:
+
+```json
+{
+  "mcpServers": {
+    "mcp-commit-story": {
+      "command": "<launch command>",
+      "args": ["<arg1>", "<arg2>", ...],
+      "env": {
+        "ANTHROPIC_API_KEY": "<optional>"
+      }
+    }
+  }
+}
+```
+  - The actual command, arguments, and environment variables will depend on the deployment and are not specified here.
+  - Environment variables such as API keys may be required if the underlying MCP SDK or AI provider requires them, but are not strictly necessary for local operation unless needed by dependencies.
+
+- **Separation of Concerns:**
+  - The MCP server configuration (how it is launched and discovered) is separate from the journal system's own configuration, which is managed via `.mcp-journalrc.yaml` as described elsewhere in this specification.
+
 ---
 
 ## Technology Stack
@@ -186,6 +216,16 @@ journal:
 - Mood/tone must be backed by language cues ("ugh", "finally", etc.)
 - If data is unavailable (e.g., terminal history), omit that section
 
+### Recursion Prevention
+- **Initial filtering**: Examine all files in commit
+  - If commit only modifies journal files → skip journal entry generation entirely
+  - If commit modifies both code and journal files → proceed to create entry
+- **Content generation**: When creating the entry
+  - When generating file diffs and stats for the journal entry content, exclude journal files from this analysis
+  - Only show changes for non-journal files
+- This allows journal files to be git-tracked while preventing recursive entries
+- No configuration needed - this behavior is built-in
+
 ### Journal Entry Structure
 #### Example (Markdown format):
 ```markdown
@@ -247,10 +287,15 @@ Empty sections are omitted. Manual entries and reflections are clearly labeled a
 - Return path to updated file
 
 #### journal/summarize
-- Options: `--week`, `--month`, `--range`
+- Options: `--week`, `--month`, `--range`, `--day`, `--year`
+- Daily summaries for quick recaps of previous day's work
+- Weekly summaries for sprint retrospectives and short-term trends
+- Monthly summaries for broader patterns and accomplishments
+- Yearly summaries for major milestones, skill development, and career progression
 - Default to most recent period if no date specified
-- Support specific dates (e.g., `--week 2025-01-13`)
+- Support specific dates (e.g., `--week 2025-01-13`, `--year 2025`)
 - Support arbitrary ranges (e.g., `--range "2025-01-01:2025-01-31"`)
+- Prioritize manually added reflections in summaries
 
 #### journal/init
 - Create initial journal directory structure
@@ -265,10 +310,11 @@ Empty sections are omitted. Manual entries and reflections are clearly labeled a
 - Return path to updated file
 
 #### journal/blogify
-- Accept single or multiple file paths
-- Convert to natural, readable blog post
-- Remove headers, timestamps, code references
-- Add transitions, rewrite for narrative flow
+- Transforms journal entries into cohesive narrative content
+- Accepts single or multiple journal file paths as input
+- Creates a natural, readable blog post from technical entries
+- Removes structural elements (headers, timestamps, metadata)
+- Preserves key decisions and insights
 
 ### Data Formats
 - All operations return pre-formatted markdown strings
@@ -298,6 +344,7 @@ mcp-journal [operation] [options]
 - `mcp-journal install-hook` - Install git post-commit hook
 - `mcp-journal backfill [--debug]` - Manually trigger missed commit check
 
+
 ### Global Options
 - `--config <path>` - Override config file location
 - `--dry-run` - Preview operations without writing files
@@ -314,9 +361,12 @@ mcp-journal [operation] [options]
 - Missing directories created automatically
 
 ### Diff Processing
-- Capture simplified summaries with line counts (e.g., "modified 3 functions in auth.py")
+- Examine all files in commit to determine if entry should be created
+- When generating file diffs and stats for the journal entry content, exclude journal files from this analysis
+- Capture simplified summaries with line counts (e.g., "modified 3 functions in auth.js")
 - Binary files noted as "binary file changed"
 - Large diffs truncated with note about truncation
+- Focus only on code and documentation changes
 
 ### Date/Time Handling
 - Week boundaries: Monday-Sunday
@@ -336,16 +386,44 @@ These errors return error status and stop execution:
 - Corrupted git repository
 
 ### Soft Failures (Silent Skip)
-These errors are skipped with optional notes in output:
-- Terminal history not accessible
-- Chat history unavailable
+These errors are skipped silently without user notification:
+- Terminal history not accessible (file permissions, format issues)
+- Chat history unavailable or API errors  
+- AI session command collection fails (unsupported AI tool, API changes)
 - Previous commit not found for backfill
 - Terminal commands unparseable
+- AI assistant doesn't support command history
+- Network timeouts when fetching optional data
+
 
 ### Error Messages
 - Brief and actionable
 - Include suggestions for resolution where possible
 - Never expose internal implementation details
+
+### Debug Mode
+When using `--debug` flag, all soft failures are logged to stderr with details:
+```bash
+$ mcp-journal new-entry --debug
+[DEBUG] Failed to read terminal history: Permission denied for ~/.bash_history
+[DEBUG] AI command collection failed: AssistantNotSupportedError
+[DEBUG] Chat history scan stopped: Previous commit reference not found after 18 hours
+Generated journal entry successfully (some sections omitted)
+```
+
+## Graceful Degradation Philosophy
+* **Always generate a journal entry** regardless of available data sources
+* **Include what works**, silently omit what doesn't
+* **No error messages** clutter the journal output
+* **User never sees broken features** - they just don't get that section
+* **Future-proof**: automatically works when AI tools improve their APIs
+
+### Error Messages
+* Brief and actionable for hard failures only
+* Include suggestions for resolution where possible
+* Never expose internal implementation details
+* **No error messages for soft failures in normal mode**
+* Debug mode provides detailed error information
 
 ---
 

@@ -48,3 +48,41 @@ Testing for this feature should include:
    - Ensure that historical summaries can be regenerated with the new prioritization rules if needed
 
 Document all test results with screenshots comparing before and after implementations.
+
+# Subtasks:
+## 1. Identify and Extract Manual Reflections from Summary Period [pending]
+### Dependencies: None
+### Description: Create a function to identify and extract all manual reflections within a given summary period (daily, weekly, monthly).
+### Details:
+Implement a new function `extractManualReflections(startDate, endDate)` that queries the database for all manual reflections created between the specified dates. The function should return an array of reflection objects sorted chronologically. Each object should contain the reflection text, timestamp, and any associated metadata. This function will serve as the foundation for prioritizing manual reflections in the summary generation process.
+
+## 2. Modify Summary Templates to Include Dedicated Manual Reflections Section [pending]
+### Dependencies: 16.1
+### Description: Update the summary templates for daily, weekly, and monthly views to include a dedicated section for manual reflections at the beginning.
+### Details:
+Modify the existing summary template structure to add a new 'Manual Reflections' section that appears before any inferred content. Design the section with appropriate headings and styling to make it visually distinct. Include conditional rendering logic to hide this section if no manual reflections exist for the period. Update the template rendering engine to pass the extracted manual reflections to this new section.
+
+## 3. Implement Visual Highlighting for Manual Reflections [pending]
+### Dependencies: 16.2
+### Description: Create visual differentiation between manual reflections and inferred content in summaries through styling, icons, or formatting.
+### Details:
+Design and implement a visual system to distinguish manual reflections from inferred content. Add CSS classes to manual reflection elements that apply distinct styling (e.g., different background color, border, or font weight). Consider adding an icon indicator next to manual reflections. Ensure the styling is consistent across all summary types and responsive to different screen sizes. Update the summary rendering code to apply these visual indicators when displaying manual reflections.
+
+## 4. Update Summary Generation Algorithm to Prioritize Manual Reflections [pending]
+### Dependencies: 16.1, 16.2, 16.3
+### Description: Modify the core summary generation algorithm to prioritize manual reflections and ensure they appear before inferred content.
+### Details:
+Refactor the existing summary generation algorithm to incorporate the extracted manual reflections at the beginning of the summary. Implement the sorting logic to display manual reflections chronologically. Create clear visual separation between the manual reflections section and subsequent inferred content. Develop fallback logic that gracefully handles periods with no manual reflections by showing only inferred content with appropriate messaging. Ensure the algorithm maintains backward compatibility with existing summary data structures.
+
+## 5. Update Summary Preview and Add User Configuration Options [pending]
+### Dependencies: 16.4
+### Description: Update the summary preview functionality to reflect the new prioritization and add user configuration options for controlling this behavior.
+### Details:
+Modify the summary preview component to accurately display the new prioritized structure with manual reflections. Implement a user configuration option in the settings panel that allows users to toggle between prioritized manual reflections and the original summary format. Create appropriate UI controls and persistence for this preference. Update the documentation to explain the new summary generation process and configuration options. Test the preview functionality to ensure it accurately represents the final summary output.
+
+## 6. Review and update README/docs [pending]
+### Dependencies: 16.1, 16.2, 16.3, 16.4, 16.5
+### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
+### Details:
+
+

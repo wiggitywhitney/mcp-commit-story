@@ -139,7 +139,7 @@ Expand the basic fixtures with more sophisticated test data. Create fixtures for
 Configure pytest-cov for coverage reporting. Set up coverage thresholds (aim for >90% overall). Create HTML and XML coverage reports. Implement CI integration for automated test running and coverage reporting. Document the testing approach, fixtures, and patterns in a TESTING.md file. Add test-related information to the project README. Create examples of how to run specific test suites. Document how to add new tests when implementing new features.
 
 ## 6. Review and update README/docs [pending]
-### Dependencies: None
+### Dependencies: 15.1, 15.2, 15.3, 15.4, 15.5
 ### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
 ### Details:
 

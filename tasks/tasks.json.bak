@@ -91,7 +91,7 @@
           "title": "Implement configuration file loading from multiple locations",
           "description": "Create functions to load configuration files from local and global locations with proper error handling.",
           "dependencies": [
-            "2.1"
+            1
           ],
           "details": "Implement functions to load YAML configuration from both local (.mcp-journalrc.yaml in repo root) and global (~/.mcp-journalrc.yaml) locations. Handle file not found errors gracefully. For malformed YAML, log errors but continue with defaults. Use the pathlib module for cross-platform path handling and PyYAML for parsing YAML files.",
           "status": "pending",
@@ -102,8 +102,8 @@
           "title": "Implement configuration merging with proper precedence",
           "description": "Create a function to merge configurations from multiple sources respecting the precedence order: defaults < global < local.",
           "dependencies": [
-            "2.1",
-            "2.2"
+            1,
+            2
           ],
           "details": "Implement a merge_configs function that takes multiple configuration dictionaries and combines them with the correct precedence. Local config should override global config, which should override defaults. Implement deep merging for nested configuration sections. Ensure that partial configurations only override the specified values.",
           "status": "pending",
@@ -114,8 +114,8 @@
           "title": "Implement configuration validation",
           "description": "Create validation functions to check the structure and values of loaded configurations, providing warnings for invalid entries.",
           "dependencies": [
-            "2.1",
-            "2.3"
+            1,
+            3
           ],
           "details": "Implement validation for all configuration sections and fields. Check types, allowed values, and required fields. For invalid or missing fields, use default values and log appropriate warnings. For completely invalid sections, ignore them with warnings. Create a validate_config function that returns a sanitized configuration with all invalid values replaced with defaults.",
           "status": "pending",
@@ -126,10 +126,10 @@
           "title": "Create public API for configuration system",
           "description": "Implement the main load_config function that orchestrates the entire configuration loading process and returns a fully initialized Config object.",
           "dependencies": [
-            "2.1",
-            "2.2",
-            "2.3",
-            "2.4"
+            1,
+            2,
+            3,
+            4
           ],
           "details": "Create a public load_config function that: 1) Loads configurations from all sources, 2) Merges them with proper precedence, 3) Validates the merged configuration, and 4) Returns a Config object initialized with the final configuration. Add optional parameters to specify custom config file paths. Implement proper logging throughout the process.",
           "status": "pending",
@@ -141,13 +141,7 @@
           "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
           "details": "",
           "status": "pending",
-          "dependencies": [
-            "2.1",
-            "2.2",
-            "2.3",
-            "2.4",
-            "2.5"
-          ],
+          "dependencies": [],
           "parentTaskId": 2
         }
       ]
@@ -178,7 +172,7 @@
           "title": "Implement Commit Information Retrieval",
           "description": "Create functions to retrieve commit information, including current commit details, previous commit details, and commits between time periods.",
           "dependencies": [
-            "3.1"
+            1
           ],
           "details": "Implement `get_current_commit()`, `get_previous_commit()`, and `get_commits_between()` functions. Each function should return structured data with commit hash, message, author, timestamp, etc. Handle edge cases like repositories with only one commit or no commits.",
           "status": "pending",
@@ -189,7 +183,7 @@
           "title": "Implement Diff Processing Functions",
           "description": "Create functions to process and format Git diffs, including retrieving file diffs for commits and generating simplified summaries.",
           "dependencies": [
-            "3.2"
+            2
           ],
           "details": "Implement `get_file_diffs()` to retrieve diffs for a specific commit, `summarize_diff()` to create simplified summaries with line counts, `handle_binary_files()` to properly process binary files, and `truncate_large_diff()` to handle oversized diffs. Return structured data that can be easily formatted for display.",
           "status": "pending",
@@ -200,7 +194,7 @@
           "title": "Implement Git Hook Management",
           "description": "Create functions to manage Git hooks, specifically for installing, checking, and backing up post-commit hooks.",
           "dependencies": [
-            "3.1"
+            1
           ],
           "details": "Implement `install_post_commit_hook()` to add the journal's hook to a repository, `check_existing_hook()` to detect if hooks already exist, and `backup_existing_hook()` to preserve any existing hooks. Ensure hooks have proper permissions and handle path differences across operating systems.",
           "status": "pending",
@@ -211,10 +205,10 @@
           "title": "Integrate Error Handling and Create Module Interface",
           "description": "Implement comprehensive error handling throughout the module and create a clean, well-documented public interface.",
           "dependencies": [
-            "3.1",
-            "3.2",
-            "3.3",
-            "3.4"
+            1,
+            2,
+            3,
+            4
           ],
           "details": "Create custom exception classes for different Git-related errors. Implement consistent error handling patterns across all functions. Define a clear public API by marking internal functions with underscores and documenting public functions with comprehensive docstrings. Create a module-level `__all__` list to explicitly define the public interface.",
           "status": "pending",
@@ -226,13 +220,7 @@
           "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
           "details": "",
           "status": "pending",
-          "dependencies": [
-            "3.1",
-            "3.2",
-            "3.3",
-            "3.4",
-            "3.5"
-          ],
+          "dependencies": [],
           "parentTaskId": 3
         }
       ]
@@ -301,13 +289,7 @@
           "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
           "details": "",
           "status": "pending",
-          "dependencies": [
-            "4.1",
-            "4.2",
-            "4.3",
-            "4.4",
-            "4.5"
-          ],
+          "dependencies": [],
           "parentTaskId": 4
         }
       ]
@@ -338,7 +320,7 @@
           "title": "Implement MCP Server Initialization",
           "description": "Implement the core server initialization functionality with proper configuration handling based on the test specifications.",
           "dependencies": [
-            "5.1"
+            1
           ],
           "details": "Create the JournalMCPServer class with initialization logic. Implement configuration parsing and validation. Set up the connection to Anthropic's SDK with appropriate authentication. Include logging setup and server lifecycle management. Ensure all tests for initialization pass.",
           "status": "pending",
@@ -349,7 +331,7 @@
           "title": "Implement Tool Registration System",
           "description": "Develop the tool registration system that will allow journal operations to be registered as MCP tools with proper schemas.",
           "dependencies": [
-            "5.2"
+            2
           ],
           "details": "Implement the _register_tools method to define and register all journal operations. Create schema definitions for each tool's parameters and return values. Implement the registration mechanism that connects tools to their handlers. Support tool categorization and documentation generation.",
           "status": "pending",
@@ -360,7 +342,7 @@
           "title": "Implement Request Handling Logic",
           "description": "Create the core request processing pipeline that receives MCP requests, routes them to the appropriate tool handlers, and formats responses.",
           "dependencies": [
-            "5.3"
+            3
           ],
           "details": "Implement request parsing and validation against tool schemas. Create the routing mechanism to dispatch requests to the correct handler functions. Implement response formatting according to MCP specifications. Add request/response logging for debugging. Handle authentication and authorization if required.",
           "status": "pending",
@@ -371,7 +353,7 @@
           "title": "Implement Error Handling and Tool Handlers",
           "description": "Develop the error handling system and implement the actual tool handler functions for journal operations.",
           "dependencies": [
-            "5.4"
+            4
           ],
           "details": "Create a comprehensive error handling system that catches exceptions and translates them to appropriate MCP error responses. Implement all tool handlers including journal/new-entry, ensuring they interact correctly with the journal system. Add detailed logging for troubleshooting. Implement retry logic for transient failures.",
           "status": "pending",
@@ -383,13 +365,7 @@
           "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
           "details": "",
           "status": "pending",
-          "dependencies": [
-            "5.1",
-            "5.2",
-            "5.3",
-            "5.4",
-            "5.5"
-          ],
+          "dependencies": [],
           "parentTaskId": 5
         }
       ]
@@ -398,7 +374,7 @@
       "id": 6,
       "title": "Implement CLI Interface",
       "description": "Create the cli.py module to implement the command-line interface using Click.",
-      "details": "Implement the cli.py module with the following functionality:\n\n5. Command structure\n   - Define main command group\n   - Add subcommands for all operations\n\n2. Command options\n   - Add global options (--config, --dry-run, --verbose, --debug)\n   - Add command-specific options\n\n3. Command handlers\n   - Implement handlers for all commands\n   - Connect to MCP server for operations\n\n4. Output formatting\n   - Format success and error messages\n   - Handle verbose and debug output\n\nImplement the following commands:\n- `mcp-journal init` - Initialize journal in current repository\n- `mcp-journal new-entry [--debug]` - Create journal entry for current commit\n- `mcp-journal add-reflection \"text\"` - Add manual reflection to today's journal\n- `mcp-journal summarize --week [--debug]` - Generate summary for most recent week\n- `mcp-journal summarize --month [--debug]` - Generate summary for most recent month\n- `mcp-journal summarize --week 2025-01-13` - Week containing specific date\n- `mcp-journal summarize --range \"2025-01-01:2025-01-31\"` - Arbitrary range\n- `mcp-journal blogify <file1> [file2] ...` - Convert to blog post\n- `mcp-journal install-hook` - Install git post-commit hook\n- `mcp-journal backfill [--debug]` - Manually trigger missed commit check\n\nExample implementation:\n```python\nimport click\nfrom pathlib import Path\nfrom .server import JournalMCPServer\nfrom .config import load_config\n\n@click.group()\ndef cli():\n    \"\"\"MCP Journal - Engineering journal integrated with Git.\"\"\"\n    pass\n\n@cli.command()\n@click.option('--debug', is_flag=True, help='Show debug information')\ndef init(debug):\n    \"\"\"Initialize journal in current repository.\"\"\"\n    config = load_config()\n    server = JournalMCPServer(config)\n    result = server.server.invoke_tool(\"journal/init\", {\"debug\": debug})\n    click.echo(result[\"message\"])\n\n@cli.command()\n@click.option('--debug', is_flag=True, help='Show debug information')\ndef new_entry(debug):\n    \"\"\"Create journal entry for current commit.\"\"\"\n    config = load_config()\n    server = JournalMCPServer(config)\n    result = server.server.invoke_tool(\"journal/new-entry\", {\"debug\": debug})\n    click.echo(result[\"message\"])\n```",
+      "details": "Implement the cli.py module with the following functionality:\n\n1. Command structure\n   - Define main command group\n   - Add subcommands for all operations\n\n2. Command options\n   - Add global options (--config, --dry-run, --verbose, --debug)\n   - Add command-specific options\n\n3. Command handlers\n   - Implement handlers for all commands\n   - Connect to MCP server for operations\n\n4. Output formatting\n   - Format success and error messages\n   - Handle verbose and debug output\n\nImplement the following commands:\n- `mcp-journal init` - Initialize journal in current repository\n- `mcp-journal new-entry [--debug]` - Create journal entry for current commit\n- `mcp-journal add-reflection \"text\"` - Add manual reflection to today's journal\n- `mcp-journal summarize --week [--debug]` - Generate summary for most recent week\n- `mcp-journal summarize --month [--debug]` - Generate summary for most recent month\n- `mcp-journal summarize --week 2025-01-13` - Week containing specific date\n- `mcp-journal summarize --range \"2025-01-01:2025-01-31\"` - Arbitrary range\n- `mcp-journal blogify <file1> [file2] ...` - Convert to blog post\n- `mcp-journal install-hook` - Install git post-commit hook\n- `mcp-journal backfill [--debug]` - Manually trigger missed commit check\n\nExample implementation:\n```python\nimport click\nfrom pathlib import Path\nfrom .server import JournalMCPServer\nfrom .config import load_config\n\n@click.group()\ndef cli():\n    \"\"\"MCP Journal - Engineering journal integrated with Git.\"\"\"\n    pass\n\n@cli.command()\n@click.option('--debug', is_flag=True, help='Show debug information')\ndef init(debug):\n    \"\"\"Initialize journal in current repository.\"\"\"\n    config = load_config()\n    server = JournalMCPServer(config)\n    result = server.server.invoke_tool(\"journal/init\", {\"debug\": debug})\n    click.echo(result[\"message\"])\n\n@cli.command()\n@click.option('--debug', is_flag=True, help='Show debug information')\ndef new_entry(debug):\n    \"\"\"Create journal entry for current commit.\"\"\"\n    config = load_config()\n    server = JournalMCPServer(config)\n    result = server.server.invoke_tool(\"journal/new-entry\", {\"debug\": debug})\n    click.echo(result[\"message\"])\n```",
       "testStrategy": "Write unit tests for:\n- Command parsing\n- Option handling\n- Command execution\n- Output formatting\n\nUse Click's testing utilities to simulate command invocation. Test all commands with various options and arguments.",
       "priority": "medium",
       "dependencies": [
@@ -421,7 +397,7 @@
           "title": "Implement global and command-specific options with tests",
           "description": "Add global options (--config, --dry-run, --verbose, --debug) and command-specific options to all commands, with appropriate tests.",
           "dependencies": [
-            "6.1"
+            1
           ],
           "details": "1. Write tests for global options that verify:\n   - Global options are available across all commands\n   - Options are correctly parsed and passed to handlers\n2. Write tests for command-specific options that verify:\n   - Each command has its required options\n   - Options correctly handle different input formats (dates, ranges, etc.)\n3. Implement global options in the main command group\n4. Add command-specific options to each subcommand\n5. Ensure all tests pass for option handling",
           "status": "pending",
@@ -432,7 +408,7 @@
           "title": "Implement command handlers and server connection",
           "description": "Create handler functions for all commands that connect to the MCP server and invoke the appropriate tools.",
           "dependencies": [
-            "6.2"
+            2
           ],
           "details": "1. Write tests for command handlers that verify:\n   - Handlers correctly invoke the MCP server with proper parameters\n   - Server responses are properly processed\n   - Error handling works as expected\n2. Implement handler functions for each command that:\n   - Load configuration\n   - Initialize MCP server connection\n   - Invoke appropriate server tools with command parameters\n   - Process server responses\n3. Add error handling for server connection issues\n4. Ensure all tests pass for command handlers",
           "status": "pending",
@@ -443,7 +419,7 @@
           "title": "Implement output formatting and logging",
           "description": "Add output formatting for command results, including success and error messages, and implement verbose and debug output handling.",
           "dependencies": [
-            "6.3"
+            3
           ],
           "details": "1. Write tests for output formatting that verify:\n   - Success messages are properly formatted\n   - Error messages include appropriate details\n   - Verbose and debug flags control output detail level\n2. Implement output formatting functions for different result types\n3. Add verbose output handling that shows additional information when --verbose is used\n4. Implement debug output that shows detailed information when --debug is used\n5. Ensure consistent formatting across all commands\n6. Make sure all tests pass for output formatting",
           "status": "pending",
@@ -454,7 +430,7 @@
           "title": "Implement integration tests and finalize CLI module",
           "description": "Create end-to-end integration tests for the CLI module and finalize the implementation with comprehensive documentation.",
           "dependencies": [
-            "6.4"
+            4
           ],
           "details": "1. Write integration tests that verify:\n   - Complete command workflows function correctly\n   - Commands interact properly with the MCP server\n   - Error scenarios are handled gracefully\n2. Refactor the CLI implementation based on test results\n3. Add comprehensive docstrings and comments\n4. Ensure consistent error handling across all commands\n5. Verify all unit and integration tests pass\n6. Create example usage documentation for each command",
           "status": "pending",
@@ -466,13 +442,7 @@
           "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
           "details": "",
           "status": "pending",
-          "dependencies": [
-            "6.1",
-            "6.2",
-            "6.3",
-            "6.4",
-            "6.5"
-          ],
+          "dependencies": [],
           "parentTaskId": 6
         }
       ]
@@ -558,13 +528,7 @@
           "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
           "details": "",
           "status": "pending",
-          "dependencies": [
-            "7.7",
-            "7.2",
-            "7.3",
-            "7.4",
-            "7.5"
-          ]
+          "dependencies": []
         }
       ]
     },
@@ -605,8 +569,8 @@
           "title": "Implement Journal Entry Generation",
           "description": "Create the core function to generate a formatted journal entry from Git and context data.",
           "dependencies": [
-            "8.1",
-            "8.2"
+            1,
+            2
           ],
           "details": "Implement `generate_journal_entry()` that takes commit details, terminal history, chat history, and decision context as inputs. Format the entry according to the template with sections for commit details, changes summary, context, and decisions. Include debug mode to provide verbose output.",
           "status": "pending",
@@ -617,7 +581,7 @@
           "title": "Implement File Management Functions",
           "description": "Create functions to determine the daily journal file path and append entries to the file.",
           "dependencies": [
-            "8.3"
+            3
           ],
           "details": "Implement `get_daily_file_path()` to generate the path for today's journal file (YYYY-MM-DD.md) and `append_to_journal_file(file_path, entry)` to create or append to the file. Ensure directories exist and handle file operations safely.",
           "status": "pending",
@@ -628,10 +592,10 @@
           "title": "Implement Backfill Check and Main Handler",
           "description": "Create the backfill check functionality and integrate all components into the main handler function.",
           "dependencies": [
-            "8.1",
-            "8.2",
-            "8.3",
-            "8.4"
+            1,
+            2,
+            3,
+            4
           ],
           "details": "Implement `check_missed_commits(repo)` to identify commits without journal entries, `backfill_entries(repo, missed_commits)` to generate entries for past commits, and complete the `handle_new_entry(params)` function to orchestrate the entire process. Include proper error handling and status reporting.",
           "status": "pending",
@@ -643,12 +607,8 @@
           "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
           "details": "",
           "status": "pending",
-          "dependencies": [
-            "8.2",
-            "8.3",
-            "8.4",
-            "8.5"
-          ]
+          "dependencies": [],
+          "parentTaskId": 8
         }
       ]
     },
@@ -680,7 +640,7 @@
           "title": "Implement entry collection and parsing",
           "description": "Create a function to collect and parse journal entries within a specified date range",
           "dependencies": [
-            "9.1"
+            1
           ],
           "details": "Implement `collect_entries()` function that finds all daily journal entries within the given date range. The function should locate entry files, parse their content, and extract relevant information (activities, accomplishments, challenges, emotional tone). Return a structured collection of entry data for further processing.",
           "status": "pending",
@@ -691,7 +651,7 @@
           "title": "Implement summary generation logic",
           "description": "Create a function to generate comprehensive summaries from collected journal entries",
           "dependencies": [
-            "9.2"
+            2
           ],
           "details": "Implement `generate_summary()` function that processes collected entries to create a structured summary. The summary should include: 1) Overview of the period, 2) List of key activities grouped by category, 3) Notable accomplishments, 4) Challenges faced, 5) Emotional tone analysis across entries. Format the summary as markdown with appropriate sections and formatting.",
           "status": "pending",
@@ -702,7 +662,7 @@
           "title": "Implement summary file management",
           "description": "Create functions to determine summary file paths and save generated summaries",
           "dependencies": [
-            "9.3"
+            3
           ],
           "details": "Implement `save_summary_file()` function that creates the necessary directory structure (journal/summaries/) if it doesn't exist, determines the appropriate file name based on summary type (weekly, monthly, custom), and writes the summary content to the file. Handle file overwriting and permissions appropriately.",
           "status": "pending",
@@ -713,10 +673,10 @@
           "title": "Implement main summarize handler function",
           "description": "Integrate all components into the main handler function for the journal/summarize operation",
           "dependencies": [
-            "9.1",
-            "9.2",
-            "9.3",
-            "9.4"
+            1,
+            2,
+            3,
+            4
           ],
           "details": "Implement the `handle_summarize()` function that orchestrates the entire summarization process: 1) Parse command parameters, 2) Determine date range using functions from subtask 1, 3) Collect entries using function from subtask 2, 4) Generate summary using function from subtask 3, 5) Save summary using function from subtask 4, 6) Return appropriate response object with status, message, and file path. Include proper error handling and debug information.",
           "status": "pending",
@@ -728,12 +688,8 @@
           "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
           "details": "",
           "status": "pending",
-          "dependencies": [
-            "9.2",
-            "9.3",
-            "9.4",
-            "9.5"
-          ]
+          "dependencies": [],
+          "parentTaskId": 9
         }
       ]
     },
@@ -765,7 +721,7 @@
           "title": "Implement Content Transformation Logic",
           "description": "Create the core transformation logic to convert journal entries into natural, readable blog post format by removing technical elements and improving narrative flow.",
           "dependencies": [
-            "10.1"
+            1
           ],
           "details": "Create a `content_transformer.py` module with a main function `transform_to_blog_post(entries)` that takes the output from the file processor and converts it to blog format. Implement helper functions to: remove headers and timestamps, strip code references, add natural transitions between paragraphs, and rewrite content for better narrative flow. Consider using NLP techniques or rule-based transformations.",
           "status": "pending",
@@ -776,7 +732,7 @@
           "title": "Implement Output Generation Module",
           "description": "Create a module to handle the output generation of the transformed blog post, either saving to a file or returning as a string.",
           "dependencies": [
-            "10.2"
+            2
           ],
           "details": "Create an `output_generator.py` module with a main function `generate_output(blog_post, output_path=None)` that takes the transformed blog post content and an optional output path. If an output path is provided, save the content to that file and return a success message with the path. If no output path is provided, return the content as a string.",
           "status": "pending",
@@ -787,9 +743,9 @@
           "title": "Implement Main Blogify Handler Function",
           "description": "Implement the main handler function that orchestrates the entire blogify operation by calling the file processing, content transformation, and output generation modules.",
           "dependencies": [
-            "10.1",
-            "10.2",
-            "10.3"
+            1,
+            2,
+            3
           ],
           "details": "Create the `handle_blogify(params)` function in the main module that: 1) Extracts parameters like file paths, debug mode, and output path, 2) Calls the file processor to read entries, 3) Passes entries to the content transformer, 4) Uses the output generator to produce the final result, 5) Handles exceptions and returns appropriate response objects with status and messages.",
           "status": "pending",
@@ -800,7 +756,7 @@
           "title": "Integrate and Test End-to-End Functionality",
           "description": "Integrate all components and perform end-to-end testing of the blogify operation with various input scenarios and edge cases.",
           "dependencies": [
-            "10.4"
+            4
           ],
           "details": "Create integration tests that test the complete blogify workflow with various inputs: 1) Single file conversion, 2) Multiple file conversion, 3) Different journal formats, 4) Edge cases like empty files or malformed content. Update the main module to expose the blogify functionality through the appropriate API or command-line interface. Document usage examples and expected outputs.",
           "status": "pending",
@@ -812,13 +768,8 @@
           "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
           "details": "",
           "status": "pending",
-          "dependencies": [
-            "10.1",
-            "10.2",
-            "10.3",
-            "10.4",
-            "10.5"
-          ]
+          "dependencies": [],
+          "parentTaskId": 10
         }
       ]
     },
@@ -851,7 +802,7 @@
           "title": "Implement Commit Retrieval and Filtering",
           "description": "Create functions to retrieve commits since a given timestamp and filter out those that already have journal entries.",
           "dependencies": [
-            "11.1"
+            1
           ],
           "details": "Implement `get_commits_since()` to retrieve all commits after the last entry timestamp, and `filter_missed_commits()` to identify commits without corresponding journal entries. The filtering should compare commit hashes with existing entries to determine which commits were missed. Include proper error handling for repository access issues.",
           "status": "pending",
@@ -862,7 +813,7 @@
           "title": "Implement Backfilled Entry Generation",
           "description": "Create functionality to generate journal entries for missed commits with appropriate backfill markers.",
           "dependencies": [
-            "11.2"
+            2
           ],
           "details": "Modify the existing `generate_journal_entry()` function to support a backfill mode that skips terminal/chat history collection. Add an `is_backfilled` parameter that, when true, adds a backfill marker to the entry and simplifies the entry format. Ensure the entry contains commit metadata, diff summary, and backfill timestamp.",
           "status": "pending",
@@ -873,7 +824,7 @@
           "title": "Implement Journal File Management",
           "description": "Create functions to determine the appropriate daily journal file for each commit and append entries in chronological order.",
           "dependencies": [
-            "11.3"
+            3
           ],
           "details": "Implement `append_to_journal_file()` to handle writing entries to the correct daily file based on commit timestamp. Ensure entries are added in chronological order within each file. Create any missing directories or files as needed. Handle file locking to prevent concurrent write issues during backfill operations.",
           "status": "pending",
@@ -884,10 +835,10 @@
           "title": "Implement Main Backfill Handler Function",
           "description": "Integrate all components into the main backfill handler function with proper error handling and reporting.",
           "dependencies": [
-            "11.1",
-            "11.2",
-            "11.3",
-            "11.4"
+            1,
+            2,
+            3,
+            4
           ],
           "details": "Implement the main `handle_backfill()` function that orchestrates the entire backfill process. It should call the previously implemented functions in sequence, handle any errors gracefully, and return appropriate success/error responses with detailed information about the backfill operation. Include debug mode support for detailed error reporting.",
           "status": "pending",
@@ -899,13 +850,8 @@
           "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
           "details": "",
           "status": "pending",
-          "dependencies": [
-            "11.1",
-            "11.2",
-            "11.3",
-            "11.4",
-            "11.5"
-          ]
+          "dependencies": [],
+          "parentTaskId": 11
         }
       ]
     },
@@ -936,7 +882,7 @@
           "title": "Implement Existing Hook Detection and Backup",
           "description": "Create functionality to check for an existing post-commit hook and create a backup if one exists.",
           "dependencies": [
-            "12.1"
+            1
           ],
           "details": "Implement functions to check if a post-commit hook already exists, and if so, create a backup with a .bak extension. Include logic to handle the different action parameters (replace, append, cancel) and implement the appropriate behavior for each case. For 'cancel', restore the backup and return an appropriate message.",
           "status": "pending",
@@ -947,7 +893,7 @@
           "title": "Implement Hook Creation and Permission Setting",
           "description": "Create functionality to write the hook file with appropriate content and set executable permissions.",
           "dependencies": [
-            "12.2"
+            2
           ],
           "details": "Implement functions to create the post-commit hook file with the correct content. For 'replace' action, use the standard hook content. For 'append' action, read the backup file and append the new hook command. Set the appropriate executable permissions (0o755) on the hook file. Include proper error handling for file operations.",
           "status": "pending",
@@ -958,7 +904,7 @@
           "title": "Implement Hook Validation",
           "description": "Create functionality to verify the hook installation was successful.",
           "dependencies": [
-            "12.3"
+            3
           ],
           "details": "Implement validation functions to verify that the hook was installed correctly. Check that the file exists and has executable permissions. Return appropriate success or error messages based on the validation results. Include detailed error information when debug mode is enabled.",
           "status": "pending",
@@ -969,10 +915,10 @@
           "title": "Integrate Components into handle_install_hook Function",
           "description": "Combine all the implemented components into the main handle_install_hook function with proper error handling.",
           "dependencies": [
-            "12.1",
-            "12.2",
-            "12.3",
-            "12.4"
+            1,
+            2,
+            3,
+            4
           ],
           "details": "Integrate all the previously implemented components into the main handle_install_hook function. Implement comprehensive error handling throughout the function. Ensure the function returns the appropriate response structure with status, message, and path (when successful). Handle the debug parameter to provide detailed error information when enabled.",
           "status": "pending",
@@ -984,13 +930,8 @@
           "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
           "details": "",
           "status": "pending",
-          "dependencies": [
-            "12.1",
-            "12.2",
-            "12.3",
-            "12.4",
-            "12.5"
-          ]
+          "dependencies": [],
+          "parentTaskId": 12
         }
       ]
     },
@@ -1022,7 +963,7 @@
           "title": "Implement reflection validation logic",
           "description": "Create the validation functions to check reflection text and journal initialization",
           "dependencies": [
-            "13.1"
+            1
           ],
           "details": "Implement functions to: 1) Validate that reflection text is non-empty, 2) Check that journal directory exists and is properly initialized. Extract these as separate functions for better testability. Return appropriate error messages for validation failures.",
           "status": "pending",
@@ -1033,7 +974,7 @@
           "title": "Write tests for reflection formatting and file determination",
           "description": "Create tests for timestamp formatting, markdown handling, and journal file path determination",
           "dependencies": [
-            "13.2"
+            2
           ],
           "details": "Implement test cases that verify: 1) Timestamp is correctly formatted in reflections, 2) Markdown in reflection text is preserved, 3) Journal file path is correctly determined based on current date, 4) New journal files get proper headers.",
           "status": "pending",
@@ -1044,7 +985,7 @@
           "title": "Implement reflection formatting and file determination logic",
           "description": "Create functions to format reflections with timestamps and determine the correct journal file path",
           "dependencies": [
-            "13.3"
+            3
           ],
           "details": "Implement functions to: 1) Format reflection text with current timestamp in the specified format, 2) Determine today's journal file path, 3) Create journal file with appropriate header if it doesn't exist. Extract these as separate functions for better testability.",
           "status": "pending",
@@ -1055,7 +996,7 @@
           "title": "Implement the complete handle_add_reflection function with file operations",
           "description": "Integrate all components into the main handler function with proper file operations",
           "dependencies": [
-            "13.4"
+            4
           ],
           "details": "Implement the complete handle_add_reflection function that: 1) Uses the validation logic from subtask 2, 2) Uses the formatting and file determination logic from subtask 4, 3) Handles file operations to append the formatted reflection to the journal file, 4) Implements proper error handling with debug mode support, 5) Returns appropriate success/error responses.",
           "status": "pending",
@@ -1067,13 +1008,8 @@
           "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
           "details": "",
           "status": "pending",
-          "dependencies": [
-            "13.1",
-            "13.2",
-            "13.3",
-            "13.4",
-            "13.5"
-          ]
+          "dependencies": [],
+          "parentTaskId": 13
         }
       ]
     },
@@ -1104,7 +1040,7 @@
           "title": "Implement Decision Context Extraction",
           "description": "Create a module that analyzes chat history to extract decision-related discussions using keyword matching and contextual analysis.",
           "dependencies": [
-            "14.1"
+            1
           ],
           "details": "Implement a DecisionContextExtractor class that takes chat history as input. Define a comprehensive list of decision-related keywords and phrases. Create methods to identify messages containing these keywords, extract surrounding context (3-5 sentences), and compile relevant snippets. Include logic to avoid duplicate or overlapping contexts. The extractor should return an array of context snippets with metadata about where they were found.",
           "status": "pending",
@@ -1115,7 +1051,7 @@
           "title": "Implement Emotional Tone Analysis",
           "description": "Create a module that analyzes chat history to identify language cues indicating mood and emotional tone.",
           "dependencies": [
-            "14.1"
+            1
           ],
           "details": "Implement an EmotionalToneAnalyzer class that processes chat history to detect emotional indicators. Define comprehensive lists of positive, negative, and focused mood indicators. Create methods to scan messages for these indicators, track their occurrences, and determine the overall emotional tone. Include safeguards to only infer mood when sufficient evidence exists. The analyzer should return the detected mood along with the specific indicators found.",
           "status": "pending",
@@ -1126,8 +1062,8 @@
           "title": "Implement Anti-Hallucination Safeguards",
           "description": "Create a validation layer that ensures all extracted information is evidence-based and prevents inference without supporting data.",
           "dependencies": [
-            "14.2",
-            "14.3"
+            2,
+            3
           ],
           "details": "Implement a ChatHistoryValidator class that applies safeguards to the extracted decision context and emotional tone. Create methods to verify that mood/tone assessments are backed by actual language cues, decision contexts contain relevant keywords, and no unsupported inferences are made. Implement logic to filter out or flag low-confidence extractions. The validator should sanitize the outputs from previous modules to ensure they meet evidence standards.",
           "status": "pending",
@@ -1138,10 +1074,10 @@
           "title": "Integrate Components into Chat History Processor",
           "description": "Create a unified ChatHistoryProcessor that orchestrates all components and provides a clean API for the rest of the application.",
           "dependencies": [
-            "14.1",
-            "14.2",
-            "14.3",
-            "14.4"
+            1,
+            2,
+            3,
+            4
           ],
           "details": "Implement a ChatHistoryProcessor class that integrates all previously created components. Create a main process method that executes the full workflow: collecting history, extracting decision context, analyzing emotional tone, and applying validation safeguards. Implement proper error handling throughout the pipeline. The processor should return a structured object containing validated decision context and emotional tone information, with clear indicators when certain data is unavailable.",
           "status": "pending",
@@ -1153,13 +1089,8 @@
           "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
           "details": "",
           "status": "pending",
-          "dependencies": [
-            "14.1",
-            "14.2",
-            "14.3",
-            "14.4",
-            "14.5"
-          ]
+          "dependencies": [],
+          "parentTaskId": 14
         }
       ]
     },
@@ -1202,7 +1133,7 @@
           "title": "Implement Unit Tests for Core Modules",
           "description": "Create comprehensive unit tests for all core modules including config, git_utils, and journal generation functions.",
           "dependencies": [
-            "15.1"
+            1
           ],
           "details": "Following TDD principles, write failing tests first for each function in core modules. Implement tests for config loading/merging, git repository interaction, and journal entry generation. Mock all external dependencies including filesystem, git repositories, and user input. Organize tests by module with clear naming conventions. Include edge cases and error conditions. Implement test parameterization for functions that need to be tested with multiple inputs.",
           "status": "pending",
@@ -1213,7 +1144,7 @@
           "title": "Implement Integration Tests and Workflow Testing",
           "description": "Create integration tests that verify end-to-end workflows and CLI command functionality.",
           "dependencies": [
-            "15.2"
+            2
           ],
           "details": "Following TDD, write failing integration tests for complete workflows. Test CLI commands using pytest-click or similar tools. Create tests for journal generation from git commits, terminal history collection, and chat history integration. Test file creation and management workflows. Implement tests for configuration loading from various locations. Create integration tests that verify multiple components work together correctly.",
           "status": "pending",
@@ -1224,7 +1155,7 @@
           "title": "Implement Advanced Test Fixtures and Mocks",
           "description": "Create comprehensive test fixtures for complex test scenarios and mock external dependencies.",
           "dependencies": [
-            "15.3"
+            3
           ],
           "details": "Expand the basic fixtures with more sophisticated test data. Create fixtures for sample git repositories with commit history. Implement mock terminal histories with various commands and outputs. Create sample chat histories in different formats. Generate various configuration files for testing different settings. Implement mock classes for all external dependencies including git, filesystem, and user interfaces. Create helper functions for test setup and teardown.",
           "status": "pending",
@@ -1235,7 +1166,7 @@
           "title": "Implement Test Coverage Reporting and Documentation",
           "description": "Configure coverage reporting tools and create comprehensive test documentation.",
           "dependencies": [
-            "15.4"
+            4
           ],
           "details": "Configure pytest-cov for coverage reporting. Set up coverage thresholds (aim for >90% overall). Create HTML and XML coverage reports. Implement CI integration for automated test running and coverage reporting. Document the testing approach, fixtures, and patterns in a TESTING.md file. Add test-related information to the project README. Create examples of how to run specific test suites. Document how to add new tests when implementing new features.",
           "status": "pending",
@@ -1247,13 +1178,8 @@
           "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
           "details": "",
           "status": "pending",
-          "dependencies": [
-            "15.1",
-            "15.2",
-            "15.3",
-            "15.4",
-            "15.5"
-          ]
+          "dependencies": [],
+          "parentTaskId": 15
         }
       ]
     },
@@ -1281,7 +1207,7 @@
           "title": "Modify Summary Templates to Include Dedicated Manual Reflections Section",
           "description": "Update the summary templates for daily, weekly, and monthly views to include a dedicated section for manual reflections at the beginning.",
           "dependencies": [
-            "16.1"
+            1
           ],
           "details": "Modify the existing summary template structure to add a new 'Manual Reflections' section that appears before any inferred content. Design the section with appropriate headings and styling to make it visually distinct. Include conditional rendering logic to hide this section if no manual reflections exist for the period. Update the template rendering engine to pass the extracted manual reflections to this new section.",
           "status": "pending",
@@ -1292,7 +1218,7 @@
           "title": "Implement Visual Highlighting for Manual Reflections",
           "description": "Create visual differentiation between manual reflections and inferred content in summaries through styling, icons, or formatting.",
           "dependencies": [
-            "16.2"
+            2
           ],
           "details": "Design and implement a visual system to distinguish manual reflections from inferred content. Add CSS classes to manual reflection elements that apply distinct styling (e.g., different background color, border, or font weight). Consider adding an icon indicator next to manual reflections. Ensure the styling is consistent across all summary types and responsive to different screen sizes. Update the summary rendering code to apply these visual indicators when displaying manual reflections.",
           "status": "pending",
@@ -1303,9 +1229,9 @@
           "title": "Update Summary Generation Algorithm to Prioritize Manual Reflections",
           "description": "Modify the core summary generation algorithm to prioritize manual reflections and ensure they appear before inferred content.",
           "dependencies": [
-            "16.1",
-            "16.2",
-            "16.3"
+            1,
+            2,
+            3
           ],
           "details": "Refactor the existing summary generation algorithm to incorporate the extracted manual reflections at the beginning of the summary. Implement the sorting logic to display manual reflections chronologically. Create clear visual separation between the manual reflections section and subsequent inferred content. Develop fallback logic that gracefully handles periods with no manual reflections by showing only inferred content with appropriate messaging. Ensure the algorithm maintains backward compatibility with existing summary data structures.",
           "status": "pending",
@@ -1316,26 +1242,11 @@
           "title": "Update Summary Preview and Add User Configuration Options",
           "description": "Update the summary preview functionality to reflect the new prioritization and add user configuration options for controlling this behavior.",
           "dependencies": [
-            "16.4"
+            4
           ],
           "details": "Modify the summary preview component to accurately display the new prioritized structure with manual reflections. Implement a user configuration option in the settings panel that allows users to toggle between prioritized manual reflections and the original summary format. Create appropriate UI controls and persistence for this preference. Update the documentation to explain the new summary generation process and configuration options. Test the preview functionality to ensure it accurately represents the final summary output.",
           "status": "pending",
           "testStrategy": "Test the preview functionality with various content combinations. Verify that toggling the configuration option correctly changes the summary format. Test that user preferences are correctly saved and applied across sessions."
-        },
-        {
-          "id": 6,
-          "title": "Review and update README/docs",
-          "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
-          "details": "",
-          "status": "pending",
-          "dependencies": [
-            "16.1",
-            "16.2",
-            "16.3",
-            "16.4",
-            "16.5"
-          ],
-          "parentTaskId": 16
         }
       ]
     },
@@ -1348,76 +1259,7 @@
       "status": "pending",
       "dependencies": [],
       "priority": "medium",
-      "subtasks": [
-        {
-          "id": 1,
-          "title": "Implement Single-Day Summary Generation Core Logic",
-          "description": "Create the core functionality to generate summaries for a specific day in the journal system",
-          "dependencies": [],
-          "details": "Develop a dedicated function that accepts a date parameter and generates a summary for that specific day. Reuse existing summary algorithms but modify them to focus on single-day context. Ensure the function handles edge cases like days with no entries. Include relevant statistics (commit count, activity patterns) and prioritize manual reflections in the summary output. Format the output consistently with other summary types. This function will serve as the foundation for both CLI and MCP tool implementations.",
-          "status": "pending",
-          "testStrategy": "Create unit tests with various test cases including: days with multiple entries, days with single entries, days with no entries, days with manual reflections, and edge cases like invalid dates. Verify summary content matches expected output format and correctly prioritizes information."
-        },
-        {
-          "id": 2,
-          "title": "Enhance CLI Interface with Day-Specific Summary Option",
-          "description": "Add a new command-line option to generate summaries for a specific day",
-          "dependencies": [
-            "17.1"
-          ],
-          "details": "Extend the CLI interface by adding a new '--day' or '--date' option that accepts date input in YYYY-MM-DD format. Implement argument parsing and validation for the new option. Connect this option to the single-day summary generation function. Ensure backward compatibility with existing CLI commands. Implement proper error handling for invalid date formats or dates with no journal entries. Update the help documentation to include information about the new option and provide usage examples.",
-          "status": "pending",
-          "testStrategy": "Create integration tests for the CLI with various valid and invalid date inputs. Test error messages for invalid formats and edge cases. Verify help documentation is accurate and complete."
-        },
-        {
-          "id": 3,
-          "title": "Integrate Day-Specific Summary Feature into MCP Tool",
-          "description": "Add UI elements to the MCP tool for selecting and generating summaries for specific days",
-          "dependencies": [
-            "17.1"
-          ],
-          "details": "Design and implement UI components in the MCP tool for date selection, such as a date picker or calendar widget. Create a dedicated panel or section for day-specific summaries. Connect the UI elements to the single-day summary generation function. Implement loading indicators and success/error messages to provide clear feedback during and after summary generation. Ensure the UI is intuitive and consistent with the existing design patterns of the MCP tool.",
-          "status": "pending",
-          "testStrategy": "Perform UI testing to verify date selection works correctly. Test the summary generation process through the UI with various dates. Verify loading states and error handling work as expected."
-        },
-        {
-          "id": 4,
-          "title": "Implement Storage and Retrieval System for Daily Summaries",
-          "description": "Design and implement a system to store and retrieve daily summaries efficiently",
-          "dependencies": [
-            "17.1"
-          ],
-          "details": "Design a consistent storage approach for daily summaries, considering file structure and naming conventions. Implement functions to save generated summaries to the appropriate storage location. Create efficient retrieval methods for viewing past daily summaries. Consider implementing a caching mechanism for frequently accessed summaries to improve performance. Ensure the storage system can handle concurrent access and is resilient to failures. Update existing code to use this new storage system when appropriate.",
-          "status": "pending",
-          "testStrategy": "Test storage and retrieval with various summary sizes. Verify summaries can be correctly saved and retrieved. Test edge cases like concurrent access and system failures. Benchmark performance to ensure efficient operation."
-        },
-        {
-          "id": 5,
-          "title": "Develop Auto-Generation Feature for Daily Summaries",
-          "description": "Create functionality to automatically generate summaries for days with new commits",
-          "dependencies": [
-            "17.1",
-            "17.4"
-          ],
-          "details": "Implement configuration options to enable/disable auto-generation of daily summaries. Create a mechanism to detect if new commits were added for a previous day. Design a background process or trigger that runs at specified intervals to check for days needing summaries. Implement the auto-generation logic that calls the single-day summary function for relevant days. Add notification functionality to inform users of newly auto-generated summaries. Provide configuration options for users to set the time window for auto-generation and other preferences. Ensure the feature is performant and doesn't interfere with other system operations.",
-          "status": "pending",
-          "testStrategy": "Test the detection mechanism with various commit patterns. Verify auto-generation triggers correctly based on configuration. Test notifications work as expected. Perform long-running tests to ensure stability of the background process."
-        },
-        {
-          "id": 6,
-          "title": "Review and update README/docs",
-          "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
-          "details": "",
-          "status": "pending",
-          "dependencies": [
-            "17.1",
-            "17.2",
-            "17.3",
-            "17.4",
-            "17.5"
-          ]
-        }
-      ]
+      "subtasks": []
     },
     {
       "id": 18,
@@ -1443,19 +1285,6 @@
           "title": "Ensure separation of MCP server config from journal config",
           "description": "Make sure documentation clearly distinguishes between MCP server configuration and the journal system's .mcp-journalrc.yaml.",
           "status": "pending"
-        },
-        {
-          "id": 4,
-          "title": "Review and update README/docs",
-          "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
-          "details": "",
-          "status": "pending",
-          "dependencies": [
-            "18.1",
-            "18.2",
-            "18.3"
-          ],
-          "parentTaskId": 18
         }
       ]
     }

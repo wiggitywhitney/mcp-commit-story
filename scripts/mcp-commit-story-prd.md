@@ -22,6 +22,36 @@ A Model Context Protocol (MCP) server designed to capture and generate engineeri
 - Standard library (pathlib, datetime)
 - pytest for testing
 
+## MCP Server Configuration and Integration
+
+The MCP server must be launchable as a standalone process and expose the required journal operations (e.g., `journal/new-entry`, `journal/summarize`, etc.) as specified in this document. The server should be discoverable by compatible clients (such as AI-powered editors, agents, or other tools) via a standard configuration mechanism.
+
+- **Server Launch:**
+  - The method for launching the MCP server is not prescribed by this specification. It may be started via a CLI command, Python entry point, or any other mechanism appropriate to the environment.
+  - The server must remain running and accessible to clients for the duration of its use.
+
+- **Client/Editor Integration:**
+  - Clients (such as editors or agents) should be able to connect to the MCP server using a configuration block similar to the following:
+
+```json
+{
+  "mcpServers": {
+    "mcp-commit-story": {
+      "command": "<launch command>",
+      "args": ["<arg1>", "<arg2>", ...],
+      "env": {
+        "ANTHROPIC_API_KEY": "<optional>"
+      }
+    }
+  }
+}
+```
+  - The actual command, arguments, and environment variables will depend on the deployment and are not specified here.
+  - Environment variables such as API keys may be required if the underlying MCP SDK or AI provider requires them, but are not strictly necessary for local operation unless needed by dependencies.
+
+- **Separation of Concerns:**
+  - The MCP server configuration (how it is launched and discovered) is separate from the journal system's own configuration, which is managed via `.mcp-journalrc.yaml` as described elsewhere in this specification.
+
 ## Key Features
 - MCP server with tools for journal operations (new-entry, summarize, blogify, etc.)
 - CLI interface for all operations
@@ -66,12 +96,54 @@ A Model Context Protocol (MCP) server designed to capture and generate engineeri
 
 # Full Engineering Specification
 
+## Recursion Prevention (Anti-Recursion)
+- If a commit only modifies journal files, skip journal entry generation entirely.
+- If a commit modifies both code and journal files, generate an entry, but exclude journal files from the diff/stat analysis.
+- This logic is always-on and not configurable.
 
-</rewritten_file> #### journal/blogify
-- Accept single or multiple file paths
-- Convert to natural, readable blog post
-- Remove headers, timestamps, code references
-- Add transitions, rewrite for narrative flow# Engineering Journal MCP Server — Complete Developer Specification
+## Manual Reflection Prioritization
+- Manual reflections (user-added) are always prioritized in all summaries (daily, weekly, monthly, yearly).
+- Summaries have a dedicated "Manual Reflections" section at the top, visually distinct from inferred content.
+- If no manual reflections exist, the section is omitted gracefully.
+
+## Daily Summary Generation
+- CLI and MCP tool support a `--day` or `--date` option for generating a summary for a specific day.
+- Daily summaries are stored in `journal/summaries/daily/`.
+- Auto-generation of daily summaries is possible if enabled in the config (`auto_summarize`).
+
+## Error Handling Philosophy
+- Hard failures (e.g., missing repo) return actionable error messages and stop execution.
+- Soft failures (e.g., missing terminal/chat history) are omitted silently unless `--debug` is set.
+- Debug mode surfaces all soft failures to stderr, but never clutters journal output.
+
+## Pattern/Trend Analysis
+- The system is designed to help identify patterns and trends in development work over time, not just record events.
+
+## Configuration Example (no frequency block)
+```yaml
+journal:
+  path: journal/
+  auto_generate: true
+  include_terminal: true
+  include_chat: true
+  include_mood: true
+  section_order:
+    - summary
+    - accomplishments
+    - frustrations
+    - tone
+    - commit_details
+    - reflections
+  auto_summarize:
+    daily: true
+    weekly: true
+    monthly: true
+    yearly: true
+```
+
+---
+
+# Engineering Journal MCP Server — Complete Developer Specification
 
 ## Overview
 This document specifies a Model Context Protocol (MCP) server designed to capture and generate engineering journal entries within a code repository. The journal captures technical progress, decision-making context, and emotional tone, with the goal of producing content that can later be reused for storytelling (e.g., blog posts, conference talks).
@@ -214,10 +286,10 @@ journal:
     - commit_details
     - reflections
   auto_summarize:
-    daily: true     # Generate daily summary on first commit of new day
-    weekly: true    # Generate weekly summary on first commit of week (Monday)
-    monthly: true   # Generate monthly summary on first commit of month
-    yearly: true    # Generate yearly summary on first commit of year
+    daily: true
+    weekly: true
+    monthly: true
+    yearly: true
 ```
 
 ---

@@ -29,10 +29,6 @@ If you use an AI-powered editor (like Cursor, Windsurf, Roo, etc.), you can add 
 - Replace the API key with your own.
 - Save and reload your editor's MCP config.
 
-**Now you can use natural language prompts in your editor, such as:**
-- "Initialize mcp-commit-story in this project."
-- "Parse my PRD at scripts/mcp-commit-story-prd.md."
-- "What's the next task I should work on?"
 
 ---
 
@@ -49,6 +45,32 @@ mcp-journal new-entry
 ### 3. Configuration
 - Edit `.mcp-journalrc.yaml` in your project root to customize journal behavior.
 - See the Configuration section below for details.
+
+---
+
+## MCP Server Configuration and Integration
+
+The MCP server must be launchable as a standalone process and expose the required journal operations (e.g., `journal/new-entry`, `journal/summarize`, etc.). The method for launching the MCP server is not prescribed; it may be started via CLI, Python entry point, or any other mechanism. The server must remain running and accessible to clients for the duration of its use.
+
+Clients (such as editors or agents) should be able to connect to the MCP server using a configuration block similar to the following:
+
+```json
+{
+  "mcpServers": {
+    "mcp-commit-story": {
+      "command": "<launch command>",
+      "args": ["<arg1>", "<arg2>", ...],
+      "env": {
+        "ANTHROPIC_API_KEY": "<optional>"
+      }
+    }
+  }
+}
+```
+
+The actual command, arguments, and environment variables will depend on the deployment and are not specified here. Environment variables such as API keys may be required if the underlying MCP SDK or AI provider requires them, but are not strictly necessary for local operation unless needed by dependencies.
+
+The MCP server configuration (how it is launched and discovered) is separate from the journal system's own configuration, which is managed via `.mcp-journalrc.yaml` as described elsewhere in this documentation.
 
 ---
 
@@ -87,8 +109,11 @@ pip install -e .
 mcp-journal init
 mcp-journal new-entry
 mcp-journal summarize --week
+mcp-journal summarize --day 2025-05-14  # Generate summary for a specific day
 mcp-journal blogify journal/daily/2025-05-*.md
 ```
+- Daily summaries are stored in `journal/summaries/daily/`.
+- If `auto_summarize` is enabled in config, daily summaries may be auto-generated on the next day with new commits.
 
 ### Programmatic Example
 ```python
@@ -124,13 +149,14 @@ journal:
     yearly: true
 ```
 
-- Environment variables can override some settings.
+- No frequency block; only auto_summarize controls auto-generation.
 
 ---
 
 ## Commit Processing
-- Commits that only modify journal files are skipped (no journal entry generated)
-- For mixed commits (code + journal files), only code changes are analyzed for the journal entry
+- Commits that only modify journal files are skipped (no journal entry generated).
+- For mixed commits (code + journal files), only code changes are analyzed for the journal entry; journal files are excluded from diff/stat analysis.
+- This recursion prevention logic is always-on and not configurable.
 
 ---
 
@@ -140,6 +166,20 @@ journal:
 - Identify patterns and trends in development work over time
 - Keep entries truthful (anti-hallucination), useful, and minimally intrusive
 - Integrate seamlessly with Git workflows and existing dev tools
+
+---
+
+## Error Handling
+- Hard failures (e.g., missing repo) return actionable error messages and stop execution.
+- Soft failures (e.g., missing terminal/chat history) are omitted silently unless `--debug` is set.
+- Debug mode surfaces all soft failures to stderr, but never clutters journal output.
+
+---
+
+## Summary Prioritization
+- Manual reflections (user-added) are always prioritized in all summaries (daily, weekly, monthly, yearly).
+- Summaries have a dedicated "Manual Reflections" section at the top, visually distinct from inferred content.
+- If no manual reflections exist, the section is omitted gracefully.
 
 ---
 

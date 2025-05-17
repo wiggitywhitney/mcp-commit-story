@@ -5,21 +5,11 @@
 # Priority: medium
 # Description: Implement the journal/init operation to initialize the journal in a Git repository.
 # Details:
-# Project Goals (from latest spec):
-# - Record accurate, structured engineering activity and emotional context
-# - Enable narrative storytelling across daily, weekly, and monthly timelines
-# - Identify patterns and trends in development work over time
-# - Keep entries truthful (anti-hallucination), useful, and minimally intrusive
-# - Integrate seamlessly with Git workflows and existing dev tools
-#
-# Commit Processing Logic:
-# - Skip commits that only modify journal files
-# - For mixed commits (code + journal files), exclude journal files from analysis
 Implement the journal/init operation with the following functionality:
 
 1. Directory creation
-   - Create journal directory structure (journal/daily/, journal/summaries/daily/, journal/summaries/weekly/, journal/summaries/monthly/, journal/summaries/yearly/)
-   - Create default configuration file (.mcp-journalrc.yaml) with auto_summarize block
+   - Create journal directory structure (journal/daily/, journal/summaries/)
+   - Create default configuration file (.mcp-journalrc.yaml)
 
 2. Git hook installation
    - Prompt for git hook installation
@@ -130,7 +120,8 @@ Write tests that verify the correct reporting of initialization status, includin
 Implement logic in the post-commit hook and/or MCP server to detect when a commit only modifies files in the journal directory (e.g., 'journal/'). If so, skip generating a new journal entry to prevent infinite loops. Write tests and/or manual checks to ensure that committing only journal files does not trigger another journal entry.
 
 ## 7. Review and update README/docs [pending]
-### Dependencies: None
+### Dependencies: 7.7, 7.2, 7.3, 7.4, 7.5
 ### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
 ### Details:
+
 

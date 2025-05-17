@@ -34,6 +34,15 @@ journal:
     - tone
     - commit_details
     - reflections
+  auto_summarize:
+    daily: true     # Generate daily summary on first commit of new day
+    weekly: true    # Generate weekly summary on first commit of week (Monday)
+    monthly: true   # Generate monthly summary on first commit of month
+    yearly: true    # Generate yearly summary on first commit of year
+    frequency:
+      weekly: "monday"      # First commit on Mondays
+      monthly: "first-day"  # First commit of month
+      yearly: "january-1"   # First commit of year
 ```
 
 Implement functions for:
@@ -85,7 +94,7 @@ Implement validation for all configuration sections and fields. Check types, all
 Create a public load_config function that: 1) Loads configurations from all sources, 2) Merges them with proper precedence, 3) Validates the merged configuration, and 4) Returns a Config object initialized with the final configuration. Add optional parameters to specify custom config file paths. Implement proper logging throughout the process.
 
 ## 6. Review and update README/docs [pending]
-### Dependencies: None
+### Dependencies: 2.1, 2.2, 2.3, 2.4, 2.5
 ### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
 ### Details:
 
