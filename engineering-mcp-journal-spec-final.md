@@ -98,10 +98,21 @@ src/mcp_journal/
 journal/
 ├── daily/
 │   ├── 2025-05-14.md
+│   ├── 2025-05-15.md
 │   └── ...
 ├── summaries/
-│   ├── 2025-05-week2.md
-│   └── 2025-05-month.md
+│   ├── daily/
+│   │   ├── 2025-05-14-summary.md
+│   │   └── ...
+│   ├── weekly/
+│   │   ├── 2025-05-week3.md
+│   │   └── ...
+│   ├── monthly/
+│   │   ├── 2025-05.md
+│   │   └── ...
+│   └── yearly/
+│       ├── 2025.md
+│       └── ...
 └── .mcp-journalrc.yaml
 ```
 
@@ -133,6 +144,15 @@ journal:
     - tone
     - commit_details
     - reflections
+  auto_summarize:
+    daily: true     # Generate daily summary on first commit of new day
+    weekly: true    # Generate weekly summary on first commit of week (Monday)
+    monthly: true   # Generate monthly summary on first commit of month
+    yearly: true    # Generate yearly summary on first commit of year
+    frequency:
+      weekly: "monday"      # First commit on Mondays
+      monthly: "first-day"  # First commit of month
+      yearly: "january-1"   # First commit of year
 ```
 
 ---
@@ -271,8 +291,10 @@ mcp-journal [operation] [options]
 - `mcp-journal init` - Initialize journal in current repository
 - `mcp-journal new-entry [--debug]` - Create journal entry for current commit (with AI command collection)
 - `mcp-journal add-reflection "text"` - Add manual reflection to today's journal
+- `mcp-journal summarize --day [date]` - Generate summary for specific day or yesterday
 - `mcp-journal summarize --week [--debug]` - Generate summary for most recent week
 - `mcp-journal summarize --month [--debug]` - Generate summary for most recent month
+- `mcp-journal summarize --year [year]` - Generate summary for specific year or current year
 - `mcp-journal summarize --week 2025-01-13` - Week containing specific date
 - `mcp-journal summarize --range "2025-01-01:2025-01-31"` - Arbitrary range
 - `mcp-journal blogify <file1> [file2] ...` - Convert to blog post
@@ -351,7 +373,6 @@ These errors are skipped with optional notes in output:
 ### Commit Processing
 - Handle all commit types uniformly (regular, merge, rebase, cherry-pick)
 - Process initial commit normally (no previous commit to reference)
-- Support multiple rapid commits with separate entries
 
 ---
 
@@ -499,6 +520,8 @@ def generate_entry(debug=False):
 ## Future Enhancements (Out of Scope for MVP)
 
 ### Potential Features
+- **Global journal** across multiple repositories tracking a developer's complete activity
+- **Human terminal history integration** for capturing non-AI commands and workflows
 - Scheduled summarization via background agent
 - Web interface for browsing/editing entries
 - Tagging system for entries or tasks

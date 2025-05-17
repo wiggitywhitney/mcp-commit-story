@@ -27,8 +27,9 @@ Implement the following commands:
 - `mcp-journal init` - Initialize journal in current repository
 - `mcp-journal new-entry [--debug]` - Create journal entry for current commit
 - `mcp-journal add-reflection "text"` - Add manual reflection to today's journal
-- `mcp-journal summarize --week [--debug]` - Generate summary for most recent week
-- `mcp-journal summarize --month [--debug]` - Generate summary for most recent month
+- `mcp-journal summarize --day [date]` - Generate summary for a specific day (journal/summaries/daily/)
+- `mcp-journal summarize --week [--debug]` - Generate summary for most recent week (journal/summaries/weekly/)
+- `mcp-journal summarize --month [--debug]` - Generate summary for most recent month (journal/summaries/monthly/)
 - `mcp-journal summarize --week 2025-01-13` - Week containing specific date
 - `mcp-journal summarize --range "2025-01-01:2025-01-31"` - Arbitrary range
 - `mcp-journal blogify <file1> [file2] ...` - Convert to blog post

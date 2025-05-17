@@ -22,7 +22,7 @@ Implement the journal/summarize operation with the following functionality:
    - Include emotional tone analysis
 
 4. File management
-   - Determine summary file path (e.g., 2025-05-week2.md, 2025-05-month.md)
+   - Determine summary file path (e.g., journal/summaries/daily/2025-05-14-summary.md, journal/summaries/weekly/2025-05-week2.md, journal/summaries/monthly/2025-05.md, journal/summaries/yearly/2025.md)
    - Create or overwrite summary file
 
 Example implementation:
@@ -59,14 +59,21 @@ def handle_summarize(params):
         summary = generate_summary(entries, start_date, end_date, summary_type)
         
         # Save summary to file
-        if summary_type == "week":
+        if summary_type == "day":
+            file_name = f"{start_date.strftime('%Y-%m-%d')}-summary.md"
+            file_path = Path("journal/summaries/daily") / file_name
+        elif summary_type == "week":
             file_name = f"{start_date.strftime('%Y-%m')}-week{start_date.strftime('%V')}.md"
+            file_path = Path("journal/summaries/weekly") / file_name
         elif summary_type == "month":
-            file_name = f"{start_date.strftime('%Y-%m')}-month.md"
+            file_name = f"{start_date.strftime('%Y-%m')}.md"
+            file_path = Path("journal/summaries/monthly") / file_name
+        elif summary_type == "year":
+            file_name = f"{start_date.strftime('%Y')}.md"
+            file_path = Path("journal/summaries/yearly") / file_name
         else:
             file_name = f"{period_name}.md"
-        
-        file_path = Path("journal/summaries") / file_name
+            file_path = Path("journal/summaries") / file_name
         save_summary_file(file_path, summary)
         
         return {

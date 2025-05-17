@@ -166,10 +166,21 @@ src/mcp_journal/
 journal/
 ├── daily/
 │   ├── 2025-05-14.md
+│   ├── 2025-05-15.md
 │   └── ...
 ├── summaries/
-│   ├── 2025-05-week2.md
-│   └── 2025-05-month.md
+│   ├── daily/
+│   │   ├── 2025-05-14-summary.md
+│   │   └── ...
+│   ├── weekly/
+│   │   ├── 2025-05-week3.md
+│   │   └── ...
+│   ├── monthly/
+│   │   ├── 2025-05.md
+│   │   └── ...
+│   └── yearly/
+│       ├── 2025.md
+│       └── ...
 └── .mcp-journalrc.yaml
 ```
 
@@ -201,6 +212,15 @@ journal:
     - tone
     - commit_details
     - reflections
+  auto_summarize:
+    daily: true     # Generate daily summary on first commit of new day
+    weekly: true    # Generate weekly summary on first commit of week (Monday)
+    monthly: true   # Generate monthly summary on first commit of month
+    yearly: true    # Generate yearly summary on first commit of year
+    frequency:
+      weekly: "monday"      # First commit on Mondays
+      monthly: "first-day"  # First commit of month
+      yearly: "january-1"   # First commit of year
 ```
 
 ---

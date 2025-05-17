@@ -113,6 +113,7 @@ Configuration is managed via `.mcp-journalrc.yaml` at the project root. Example:
 | `include_chat`      | bool    | `true`     | Include chat/AI conversation history in journal entries          |
 | `include_mood`      | bool    | `true`     | Include mood/emotional tone analysis in journal entries          |
 | `section_order`     | list    | see below  | Order of sections in each journal entry                          |
+| `auto_summarize`    | dict    | see below  | Configuration for automatic summarization of journal entries       |
 
 See the PRD and engineering spec for all available options.
 
@@ -145,21 +146,24 @@ MIT License. See [LICENSE](LICENSE) for details.
 ## Project Structure
 
 ```
-mcp-journal/
-├── src/
-│   └── mcp_journal/
-│       ├── __init__.py
-│       ├── cli.py
-│       ├── server.py
-│       ├── journal.py
-│       ├── git_utils.py
-│       └── config.py
-├── tests/
-│   ├── unit/
-│   ├── integration/
-│   └── fixtures/
-├── pyproject.toml
-├── README.md
+journal/
+├── daily/
+│   ├── 2025-05-14.md
+│   ├── 2025-05-15.md
+│   └── ...
+├── summaries/
+│   ├── daily/
+│   │   ├── 2025-05-14-summary.md
+│   │   └── ...
+│   ├── weekly/
+│   │   ├── 2025-05-week3.md
+│   │   └── ...
+│   ├── monthly/
+│   │   ├── 2025-05.md
+│   │   └── ...
+│   └── yearly/
+│       ├── 2025.md
+│       └── ...
 └── .mcp-journalrc.yaml
 ```
 

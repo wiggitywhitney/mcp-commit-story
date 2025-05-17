@@ -69,7 +69,7 @@
       "id": 2,
       "title": "Implement Configuration System",
       "description": "Create the configuration module to handle loading and validating configuration from .mcp-journalrc.yaml files.",
-      "details": "Implement the config.py module with the following functionality:\n\n1. Load configuration from multiple sources with precedence:\n   - Local config (.mcp-journalrc.yaml in repo root)\n   - Global config (~/.mcp-journalrc.yaml)\n   - Built-in defaults\n\n2. Validate configuration structure and values\n   - Missing/invalid fields use defaults and continue with warnings\n   - Malformed YAML logs error but continues with defaults\n   - Invalid sections are ignored with warnings\n\n3. Provide a Config class with properties for all configuration options\n\nExample configuration structure:\n```yaml\njournal:\n  path: journal/\n  auto_generate: true\n  include_terminal: true\n  include_chat: true\n  include_mood: true\n  section_order:\n    - summary\n    - accomplishments\n    - frustrations\n    - tone\n    - commit_details\n    - reflections\n```\n\nImplement functions for:\n- Loading config from file\n- Merging configs with proper precedence\n- Validating config structure\n- Providing default values for missing fields",
+      "details": "Implement the config.py module with the following functionality:\n\n1. Load configuration from multiple sources with precedence:\n   - Local config (.mcp-journalrc.yaml in repo root)\n   - Global config (~/.mcp-journalrc.yaml)\n   - Built-in defaults\n\n2. Validate configuration structure and values\n   - Missing/invalid fields use defaults and continue with warnings\n   - Malformed YAML logs error but continues with defaults\n   - Invalid sections are ignored with warnings\n\n3. Provide a Config class with properties for all configuration options\n\nExample configuration structure:\n```yaml\njournal:\n  path: journal/\n  auto_generate: true\n  include_terminal: true\n  include_chat: true\n  include_mood: true\n  section_order:\n    - summary\n    - accomplishments\n    - frustrations\n    - tone\n    - commit_details\n    - reflections\n  auto_summarize:\n    daily: true     # Generate daily summary on first commit of new day\n    weekly: true    # Generate weekly summary on first commit of week (Monday)\n    monthly: true   # Generate monthly summary on first commit of month\n    yearly: true    # Generate yearly summary on first commit of year\n    frequency:\n      weekly: \"monday\"      # First commit on Mondays\n      monthly: \"first-day\"  # First commit of month\n      yearly: \"january-1\"   # First commit of year\n```\n\nImplement functions for:\n- Loading config from file\n- Merging configs with proper precedence\n- Validating config structure\n- Providing default values for missing fields",
       "testStrategy": "Write unit tests for:\n- Loading config from file\n- Merging configs with proper precedence\n- Handling missing or invalid configuration files\n- Validating config structure\n- Default value application\n- Error handling for malformed YAML\n\nTest with various valid and invalid configuration files to ensure robust error handling.",
       "priority": "high",
       "dependencies": [
@@ -516,9 +516,25 @@
         },
         {
           "id": 6,
+          "title": "Prevent journal-entry-only commits from triggering new journal entries",
+          "description": "Implement logic in the post-commit hook and/or MCP server to detect when a commit only modifies files in the journal directory (e.g., 'journal/'). If so, skip generating a new journal entry to prevent infinite loops.",
+          "status": "pending",
+          "testStrategy": "Write tests and/or manual checks to ensure that committing only journal files does not trigger another journal entry."
+        },
+        {
+          "id": 7,
           "title": "Review and update README/docs",
           "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
           "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 7
+        },
+        {
+          "id": 8,
+          "title": "Prevent journal-entry-only commits from triggering new journal entries",
+          "description": "Implement logic in the post-commit hook and/or MCP server to detect when a commit only modifies files in the journal directory (e.g., 'journal/'). If so, skip generating a new journal entry to prevent infinite loops.",
+          "details": "Implement logic in the post-commit hook and/or MCP server to detect when a commit only modifies files in the journal directory (e.g., 'journal/'). If so, skip generating a new journal entry to prevent infinite loops. Write tests and/or manual checks to ensure that committing only journal files does not trigger another journal entry.",
           "status": "pending",
           "dependencies": [],
           "parentTaskId": 7
@@ -1175,6 +1191,28 @@
           "parentTaskId": 15
         }
       ]
+    },
+    {
+      "id": 16,
+      "title": "Prioritize Manual Reflections in Summary Generation",
+      "description": "Modify the summary generation algorithm to prioritize user-added manual reflections over inferred content in daily, weekly, and monthly summaries, ensuring that intentional user input is prominently displayed.",
+      "details": "This task involves restructuring the summary generation process to give precedence to manual reflections. Key implementation details include:\n\n1. Identify all manual reflections within the summary period (daily, weekly, monthly)\n2. Modify the summary template to include a dedicated \"Manual Reflections\" section at the beginning of each summary\n3. Apply visual highlighting (e.g., different formatting, color, or icons) to distinguish manual reflections from inferred content\n4. Update the sorting algorithm to prioritize manual reflections chronologically at the top of summaries\n5. Ensure that inferred mood, tone, or accomplishments appear after manual reflections, with clear visual separation\n6. Implement fallback logic for periods with no manual reflections to gracefully handle this case\n7. Update the summary preview functionality to reflect these changes\n8. Maintain backward compatibility with existing summary data structures\n9. Document the changes in the summary generation process for future reference\n10. Consider adding a configuration option to allow users to toggle this behavior if desired\n\nThe implementation should build upon the existing manual reflection functionality from Task #13 and integrate with the current summary generation system.",
+      "testStrategy": "Testing for this feature should include:\n\n1. Unit tests:\n   - Verify that manual reflections are correctly identified and extracted from journal entries\n   - Test the sorting algorithm to ensure manual reflections appear before inferred content\n   - Validate that the summary template correctly positions manual reflections at the beginning\n\n2. Integration tests:\n   - Create test journals with various combinations of manual and inferred content\n   - Generate summaries for different time periods (daily, weekly, monthly) and verify correct prioritization\n   - Test edge cases: summaries with only manual reflections, only inferred content, or no content at all\n\n3. UI/UX tests:\n   - Verify that manual reflections are visually distinct and prominently displayed in the UI\n   - Test that the visual hierarchy clearly communicates the importance of manual reflections\n   - Ensure responsive design maintains this prioritization across different devices and screen sizes\n\n4. User acceptance testing:\n   - Create test scenarios with sample journal data containing both manual reflections and inferred content\n   - Have test users review summaries to confirm that manual reflections are more noticeable\n   - Collect feedback on the effectiveness of the prioritization implementation\n\n5. Regression testing:\n   - Verify that existing summary functionality remains intact\n   - Ensure that historical summaries can be regenerated with the new prioritization rules if needed\n\nDocument all test results with screenshots comparing before and after implementations.",
+      "status": "pending",
+      "dependencies": [],
+      "priority": "medium",
+      "subtasks": []
+    },
+    {
+      "id": 17,
+      "title": "Implement Daily Summary Generation Feature",
+      "description": "Add functionality to generate summaries for a single day in the journal system via CLI and MCP tool, with consideration for auto-generating summaries for days with new commits.",
+      "details": "The implementation should include:\n\n1. CLI Enhancement:\n   - Add a new '--day' or '--date' option to the CLI interface that accepts date input in a standard format (YYYY-MM-DD)\n   - Ensure backward compatibility with existing CLI commands\n   - Implement proper error handling for invalid date formats or dates with no journal entries\n   - Add help documentation for the new option\n\n2. MCP Tool Integration:\n   - Add corresponding UI elements in the MCP tool to select a specific day for summary generation\n   - Implement date picker or similar intuitive interface for date selection\n   - Ensure the UI provides clear feedback during and after summary generation\n\n3. Summary Generation Logic:\n   - Create a dedicated function for single-day summary generation\n   - Reuse existing summary algorithms but optimize for single-day context\n   - Ensure manual reflections are prioritized in the summary (as per Task #16)\n   - Include relevant statistics for the day (commit count, activity patterns)\n   - Format the output consistently with other summary types\n\n4. Auto-generation Feature (Optional):\n   - Implement a configuration option to enable/disable auto-generation\n   - Create a mechanism to detect if new commits were added for a previous day\n   - Design a background process or trigger to generate summaries automatically\n   - Ensure users are notified of auto-generated summaries\n   - Allow users to configure the time window for when auto-generation occurs\n\n5. Storage and Retrieval:\n   - Design a consistent storage approach for daily summaries\n   - Implement efficient retrieval methods for viewing past daily summaries\n   - Consider caching mechanisms for frequently accessed summaries\n\n6. Performance Considerations:\n   - Optimize the summary generation for speed, especially for days with many entries\n   - Implement progress indicators for longer operations",
+      "testStrategy": "Testing should cover all aspects of the daily summary feature:\n\n1. Unit Tests:\n   - Test the date parsing and validation logic\n   - Verify the summary generation algorithm produces correct output for various input scenarios\n   - Test edge cases: empty days, days with single entries, days with many entries\n   - Verify proper handling of manual reflections prioritization\n\n2. Integration Tests:\n   - Test the CLI interface with various date formats and options\n   - Verify the MCP tool correctly interfaces with the summary generation logic\n   - Test the auto-generation feature triggers correctly when enabled\n   - Verify storage and retrieval of daily summaries works as expected\n\n3. User Acceptance Testing:\n   - Create test scenarios for common user workflows\n   - Verify the feature works with the journal system's existing data\n   - Test with different user permission levels if applicable\n\n4. Performance Testing:\n   - Measure and benchmark summary generation time for various day sizes\n   - Test auto-generation impact on system resources\n   - Verify the system remains responsive during summary generation\n\n5. Regression Testing:\n   - Ensure existing summary features (weekly, monthly) continue to work\n   - Verify that the prioritization of manual reflections works consistently\n\n6. Automated Test Suite:\n   - Add new test cases to the comprehensive testing suite (from Task #15)\n   - Create specific test fixtures for daily summary testing\n\n7. Documentation Testing:\n   - Verify help documentation accurately describes the new options\n   - Test that error messages are clear and actionable",
+      "status": "pending",
+      "dependencies": [],
+      "priority": "medium",
+      "subtasks": []
     }
   ]
 }
