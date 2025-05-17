@@ -474,9 +474,7 @@
           "id": 2,
           "title": "Implement journal directory structure creation with TDD",
           "description": "Create tests and implement functionality for creating the journal directory structure, including the main journal directory and subdirectories for daily entries and summaries.",
-          "dependencies": [
-            1
-          ],
+          "dependencies": ["7.1"],
           "details": "First, write tests that verify the creation of the journal directory structure (journal/, journal/daily/, journal/summaries/). Then implement the directory creation logic that passes these tests. Ensure proper error handling for permission issues and existing directories.",
           "status": "pending",
           "testStrategy": "Use temporary directory fixtures to test directory creation. Verify directory existence and permissions after creation. Test edge cases like existing directories and permission errors."
@@ -485,9 +483,7 @@
           "id": 3,
           "title": "Implement configuration file creation with TDD",
           "description": "Develop tests and implement functionality for creating the default journal configuration file (.mcp-journalrc.yaml).",
-          "dependencies": [
-            2
-          ],
+          "dependencies": ["7.2"],
           "details": "Write tests that verify the creation and content of the configuration file. Then implement the configuration file creation logic. The configuration file should contain default settings for the journal, including paths, templates, and other configurable options.",
           "status": "pending",
           "testStrategy": "Test that the configuration file is created with the correct content, structure, and permissions. Verify that the file is valid YAML and contains all required default settings."
@@ -496,9 +492,7 @@
           "id": 4,
           "title": "Implement Git hook installation with TDD",
           "description": "Create tests and implement functionality for prompting and installing the Git post-commit hook.",
-          "dependencies": [
-            3
-          ],
+          "dependencies": ["7.3"],
           "details": "Write tests for the Git hook installation process, including user prompting logic and the actual hook installation. Then implement the hook installation functionality that passes these tests. The hook should be installed in the .git/hooks directory and should be executable.",
           "status": "pending",
           "testStrategy": "Mock user input for testing prompts. Use temporary git repositories to test actual hook installation. Verify hook file existence, content, and permissions after installation."
@@ -507,25 +501,24 @@
           "id": 5,
           "title": "Implement initialization status reporting with TDD",
           "description": "Develop tests and implement functionality for reporting the status of the journal initialization process, including success/failure messages and paths of created files/directories.",
+          "dependencies": ["7.4"],
+          "details": "Write tests that verify the correct reporting of initialization status, including success messages, warning messages for already initialized journals, error messages for failures, and the correct reporting of created file/directory paths. Then implement the reporting functionality that passes these tests.",
           "status": "pending",
-          "testStrategy": "Write tests that verify the correct reporting of initialization status, including success messages, warning messages for already initialized journals, error messages for failures, and the correct reporting of created file/directory paths. Then implement the reporting functionality that passes these tests.",
-          "dependencies": [
-            4
-          ]
+          "testStrategy": "Write tests that verify the correct reporting of initialization status, including success messages, warning messages for already initialized journals, error messages for failures, and the correct reporting of created file/directory paths. Then implement the reporting functionality that passes these tests."
+        },
+        {
+          "id": 6,
+          "title": "Prevent journal-entry-only commits from triggering new journal entries",
+          "description": "Implement logic in the post-commit hook and/or MCP server to detect when a commit only modifies files in the journal directory (e.g., 'journal/'). If so, skip generating a new journal entry to prevent infinite loops.",
+          "details": "Implement logic in the post-commit hook and/or MCP server to detect when a commit only modifies files in the journal directory (e.g., 'journal/'). If so, skip generating a new journal entry to prevent infinite loops. Write tests and/or manual checks to ensure that committing only journal files does not trigger another journal entry.",
+          "status": "pending",
+          "dependencies": []
         },
         {
           "id": 7,
           "title": "Review and update README/docs",
           "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
           "details": "",
-          "status": "pending",
-          "dependencies": []
-        },
-        {
-          "id": 8,
-          "title": "Prevent journal-entry-only commits from triggering new journal entries",
-          "description": "Implement logic in the post-commit hook and/or MCP server to detect when a commit only modifies files in the journal directory (e.g., 'journal/'). If so, skip generating a new journal entry to prevent infinite loops.",
-          "details": "Implement logic in the post-commit hook and/or MCP server to detect when a commit only modifies files in the journal directory (e.g., 'journal/'). If so, skip generating a new journal entry to prevent infinite loops. Write tests and/or manual checks to ensure that committing only journal files does not trigger another journal entry.",
           "status": "pending",
           "dependencies": []
         }

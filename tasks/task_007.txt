@@ -123,14 +123,14 @@ Write tests for the Git hook installation process, including user prompting logi
 ### Details:
 Write tests that verify the correct reporting of initialization status, including success messages, warning messages for already initialized journals, error messages for failures, and the correct reporting of created file/directory paths. Then implement the reporting functionality that passes these tests.
 
-## 7. Review and update README/docs [pending]
-### Dependencies: None
-### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
-### Details:
-
-## 8. Prevent journal-entry-only commits from triggering new journal entries [pending]
+## 6. Prevent journal-entry-only commits from triggering new journal entries [pending]
 ### Dependencies: None
 ### Description: Implement logic in the post-commit hook and/or MCP server to detect when a commit only modifies files in the journal directory (e.g., 'journal/'). If so, skip generating a new journal entry to prevent infinite loops.
 ### Details:
 Implement logic in the post-commit hook and/or MCP server to detect when a commit only modifies files in the journal directory (e.g., 'journal/'). If so, skip generating a new journal entry to prevent infinite loops. Write tests and/or manual checks to ensure that committing only journal files does not trigger another journal entry.
+
+## 7. Review and update README/docs [pending]
+### Dependencies: None
+### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
+### Details:
 
