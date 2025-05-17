@@ -1,7 +1,7 @@
 **This project is currently under active development. Features and documentation may change rapidly.**
 
 # mcp-commit-story
-mcp-commit-story is a Model Context Protocol (MCP) server designed to generate engineering journal entries within a code repository. The journal records technical progress, decision-making context, and emotional tone, with the goal of understanding larger-scale patterns and producing content that can later be reused for storytelling (e.g., blog posts, conference talks).
+mcp-commit-story is a Model Context Protocol (MCP) server designed to generate engineering journal entries within a code repository. The journal records commits, technical progress, decision-making context, and emotional tone, with the goal of understanding larger-scale patterns, identifying trends, and producing content that can later be reused for storytelling (e.g., blog posts, conference talks).
 
 **Primary Usage Notice:**
 
@@ -103,21 +103,43 @@ journal.new_entry()
 
 Configuration is managed via `.mcp-journalrc.yaml` at the project root. Example:
 
-**Key Configuration Options:**
-
-| Option              | Type    | Default    | Description                                                      |
-|---------------------|---------|------------|------------------------------------------------------------------|
-| `journal.path`      | string  | `journal/` | Directory where journal entries are stored                        |
-| `auto_generate`     | bool    | `true`     | Automatically generate journal entries after each commit         |
-| `include_terminal`  | bool    | `true`     | Include terminal command history in journal entries              |
-| `include_chat`      | bool    | `true`     | Include chat/AI conversation history in journal entries          |
-| `include_mood`      | bool    | `true`     | Include mood/emotional tone analysis in journal entries          |
-| `section_order`     | list    | see below  | Order of sections in each journal entry                          |
-| `auto_summarize`    | dict    | see below  | Configuration for automatic summarization of journal entries       |
-
-See the PRD and engineering spec for all available options.
+```yaml
+journal:
+  path: journal/
+  auto_generate: true
+  include_terminal: true
+  include_chat: true
+  include_mood: true
+  section_order:
+    - summary
+    - accomplishments
+    - frustrations
+    - tone
+    - commit_details
+    - reflections
+  auto_summarize:
+    daily: true
+    weekly: true
+    monthly: true
+    yearly: true
+```
 
 - Environment variables can override some settings.
+
+---
+
+## Commit Processing
+- Commits that only modify journal files are skipped (no journal entry generated)
+- For mixed commits (code + journal files), only code changes are analyzed for the journal entry
+
+---
+
+## Goals
+- Record accurate, structured engineering activity and emotional context
+- Enable narrative storytelling across daily, weekly, and monthly timelines
+- Identify patterns and trends in development work over time
+- Keep entries truthful (anti-hallucination), useful, and minimally intrusive
+- Integrate seamlessly with Git workflows and existing dev tools
 
 ---
 

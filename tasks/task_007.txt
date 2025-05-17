@@ -5,6 +5,16 @@
 # Priority: medium
 # Description: Implement the journal/init operation to initialize the journal in a Git repository.
 # Details:
+# Project Goals (from latest spec):
+# - Record accurate, structured engineering activity and emotional context
+# - Enable narrative storytelling across daily, weekly, and monthly timelines
+# - Identify patterns and trends in development work over time
+# - Keep entries truthful (anti-hallucination), useful, and minimally intrusive
+# - Integrate seamlessly with Git workflows and existing dev tools
+#
+# Commit Processing Logic:
+# - Skip commits that only modify journal files
+# - For mixed commits (code + journal files), exclude journal files from analysis
 Implement the journal/init operation with the following functionality:
 
 1. Directory creation
@@ -112,12 +122,6 @@ Write tests for the Git hook installation process, including user prompting logi
 ### Description: Develop tests and implement functionality for reporting the status of the journal initialization process, including success/failure messages and paths of created files/directories.
 ### Details:
 Write tests that verify the correct reporting of initialization status, including success messages, warning messages for already initialized journals, error messages for failures, and the correct reporting of created file/directory paths. Then implement the reporting functionality that passes these tests.
-
-## 6. Prevent journal-entry-only commits from triggering new journal entries [pending]
-### Dependencies: None
-### Description: Implement logic in the post-commit hook and/or MCP server to detect when a commit only modifies files in the journal directory (e.g., 'journal/'). If so, skip generating a new journal entry to prevent infinite loops.
-### Details:
-
 
 ## 7. Review and update README/docs [pending]
 ### Dependencies: None

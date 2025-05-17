@@ -3,7 +3,7 @@
     {
       "id": 1,
       "title": "Setup Project Structure and Dependencies",
-      "description": "Initialize the project repository with proper structure and dependencies as specified in the PRD.",
+      "description": "Initialize the project repository with proper structure and dependencies as specified in the PRD.\n\nProject goals include:\n- Record accurate, structured engineering activity and emotional context\n- Enable narrative storytelling across daily, weekly, and monthly timelines\n- Identify patterns and trends in development work over time\n- Keep entries truthful (anti-hallucination), useful, and minimally intrusive\n- Integrate seamlessly with Git workflows and existing dev tools\n\nCommit processing logic:\n- Skip commits that only modify journal files\n- For mixed commits (code + journal files), exclude journal files from analysis\n\nConfiguration example:\n```yaml\njournal:\n  path: journal/\n  auto_generate: true\n  include_terminal: true\n  include_chat: true\n  include_mood: true\n  section_order:\n    - summary\n    - accomplishments\n    - frustrations\n    - tone\n    - commit_details\n    - reflections\n  auto_summarize:\n    daily: true\n    weekly: true\n    monthly: true\n    yearly: true\n```",
       "details": "Create the project structure according to the PRD:\n\n```\nmcp-journal/\n├── src/\n│   └── mcp_journal/\n│       ├── __init__.py\n│       ├── cli.py\n│       ├── server.py\n│       ├── journal.py\n│       ├── git_utils.py\n│       └── config.py\n├── tests/\n│   ├── unit/\n│   ├── integration/\n│   └── fixtures/\n├── pyproject.toml\n├── README.md\n└── .mcp-journalrc.yaml\n```\n\nSetup pyproject.toml with the following dependencies:\n- Python 3.9+\n- Anthropic MCP Python SDK\n- Click (CLI)\n- PyYAML (config)\n- GitPython\n- python-dateutil\n- Development dependencies: pytest, pytest-mock, pytest-cov, pytest-watch, black, flake8, mypy\n\nCreate initial README.md with project overview and basic usage instructions.",
       "testStrategy": "Verify project structure is created correctly with all required files and directories. Ensure pyproject.toml contains all required dependencies. Validate that the package can be installed in development mode with `pip install -e .`.",
       "priority": "high",
@@ -507,19 +507,11 @@
           "id": 5,
           "title": "Implement initialization status reporting with TDD",
           "description": "Develop tests and implement functionality for reporting the status of the journal initialization process, including success/failure messages and paths of created files/directories.",
+          "status": "pending",
+          "testStrategy": "Write tests that verify the correct reporting of initialization status, including success messages, warning messages for already initialized journals, error messages for failures, and the correct reporting of created file/directory paths. Then implement the reporting functionality that passes these tests.",
           "dependencies": [
             4
-          ],
-          "details": "Write tests that verify the correct reporting of initialization status, including success messages, warning messages for already initialized journals, error messages for failures, and the correct reporting of created file/directory paths. Then implement the reporting functionality that passes these tests.",
-          "status": "pending",
-          "testStrategy": "Test various initialization scenarios and verify that the correct status, messages, and paths are returned. Include tests for successful initialization, already initialized journals, and various error conditions."
-        },
-        {
-          "id": 6,
-          "title": "Prevent journal-entry-only commits from triggering new journal entries",
-          "description": "Implement logic in the post-commit hook and/or MCP server to detect when a commit only modifies files in the journal directory (e.g., 'journal/'). If so, skip generating a new journal entry to prevent infinite loops.",
-          "status": "pending",
-          "testStrategy": "Write tests and/or manual checks to ensure that committing only journal files does not trigger another journal entry."
+          ]
         },
         {
           "id": 7,
@@ -527,8 +519,7 @@
           "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
           "details": "",
           "status": "pending",
-          "dependencies": [],
-          "parentTaskId": 7
+          "dependencies": []
         },
         {
           "id": 8,
@@ -536,8 +527,7 @@
           "description": "Implement logic in the post-commit hook and/or MCP server to detect when a commit only modifies files in the journal directory (e.g., 'journal/'). If so, skip generating a new journal entry to prevent infinite loops.",
           "details": "Implement logic in the post-commit hook and/or MCP server to detect when a commit only modifies files in the journal directory (e.g., 'journal/'). If so, skip generating a new journal entry to prevent infinite loops. Write tests and/or manual checks to ensure that committing only journal files does not trigger another journal entry.",
           "status": "pending",
-          "dependencies": [],
-          "parentTaskId": 7
+          "dependencies": []
         }
       ]
     },

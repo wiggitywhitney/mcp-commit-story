@@ -4,11 +4,12 @@
 Engineering Journal MCP Server
 
 ## Overview
-A Model Context Protocol (MCP) server designed to capture and generate engineering journal entries within a code repository. The journal captures technical progress, decision-making context, and emotional tone, with the goal of producing content that can later be reused for storytelling (e.g., blog posts, conference talks).
+A Model Context Protocol (MCP) server designed to capture and generate engineering journal entries within a code repository. The journal records commits, technical progress, decision-making context, and emotional tone, with the goal of producing content that can be analyzed for patterns and reused for storytelling (e.g., blog posts, conference talks).
 
 ## Goals
 - Record accurate, structured engineering activity and emotional context
 - Enable narrative storytelling across daily, weekly, and monthly timelines
+- Identify patterns and trends in development work over time
 - Keep entries truthful (anti-hallucination), useful, and minimally intrusive
 - Integrate seamlessly with Git workflows and existing dev tools
 
@@ -217,10 +218,6 @@ journal:
     weekly: true    # Generate weekly summary on first commit of week (Monday)
     monthly: true   # Generate monthly summary on first commit of month
     yearly: true    # Generate yearly summary on first commit of year
-    frequency:
-      weekly: "monday"      # First commit on Mondays
-      monthly: "first-day"  # First commit of month
-      yearly: "january-1"   # First commit of year
 ```
 
 ---
@@ -437,9 +434,8 @@ These errors are skipped with optional notes in output:
 - Annotation: Mark entries as backfilled with timestamp
 
 ### Commit Processing
-- Handle all commit types uniformly (regular, merge, rebase, cherry-pick)
-- Process initial commit normally (no previous commit to reference)
-- Support multiple rapid commits with separate entries
+- Skip commits that only modify journal files
+- For mixed commits (code + journal files), exclude journal files from analysis
 
 ---
 

@@ -1,15 +1,12 @@
-#### journal/blogify
-- Accept single or multiple file paths
-- Convert to natural, readable blog post
-- Remove headers, timestamps, code references
-- Add transitions, rewrite for narrative flow# Engineering Journal MCP Server — Complete Developer Specification
+# Commit Story MCP Server — Complete Developer Specification
 
 ## Overview
-This document specifies a Model Context Protocol (MCP) server designed to capture and generate engineering journal entries within a code repository. The journal captures technical progress, decision-making context, and emotional tone, with the goal of producing content that can later be reused for storytelling (e.g., blog posts, conference talks).
+This document specifies a Model Context Protocol (MCP) server designed to capture and generate engineering journal entries within a code repository. The journal records commits, technical progress, decision-making context, and emotional tone, with the goal of producing content that can be analyzed for patterns and reused for storytelling (e.g., blog posts, conference talks).
 
 ## Goals
 - Record accurate, structured engineering activity and emotional context
 - Enable narrative storytelling across daily, weekly, and monthly timelines
+- Identify patterns and trends in development work over time
 - Keep entries truthful (anti-hallucination), useful, and minimally intrusive
 - Integrate seamlessly with Git workflows and existing dev tools
 
@@ -149,10 +146,6 @@ journal:
     weekly: true    # Generate weekly summary on first commit of week (Monday)
     monthly: true   # Generate monthly summary on first commit of month
     yearly: true    # Generate yearly summary on first commit of year
-    frequency:
-      weekly: "monday"      # First commit on Mondays
-      monthly: "first-day"  # First commit of month
-      yearly: "january-1"   # First commit of year
 ```
 
 ---
@@ -179,13 +172,11 @@ journal:
 - File diffs (simplified summaries with line counts)
 
 #### Optional (if available):
-- Terminal history (from `.bash_history`, `.zsh_history`, timestamped if possible)
 - Chat history with dev agents (scanned in reverse until a reference to the previous git commit is found)
 - **Discussion excerpts** from chat history showing decision-making context
 - **AI session terminal commands** - commands executed by AI assistants during the work session
 
 ### History Collection Boundaries
-- **Terminal history**: Between previous commit timestamp and current commit timestamp
 - **Chat history**: From current commit backward until finding previous commit reference OR 18-hour safety limit
 - **AI session commands**: Request from AI assistant for commands executed during current work session
 - **No filtering**: Include all commands/messages within boundaries
@@ -273,6 +264,12 @@ Empty sections are omitted. Manual entries and reflections are clearly labeled a
 - Support markdown formatting in reflection
 - Return path to updated file
 
+#### journal/blogify
+- Accept single or multiple file paths
+- Convert to natural, readable blog post
+- Remove headers, timestamps, code references
+- Add transitions, rewrite for narrative flow
+
 ### Data Formats
 - All operations return pre-formatted markdown strings
 - Success operations return file path + status
@@ -357,11 +354,7 @@ These errors are skipped with optional notes in output:
 ### Hook Installation
 - `mcp-journal install-hook` command
 - Checks for existing hooks and prompts for action
-- Creates simple hook:
-  ```bash
-  #!/bin/sh
-  mcp-journal new-entry
-  ```
+- Creates hook that implements recursion prevention logic
 - Backs up existing hooks before modification
 
 ### Backfill Mechanism
@@ -373,6 +366,9 @@ These errors are skipped with optional notes in output:
 ### Commit Processing
 - Handle all commit types uniformly (regular, merge, rebase, cherry-pick)
 - Process initial commit normally (no previous commit to reference)
+- Skip commits that only modify journal files
+- For mixed commits (code + journal files), exclude journal files from analysis
+
 
 ---
 
