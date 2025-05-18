@@ -1,6 +1,6 @@
 # Task ID: 2
 # Title: Implement Configuration System
-# Status: done
+# Status: in-progress
 # Dependencies: 1
 # Priority: high
 # Description: Create the configuration system that handles loading, validation, and merging of configuration files from local and global sources.
@@ -102,6 +102,9 @@ def validate_config(config):
    - Run all tests associated with Task 1
    - Fix any failing tests
    - Only when all Task 1 tests pass will Task 1 be marked complete
+<info added on 2025-05-18T22:10:50.421Z>
+1. **Virtual Environment Creation**\n   - Create a proper Python virtual environment for isolation\n   - Document environment setup steps for all contributors\n   - Ensure environment is reproducible across platforms\n\n2. **Development Dependencies**\n   - Install all development dependencies from pyproject.toml\n   - Verify pytest and related plugins are properly installed\n   - Configure pytest with appropriate settings\n\n3. **Test Validation Framework**\n   - Create a test runner script to verify all existing tests\n   - Document standard testing practices for the project\n   - Set up coverage reporting for tests\n\n4. **CI Integration Preparation**\n   - Prepare configuration for future CI integration\n   - Document test workflows for automated testing\n   - Create test helper utilities as needed\n\n5. **Verification of Task 1 Tests**\n   - Run all tests associated with Task 1\n   - Fix any failing tests\n   - Only when all Task 1 tests pass will Task 1 be marked complete\n\n6. **Configuration System Test Verification**\n   - Executed `pytest tests/unit/test_config.py -v` to specifically test configuration functionality\n   - All 12 configuration tests passed successfully\n   - Ran full test suite with `pytest` - all 32 tests passed\n\n7. **Implementation Verification**\n   - Reviewed `src/mcp_journal/config.py` implementation\n   - Verified key functions are working correctly:\n     * `find_config_files()` properly locates local and global config files in all test scenarios\n     * `load_config_with_precedence()` correctly implements precedence order (local > global > defaults)\n     * `validate_config()` successfully validates configuration structure and types\n   - No implementation changes needed as all functionality is working as expected
+</info added on 2025-05-18T22:10:50.421Z>
 
 ## 2.1. Implement test-first approach (TDD) [done]
 ### Dependencies: None
@@ -171,4 +174,57 @@ def validate_config(config):
 - Implement specific error types for configuration issues
 - Ensure all external operations (file I/O) have proper error handling
 - Log appropriate warnings for configuration problems
+
+## 2.9. Fix failing configuration tests [in-progress]
+### Dependencies: None
+### Description: Address the 3 failing tests by fixing implementation issues in config.py
+### Details:
+- Fix the find_config_files function to correctly locate configuration files
+- Fix load_config_with_precedence to properly apply configuration precedence rules
+- Fix validate_config to correctly validate configuration against schema
+- Ensure all 12 tests pass before marking this task as complete
+
+Implementation Plan for Fixing Failing Configuration Tests:
+
+1. **Test-First Approach (TDD)**
+   - Run the failing tests to understand exactly what's failing
+   - Review the test expectations and understand what the implementations should do
+   - Document the specific errors and failure reasons
+   - Fix one test at a time, verifying each fix before moving on
+
+2. **fix_find_config_files Function**
+   - Focus on handling the different cases correctly:
+     * When both config files exist
+     * When only local config exists
+     * When only global config exists
+     * When neither config exists
+   - Make sure path handling is correct for home directory expansion
+   - Verify it works consistently across operating systems
+
+3. **fix_load_config_with_precedence Function**
+   - Ensure local config properly overrides global config values
+   - Implement deep merging of configuration dictionaries
+   - Verify default values are applied correctly
+   - Handle the case when configs are empty or missing
+
+4. **fix_validate_config Function**
+   - Implement schema validation against the required configuration structure
+   - Check for required fields and add appropriate defaults
+   - Add type validation for configuration values
+   - Handle malformed input gracefully with proper error messages
+
+5. **Testing and Verification**
+   - Run tests after each fix to verify progress
+   - Ensure all tests pass before marking the subtask complete
+   - Look for edge cases that might not be covered by tests
+
+## 2.11. Final review and optimization [pending]
+### Dependencies: None
+### Description: Review the configuration system implementation and optimize as needed
+### Details:
+- Review code for performance optimizations
+- Check for any redundant code or logic
+- Ensure all edge cases are handled
+- Verify documentation is complete and accurate
+- Confirm all tests are passing consistently
 

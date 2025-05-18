@@ -152,7 +152,8 @@ def test_find_config_files():
         assert local is None
         assert global_path == '/home/user/.mcp-journalrc.yaml'
         
-        # Case 4: No configs exist
+        # Case 4: No configs exist - reset the mock
+        mock_exists.side_effect = None
         mock_exists.return_value = False
         
         local, global_path = find_config_files()

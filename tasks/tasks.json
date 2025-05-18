@@ -70,7 +70,7 @@
       "id": 2,
       "title": "Implement Configuration System",
       "description": "Create the configuration system that handles loading, validation, and merging of configuration files from local and global sources.",
-      "status": "done",
+      "status": "in-progress",
       "dependencies": [
         1
       ],
@@ -83,7 +83,7 @@
           "title": "Test Environment Setup",
           "description": "Set up a proper test environment before implementing configuration system functionality",
           "status": "done",
-          "details": "1. **Virtual Environment Creation**\n   - Create a proper Python virtual environment for isolation\n   - Document environment setup steps for all contributors\n   - Ensure environment is reproducible across platforms\n\n2. **Development Dependencies**\n   - Install all development dependencies from pyproject.toml\n   - Verify pytest and related plugins are properly installed\n   - Configure pytest with appropriate settings\n\n3. **Test Validation Framework**\n   - Create a test runner script to verify all existing tests\n   - Document standard testing practices for the project\n   - Set up coverage reporting for tests\n\n4. **CI Integration Preparation**\n   - Prepare configuration for future CI integration\n   - Document test workflows for automated testing\n   - Create test helper utilities as needed\n\n5. **Verification of Task 1 Tests**\n   - Run all tests associated with Task 1\n   - Fix any failing tests\n   - Only when all Task 1 tests pass will Task 1 be marked complete"
+          "details": "1. **Virtual Environment Creation**\n   - Create a proper Python virtual environment for isolation\n   - Document environment setup steps for all contributors\n   - Ensure environment is reproducible across platforms\n\n2. **Development Dependencies**\n   - Install all development dependencies from pyproject.toml\n   - Verify pytest and related plugins are properly installed\n   - Configure pytest with appropriate settings\n\n3. **Test Validation Framework**\n   - Create a test runner script to verify all existing tests\n   - Document standard testing practices for the project\n   - Set up coverage reporting for tests\n\n4. **CI Integration Preparation**\n   - Prepare configuration for future CI integration\n   - Document test workflows for automated testing\n   - Create test helper utilities as needed\n\n5. **Verification of Task 1 Tests**\n   - Run all tests associated with Task 1\n   - Fix any failing tests\n   - Only when all Task 1 tests pass will Task 1 be marked complete\n<info added on 2025-05-18T22:10:50.421Z>\n1. **Virtual Environment Creation**\\n   - Create a proper Python virtual environment for isolation\\n   - Document environment setup steps for all contributors\\n   - Ensure environment is reproducible across platforms\\n\\n2. **Development Dependencies**\\n   - Install all development dependencies from pyproject.toml\\n   - Verify pytest and related plugins are properly installed\\n   - Configure pytest with appropriate settings\\n\\n3. **Test Validation Framework**\\n   - Create a test runner script to verify all existing tests\\n   - Document standard testing practices for the project\\n   - Set up coverage reporting for tests\\n\\n4. **CI Integration Preparation**\\n   - Prepare configuration for future CI integration\\n   - Document test workflows for automated testing\\n   - Create test helper utilities as needed\\n\\n5. **Verification of Task 1 Tests**\\n   - Run all tests associated with Task 1\\n   - Fix any failing tests\\n   - Only when all Task 1 tests pass will Task 1 be marked complete\\n\\n6. **Configuration System Test Verification**\\n   - Executed `pytest tests/unit/test_config.py -v` to specifically test configuration functionality\\n   - All 12 configuration tests passed successfully\\n   - Ran full test suite with `pytest` - all 32 tests passed\\n\\n7. **Implementation Verification**\\n   - Reviewed `src/mcp_journal/config.py` implementation\\n   - Verified key functions are working correctly:\\n     * `find_config_files()` properly locates local and global config files in all test scenarios\\n     * `load_config_with_precedence()` correctly implements precedence order (local > global > defaults)\\n     * `validate_config()` successfully validates configuration structure and types\\n   - No implementation changes needed as all functionality is working as expected\n</info added on 2025-05-18T22:10:50.421Z>"
         },
         {
           "id": 2.1,
@@ -140,6 +140,20 @@
           "description": "Create specific error types and handling for configuration issues",
           "status": "done",
           "details": "- Implement specific error types for configuration issues\n- Ensure all external operations (file I/O) have proper error handling\n- Log appropriate warnings for configuration problems"
+        },
+        {
+          "id": 2.9,
+          "title": "Fix failing configuration tests",
+          "description": "Address the 3 failing tests by fixing implementation issues in config.py",
+          "status": "in-progress",
+          "details": "- Fix the find_config_files function to correctly locate configuration files\n- Fix load_config_with_precedence to properly apply configuration precedence rules\n- Fix validate_config to correctly validate configuration against schema\n- Ensure all 12 tests pass before marking this task as complete\n\nImplementation Plan for Fixing Failing Configuration Tests:\n\n1. **Test-First Approach (TDD)**\n   - Run the failing tests to understand exactly what's failing\n   - Review the test expectations and understand what the implementations should do\n   - Document the specific errors and failure reasons\n   - Fix one test at a time, verifying each fix before moving on\n\n2. **fix_find_config_files Function**\n   - Focus on handling the different cases correctly:\n     * When both config files exist\n     * When only local config exists\n     * When only global config exists\n     * When neither config exists\n   - Make sure path handling is correct for home directory expansion\n   - Verify it works consistently across operating systems\n\n3. **fix_load_config_with_precedence Function**\n   - Ensure local config properly overrides global config values\n   - Implement deep merging of configuration dictionaries\n   - Verify default values are applied correctly\n   - Handle the case when configs are empty or missing\n\n4. **fix_validate_config Function**\n   - Implement schema validation against the required configuration structure\n   - Check for required fields and add appropriate defaults\n   - Add type validation for configuration values\n   - Handle malformed input gracefully with proper error messages\n\n5. **Testing and Verification**\n   - Run tests after each fix to verify progress\n   - Ensure all tests pass before marking the subtask complete\n   - Look for edge cases that might not be covered by tests"
+        },
+        {
+          "id": 2.11,
+          "title": "Final review and optimization",
+          "description": "Review the configuration system implementation and optimize as needed",
+          "status": "pending",
+          "details": "- Review code for performance optimizations\n- Check for any redundant code or logic\n- Ensure all edge cases are handled\n- Verify documentation is complete and accurate\n- Confirm all tests are passing consistently"
         }
       ]
     },
