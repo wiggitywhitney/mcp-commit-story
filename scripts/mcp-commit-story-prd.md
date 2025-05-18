@@ -21,6 +21,7 @@ A Model Context Protocol (MCP) server designed to capture and generate engineeri
 - GitPython
 - Standard library (pathlib, datetime)
 - pytest for testing
+- OpenTelemetry for tracing, metrics, and logging
 
 ## MCP Server Configuration and Integration
 
@@ -61,15 +62,17 @@ The MCP server must be launchable as a standalone process and expose the require
 - Error handling: fail fast on hard errors, skip with notes on soft errors
 - Git integration: post-commit hook, backfill, commit processing
 - Testing: TDD, >90% coverage, unit/integration/fixtures
+- Telemetry: OpenTelemetry instrumentation for observability
 
 ## Implementation Guidelines
 - Test-driven development
 - High test coverage
-- Modular code: separate CLI, server, journal, git utils, config
+- Modular code: separate CLI, server, journal, git utils, config, telemetry
 - Use type hints
 - Small, single-purpose functions
 - Minimal external dependencies
 - Secure file and path handling
+- Instrumented operations with appropriate traces for monitoring
 
 ## Deliverables
 - Working MCP server with all journal operations
@@ -79,6 +82,7 @@ The MCP server must be launchable as a standalone process and expose the require
 - Git integration (hook, backfill)
 - Comprehensive tests
 - Documentation (README, usage, config)
+- Telemetry integration for performance monitoring
 
 ## Out of Scope
 - Web interface
@@ -90,7 +94,9 @@ The MCP server must be launchable as a standalone process and expose the require
 - Zero friction for normal dev workflow
 - Valuable output for retrospectives
 - Easy to customize and extend
-- Reliable operation
+- Reliable operation across different environments
+- Observable performance and behavior
+- Minimal overhead from telemetry collection
 
 ---
 
@@ -119,7 +125,14 @@ The MCP server must be launchable as a standalone process and expose the require
 ## Pattern/Trend Analysis
 - The system is designed to help identify patterns and trends in development work over time, not just record events.
 
-## Configuration Example (no frequency block)
+## Telemetry Integration
+- OpenTelemetry used to instrument key operations for tracing and performance insights
+- Each MCP operation includes appropriate traces for monitoring
+- Telemetry can be configured or disabled via configuration
+- Minimal overhead to maintain system performance
+- Useful for debugging and performance optimization
+
+## Configuration Example
 ```yaml
 journal:
   path: journal/
@@ -166,6 +179,7 @@ This document specifies a Model Context Protocol (MCP) server designed to captur
 - **Git Integration**: GitPython library
 - **File I/O**: Standard library (pathlib, datetime)
 - **Testing**: pytest for unit/integration tests
+- **Observability**: OpenTelemetry for tracing, metrics, and logging
 
 ### Project Structure
 ```
@@ -177,6 +191,7 @@ mcp-journal/
 │       ├── server.py     # MCP server implementation
 │       ├── journal.py    # Journal entry generation
 │       ├── git_utils.py  # Git operations
+│       ├── telemetry.py  # OpenTelemetry setup and utilities
 │       └── config.py     # Configuration handling
 ├── tests/
 │   ├── unit/
@@ -202,6 +217,9 @@ click = "^8.0.0"
 pyyaml = "^6.0"
 gitpython = "^3.1.0"
 python-dateutil = "^2.8.0"
+opentelemetry-api = "^1.15.0"
+opentelemetry-sdk = "^1.15.0"
+opentelemetry-exporter-otlp = "^1.15.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.0.0"
@@ -222,6 +240,7 @@ mypy = "^1.0.0"
 - Register tools for each journal operation (new-entry, summarize, etc.)
 - Handle async operations for file I/O and git commands
 - Return structured responses with success status and file paths
+- Instrument key operations with OpenTelemetry for tracing and performance insights
 
 ### Core Components
 ```
@@ -231,6 +250,7 @@ src/mcp_journal/
 ├── server.py     # MCP server implementation  
 ├── journal.py    # Journal entry generation
 ├── git_utils.py  # Git operations
+├── telemetry.py  # OpenTelemetry setup and utilities
 └── config.py     # Configuration handling
 ```
 
@@ -286,10 +306,15 @@ journal:
     - commit_details
     - reflections
   auto_summarize:
-    daily: true
-    weekly: true
-    monthly: true
-    yearly: true
+    daily: true     # Generate daily summary on first commit of new day
+    weekly: true    # Generate weekly summary on first commit of week (Monday)
+    monthly: true   # Generate monthly summary on first commit of month
+    yearly: true    # Generate yearly summary on first commit of year
+
+# Minimal telemetry configuration
+telemetry:
+  enabled: true                 # Toggle telemetry collection
+  service_name: "mcp-journal"   # Service name for traces
 ```
 
 ---
@@ -533,6 +558,7 @@ These errors are skipped with optional notes in output:
 - Mock terminal histories
 - Sample chat histories
 - Various configuration files
+- Mock telemetry exporters for verification
 
 ### Test Utilities
 ```python
@@ -549,6 +575,11 @@ def sample_journal_entries():
 @pytest.fixture
 def mock_terminal_history():
     # Provide test terminal command history
+    pass
+
+@pytest.fixture
+def mock_telemetry_exporter():
+    # Provide a test exporter that captures telemetry events
     pass
 ```
 
