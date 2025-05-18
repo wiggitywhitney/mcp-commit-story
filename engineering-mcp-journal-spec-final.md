@@ -52,6 +52,7 @@ The MCP server must be launchable as a standalone process and expose the require
 - **Git Integration**: GitPython library
 - **File I/O**: Standard library (pathlib, datetime)
 - **Testing**: pytest for unit/integration tests
+- **Observability**: OpenTelemetry for tracing, metrics, and logging
 
 ### Project Structure
 ```
@@ -63,6 +64,7 @@ mcp-journal/
 │       ├── server.py     # MCP server implementation
 │       ├── journal.py    # Journal entry generation
 │       ├── git_utils.py  # Git operations
+│       ├── telemetry.py  # OpenTelemetry setup and utilities
 │       └── config.py     # Configuration handling
 ├── tests/
 │   ├── unit/
@@ -88,6 +90,9 @@ click = "^8.0.0"
 pyyaml = "^6.0"
 gitpython = "^3.1.0"
 python-dateutil = "^2.8.0"
+opentelemetry-api = "^1.15.0"
+opentelemetry-sdk = "^1.15.0"
+opentelemetry-exporter-otlp = "^1.15.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.0.0"
@@ -108,6 +113,7 @@ mypy = "^1.0.0"
 - Register tools for each journal operation (new-entry, summarize, etc.)
 - Handle async operations for file I/O and git commands
 - Return structured responses with success status and file paths
+- Instrument key operations with OpenTelemetry for tracing and performance insights
 
 ### Core Components
 ```
@@ -117,6 +123,7 @@ src/mcp_journal/
 ├── server.py     # MCP server implementation  
 ├── journal.py    # Journal entry generation
 ├── git_utils.py  # Git operations
+├── telemetry.py  # OpenTelemetry setup and utilities
 └── config.py     # Configuration handling
 ```
 
@@ -176,6 +183,11 @@ journal:
     weekly: true    # Generate weekly summary on first commit of week (Monday)
     monthly: true   # Generate monthly summary on first commit of month
     yearly: true    # Generate yearly summary on first commit of year
+
+# Minimal telemetry configuration
+telemetry:
+  enabled: true                 # Toggle telemetry collection
+  service_name: "mcp-journal"   # Service name for traces
 ```
 
 ---
@@ -278,6 +290,8 @@ Empty sections are omitted. Manual entries and reflections are clearly labeled a
 5. `journal/install-hook` - Install git post-commit hook
 6. `journal/add-reflection` - Add a manual reflection to today's journal
 7. `journal/init` - Initialize journal in current repository
+
+Each operation will be instrumented with appropriate traces to monitor performance and error rates.
 
 ### Operation Details
 
@@ -459,6 +473,7 @@ Generated journal entry successfully (some sections omitted)
 - Git utility functions
 - CLI command parsing
 - Date/time handling
+- Telemetry initialization and configuration
 
 ### Integration Tests
 - End-to-end git hook workflow
@@ -466,12 +481,14 @@ Generated journal entry successfully (some sections omitted)
 - Backfill detection and processing
 - Summary generation across date ranges
 - Blog post conversion
+- Tracing of operations through the entire flow
 
 ### Test Fixtures
 - Sample git repositories with various states
 - Mock terminal histories
 - Sample chat histories
 - Various configuration files
+- Mock telemetry exporters for verification
 
 ### Test Utilities
 ```python
@@ -488,6 +505,11 @@ def sample_journal_entries():
 @pytest.fixture
 def mock_terminal_history():
     # Provide test terminal command history
+    pass
+
+@pytest.fixture
+def mock_telemetry_exporter():
+    # Provide a test exporter that captures telemetry events
     pass
 ```
 
@@ -620,20 +642,24 @@ This tool is designed to be **developer-friendly**, **minimally intrusive**, and
 - Valuable output for retrospectives
 - Easy to customize and extend
 - Reliable operation across different environments
+- Observable performance and behavior
+- Minimal overhead from telemetry collection
 
 ### Development Workflow
 1. Set up project structure with pyproject.toml
 2. **Write failing tests first** (TDD approach)
 3. Implement basic MCP server skeleton
-4. Add `journal/init` command and initialization flow
-5. Add git integration and journal generation
-6. Create CLI interface with Click
-7. Add configuration system  
-8. Implement decision detection in chat history
-9. Add reflection capabilities
-10. Implement summarization and blogification
-11. Add comprehensive tests (maintaining >90% coverage)
-12. Package for distribution
+4. Add OpenTelemetry initialization
+5. Add `journal/init` command and initialization flow
+6. Add git integration and journal generation
+7. Create CLI interface with Click
+8. Add configuration system  
+9. Implement decision detection in chat history
+10. Add reflection capabilities
+11. Implement summarization and blogification
+12. Add telemetry to key operations
+13. Add comprehensive tests (maintaining >90% coverage)
+14. Package for distribution
 
 ### Initialization Workflow
 1. User runs `mcp-journal init` in their repository
