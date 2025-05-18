@@ -137,7 +137,8 @@ def test_find_config_files():
         
         # Case 2: Only local exists
         def exists_side_effect(path):
-            if '/home/' in path or '\\home\\' in path:
+            # Only return False for the exact global config path
+            if path == '/home/user/.mcp-journalrc.yaml':
                 return False  # Global config does not exist
             return True  # Local config exists
         mock_exists.side_effect = exists_side_effect
@@ -148,7 +149,8 @@ def test_find_config_files():
         
         # Case 3: Only global exists
         def exists_side_effect2(path):
-            if '/home/' in path or '\\home\\' in path:
+            # Only return True for the exact global config path
+            if path == '/home/user/.mcp-journalrc.yaml':
                 return True  # Global config exists
             return False  # Local config does not exist
         mock_exists.side_effect = exists_side_effect2
