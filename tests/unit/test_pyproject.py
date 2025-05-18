@@ -4,7 +4,7 @@ import toml
 
 REQUIRED_METADATA = {
     'name': 'mcp-journal',
-    'requires-python': '>=3.9',
+    'requires-python': '>=3.10',
 }
 
 REQUIRED_RUNTIME_DEPS = [

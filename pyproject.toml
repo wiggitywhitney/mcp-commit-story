@@ -30,7 +30,8 @@ dev = [
     "pytest-watch>=4.2.0",
     "black>=23.0.0",
     "flake8>=6.0.0",
-    "mypy>=1.0.0"
+    "mypy>=1.0.0",
+    "toml>=0.10.0"
 ]
 
 [project.scripts]
