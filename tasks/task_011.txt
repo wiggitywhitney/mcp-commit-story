@@ -1,124 +1,224 @@
 # Task ID: 11
-# Title: Implement Backfill Mechanism
+# Title: Implement Summary Generation
 # Status: pending
-# Dependencies: 3, 4, 5, 6
+# Dependencies: 5, 6, 7
 # Priority: medium
-# Description: Implement the journal/backfill operation to check for missed commits and create entries for them.
+# Description: Create the functionality to generate daily, weekly, monthly, and yearly summaries of journal entries.
 # Details:
-Implement the journal/backfill operation with the following functionality:
+Implement summary generation in both the MCP server and CLI with the following features:
 
-1. Missed commit detection
-   - Find last journal entry timestamp
-   - Get all commits since that timestamp
-   - Filter out commits that already have entries
-
-2. Entry generation for missed commits
-   - Generate entries for each missed commit
-   - Mark entries as backfilled
-   - Skip terminal/chat history for backfilled entries
-
-3. File management
-   - Determine appropriate daily file for each commit
-   - Append entries in chronological order
-
-Example implementation:
+1. Date range utilities:
 ```python
-def handle_backfill(params):
-    """Handle journal/backfill operation."""
-    debug = params.get("debug", False)
+def get_date_range(period, date=None):
+    """Get start and end dates for a period"""
+    if date is None:
+        date = datetime.now().date()
+    elif isinstance(date, str):
+        date = datetime.strptime(date, "%Y-%m-%d").date()
+    
+    if period == "day":
+        return date, date
+    elif period == "week":
+        # Start of week (Monday)
+        start = date - timedelta(days=date.weekday())
+        end = start + timedelta(days=6)
+        return start, end
+    elif period == "month":
+        start = date.replace(day=1)
+        # Last day of month
+        next_month = date.replace(day=28) + timedelta(days=4)
+        end = next_month - timedelta(days=next_month.day)
+        return start, end
+    elif period == "year":
+        start = date.replace(month=1, day=1)
+        end = date.replace(month=12, day=31)
+        return start, end
+    else:
+        raise ValueError(f"Unknown period: {period}")
+```
+
+2. Journal file collection:
+```python
+def get_journal_files_in_range(start_date, end_date, config):
+    """Get journal files in date range"""
+    files = []
+    current = start_date
+    while current <= end_date:
+        file_path = Path(config["journal"]["path"]) / "daily" / f"{current.strftime('%Y-%m-%d')}.md"
+        if file_path.exists():
+            files.append(file_path)
+        current += timedelta(days=1)
+    return files
+```
+
+3. Summary generation:
+```python
+def generate_summary(files, period, config):
+    """Generate summary from journal files"""
+    # Extract content from files
+    entries = []
+    manual_reflections = []
+    
+    for file_path in files:
+        with open(file_path, "r") as f:
+            content = f.read()
+            # Extract entries and reflections
+            # Implementation
+    
+    # Generate summary sections
+    summary = []
+    
+    # Add manual reflections section if any
+    if manual_reflections:
+        summary.append("# Manual Reflections\n")
+        summary.append("\n".join(manual_reflections))
+    
+    # Add other sections
+    summary.append("# Summary\n")
+    # Generate overall summary
+    
+    summary.append("# Key Accomplishments\n")
+    # Extract accomplishments
+    
+    summary.append("# Challenges\n")
+    # Extract challenges
+    
+    summary.append("# Technical Decisions\n")
+    # Extract decisions
+    
+    return "\n\n".join(summary)
+```
+
+4. Summary file saving:
+```python
+def save_summary(content, period, date, config):
+    """Save summary to appropriate file"""
+    if period == "day":
+        file_name = f"{date.strftime('%Y-%m-%d')}-summary.md"
+        dir_path = Path(config["journal"]["path"]) / "summaries" / "daily"
+    elif period == "week":
+        # Get week number
+        week_num = date.isocalendar()[1]
+        file_name = f"{date.strftime('%Y-%m')}-week{week_num}.md"
+        dir_path = Path(config["journal"]["path"]) / "summaries" / "weekly"
+    elif period == "month":
+        file_name = f"{date.strftime('%Y-%m')}.md"
+        dir_path = Path(config["journal"]["path"]) / "summaries" / "monthly"
+    elif period == "year":
+        file_name = f"{date.strftime('%Y')}.md"
+        dir_path = Path(config["journal"]["path"]) / "summaries" / "yearly"
+    else:
+        raise ValueError(f"Unknown period: {period}")
+    
+    # Create directory if needed
+    dir_path.mkdir(parents=True, exist_ok=True)
+    
+    # Save file
+    file_path = dir_path / file_name
+    with open(file_path, "w") as f:
+        f.write(content)
+    
+    return file_path
+```
+
+5. MCP handler implementation:
+```python
+@trace_operation("journal_summarize")
+async def handle_summarize(request):
+    """Handle journal/summarize operation"""
+    period = request.get("period", "day")
+    date = request.get("date")
+    date_range = request.get("range")
+    
+    # Load config
+    config = load_config()
+    
+    # Get date range
+    if date_range:
+        # Parse range (format: "YYYY-MM-DD:YYYY-MM-DD")
+        start_str, end_str = date_range.split(":")
+        start_date = datetime.strptime(start_str, "%Y-%m-%d").date()
+        end_date = datetime.strptime(end_str, "%Y-%m-%d").date()
+    else:
+        start_date, end_date = get_date_range(period, date)
+    
+    # Get journal files
+    files = get_journal_files_in_range(start_date, end_date, config)
+    if not files:
+        return {"status": "error", "error": "No journal entries found in date range"}
+    
+    # Generate summary
+    content = generate_summary(files, period, config)
+    
+    # Save summary
+    file_path = save_summary(content, period, start_date, config)
+    
+    return {
+        "status": "success",
+        "file_path": str(file_path),
+        "content": content
+    }
+```
+
+6. CLI command implementation:
+```python
+@cli.command()
+@click.option("--week", is_flag=True, help="Summarize most recent week")
+@click.option("--month", is_flag=True, help="Summarize most recent month")
+@click.option("--day", "--date", help="Summarize specific day (YYYY-MM-DD)")
+@click.option("--range", help="Summarize date range (YYYY-MM-DD:YYYY-MM-DD)")
+@click.option("--debug", is_flag=True, help="Show debug information")
+def summarize(week, month, date, range, debug):
+    """Generate summary for specified period"""
     try:
-        # Find last journal entry timestamp
-        last_entry_timestamp = find_last_entry_timestamp()
+        # Determine period
+        if week:
+            period = "week"
+        elif month:
+            period = "month"
+        else:
+            period = "day"
         
-        # Get all commits since that timestamp
-        repo = find_repo()
-        commits = get_commits_since(repo, last_entry_timestamp)
+        # Load config
+        config = load_config()
         
-        # Filter out commits that already have entries
-        existing_entries = get_existing_entries()
-        missed_commits = filter_missed_commits(commits, existing_entries)
+        # Get date range
+        if range:
+            # Parse range (format: "YYYY-MM-DD:YYYY-MM-DD")
+            start_str, end_str = range.split(":")
+            start_date = datetime.strptime(start_str, "%Y-%m-%d").date()
+            end_date = datetime.strptime(end_str, "%Y-%m-%d").date()
+        else:
+            start_date, end_date = get_date_range(period, date)
         
-        if not missed_commits:
-            return {
-                "status": "success",
-                "message": "No missed commits found."
-            }
+        # Get journal files
+        files = get_journal_files_in_range(start_date, end_date, config)
+        if not files:
+            click.echo("No journal entries found in date range")
+            return
         
-        # Generate entries for missed commits
-        backfilled_entries = []
-        for commit in missed_commits:
-            # Generate entry (skip terminal/chat history)
-            entry = generate_journal_entry(
-                commit=commit,
-                is_backfilled=True,
-                debug=debug
-            )
-            
-            # Determine appropriate daily file
-            commit_date = commit["timestamp"].strftime("%Y-%m-%d")
-            file_path = Path("journal/daily") / f"{commit_date}.md"
-            
-            # Append entry to file
-            append_to_journal_file(file_path, entry)
-            backfilled_entries.append({
-                "commit": commit["short_hash"],
-                "date": commit_date,
-                "path": str(file_path)
-            })
+        # Generate summary
+        content = generate_summary(files, period, config)
         
-        return {
-            "status": "success",
-            "message": f"Backfilled {len(backfilled_entries)} missed commits.",
-            "backfilled": backfilled_entries
-        }
+        # Save summary
+        file_path = save_summary(content, period, start_date, config)
+        
+        click.echo(f"Summary saved to {file_path}")
     except Exception as e:
         if debug:
-            return {"status": "error", "message": f"Backfill failed: {str(e)}"}
-        return {"status": "error", "message": "Backfill failed. Use --debug for details."}
+            click.echo(f"Error: {e}")
+            traceback.print_exc()
+        else:
+            click.echo(f"Error: {e}")
 ```
 
 # Test Strategy:
-Write unit tests for:
-- Missed commit detection
-- Entry generation for missed commits
-- File management
-
-Test with various repository states and commit histories.
-
-# Subtasks:
-## 1. Implement Last Entry Timestamp Detection [pending]
-### Dependencies: None
-### Description: Create functions to find the last journal entry timestamp to determine the starting point for backfill operations.
-### Details:
-Implement the `find_last_entry_timestamp()` function that scans through existing journal files to find the most recent entry. This should handle cases where journal files might be missing or empty. Return a default timestamp (e.g., project start date) if no entries are found. Include proper error handling and logging.
-
-## 2. Implement Commit Retrieval and Filtering [pending]
-### Dependencies: 11.1
-### Description: Create functions to retrieve commits since a given timestamp and filter out those that already have journal entries.
-### Details:
-Implement `get_commits_since()` to retrieve all commits after the last entry timestamp, and `filter_missed_commits()` to identify commits without corresponding journal entries. The filtering should compare commit hashes with existing entries to determine which commits were missed. Include proper error handling for repository access issues.
-
-## 3. Implement Backfilled Entry Generation [pending]
-### Dependencies: 11.2
-### Description: Create functionality to generate journal entries for missed commits with appropriate backfill markers.
-### Details:
-Modify the existing `generate_journal_entry()` function to support a backfill mode that skips terminal/chat history collection. Add an `is_backfilled` parameter that, when true, adds a backfill marker to the entry and simplifies the entry format. Ensure the entry contains commit metadata, diff summary, and backfill timestamp.
-
-## 4. Implement Journal File Management [pending]
-### Dependencies: 11.3
-### Description: Create functions to determine the appropriate daily journal file for each commit and append entries in chronological order.
-### Details:
-Implement `append_to_journal_file()` to handle writing entries to the correct daily file based on commit timestamp. Ensure entries are added in chronological order within each file. Create any missing directories or files as needed. Handle file locking to prevent concurrent write issues during backfill operations.
-
-## 5. Implement Main Backfill Handler Function [pending]
-### Dependencies: 11.1, 11.2, 11.3, 11.4
-### Description: Integrate all components into the main backfill handler function with proper error handling and reporting.
-### Details:
-Implement the main `handle_backfill()` function that orchestrates the entire backfill process. It should call the previously implemented functions in sequence, handle any errors gracefully, and return appropriate success/error responses with detailed information about the backfill operation. Include debug mode support for detailed error reporting.
-
-## 6. Review and update README/docs [pending]
-### Dependencies: 11.1, 11.2, 11.3, 11.4, 11.5
-### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
-### Details:
-
-
+1. Unit tests for date range utilities
+2. Tests for journal file collection
+3. Tests for summary generation
+4. Tests for summary file saving
+5. Tests for MCP handler implementation
+6. Tests for CLI command implementation
+7. Tests for handling different periods (day, week, month, year)
+8. Tests for handling date ranges
+9. Integration tests for full summary generation flow

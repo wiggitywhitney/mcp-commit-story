@@ -1,110 +1,137 @@
 # Task ID: 13
-# Title: Implement Manual Reflection Addition
+# Title: Implement Backfill Functionality
 # Status: pending
-# Dependencies: 4, 5, 6
-# Priority: low
-# Description: Implement the journal/add-reflection operation to add manual reflections to the journal.
+# Dependencies: 3, 5, 6, 7
+# Priority: medium
+# Description: Create the functionality to detect and generate journal entries for missed commits.
 # Details:
-Implement the journal/add-reflection operation with the following functionality:
+Implement backfill functionality in both the MCP server and CLI with the following features:
 
-1. Reflection formatting
-   - Format reflection text with timestamp
-   - Support markdown formatting in reflection
-
-2. File management
-   - Determine today's journal file
-   - Create file if it doesn't exist
-   - Append reflection to file
-
-3. Validation
-   - Validate reflection text (non-empty)
-   - Ensure journal is initialized
-
-Example implementation:
+1. Missed commit detection:
 ```python
-def handle_add_reflection(params):
-    """Handle journal/add-reflection operation."""
-    debug = params.get("debug", False)
+def get_missed_commits(repo, config):
+    """Get commits that don't have journal entries"""
+    # Get journal directory
+    journal_path = Path(config["journal"]["path"])
+    
+    # Get all commits
+    commits = list(repo.iter_commits())
+    
+    # Get all journal files
+    journal_files = list(journal_path.glob("daily/*.md"))
+    
+    # Extract commit hashes from journal files
+    journal_commits = set()
+    for file_path in journal_files:
+        with open(file_path, "r") as f:
+            content = f.read()
+            # Extract commit hashes using regex
+            # Implementation
+    
+    # Find commits not in journal
+    missed_commits = []
+    for commit in commits:
+        if commit.hexsha not in journal_commits and not is_journal_only_commit(commit, config["journal"]["path"]):
+            missed_commits.append(commit)
+    
+    return missed_commits
+```
+
+2. Backfill processing:
+```python
+def process_backfill(commits, config, debug=False):
+    """Process backfill for missed commits"""
+    results = []
+    
+    # Sort commits by date
+    commits.sort(key=lambda c: c.committed_date)
+    
+    for commit in commits:
+        # Generate entry
+        entry = generate_journal_entry(commit, config, debug)
+        if not entry:
+            continue
+        
+        # Mark as backfilled
+        entry.is_backfilled = True
+        
+        # Save entry
+        file_path = save_journal_entry(entry, config)
+        
+        results.append({
+            "commit": commit.hexsha,
+            "file_path": str(file_path)
+        })
+    
+    return results
+```
+
+3. MCP handler implementation:
+```python
+@trace_operation("journal_backfill")
+async def handle_backfill(request):
+    """Handle journal/backfill operation"""
+    debug = request.get("debug", False)
+    
+    # Load config
+    config = load_config()
+    
+    # Get repo
+    repo = get_repo()
+    
+    # Get missed commits
+    missed_commits = get_missed_commits(repo, config)
+    if not missed_commits:
+        return {"status": "success", "message": "No missed commits found"}
+    
+    # Process backfill
+    results = process_backfill(missed_commits, config, debug)
+    
+    return {
+        "status": "success",
+        "count": len(results),
+        "entries": results
+    }
+```
+
+4. CLI command implementation:
+```python
+@cli.command()
+@click.option("--debug", is_flag=True, help="Show debug information")
+def backfill(debug):
+    """Check for missed commits and create entries"""
     try:
-        # Get reflection text
-        reflection_text = params.get("text")
-        if not reflection_text:
-            return {
-                "status": "error",
-                "message": "Reflection text cannot be empty."
-            }
+        # Load config
+        config = load_config()
         
-        # Format reflection with timestamp
-        timestamp = datetime.now().strftime("%I:%M %p")
-        formatted_reflection = f"### {timestamp} — Manual Reflection\n\n{reflection_text}\n"
+        # Get repo
+        repo = get_repo()
         
-        # Determine today's journal file
-        today = datetime.now().strftime("%Y-%m-%d")
-        file_path = Path("journal/daily") / f"{today}.md"
+        # Get missed commits
+        missed_commits = get_missed_commits(repo, config)
+        if not missed_commits:
+            click.echo("No missed commits found")
+            return
         
-        # Create file if it doesn't exist
-        file_path.parent.mkdir(parents=True, exist_ok=True)
-        if not file_path.exists():
-            with open(file_path, "w") as f:
-                f.write(f"# Journal Entry for {today}\n\n")
+        # Process backfill
+        results = process_backfill(missed_commits, config, debug)
         
-        # Append reflection to file
-        with open(file_path, "a") as f:
-            f.write("\n" + formatted_reflection)
-        
-        return {
-            "status": "success",
-            "message": "Reflection added to journal.",
-            "path": str(file_path)
-        }
+        click.echo(f"Created {len(results)} journal entries for missed commits")
+        for result in results:
+            click.echo(f"  - {result['commit'][:8]}: {result['file_path']}")
     except Exception as e:
         if debug:
-            return {"status": "error", "message": f"Adding reflection failed: {str(e)}"}
-        return {"status": "error", "message": "Adding reflection failed. Use --debug for details."}
+            click.echo(f"Error: {e}")
+            traceback.print_exc()
+        else:
+            click.echo(f"Error: {e}")
 ```
 
 # Test Strategy:
-Write unit tests for:
-- Reflection formatting
-- File management
-- Validation
-
-Test with various reflection texts and file states.
-
-# Subtasks:
-## 1. Write tests for reflection validation [pending]
-### Dependencies: None
-### Description: Create unit tests for validating reflection text and journal initialization checks
-### Details:
-Implement test cases that verify: 1) Empty reflection text returns appropriate error, 2) Missing journal directory returns initialization error, 3) Valid reflection text passes validation. Use pytest fixtures to set up test environments with and without initialized journal directories.
-
-## 2. Implement reflection validation logic [pending]
-### Dependencies: 13.1
-### Description: Create the validation functions to check reflection text and journal initialization
-### Details:
-Implement functions to: 1) Validate that reflection text is non-empty, 2) Check that journal directory exists and is properly initialized. Extract these as separate functions for better testability. Return appropriate error messages for validation failures.
-
-## 3. Write tests for reflection formatting and file determination [pending]
-### Dependencies: 13.2
-### Description: Create tests for timestamp formatting, markdown handling, and journal file path determination
-### Details:
-Implement test cases that verify: 1) Timestamp is correctly formatted in reflections, 2) Markdown in reflection text is preserved, 3) Journal file path is correctly determined based on current date, 4) New journal files get proper headers.
-
-## 4. Implement reflection formatting and file determination logic [pending]
-### Dependencies: 13.3
-### Description: Create functions to format reflections with timestamps and determine the correct journal file path
-### Details:
-Implement functions to: 1) Format reflection text with current timestamp in the specified format, 2) Determine today's journal file path, 3) Create journal file with appropriate header if it doesn't exist. Extract these as separate functions for better testability.
-
-## 5. Implement the complete handle_add_reflection function with file operations [pending]
-### Dependencies: 13.4
-### Description: Integrate all components into the main handler function with proper file operations
-### Details:
-Implement the complete handle_add_reflection function that: 1) Uses the validation logic from subtask 2, 2) Uses the formatting and file determination logic from subtask 4, 3) Handles file operations to append the formatted reflection to the journal file, 4) Implements proper error handling with debug mode support, 5) Returns appropriate success/error responses.
-
-## 6. Review and update README/docs [pending]
-### Dependencies: 13.1, 13.2, 13.3, 13.4, 13.5
-### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
-### Details:
-
-
+1. Unit tests for missed commit detection
+2. Tests for backfill processing
+3. Tests for MCP handler implementation
+4. Tests for CLI command implementation
+5. Tests for handling journal-only commits
+6. Tests for chronological ordering of backfilled entries
+7. Integration tests for full backfill flow

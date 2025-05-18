@@ -1,128 +1,133 @@
 # Task ID: 9
-# Title: Implement Summarization
+# Title: Implement Journal Entry Creation
 # Status: pending
-# Dependencies: 4, 5, 6
-# Priority: medium
-# Description: Implement the journal/summarize operation to generate weekly and monthly summaries.
+# Dependencies: 5, 6, 7
+# Priority: high
+# Description: Create the functionality to generate and save journal entries for Git commits, including context collection and formatting.
 # Details:
-Implement the journal/summarize operation with the following functionality:
+Implement journal entry creation in both the MCP server and CLI with the following features:
 
-1. Date range determination
-   - Handle --week, --month, and --range options
-   - Calculate date ranges for relative periods (e.g., "this week")
-   - Parse specific dates (e.g., "2025-01-13")
-
-2. Entry collection
-   - Find all daily entries within date range
-   - Parse entries for relevant information
-
-3. Summary generation
-   - Generate summary of activities across entries
-   - Highlight key accomplishments and challenges
-   - Include emotional tone analysis
-
-4. File management
-   - Determine summary file path (e.g., 2025-05-week2.md, 2025-05-month.md)
-   - Create or overwrite summary file
-
-Example implementation:
+1. Entry generation workflow:
 ```python
-def handle_summarize(params):
-    """Handle journal/summarize operation."""
-    debug = params.get("debug", False)
+def generate_journal_entry(commit, config, debug=False):
+    """Generate a journal entry for a commit"""
+    # Skip if journal-only commit
+    if is_journal_only_commit(commit, config["journal"]["path"]):
+        if debug:
+            print("Skipping journal-only commit")
+        return None
+    
+    # Collect context
+    context = {}
+    if config["journal"]["include_terminal"]:
+        try:
+            context["terminal"] = collect_terminal_history(commit.committed_date)
+        except Exception as e:
+            if debug:
+                print(f"Error collecting terminal history: {e}")
+    
+    if config["journal"]["include_chat"]:
+        try:
+            context["chat"] = collect_chat_history(commit)
+        except Exception as e:
+            if debug:
+                print(f"Error collecting chat history: {e}")
+    
+    # Generate entry
+    entry = JournalEntry(commit, config)
+    entry.generate_sections(context)
+    
+    return entry
+```
+
+2. File saving:
+```python
+def save_journal_entry(entry, config):
+    """Save journal entry to appropriate file"""
+    date = entry.timestamp.strftime("%Y-%m-%d")
+    file_path = Path(config["journal"]["path"]) / "daily" / f"{date}.md"
+    
+    # Create directory if needed
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Append to file
+    with open(file_path, "a") as f:
+        f.write("\n\n" + entry.to_markdown())
+    
+    return file_path
+```
+
+3. MCP handler implementation:
+```python
+@trace_operation("journal_new_entry")
+async def handle_new_entry(request):
+    """Handle journal/new-entry operation"""
+    debug = request.get("debug", False)
+    
+    # Load config
+    config = load_config()
+    
+    # Get current commit
+    repo = get_repo()
+    commit = get_current_commit(repo)
+    
+    # Generate entry
+    entry = generate_journal_entry(commit, config, debug)
+    if not entry:
+        return {"status": "skipped", "reason": "Journal-only commit"}
+    
+    # Save entry
+    file_path = save_journal_entry(entry, config)
+    
+    # Check for auto-summarize
+    if config["journal"]["auto_summarize"]["daily"]:
+        # Check if first commit of day
+        # Implementation
+    
+    return {
+        "status": "success",
+        "file_path": str(file_path),
+        "entry": entry.to_markdown()
+    }
+```
+
+4. CLI command implementation:
+```python
+@cli.command()
+@click.option("--debug", is_flag=True, help="Show debug information")
+def new_entry(debug):
+    """Create journal entry for current commit"""
     try:
-        # Determine date range
-        if "week" in params:
-            start_date, end_date, period_name = get_week_range(params["week"])
-            summary_type = "week"
-        elif "month" in params:
-            start_date, end_date, period_name = get_month_range(params["month"])
-            summary_type = "month"
-        elif "range" in params:
-            start_date, end_date = parse_date_range(params["range"])
-            period_name = f"{start_date.strftime('%Y-%m-%d')}-to-{end_date.strftime('%Y-%m-%d')}"
-            summary_type = "custom"
-        else:
-            # Default to current week
-            start_date, end_date, period_name = get_week_range(None)
-            summary_type = "week"
+        # Load config
+        config = load_config()
         
-        # Collect entries within date range
-        entries = collect_entries(start_date, end_date)
-        if not entries:
-            return {
-                "status": "warning",
-                "message": f"No journal entries found for {period_name}."
-            }
+        # Get current commit
+        repo = get_repo()
+        commit = get_current_commit(repo)
         
-        # Generate summary
-        summary = generate_summary(entries, start_date, end_date, summary_type)
+        # Generate entry
+        entry = generate_journal_entry(commit, config, debug)
+        if not entry:
+            click.echo("Skipped (journal-only commit)")
+            return
         
-        # Save summary to file
-        if summary_type == "week":
-            file_name = f"{start_date.strftime('%Y-%m')}-week{start_date.strftime('%V')}.md"
-        elif summary_type == "month":
-            file_name = f"{start_date.strftime('%Y-%m')}-month.md"
-        else:
-            file_name = f"{period_name}.md"
+        # Save entry
+        file_path = save_journal_entry(entry, config)
         
-        file_path = Path("journal/summaries") / file_name
-        save_summary_file(file_path, summary)
-        
-        return {
-            "status": "success",
-            "message": f"Summary generated for {period_name}.",
-            "path": str(file_path)
-        }
+        click.echo(f"Journal entry saved to {file_path}")
     except Exception as e:
         if debug:
-            return {"status": "error", "message": f"Summarization failed: {str(e)}"}
-        return {"status": "error", "message": "Summarization failed. Use --debug for details."}
+            click.echo(f"Error: {e}")
+            traceback.print_exc()
+        else:
+            click.echo(f"Error: {e}")
 ```
 
 # Test Strategy:
-Write unit tests for:
-- Date range determination
-- Entry collection
-- Summary generation
-- File management
-
-Test with various date ranges and entry availability scenarios.
-
-# Subtasks:
-## 1. Implement date range determination functions [pending]
-### Dependencies: None
-### Description: Create functions to determine date ranges for weekly, monthly, and custom periods based on user input
-### Details:
-Implement `get_week_range()`, `get_month_range()`, and `parse_date_range()` functions that handle relative periods (e.g., 'this week', 'last month') and specific dates. Each function should return start_date, end_date, and a human-readable period_name. Include support for ISO week numbers and proper month boundaries.
-
-## 2. Implement entry collection and parsing [pending]
-### Dependencies: 9.1
-### Description: Create a function to collect and parse journal entries within a specified date range
-### Details:
-Implement `collect_entries()` function that finds all daily journal entries within the given date range. The function should locate entry files, parse their content, and extract relevant information (activities, accomplishments, challenges, emotional tone). Return a structured collection of entry data for further processing.
-
-## 3. Implement summary generation logic [pending]
-### Dependencies: 9.2
-### Description: Create a function to generate comprehensive summaries from collected journal entries
-### Details:
-Implement `generate_summary()` function that processes collected entries to create a structured summary. The summary should include: 1) Overview of the period, 2) List of key activities grouped by category, 3) Notable accomplishments, 4) Challenges faced, 5) Emotional tone analysis across entries. Format the summary as markdown with appropriate sections and formatting.
-
-## 4. Implement summary file management [pending]
-### Dependencies: 9.3
-### Description: Create functions to determine summary file paths and save generated summaries
-### Details:
-Implement `save_summary_file()` function that creates the necessary directory structure (journal/summaries/) if it doesn't exist, determines the appropriate file name based on summary type (weekly, monthly, custom), and writes the summary content to the file. Handle file overwriting and permissions appropriately.
-
-## 5. Implement main summarize handler function [pending]
-### Dependencies: 9.1, 9.2, 9.3, 9.4
-### Description: Integrate all components into the main handler function for the journal/summarize operation
-### Details:
-Implement the `handle_summarize()` function that orchestrates the entire summarization process: 1) Parse command parameters, 2) Determine date range using functions from subtask 1, 3) Collect entries using function from subtask 2, 4) Generate summary using function from subtask 3, 5) Save summary using function from subtask 4, 6) Return appropriate response object with status, message, and file path. Include proper error handling and debug information.
-
-## 6. Review and update README/docs [pending]
-### Dependencies: 9.2, 9.3, 9.4, 9.5
-### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
-### Details:
-
-
+1. Unit tests for entry generation workflow
+2. Tests for file saving
+3. Tests for MCP handler implementation
+4. Tests for CLI command implementation
+5. Tests for journal-only commit detection
+6. Tests for context collection
+7. Integration tests for full entry creation flow

@@ -1,45 +1,13 @@
 # Task ID: 1
 # Title: Setup Project Structure and Dependencies
-# Status: done
+# Status: pending
 # Dependencies: None
 # Priority: high
-# Description: Initialize the project repository with proper structure and dependencies as specified in the PRD.
-
-Project goals include:
-- Record accurate, structured engineering activity and emotional context
-- Enable narrative storytelling across daily, weekly, and monthly timelines
-- Identify patterns and trends in development work over time
-- Keep entries truthful (anti-hallucination), useful, and minimally intrusive
-- Integrate seamlessly with Git workflows and existing dev tools
-
-Commit processing logic:
-- Skip commits that only modify journal files
-- For mixed commits (code + journal files), exclude journal files from analysis
-
-Configuration example:
-```yaml
-journal:
-  path: journal/
-  auto_generate: true
-  include_terminal: true
-  include_chat: true
-  include_mood: true
-  section_order:
-    - summary
-    - accomplishments
-    - frustrations
-    - tone
-    - commit_details
-    - reflections
-  auto_summarize:
-    daily: true
-    weekly: true
-    monthly: true
-    yearly: true
-```
+# Description: Initialize the project repository with the required directory structure and dependencies as specified in the PRD.
 # Details:
-Create the project structure according to the PRD:
+Create the project structure with the following components:
 
+1. Create directory structure:
 ```
 mcp-journal/
 ├── src/
@@ -49,6 +17,7 @@ mcp-journal/
 │       ├── server.py
 │       ├── journal.py
 │       ├── git_utils.py
+│       ├── telemetry.py
 │       └── config.py
 ├── tests/
 │   ├── unit/
@@ -59,174 +28,48 @@ mcp-journal/
 └── .mcp-journalrc.yaml
 ```
 
-Setup pyproject.toml with the following dependencies:
-- Python 3.9+
-- Anthropic MCP Python SDK
-- Click (CLI)
-- PyYAML (config)
-- GitPython
-- python-dateutil
-- Development dependencies: pytest, pytest-mock, pytest-cov, pytest-watch, black, flake8, mypy
+2. Set up pyproject.toml with dependencies:
+```toml
+[tool.poetry]
+name = "mcp-journal"
+version = "0.1.0"
+description = "MCP server for engineering journal entries"
+authors = ["Your Name <your.email@example.com>"]
 
-Create initial README.md with project overview and basic usage instructions.
+[tool.poetry.dependencies]
+python = "^3.9"
+mcp = "^1.0.0"
+click = "^8.0.0"
+pyyaml = "^6.0"
+gitpython = "^3.1.0"
+python-dateutil = "^2.8.0"
+opentelemetry-api = "^1.15.0"
+opentelemetry-sdk = "^1.15.0"
+opentelemetry-exporter-otlp = "^1.15.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.0.0"
+pytest-mock = "^3.10.0"
+pytest-cov = "^4.0.0"
+pytest-watch = "^4.2.0"
+black = "^23.0.0"
+flake8 = "^6.0.0"
+mypy = "^1.0.0"
+
+[tool.poetry.scripts]
+mcp-journal = "mcp_journal.cli:main"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+```
+
+3. Create a basic README.md with project overview
+4. Initialize a default .mcp-journalrc.yaml configuration file
 
 # Test Strategy:
-Verify project structure is created correctly with all required files and directories. Ensure pyproject.toml contains all required dependencies. Validate that the package can be installed in development mode with `pip install -e .`.
-
-# Subtasks:
-## 1. Create Project Directory Structure and Initial Files [done]
-### Dependencies: None
-### Description: Set up the basic project directory structure with empty placeholder files according to the PRD specification.
-### Details:
-Create the directory structure including src/mcp_journal with empty __init__.py, cli.py, server.py, journal.py, git_utils.py, and config.py files. Create tests directory with unit, integration, and fixtures subdirectories. Add empty README.md and .mcp-journalrc.yaml files at the root level.
-<info added on 2025-05-16T17:22:41.772Z>
-Create the directory structure including src/mcp_journal with empty __init__.py, cli.py, server.py, journal.py, git_utils.py, and config.py files. Create tests directory with unit, integration, and fixtures subdirectories. Add empty README.md and .mcp-journalrc.yaml files at the root level.
-
-Implementation Plan:
-1. Follow Test-Driven Development approach by first creating a test file at tests/unit/test_structure.py
-2. The test should verify the existence of:
-   - Directory structure: src/mcp_journal/, tests/unit/, tests/integration/, tests/fixtures/
-   - Files in src/mcp_journal/: __init__.py, cli.py, server.py, journal.py, git_utils.py, config.py
-   - Root files: README.md and .mcp-journalrc.yaml
-3. After writing the test (which should initially fail), create the actual directories and files
-4. Run the test to confirm all required elements exist
-5. Document any deviations from the PRD or engineering specifications
-6. Ensure the test is comprehensive and will catch any missing components
-
-This implementation prepares the foundation for the next subtask of configuring pyproject.toml with dependencies.
-</info added on 2025-05-16T17:22:41.772Z>
-
-## 2. Configure pyproject.toml with Dependencies [done]
-### Dependencies: 1.1
-### Description: Create and configure the pyproject.toml file with all required dependencies and project metadata.
-### Details:
-Set up pyproject.toml with project name, version, description, and author information. Configure build system (e.g., setuptools). Add all runtime dependencies (Python 3.9+, Anthropic MCP SDK, Click, PyYAML, GitPython, python-dateutil) and development dependencies (pytest, pytest-mock, pytest-cov, pytest-watch, black, flake8, mypy) with appropriate version constraints.
-<info added on 2025-05-16T17:34:52.685Z>
-Set up pyproject.toml with project name, version, description, and author information. Configure build system (e.g., setuptools). Add all runtime dependencies (Python 3.9+, Anthropic MCP SDK, Click, PyYAML, GitPython, python-dateutil) and development dependencies (pytest, pytest-mock, pytest-cov, pytest-watch, black, flake8, mypy) with appropriate version constraints.
-
-Implementation Plan:
-1. First, review the PRD and engineering specification to confirm all required dependencies and metadata.
-2. Create a test file at tests/unit/test_pyproject.py following TDD principles:
-   - Write tests that parse pyproject.toml and verify all required metadata fields
-   - Test for presence of correct build system configuration
-   - Verify all runtime dependencies with appropriate version constraints
-   - Verify all development dependencies with appropriate version constraints
-3. Create the pyproject.toml file with the following sections:
-   - [build-system]: Configure with setuptools or poetry as specified in engineering docs
-   - [project]: Include name, version, description, authors, readme, requires-python (>=3.9)
-   - [project.dependencies]: List all runtime dependencies with version constraints
-   - [project.optional-dependencies.dev]: Include all development dependencies
-   - [project.scripts]: Configure any CLI entry points if needed
-4. Run the tests to verify the pyproject.toml meets all requirements
-5. Document any deviations from the spec or questions that arose during implementation
-6. Ensure compatibility with the next subtask (1.3) which will implement the basic package structure
-
-Note: If using Poetry instead of setuptools, adjust the format accordingly while maintaining the same dependencies.
-</info added on 2025-05-16T17:34:52.685Z>
-
-## 3. Implement Basic Package Structure and Imports [done]
-### Dependencies: 1.2
-### Description: Implement the basic package structure with proper imports and minimal module definitions to ensure the package can be imported.
-### Details:
-Update __init__.py with version and package metadata. Create skeleton implementations for each module with proper imports, docstrings, and type hints. Define the main interfaces and classes for each module without full implementation. Ensure circular imports are avoided and the package can be successfully imported.
-<info added on 2025-05-16T17:39:02.466Z>
-Update __init__.py with version and package metadata. Create skeleton implementations for each module with proper imports, docstrings, and type hints. Define the main interfaces and classes for each module without full implementation. Ensure circular imports are avoided and the package can be successfully imported.
-
-Implementation Plan:
-1. Review the PRD and engineering spec to identify all required modules and their relationships
-2. Update src/mcp_journal/__init__.py with:
-   - Version information (__version__)
-   - Package metadata (author, description)
-   - Expose key classes/functions at package level
-3. Create skeleton implementations with proper structure for:
-   - cli.py: Command-line interface entry points
-   - server.py: Server functionality for remote operations
-   - journal.py: Core journaling functionality
-   - git_utils.py: Git integration utilities
-   - config.py: Configuration management
-4. For each module:
-   - Add comprehensive module docstrings
-   - Define interfaces with type hints
-   - Create empty class/function implementations with pass statements
-   - Add proper imports with explicit imports (avoid wildcard imports)
-5. Implement dependency management between modules to prevent circular imports
-6. Create test_imports.py in tests/unit/ directory
-   - Write tests that verify each module can be imported
-   - Verify key classes and variables exist in each module
-7. Follow TDD approach: write tests first, then implement modules to pass tests
-8. Document any questions or deviations for future review
-</info added on 2025-05-16T17:39:02.466Z>
-
-## 4. Write Comprehensive README.md Documentation [done]
-### Dependencies: 1.2
-### Description: Create detailed README.md with project overview, installation instructions, usage examples, and development setup.
-### Details:
-Write a comprehensive README.md that includes: project title and description, installation instructions (pip install, development setup), basic usage examples for CLI and programmatic use, configuration options, contribution guidelines, and license information. Include badges for build status, test coverage, etc.
-<info added on 2025-05-16T17:46:24.601Z>
-The README.md documentation should be comprehensive and follow this implementation plan:
-
-1. Begin with a thorough review of the PRD and engineering specifications to identify all required documentation sections and ensure alignment with project goals.
-
-2. Structure the README.md with these essential sections:
-   - Project title with a clear, concise description of the MCP Journal project
-   - Installation instructions, including:
-     * Standard pip installation method
-     * Development setup with git clone and dependency installation
-     * Any environment configuration needed
-   - Usage documentation with:
-     * CLI command examples with expected outputs
-     * Programmatic usage patterns with code snippets
-     * Common use cases and workflows
-   - Configuration section detailing:
-     * All available options in .mcp-journalrc.yaml
-     * Example configuration file with comments
-     * Environment variable overrides if applicable
-   - Contribution guidelines explaining:
-     * Code style and standards
-     * Pull request process
-     * Issue reporting procedure
-   - License information with appropriate disclaimers
-   - Status badges for build status, test coverage, and other relevant metrics
-
-3. Include specific references to:
-   - How the project uses Taskmaster-AI for development
-   - Test-Driven Development approach used in the project
-   - Project structure overview with key directories and files
-
-4. After drafting, conduct a manual review against PRD requirements to ensure:
-   - All required functionality is documented
-   - Instructions are clear and accurate
-   - Examples are working and helpful
-   - No critical information is missing
-
-5. Document any questions, uncertainties, or potential deviations from the PRD for future team discussion.
-
-The README should serve as both a quick-start guide for users and a comprehensive reference for developers contributing to the project.
-</info added on 2025-05-16T17:46:24.601Z>
-
-## 5. Set Up Test Infrastructure and Write Initial Tests [done]
-### Dependencies: 1.3
-### Description: Configure the test infrastructure and write initial tests for the project structure and basic functionality.
-### Details:
-Set up pytest configuration in pyproject.toml or pytest.ini. Create test fixtures and helpers in tests/fixtures. Write initial unit tests for each module that verify the basic structure and interfaces. Set up GitHub Actions or similar CI workflow for automated testing. Include test coverage reporting configuration.
-<info added on 2025-05-16T18:34:24.480Z>
-Set up pytest configuration in pyproject.toml or pytest.ini. Create test fixtures and helpers in tests/fixtures. Write initial unit tests for each module that verify the basic structure and interfaces. Set up GitHub Actions or similar CI workflow for automated testing. Include test coverage reporting configuration.
-
-Implementation Plan:
-1. Add pytest and related dev dependencies to pyproject.toml if not already present.
-2. Create a pytest.ini or add pytest configuration to pyproject.toml for test discovery and options.
-3. Create the following test directories and files:
-   - tests/unit/ (for unit tests)
-   - tests/integration/ (for integration tests)
-   - tests/fixtures/ (for shared test fixtures)
-4. Add an initial test file for each module in src/mcp_journal/ (e.g., test_cli.py, test_server.py, etc.) with a basic test that asserts True (to verify test discovery works).
-5. Add a test for project structure (test_structure.py) to verify all required files and directories exist.
-6. Add a test for pyproject.toml (test_pyproject.py) to verify dependencies and metadata.
-7. Set up GitHub Actions (or similar CI) workflow for running tests on push/PR.
-8. Add pytest-cov for coverage reporting and configure it in the workflow.
-9. Run pytest locally to verify all tests are discovered and pass (or fail as expected for TDD).
-10. Document any issues or deviations from the plan in the subtask details.
-
-This plan ensures a robust test infrastructure and a TDD foundation for the project.
-</info added on 2025-05-16T18:34:24.480Z>
-
+1. Verify the project structure is created correctly
+2. Ensure all dependencies can be installed
+3. Validate the pyproject.toml file structure
+4. Check that the package can be installed in development mode
+5. Verify the CLI entry point is properly registered

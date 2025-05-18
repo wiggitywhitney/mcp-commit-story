@@ -1,146 +1,110 @@
 # Task ID: 15
-# Title: Implement Comprehensive Testing Suite
+# Title: Create Comprehensive Tests and Documentation
 # Status: pending
 # Dependencies: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14
 # Priority: high
-# Description: Create a comprehensive testing suite for all components of the MCP journal system.
+# Description: Develop comprehensive tests for all components and create documentation for the project.
 # Details:
-Implement a comprehensive testing suite with the following components:
+Create comprehensive tests and documentation with the following features:
 
-1. Unit tests
-   - Test all individual functions and classes
-   - Use pytest fixtures for test data
-   - Mock external dependencies
-
-2. Integration tests
-   - Test end-to-end workflows
-   - Test CLI commands
-   - Test file creation and management
-
-3. Test fixtures
-   - Sample git repositories
-   - Mock terminal histories
-   - Sample chat histories
-   - Various configuration files
-
-4. Test utilities
-   - Helper functions for test setup and teardown
-   - Mock classes for external dependencies
-
-5. Coverage reporting
-   - Configure pytest-cov for coverage reporting
-   - Aim for >90% test coverage
-
-Example test implementation:
+1. Test fixtures:
 ```python
-import pytest
-from pathlib import Path
-from unittest.mock import patch, MagicMock
-from mcp_journal.config import load_config, merge_configs
-from mcp_journal.git_utils import find_repo, get_current_commit
-from mcp_journal.journal import generate_journal_entry
-
 @pytest.fixture
 def mock_git_repo():
-    """Create a mock git repository for testing."""
-    repo_mock = MagicMock()
-    commit_mock = MagicMock()
-    commit_mock.hexsha = "abcdef1234567890"
-    commit_mock.message = "Test commit message"
-    commit_mock.author.name = "Test Author"
-    commit_mock.author.email = "test@example.com"
-    commit_mock.committed_datetime = datetime.now()
-    
-    repo_mock.head.commit = commit_mock
-    return repo_mock
+    """Create temporary git repo with test commits"""
+    # Implementation
 
 @pytest.fixture
-def sample_config():
-    """Create a sample configuration for testing."""
-    return {
-        "journal": {
-            "path": "journal/",
-            "auto_generate": True,
-            "include_terminal": True,
-            "include_chat": True,
-            "include_mood": True,
-            "section_order": [
-                "summary",
-                "accomplishments",
-                "frustrations",
-                "tone",
-                "commit_details",
-                "reflections"
-            ]
-        }
-    }
+def sample_journal_entries():
+    """Load sample journal files"""
+    # Implementation
 
-def test_load_config(tmp_path, sample_config):
-    """Test loading configuration from file."""
-    config_path = tmp_path / ".mcp-journalrc.yaml"
-    with open(config_path, "w") as f:
-        yaml.dump(sample_config, f)
-    
-    with patch("pathlib.Path.cwd", return_value=tmp_path):
-        config = load_config()
-    
-    assert config["journal"]["path"] == "journal/"
-    assert config["journal"]["auto_generate"] is True
+@pytest.fixture
+def mock_terminal_history():
+    """Provide test terminal command history"""
+    # Implementation
 
-def test_generate_journal_entry(mock_git_repo, sample_config):
-    """Test journal entry generation."""
-    commit = get_current_commit(mock_git_repo)
-    
-    with patch("mcp_journal.journal.collect_terminal_history", return_value=None):
-        with patch("mcp_journal.journal.collect_chat_history", return_value=None):
-            entry = generate_journal_entry(
-                commit=commit,
-                config=sample_config,
-                debug=True
-            )
-    
-    assert "Test commit message" in entry
-    assert commit["short_hash"] in entry
-    assert "## Summary" in entry
+@pytest.fixture
+def mock_chat_history():
+    """Provide test chat history"""
+    # Implementation
+
+@pytest.fixture
+def mock_telemetry_exporter():
+    """Provide a test exporter that captures telemetry events"""
+    # Implementation
+```
+
+2. Unit tests:
+```python
+def test_config_loading():
+    """Test configuration loading"""
+    # Implementation
+
+def test_git_utils():
+    """Test git utilities"""
+    # Implementation
+
+def test_journal_entry_generation():
+    """Test journal entry generation"""
+    # Implementation
+
+def test_telemetry():
+    """Test telemetry integration"""
+    # Implementation
+
+# Additional unit tests for all components
+```
+
+3. Integration tests:
+```python
+def test_cli_init():
+    """Test CLI init command"""
+    # Implementation
+
+def test_cli_new_entry():
+    """Test CLI new-entry command"""
+    # Implementation
+
+def test_mcp_server():
+    """Test MCP server operations"""
+    # Implementation
+
+# Additional integration tests for all workflows
+```
+
+4. Documentation:
+   - README.md with project overview, installation, and usage
+   - Configuration documentation
+   - CLI command reference
+   - MCP server API reference
+   - Development guide
+   - Examples and tutorials
+
+5. Test coverage:
+   - Configure pytest-cov for coverage reporting
+   - Ensure >90% test coverage
+   - Add coverage reporting to CI pipeline
+
+6. Documentation structure:
+```
+README.md
+docs/
+├── configuration.md
+├── cli.md
+├── mcp-server.md
+├── development.md
+└── examples/
+    ├── basic-usage.md
+    ├── custom-configuration.md
+    └── integration-examples.md
 ```
 
 # Test Strategy:
-Ensure all tests are properly organized and documented. Use pytest's built-in features for test discovery and execution. Configure CI/CD to run tests automatically. Maintain high test coverage (>90%) across all modules.
-
-# Subtasks:
-## 1. Implement Unit Testing Framework and Base Fixtures [pending]
-### Dependencies: None
-### Description: Set up the pytest framework with initial test fixtures for unit testing core components of the MCP journal system.
-### Details:
-Create a tests/ directory with proper structure (tests/unit/, tests/integration/, etc.). Implement base fixtures including mock_git_repo, sample_config, and temp_directory. Write initial test configuration in conftest.py with pytest markers. Set up pytest.ini with configuration for test discovery and reporting. Following TDD, write failing tests for core utility functions before implementing any actual test code.
-
-## 2. Implement Unit Tests for Core Modules [pending]
-### Dependencies: 15.1
-### Description: Create comprehensive unit tests for all core modules including config, git_utils, and journal generation functions.
-### Details:
-Following TDD principles, write failing tests first for each function in core modules. Implement tests for config loading/merging, git repository interaction, and journal entry generation. Mock all external dependencies including filesystem, git repositories, and user input. Organize tests by module with clear naming conventions. Include edge cases and error conditions. Implement test parameterization for functions that need to be tested with multiple inputs.
-
-## 3. Implement Integration Tests and Workflow Testing [pending]
-### Dependencies: 15.2
-### Description: Create integration tests that verify end-to-end workflows and CLI command functionality.
-### Details:
-Following TDD, write failing integration tests for complete workflows. Test CLI commands using pytest-click or similar tools. Create tests for journal generation from git commits, terminal history collection, and chat history integration. Test file creation and management workflows. Implement tests for configuration loading from various locations. Create integration tests that verify multiple components work together correctly.
-
-## 4. Implement Advanced Test Fixtures and Mocks [pending]
-### Dependencies: 15.3
-### Description: Create comprehensive test fixtures for complex test scenarios and mock external dependencies.
-### Details:
-Expand the basic fixtures with more sophisticated test data. Create fixtures for sample git repositories with commit history. Implement mock terminal histories with various commands and outputs. Create sample chat histories in different formats. Generate various configuration files for testing different settings. Implement mock classes for all external dependencies including git, filesystem, and user interfaces. Create helper functions for test setup and teardown.
-
-## 5. Implement Test Coverage Reporting and Documentation [pending]
-### Dependencies: 15.4
-### Description: Configure coverage reporting tools and create comprehensive test documentation.
-### Details:
-Configure pytest-cov for coverage reporting. Set up coverage thresholds (aim for >90% overall). Create HTML and XML coverage reports. Implement CI integration for automated test running and coverage reporting. Document the testing approach, fixtures, and patterns in a TESTING.md file. Add test-related information to the project README. Create examples of how to run specific test suites. Document how to add new tests when implementing new features.
-
-## 6. Review and update README/docs [pending]
-### Dependencies: 15.1, 15.2, 15.3, 15.4, 15.5
-### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
-### Details:
-
-
+1. Verify test coverage meets >90% threshold
+2. Ensure all components have unit tests
+3. Verify integration tests cover all workflows
+4. Test documentation for accuracy and completeness
+5. Verify examples work as documented
+6. Test installation and usage instructions
+7. Verify CI pipeline runs all tests

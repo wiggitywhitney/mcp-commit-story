@@ -1,122 +1,86 @@
 # Task ID: 10
-# Title: Implement Blog Post Conversion
+# Title: Implement Manual Reflection Addition
 # Status: pending
-# Dependencies: 4, 5, 6
-# Priority: low
-# Description: Implement the journal/blogify operation to convert journal entries to blog post format.
+# Dependencies: 5, 6, 7
+# Priority: medium
+# Description: Create the functionality to add manual reflections to journal entries, ensuring they are prioritized in summaries.
 # Details:
-Implement the journal/blogify operation with the following functionality:
+Implement manual reflection addition in both the MCP server and CLI with the following features:
 
-1. File processing
-   - Accept single or multiple file paths
-   - Read and parse journal entries
-
-2. Content transformation
-   - Convert to natural, readable blog post
-   - Remove headers, timestamps, code references
-   - Add transitions, rewrite for narrative flow
-
-3. Output generation
-   - Generate blog post in Markdown format
-   - Save to new file or return as string
-
-Example implementation:
+1. Reflection formatting:
 ```python
-def handle_blogify(params):
-    """Handle journal/blogify operation."""
-    debug = params.get("debug", False)
+def format_reflection(text):
+    """Format a manual reflection with timestamp"""
+    timestamp = datetime.now().strftime("%I:%M %p")
+    return f"## {timestamp} — Manual Reflection\n\n{text}\n"
+```
+
+2. File appending:
+```python
+def add_reflection_to_journal(text, config):
+    """Add a reflection to today's journal"""
+    date = datetime.now().strftime("%Y-%m-%d")
+    file_path = Path(config["journal"]["path"]) / "daily" / f"{date}.md"
+    
+    # Create directory and file if needed
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    if not file_path.exists():
+        with open(file_path, "w") as f:
+            f.write(f"# Journal for {date}\n")
+    
+    # Format and append reflection
+    reflection = format_reflection(text)
+    with open(file_path, "a") as f:
+        f.write("\n\n" + reflection)
+    
+    return file_path
+```
+
+3. MCP handler implementation:
+```python
+@trace_operation("journal_add_reflection")
+async def handle_add_reflection(request):
+    """Handle journal/add-reflection operation"""
+    text = request.get("text")
+    if not text:
+        return {"status": "error", "error": "No reflection text provided"}
+    
+    # Load config
+    config = load_config()
+    
+    # Add reflection
+    file_path = add_reflection_to_journal(text, config)
+    
+    return {
+        "status": "success",
+        "file_path": str(file_path),
+        "reflection": text
+    }
+```
+
+4. CLI command implementation:
+```python
+@cli.command()
+@click.argument("text")
+def add_reflection(text):
+    """Add manual reflection to today's journal"""
     try:
-        # Get file paths
-        file_paths = params.get("files", [])
-        if not file_paths:
-            return {
-                "status": "error",
-                "message": "No files specified for blogify operation."
-            }
+        # Load config
+        config = load_config()
         
-        # Read and parse journal entries
-        entries = []
-        for file_path in file_paths:
-            path = Path(file_path)
-            if not path.exists():
-                return {
-                    "status": "error",
-                    "message": f"File not found: {file_path}"
-                }
-            
-            with open(path, "r") as f:
-                content = f.read()
-            
-            entries.append({"path": file_path, "content": content})
+        # Add reflection
+        file_path = add_reflection_to_journal(text, config)
         
-        # Transform content to blog post
-        blog_post = transform_to_blog_post(entries)
-        
-        # Save to new file or return as string
-        if params.get("output"):
-            output_path = Path(params["output"])
-            with open(output_path, "w") as f:
-                f.write(blog_post)
-            
-            return {
-                "status": "success",
-                "message": f"Blog post generated and saved to {output_path}.",
-                "path": str(output_path)
-            }
-        else:
-            return {
-                "status": "success",
-                "message": "Blog post generated.",
-                "content": blog_post
-            }
+        click.echo(f"Reflection added to {file_path}")
     except Exception as e:
-        if debug:
-            return {"status": "error", "message": f"Blogify operation failed: {str(e)}"}
-        return {"status": "error", "message": "Blogify operation failed. Use --debug for details."}
+        click.echo(f"Error: {e}")
 ```
 
 # Test Strategy:
-Write unit tests for:
-- File processing
-- Content transformation
-- Output generation
-
-Test with various journal entry formats and content types.
-
-# Subtasks:
-## 1. Implement File Processing Module [pending]
-### Dependencies: None
-### Description: Create a module to handle file processing for the blogify operation, including accepting single or multiple file paths, validating their existence, and reading their contents.
-### Details:
-Create a `file_processor.py` module with functions to validate file paths and read journal entries. Implement a main function `process_files(file_paths)` that takes a list of file paths, validates each path exists, reads the content, and returns a list of dictionaries with 'path' and 'content' keys.
-
-## 2. Implement Content Transformation Logic [pending]
-### Dependencies: 10.1
-### Description: Create the core transformation logic to convert journal entries into natural, readable blog post format by removing technical elements and improving narrative flow.
-### Details:
-Create a `content_transformer.py` module with a main function `transform_to_blog_post(entries)` that takes the output from the file processor and converts it to blog format. Implement helper functions to: remove headers and timestamps, strip code references, add natural transitions between paragraphs, and rewrite content for better narrative flow. Consider using NLP techniques or rule-based transformations.
-
-## 3. Implement Output Generation Module [pending]
-### Dependencies: 10.2
-### Description: Create a module to handle the output generation of the transformed blog post, either saving to a file or returning as a string.
-### Details:
-Create an `output_generator.py` module with a main function `generate_output(blog_post, output_path=None)` that takes the transformed blog post content and an optional output path. If an output path is provided, save the content to that file and return a success message with the path. If no output path is provided, return the content as a string.
-
-## 4. Implement Main Blogify Handler Function [pending]
-### Dependencies: 10.1, 10.2, 10.3
-### Description: Implement the main handler function that orchestrates the entire blogify operation by calling the file processing, content transformation, and output generation modules.
-### Details:
-Create the `handle_blogify(params)` function in the main module that: 1) Extracts parameters like file paths, debug mode, and output path, 2) Calls the file processor to read entries, 3) Passes entries to the content transformer, 4) Uses the output generator to produce the final result, 5) Handles exceptions and returns appropriate response objects with status and messages.
-
-## 5. Integrate and Test End-to-End Functionality [pending]
-### Dependencies: 10.4
-### Description: Integrate all components and perform end-to-end testing of the blogify operation with various input scenarios and edge cases.
-### Details:
-Create integration tests that test the complete blogify workflow with various inputs: 1) Single file conversion, 2) Multiple file conversion, 3) Different journal formats, 4) Edge cases like empty files or malformed content. Update the main module to expose the blogify functionality through the appropriate API or command-line interface. Document usage examples and expected outputs.
-
-## 6. Review and update README/docs [pending]
-### Dependencies: 10.1, 10.2, 10.3, 10.4, 10.5
-### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
-### Details:
-
-
+1. Unit tests for reflection formatting
+2. Tests for file appending
+3. Tests for MCP handler implementation
+4. Tests for CLI command implementation
+5. Tests for creating new journal file if needed
+6. Tests for appending to existing journal file
+7. Integration tests for full reflection addition flow
