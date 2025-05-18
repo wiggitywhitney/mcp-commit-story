@@ -15,5 +15,5 @@ git:
 
 # Telemetry settings
 telemetry:
-  # Whether to collect anonymous usage data
-  enabled: false 
+  # Whether to collect telemetry
+  enabled: false

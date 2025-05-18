@@ -168,7 +168,140 @@
         1
       ],
       "status": "pending",
-      "subtasks": []
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Assess existing Git utilities code structure",
+          "description": "Review the current state of git_utils.py to understand what's already implemented and what needs to be added.",
+          "dependencies": [],
+          "details": "Examine the existing git_utils.py file to identify: 1) Which functions are already implemented, 2) Code style and patterns to follow, 3) Dependencies being used, 4) Any existing test coverage. Create a report documenting findings and identifying gaps.",
+          "status": "pending",
+          "testStrategy": "No tests needed for this assessment task."
+        },
+        {
+          "id": 2,
+          "title": "Verify GitPython dependency and setup",
+          "description": "Ensure GitPython is properly installed and configured for the project.",
+          "dependencies": [
+            1
+          ],
+          "details": "Check if GitPython is in requirements.txt or pyproject.toml. Install if missing. Create a simple script to verify GitPython can access a test repository. Document any version constraints or issues encountered.",
+          "status": "pending",
+          "testStrategy": "Create a simple verification script that imports GitPython and performs a basic operation."
+        },
+        {
+          "id": 3,
+          "title": "Create test fixtures for Git operations",
+          "description": "Develop test fixtures that provide consistent Git repositories for testing.",
+          "dependencies": [
+            2
+          ],
+          "details": "Create a pytest fixture that: 1) Sets up a temporary Git repository, 2) Creates sample commits with known content, 3) Provides helper methods to manipulate the repo state. This fixture will be used by all subsequent test tasks.",
+          "status": "pending",
+          "testStrategy": "Write tests for the fixture itself to ensure it correctly creates repositories with the expected state."
+        },
+        {
+          "id": 4,
+          "title": "Write tests for get_commit_diff_summary function",
+          "description": "Create comprehensive tests for the get_commit_diff_summary function before implementation.",
+          "dependencies": [
+            3
+          ],
+          "details": "Write tests that verify: 1) Basic diff summary for a simple commit, 2) Handling of file additions, modifications, and deletions, 3) Proper formatting of the summary output, 4) Edge cases like empty commits, binary files, etc.",
+          "status": "pending",
+          "testStrategy": "Use pytest with the Git repository fixture. Tests should initially fail since the function isn't implemented yet."
+        },
+        {
+          "id": 5,
+          "title": "Implement get_commit_diff_summary function",
+          "description": "Implement the function to generate a simplified summary of file changes in a commit.",
+          "dependencies": [
+            4
+          ],
+          "details": "Implement get_commit_diff_summary to: 1) Extract diff information from a commit object, 2) Categorize changes (added, modified, deleted), 3) Format the summary in a consistent way, 4) Handle edge cases identified in tests.",
+          "status": "pending",
+          "testStrategy": "Run the previously created tests to verify implementation. All tests should now pass."
+        },
+        {
+          "id": 6,
+          "title": "Write tests for backup_existing_hook function",
+          "description": "Create tests for the backup_existing_hook function to verify it correctly preserves existing Git hooks.",
+          "dependencies": [
+            3
+          ],
+          "details": "Write tests that verify: 1) Existing hooks are properly backed up with timestamp, 2) Permissions are preserved, 3) Function handles missing hooks gracefully, 4) Function handles read-only filesystem scenarios.",
+          "status": "pending",
+          "testStrategy": "Use pytest with temporary directories and mock files to simulate Git hook scenarios."
+        },
+        {
+          "id": 7,
+          "title": "Implement backup_existing_hook function",
+          "description": "Implement the function to safely backup existing Git hooks before modification.",
+          "dependencies": [
+            6
+          ],
+          "details": "Implement backup_existing_hook to: 1) Check if a hook exists at the specified path, 2) Create a timestamped backup copy if it exists, 3) Preserve file permissions, 4) Return the backup path or None if no backup was needed.",
+          "status": "pending",
+          "testStrategy": "Run the previously created tests to verify implementation. All tests should now pass."
+        },
+        {
+          "id": 8,
+          "title": "Write tests for install_post_commit_hook function",
+          "description": "Create tests for the install_post_commit_hook function to verify it correctly installs the hook.",
+          "dependencies": [
+            7
+          ],
+          "details": "Write tests that verify: 1) Hook is correctly installed with proper content, 2) Existing hooks are backed up (using the previously implemented function), 3) Proper permissions are set on the hook file, 4) Function handles various error conditions gracefully.",
+          "status": "pending",
+          "testStrategy": "Use pytest with the Git repository fixture and mock filesystem operations where appropriate."
+        },
+        {
+          "id": 9,
+          "title": "Implement install_post_commit_hook function",
+          "description": "Implement the function to install the post-commit hook in a Git repository.",
+          "dependencies": [
+            8
+          ],
+          "details": "Implement install_post_commit_hook to: 1) Determine the correct hook path, 2) Back up any existing hook using backup_existing_hook, 3) Write the new hook content with appropriate shebang and commands, 4) Set executable permissions, 5) Handle potential errors.",
+          "status": "pending",
+          "testStrategy": "Run the previously created tests to verify implementation. All tests should now pass."
+        },
+        {
+          "id": 10,
+          "title": "Write tests for get_commits_since_last_entry function",
+          "description": "Create tests for the get_commits_since_last_entry function to verify it correctly identifies commits without journal entries.",
+          "dependencies": [
+            3
+          ],
+          "details": "Write tests that verify: 1) Commits after the last journal entry are correctly identified, 2) Function handles repositories with no journal entries, 3) Function correctly filters out journal-only commits, 4) Edge cases like empty repositories are handled properly.",
+          "status": "pending",
+          "testStrategy": "Use pytest with the Git repository fixture, creating both regular commits and journal entries in a controlled sequence."
+        },
+        {
+          "id": 11,
+          "title": "Implement get_commits_since_last_entry function",
+          "description": "Implement the function to identify commits that don't have corresponding journal entries.",
+          "dependencies": [
+            10
+          ],
+          "details": "Implement get_commits_since_last_entry to: 1) Find the most recent commit that modified the journal, 2) Get all commits since that point, 3) Filter out any commits that only modified the journal, 4) Return the list of commits that need entries, 5) Handle edge cases identified in tests.",
+          "status": "pending",
+          "testStrategy": "Run the previously created tests to verify implementation. All tests should now pass."
+        },
+        {
+          "id": 12,
+          "title": "Document Git utilities and perform final verification",
+          "description": "Add comprehensive docstrings and verify all Git utility functions work together correctly.",
+          "dependencies": [
+            5,
+            9,
+            11
+          ],
+          "details": "1) Add or update docstrings for all functions following project conventions, 2) Create usage examples for the README, 3) Perform integration testing to ensure all functions work together correctly, 4) Verify error handling and edge cases across the entire module.",
+          "status": "pending",
+          "testStrategy": "Create an integration test that uses multiple Git utility functions together in realistic scenarios."
+        }
+      ]
     },
     {
       "id": 4,
