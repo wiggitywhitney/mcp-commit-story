@@ -15,6 +15,7 @@ REQUIRED_FILES = [
     'src/mcp_journal/journal.py',
     'src/mcp_journal/git_utils.py',
     'src/mcp_journal/config.py',
+    'src/mcp_journal/telemetry.py',
     'README.md',
     '.mcp-journalrc.yaml',
 ]

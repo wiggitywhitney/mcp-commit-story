@@ -16,7 +16,10 @@ dependencies = [
     "click>=8.0.0",
     "pyyaml>=6.0",
     "gitpython>=3.1.0",
-    "python-dateutil>=2.8.0"
+    "python-dateutil>=2.8.0",
+    "opentelemetry-api>=1.15.0",
+    "opentelemetry-sdk>=1.15.0",
+    "opentelemetry-exporter-otlp>=1.15.0"
 ]
 
 [project.optional-dependencies]
@@ -28,4 +31,7 @@ dev = [
     "black>=23.0.0",
     "flake8>=6.0.0",
     "mypy>=1.0.0"
-] 
+]
+
+[project.scripts]
+mcp-journal = "mcp_journal.cli:main" 

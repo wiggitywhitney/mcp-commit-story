@@ -1,5 +1,5 @@
-# MCP Journal Configuration
-# This file contains essential configuration options for the MCP Journal tool
+# MCP Journal Configuration (EXAMPLE)
+# This file contains configuration options for the MCP Journal tool
 
 # Journal settings
 journal:
@@ -16,4 +16,4 @@ git:
 # Telemetry settings
 telemetry:
   # Whether to collect anonymous usage data
-  enabled: false
+  enabled: false 

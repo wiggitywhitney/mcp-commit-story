@@ -1,4 +1,8 @@
 .env
+.mcp-journalrc.yaml  # Ignore local configuration
+# But track the example configuration
+!.mcp-journalrc.yaml.example
+!verify_config.py  # Utility script for verifying configuration 
 
 # Added by Claude Task Master
 # Logs
@@ -25,6 +29,7 @@ node_modules/
 
 # OS specific
 .DS_Store
+Thumbs.db
 
 # Task files
 # tasks.json
@@ -32,4 +37,19 @@ node_modules/
 
 # Python cache and build artifacts
 __pycache__/
-*.egg-info/ 
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+ENV/
+env/ 

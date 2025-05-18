@@ -13,6 +13,9 @@ REQUIRED_RUNTIME_DEPS = [
     'pyyaml',
     'gitpython',
     'python-dateutil',
+    'opentelemetry-api',
+    'opentelemetry-sdk',
+    'opentelemetry-exporter-otlp',
 ]
 
 REQUIRED_DEV_DEPS = [

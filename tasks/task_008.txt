@@ -20,20 +20,46 @@ def create_journal_structure(base_path):
     return True
 ```
 
-2. Configuration file generation:
+2. Simplified configuration file generation:
 ```python
-def generate_default_config(config_path):
-    """Generate default configuration file"""
+def generate_default_config(config_path, journal_path):
+    """Generate minimal default configuration file"""
+    default_config = {
+        "journal": {
+            "path": str(journal_path)
+        },
+        "git": {
+            "exclude_patterns": ["journal/**"]
+        },
+        "telemetry": {
+            "enabled": True
+        }
+    }
     with open(config_path, "w") as f:
         yaml.dump(default_config, f, default_flow_style=False)
     return True
 ```
 
-3. Hook installation prompt:
+3. Configuration handling:
 ```python
-def prompt_for_hook_installation():
-    """Prompt user for hook installation"""
-    return click.confirm("Install Git post-commit hook?", default=True)
+def setup_configuration(repo_path):
+    """Set up configuration file"""
+    config_path = Path(repo_path) / ".mcp-journalrc.yaml"
+    example_path = Path(repo_path) / ".mcp-journalrc.yaml.example"
+    journal_path = Path(repo_path) / "journal"
+    
+    # Check if config already exists
+    if config_path.exists():
+        return False, "Journal already initialized"
+    
+    # Check for example config and copy if exists
+    if example_path.exists():
+        shutil.copy(example_path, config_path)
+    else:
+        # Generate minimal default config
+        generate_default_config(config_path, journal_path)
+    
+    return True, config_path
 ```
 
 4. MCP handler implementation:
@@ -43,22 +69,24 @@ async def handle_init(request):
     """Handle journal/init operation"""
     repo_path = request.get("repo_path", os.getcwd())
     
-    # Check if already initialized
-    config_path = Path(repo_path) / ".mcp-journalrc.yaml"
-    if config_path.exists():
-        return {"status": "error", "error": "Journal already initialized"}
+    # Setup configuration
+    success, result = setup_configuration(repo_path)
+    if not success:
+        return {"status": "error", "error": result}
     
-    # Create structure and config
+    # Create structure
     journal_path = Path(repo_path) / "journal"
     create_journal_structure(journal_path)
-    generate_default_config(config_path)
+    
+    # Install git hook (no longer optional)
+    install_post_commit_hook(repo_path)
     
     # Return success
     return {
         "status": "success",
         "message": "Journal initialized successfully",
         "paths": {
-            "config": str(config_path),
+            "config": str(result),
             "journal": str(journal_path)
         }
     }
@@ -71,21 +99,19 @@ async def handle_init(request):
 def init(debug):
     """Initialize journal in current repository"""
     try:
-        # Check if already initialized
-        config_path = Path.cwd() / ".mcp-journalrc.yaml"
-        if config_path.exists():
-            click.echo("Journal already initialized")
+        # Setup configuration
+        success, result = setup_configuration(Path.cwd())
+        if not success:
+            click.echo(result)
             return
         
-        # Create structure and config
+        # Create structure
         journal_path = Path.cwd() / "journal"
         create_journal_structure(journal_path)
-        generate_default_config(config_path)
         
-        # Prompt for hook installation
-        if prompt_for_hook_installation():
-            install_post_commit_hook()
-            click.echo("Git post-commit hook installed")
+        # Install git hook (no longer optional)
+        install_post_commit_hook(Path.cwd())
+        click.echo("Git post-commit hook installed")
         
         click.echo(f"Journal initialized at {journal_path}")
     except Exception as e:
@@ -98,9 +124,11 @@ def init(debug):
 
 # Test Strategy:
 1. Unit tests for directory structure creation
-2. Tests for configuration file generation
-3. Tests for hook installation prompt
+2. Tests for simplified configuration file generation
+3. Tests for configuration handling (existing config, example config, default generation)
 4. Tests for MCP handler implementation
 5. Tests for CLI command implementation
 6. Tests for handling existing journal
 7. Integration tests for full initialization flow
+8. Tests to verify git hook installation is always performed
+9. Tests to verify the minimal configuration contains only the essential settings

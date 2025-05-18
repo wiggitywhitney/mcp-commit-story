@@ -7,12 +7,16 @@ mcp-commit-story is a Model Context Protocol (MCP) server designed to generate e
 
 This project is designed to be used primarily by AI agents (such as Cursor or other MCP-compatible tools) via the Model Context Protocol (MCP). Human users may use the CLI for manual operations, but the main workflow is agent-driven.
 
+## Badges
+
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+![Test Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
+
 ## Quick Start
 
-### 1. AI-Powered Editor Integration (Recommended)
-If you use an AI-powered editor (like Cursor, Windsurf, Roo, etc.), you can add mcp-commit-story as an MCP server.
+### MCP Server Integration
+The MCP server must be discoverable by compatible clients via a standard configuration mechanism. Here's an example configuration:
 
-**Example MCP config:**
 ```json
 {
   "mcpServers": {
@@ -26,139 +30,60 @@ If you use an AI-powered editor (like Cursor, Windsurf, Roo, etc.), you can add 
   }
 }
 ```
-- Replace the API key with your own.
-- Save and reload your editor's MCP config.
-
-
----
-
-### 2. Command Line Usage (Optional)
-If you prefer the CLI, you can also:
-```bash
-pip install mcp-commit-story
-mcp-journal init
-mcp-journal new-entry
-```
-
----
-
-### 3. Configuration
-- Edit `.mcp-journalrc.yaml` in your project root to customize journal behavior.
-- See the Configuration section below for details.
-
----
-
-## MCP Server Configuration and Integration
-
-The MCP server must be launchable as a standalone process and expose the required journal operations (e.g., `journal/new-entry`, `journal/summarize`, etc.). The method for launching the MCP server is not prescribed; it may be started via CLI, Python entry point, or any other mechanism. The server must remain running and accessible to clients for the duration of its use.
-
-Clients (such as editors or agents) should be able to connect to the MCP server using a configuration block similar to the following:
-
-```json
-{
-  "mcpServers": {
-    "mcp-commit-story": {
-      "command": "<launch command>",
-      "args": ["<arg1>", "<arg2>", ...],
-      "env": {
-        "ANTHROPIC_API_KEY": "<optional>"
-      }
-    }
-  }
-}
-```
-
-The actual command, arguments, and environment variables will depend on the deployment and are not specified here. Environment variables such as API keys may be required if the underlying MCP SDK or AI provider requires them, but are not strictly necessary for local operation unless needed by dependencies.
-
-The MCP server configuration (how it is launched and discovered) is separate from the journal system's own configuration, which is managed via `.mcp-journalrc.yaml` as described elsewhere in this documentation.
-
 ---
 
 ## User Story: Real-World Impact (Fictional Example)
 
-In this fictional scenario, Bonnie—a senior engineer—transformed her daily work into a powerful resource for professional growth using the MCP Journal tool. Instead of scrambling to remember what happened during a project, she could quickly generate blog posts, spot recurring themes, and prepare compelling stories for conference talks using her automatically organized engineering journal.
+In this fictional scenario, Bonnie—a senior engineer—transformed her daily work into a powerful resource for professional growth using the MCP Journal 
+tool. Instead of scrambling to remember what happened during a project, she could quickly generate blog posts, spot recurring themes, and prepare 
+compelling stories for conference talks using her automatically organized engineering journal.
 
-The tool made it easy for Bonnie to become a thought leader: she always had concrete examples and lessons learned at her fingertips. When her team faced new challenges, they could review past journal entries to avoid repeating mistakes and to build on previous solutions. Over time, Bonnie's journal became a springboard for content creation, knowledge sharing, and continuous improvement—turning everyday engineering into lasting impact.
+The tool made it easy for Bonnie to become a thought leader: she always had concrete examples and lessons learned at her fingertips. When her team 
+faced new challenges, they could review past journal entries to avoid repeating mistakes and to build on previous solutions. Over time, Bonnie's 
+journal became a springboard for content creation, knowledge sharing, and continuous improvement—turning everyday engineering into lasting impact.
 
 ---
-
 ## Installation
 
-### Standard Installation
 ```bash
 pip install mcp-commit-story
 ```
 
-### Development Setup
-```bash
-git clone https://github.com/wiggitywhitney/mcp-commit-story.git
-cd mcp-commit-story
-pip install -e .
-```
-
-### Environment Configuration
-- Ensure Python 3.9+ is installed.
-- Set up any required environment variables (see Configuration section).
-
----
-
-## Usage
-
-### CLI Example
-```bash
-mcp-journal init
-mcp-journal new-entry
-mcp-journal summarize --week
-mcp-journal summarize --day 2025-05-14  # Generate summary for a specific day
-mcp-journal blogify journal/daily/2025-05-*.md
-```
-- Daily summaries are stored in `journal/summaries/daily/`.
-- If `auto_summarize` is enabled in config, daily summaries may be auto-generated on the next day with new commits.
-
-### Programmatic Example
-```python
-from mcp_journal import Journal
-journal = Journal()
-journal.new_entry()
-```
-
----
-
 ## Configuration
 
-Configuration is managed via `.mcp-journalrc.yaml` at the project root. Example:
+A minimal configuration file is automatically generated when you initialize the project:
 
-```yaml
-journal:
-  path: journal/
-  auto_generate: true
-  include_terminal: true
-  include_chat: true
-  include_mood: true
-  section_order:
-    - summary
-    - accomplishments
-    - frustrations
-    - tone
-    - commit_details
-    - reflections
-  auto_summarize:
-    daily: true
-    weekly: true
-    monthly: true
-    yearly: true
+```bash
+mcp-journal init
 ```
 
-- No frequency block; only auto_summarize controls auto-generation.
+The configuration file `.mcp-journalrc.yaml` contains essential settings:
 
----
+```yaml
+# Journal settings
+journal:
+  # Base path for all journal files (relative to repo root)
+  path: "journal/"
+
+# Git repository settings
+git:
+  # Files to exclude from analysis in journal entries
+  exclude_patterns:
+    - "journal/**"        # Ignore journal directory to prevent recursion
+    - ".mcp-journalrc.yaml"  # Ignore config file itself
+
+# Telemetry settings
+telemetry:
+  # Whether to collect anonymous usage data
+  enabled: false
+```
+
+If you want to customize your configuration before initialization, you can copy the provided example file.
 
 ## Commit Processing
-- Commits that only modify journal files are skipped (no journal entry generated).
-- For mixed commits (code + journal files), only code changes are analyzed for the journal entry; journal files are excluded from diff/stat analysis.
-- This recursion prevention logic is always-on and not configurable.
-
----
+- Commits that only modify journal files are skipped (no journal entry generated)
+- For mixed commits (code + journal files), only code changes are analyzed for the journal entry
+- This recursion prevention logic is always-on and not configurable
 
 ## Goals
 - Record accurate, structured engineering activity and emotional context
@@ -167,72 +92,37 @@ journal:
 - Keep entries truthful (anti-hallucination), useful, and minimally intrusive
 - Integrate seamlessly with Git workflows and existing dev tools
 
----
-
-## Error Handling
-- Hard failures (e.g., missing repo) return actionable error messages and stop execution.
-- Soft failures (e.g., missing terminal/chat history) are omitted silently unless `--debug` is set.
-- Debug mode surfaces all soft failures to stderr, but never clutters journal output.
-
----
-
-## Summary Prioritization
-- Manual reflections (user-added) are always prioritized in all summaries (daily, weekly, monthly, yearly).
-- Summaries have a dedicated "Manual Reflections" section at the top, visually distinct from inferred content.
-- If no manual reflections exist, the section is omitted gracefully.
-
----
-
-## Contribution Guidelines
-
-- Follow PEP8 and use `black` for formatting.
-- Write tests first (TDD encouraged).
-- Run all tests with `pytest` before submitting a PR.
-- Open issues for bugs, feature requests, or questions.
-
----
-
-## License
-
-MIT License. See [LICENSE](LICENSE) for details.
-
----
-
-## Badges
-
-![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
-![Test Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
-
----
-
 ## Project Structure
 
 ```
 journal/
 ├── daily/
-│   ├── 2025-05-14.md
-│   ├── 2025-05-15.md
+│   ├── YYYY-MM-DD.md
 │   └── ...
 ├── summaries/
 │   ├── daily/
-│   │   ├── 2025-05-14-summary.md
-│   │   └── ...
 │   ├── weekly/
-│   │   ├── 2025-05-week3.md
-│   │   └── ...
 │   ├── monthly/
-│   │   ├── 2025-05.md
-│   │   └── ...
 │   └── yearly/
-│       ├── 2025.md
-│       └── ...
 └── .mcp-journalrc.yaml
 ```
 
----
+## Development
 
-## Development Approach
+### Setting Up Test Environment
 
-This project uses Test-Driven Development (TDD) and Taskmaster-AI for planning and task breakdown. All major features are developed with tests written first, ensuring high coverage and reliability.
+This project follows Test-Driven Development (TDD) principles. To set up the test environment:
 
----
+```bash
+# Setup the test environment (creates virtual environment and installs dependencies)
+./scripts/setup_test_env.sh
+
+# Run tests
+./scripts/run_tests.sh
+```
+
+For more details on testing standards and practices, see [Testing Standards](docs/testing_standards.md).
+
+## License
+
+MIT License. See [LICENSE](LICENSE) for details.
