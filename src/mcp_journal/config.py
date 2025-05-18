@@ -160,11 +160,13 @@ def find_config_files() -> Tuple[Optional[str], Optional[str]]:
     """
     # Get local config path and check if it exists
     local_config_path = os.path.join(os.getcwd(), '.mcp-journalrc.yaml')
-    local_config = local_config_path if os.path.exists(local_config_path) else None
+    local_exists = os.path.exists(local_config_path)
+    local_config = local_config_path if local_exists else None
     
     # Get global config path and check if it exists
     global_config_path = os.path.expanduser('~/.mcp-journalrc.yaml')
-    global_config = global_config_path if os.path.exists(global_config_path) else None
+    global_exists = os.path.exists(global_config_path)
+    global_config = global_config_path if global_exists else None
     
     return local_config, global_config
 

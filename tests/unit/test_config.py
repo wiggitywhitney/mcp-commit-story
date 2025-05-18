@@ -126,26 +126,31 @@ def test_find_config_files():
         
         # Mock paths
         mock_expanduser.return_value = '/home/user/.mcp-journalrc.yaml'
+        local_path = os.path.join(os.getcwd(), '.mcp-journalrc.yaml')
         
         # Case 1: Local and global exist
-        mock_exists.side_effect = lambda path: True
+        mock_exists.return_value = True
         
         local, global_path = find_config_files()
-        assert local == os.path.join(os.getcwd(), '.mcp-journalrc.yaml')
+        assert local == local_path
         assert global_path == '/home/user/.mcp-journalrc.yaml'
         
         # Case 2: Only local exists
         def exists_side_effect(path):
-            return 'home' not in path
+            if '/home/' in path or '\\home\\' in path:
+                return False  # Global config does not exist
+            return True  # Local config exists
         mock_exists.side_effect = exists_side_effect
         
         local, global_path = find_config_files()
-        assert local == os.path.join(os.getcwd(), '.mcp-journalrc.yaml')
+        assert local == local_path
         assert global_path is None
         
         # Case 3: Only global exists
         def exists_side_effect2(path):
-            return 'home' in path
+            if '/home/' in path or '\\home\\' in path:
+                return True  # Global config exists
+            return False  # Local config does not exist
         mock_exists.side_effect = exists_side_effect2
         
         local, global_path = find_config_files()
