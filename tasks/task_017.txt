@@ -1,117 +1,125 @@
 # Task ID: 17
-# Title: Implement Daily Summary Generation Feature
+# Title: Prioritize Manual Reflections in Summary Generation
 # Status: pending
-# Dependencies: None
+# Dependencies: 13
 # Priority: medium
-# Description: Add functionality to generate summaries for a single day in the journal system via CLI and MCP tool, with consideration for auto-generating summaries for days with new commits.
+# Description: Modify the summary generation algorithm to prioritize user-added manual reflections over inferred content in daily, weekly, and monthly summaries, ensuring that intentional user input is prominently displayed.
 # Details:
-The implementation should include:
+This task involves restructuring the summary generation process to give precedence to manual reflections. Key implementation details include:
 
-1. CLI Enhancement:
-   - Add a new '--day' or '--date' option to the CLI interface that accepts date input in a standard format (YYYY-MM-DD)
-   - Ensure backward compatibility with existing CLI commands
-   - Implement proper error handling for invalid date formats or dates with no journal entries
-   - Add help documentation for the new option
+1. Identify all manual reflections within the summary period (daily, weekly, monthly)
+2. Modify the summary template to include a dedicated "Manual Reflections" section at the beginning of each summary
+3. Apply visual highlighting (e.g., different formatting, color, or icons) to distinguish manual reflections from inferred content
+4. Update the sorting algorithm to prioritize manual reflections chronologically at the top of summaries
+5. Ensure that inferred mood, tone, or accomplishments appear after manual reflections, with clear visual separation
+6. Implement fallback logic for periods with no manual reflections to gracefully handle this case
+7. Update the summary preview functionality to reflect these changes
+8. Maintain backward compatibility with existing summary data structures
+9. Document the changes in the summary generation process for future reference
+10. Consider adding a configuration option to allow users to toggle this behavior if desired
 
-2. MCP Tool Integration:
-   - Add corresponding UI elements in the MCP tool to select a specific day for summary generation
-   - Implement date picker or similar intuitive interface for date selection
-   - Ensure the UI provides clear feedback during and after summary generation
-
-3. Summary Generation Logic:
-   - Create a dedicated function for single-day summary generation
-   - Reuse existing summary algorithms but optimize for single-day context
-   - Ensure manual reflections are prioritized in the summary (as per Task #16)
-   - Include relevant statistics for the day (commit count, activity patterns)
-   - Format the output consistently with other summary types
-
-4. Auto-generation Feature (Optional):
-   - Implement a configuration option to enable/disable auto-generation
-   - Create a mechanism to detect if new commits were added for a previous day
-   - Design a background process or trigger to generate summaries automatically
-   - Ensure users are notified of auto-generated summaries
-   - Allow users to configure the time window for when auto-generation occurs
-
-5. Storage and Retrieval:
-   - Design a consistent storage approach for daily summaries
-   - Implement efficient retrieval methods for viewing past daily summaries
-   - Consider caching mechanisms for frequently accessed summaries
-
-6. Performance Considerations:
-   - Optimize the summary generation for speed, especially for days with many entries
-   - Implement progress indicators for longer operations
+The implementation should build upon the existing manual reflection functionality from Task #13 and integrate with the current summary generation system.
 
 # Test Strategy:
-Testing should cover all aspects of the daily summary feature:
+# Test Strategy:
+Testing for this feature should include:
 
-1. Unit Tests:
-   - Test the date parsing and validation logic
-   - Verify the summary generation algorithm produces correct output for various input scenarios
-   - Test edge cases: empty days, days with single entries, days with many entries
-   - Verify proper handling of manual reflections prioritization
+1. Unit tests:
+   - Verify that manual reflections are correctly identified and extracted from journal entries
+   - Test the sorting algorithm to ensure manual reflections appear before inferred content
+   - Validate that the summary template correctly positions manual reflections at the beginning
 
-2. Integration Tests:
-   - Test the CLI interface with various date formats and options
-   - Verify the MCP tool correctly interfaces with the summary generation logic
-   - Test the auto-generation feature triggers correctly when enabled
-   - Verify storage and retrieval of daily summaries works as expected
+2. Integration tests:
+   - Create test journals with various combinations of manual and inferred content
+   - Generate summaries for different time periods (daily, weekly, monthly) and verify correct prioritization
+   - Test edge cases: summaries with only manual reflections, only inferred content, or no content at all
 
-3. User Acceptance Testing:
-   - Create test scenarios for common user workflows
-   - Verify the feature works with the journal system's existing data
-   - Test with different user permission levels if applicable
+3. UI/UX tests:
+   - Verify that manual reflections are visually distinct and prominently displayed in the UI
+   - Test that the visual hierarchy clearly communicates the importance of manual reflections
+   - Ensure responsive design maintains this prioritization across different devices and screen sizes
 
-4. Performance Testing:
-   - Measure and benchmark summary generation time for various day sizes
-   - Test auto-generation impact on system resources
-   - Verify the system remains responsive during summary generation
+4. User acceptance testing:
+   - Create test scenarios with sample journal data containing both manual reflections and inferred content
+   - Have test users review summaries to confirm that manual reflections are more noticeable
+   - Collect feedback on the effectiveness of the prioritization implementation
 
-5. Regression Testing:
-   - Ensure existing summary features (weekly, monthly) continue to work
-   - Verify that the prioritization of manual reflections works consistently
+5. Regression testing:
+   - Verify that existing summary functionality remains intact
+   - Ensure that historical summaries can be regenerated with the new prioritization rules if needed
 
-6. Automated Test Suite:
-   - Add new test cases to the comprehensive testing suite (from Task #15)
-   - Create specific test fixtures for daily summary testing
-
-7. Documentation Testing:
-   - Verify help documentation accurately describes the new options
-   - Test that error messages are clear and actionable
+Document all test results with screenshots comparing before and after implementations.
 
 # Subtasks:
-## 1. Implement Single-Day Summary Generation Core Logic [pending]
+## 1. Identify and Extract Manual Reflections from Summary Period [pending]
 ### Dependencies: None
-### Description: Create the core functionality to generate summaries for a specific day in the journal system
+### Description: Create a function to identify and extract all manual reflections within a given summary period (daily, weekly, monthly).
 ### Details:
-Develop a dedicated function that accepts a date parameter and generates a summary for that specific day. Reuse existing summary algorithms but modify them to focus on single-day context. Ensure the function handles edge cases like days with no entries. Include relevant statistics (commit count, activity patterns) and prioritize manual reflections in the summary output. Format the output consistently with other summary types. This function will serve as the foundation for both CLI and MCP tool implementations.
+Implement a new function `extractManualReflections(startDate, endDate)` that queries the database for all manual reflections created between the specified dates. The function should return an array of reflection objects sorted chronologically. Each object should contain the reflection text, timestamp, and any associated metadata. This function will serve as the foundation for prioritizing manual reflections in the summary generation process.
 
-## 2. Enhance CLI Interface with Day-Specific Summary Option [pending]
+## 2. Modify Summary Templates to Include Dedicated Manual Reflections Section [pending]
 ### Dependencies: 17.1
-### Description: Add a new command-line option to generate summaries for a specific day
+### Description: Update the summary templates for daily, weekly, and monthly views to include a dedicated section for manual reflections at the beginning.
 ### Details:
-Extend the CLI interface by adding a new '--day' or '--date' option that accepts date input in YYYY-MM-DD format. Implement argument parsing and validation for the new option. Connect this option to the single-day summary generation function. Ensure backward compatibility with existing CLI commands. Implement proper error handling for invalid date formats or dates with no journal entries. Update the help documentation to include information about the new option and provide usage examples.
+Modify the existing summary template structure to add a new 'Manual Reflections' section that appears before any inferred content. Design the section with appropriate headings and styling to make it visually distinct. Include conditional rendering logic to hide this section if no manual reflections exist for the period. Update the template rendering engine to pass the extracted manual reflections to this new section.
 
-## 3. Integrate Day-Specific Summary Feature into MCP Tool [pending]
-### Dependencies: 17.1
-### Description: Add UI elements to the MCP tool for selecting and generating summaries for specific days
+## 3. Implement Visual Highlighting for Manual Reflections [pending]
+### Dependencies: 17.2
+### Description: Create visual differentiation between manual reflections and inferred content in summaries through styling, icons, or formatting.
 ### Details:
-Design and implement UI components in the MCP tool for date selection, such as a date picker or calendar widget. Create a dedicated panel or section for day-specific summaries. Connect the UI elements to the single-day summary generation function. Implement loading indicators and success/error messages to provide clear feedback during and after summary generation. Ensure the UI is intuitive and consistent with the existing design patterns of the MCP tool.
+Design and implement a visual system to distinguish manual reflections from inferred content. Add CSS classes to manual reflection elements that apply distinct styling (e.g., different background color, border, or font weight). Consider adding an icon indicator next to manual reflections. Ensure the styling is consistent across all summary types and responsive to different screen sizes. Update the summary rendering code to apply these visual indicators when displaying manual reflections.
 
-## 4. Implement Storage and Retrieval System for Daily Summaries [pending]
-### Dependencies: 17.1
-### Description: Design and implement a system to store and retrieve daily summaries efficiently
+## 4. Update Summary Generation Algorithm to Prioritize Manual Reflections [pending]
+### Dependencies: 17.1, 17.2, 17.3
+### Description: Modify the core summary generation algorithm to prioritize manual reflections and ensure they appear before inferred content.
 ### Details:
-Design a consistent storage approach for daily summaries, considering file structure and naming conventions. Implement functions to save generated summaries to the appropriate storage location. Create efficient retrieval methods for viewing past daily summaries. Consider implementing a caching mechanism for frequently accessed summaries to improve performance. Ensure the storage system can handle concurrent access and is resilient to failures. Update existing code to use this new storage system when appropriate.
+Refactor the existing summary generation algorithm to incorporate the extracted manual reflections at the beginning of the summary. Implement the sorting logic to display manual reflections chronologically. Create clear visual separation between the manual reflections section and subsequent inferred content. Develop fallback logic that gracefully handles periods with no manual reflections by showing only inferred content with appropriate messaging. Ensure the algorithm maintains backward compatibility with existing summary data structures.
 
-## 5. Develop Auto-Generation Feature for Daily Summaries [pending]
-### Dependencies: 17.1, 17.4
-### Description: Create functionality to automatically generate summaries for days with new commits
+## 5. Update Summary Preview and Add User Configuration Options [pending]
+### Dependencies: 17.4
+### Description: Update the summary preview functionality to reflect the new prioritization and add user configuration options for controlling this behavior.
 ### Details:
-Implement configuration options to enable/disable auto-generation of daily summaries. Create a mechanism to detect if new commits were added for a previous day. Design a background process or trigger that runs at specified intervals to check for days needing summaries. Implement the auto-generation logic that calls the single-day summary function for relevant days. Add notification functionality to inform users of newly auto-generated summaries. Provide configuration options for users to set the time window for auto-generation and other preferences. Ensure the feature is performant and doesn't interfere with other system operations.
+Modify the summary preview component to accurately display the new prioritized structure with manual reflections. Implement a user configuration option in the settings panel that allows users to toggle between prioritized manual reflections and the original summary format. Create appropriate UI controls and persistence for this preference. Update the documentation to explain the new summary generation process and configuration options. Test the preview functionality to ensure it accurately represents the final summary output.
 
 ## 6. Review and update README/docs [pending]
 ### Dependencies: 17.1, 17.2, 17.3, 17.4, 17.5
 ### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
 ### Details:
+Document the changes in the summary generation process, explaining how manual reflections are now prioritized over inferred content. Include information about the new user configuration option that allows toggling this behavior. Update any relevant developer documentation to explain the implementation details and design decisions. Ensure that user-facing documentation clearly explains the new summary structure and how manual reflections are displayed.
+<info added on 2025-05-18T22:52:53.110Z>
+Document the changes in the summary generation process, explaining how manual reflections are now prioritized over inferred content. Include information about the new user configuration option that allows toggling this behavior. Update any relevant developer documentation to explain the implementation details and design decisions. Ensure that user-facing documentation clearly explains the new summary structure and how manual reflections are displayed.
 
+The documentation update should include:
+
+1. README.md Updates:
+   - Add a new section titled "Manual Reflections in Summaries" explaining the prioritization feature
+   - Update the configuration options section to include the new toggle for manual reflection prioritization
+   - Include screenshots or examples showing the difference between prioritized and non-prioritized summaries
+   - Update any relevant command-line arguments or API parameters
+
+2. User Documentation:
+   - Create clear explanations of what manual reflections are and how they differ from inferred content
+   - Provide step-by-step instructions for enabling/disabling the prioritization feature
+   - Include visual examples showing before/after comparisons
+   - Add troubleshooting tips for common issues users might encounter
+
+3. Developer Documentation:
+   - Document the technical implementation of the prioritization algorithm
+   - Explain the data flow and how manual reflections are identified and extracted
+   - Detail the changes made to the summary generation pipeline
+   - Include code examples showing how to interact with the new functionality programmatically
+   - Document any new classes, methods, or configuration parameters added
+   - Explain design decisions and trade-offs considered during implementation
+
+4. API Documentation:
+   - Update any API reference documentation to include new endpoints or parameters
+   - Provide example requests and responses showing the feature in action
+   - Document any changes to response formats or structures
+
+5. Changelog:
+   - Add an entry describing this feature addition with appropriate version number
+   - Highlight backward compatibility considerations
+
+Ensure all documentation maintains a consistent tone and style with existing documentation. Use clear, concise language appropriate for the target audience of each document type.
+</info added on 2025-05-18T22:52:53.110Z>
 

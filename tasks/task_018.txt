@@ -1,36 +1,83 @@
 # Task ID: 18
-# Title: Document MCP Server Configuration and Integration
+# Title: Implement Daily Summary Generation Feature
 # Status: pending
 # Dependencies: None
 # Priority: medium
-# Description: Ensure the MCP server launch/discovery/configuration requirements are documented in the PRD, README, and codebase. The MCP server must be launchable as a standalone process, expose the required journal operations, and be discoverable by compatible clients. The method for launching the MCP server is not prescribed; it may be started via CLI, Python entry point, etc.
+# Description: Add functionality to generate summaries for a single day in the journal system via CLI and MCP tool, with consideration for auto-generating summaries for days with new commits.
 # Details:
 
 
 # Test Strategy:
+# Test Strategy:
+Testing should cover all aspects of the daily summary feature:
 
+1. Unit Tests:
+   - Test the date parsing and validation logic
+   - Verify the summary generation algorithm produces correct output for various input scenarios
+   - Test edge cases: empty days, days with single entries, days with many entries
+   - Verify proper handling of manual reflections prioritization
+
+2. Integration Tests:
+   - Test the CLI interface with various date formats and options
+   - Verify the MCP tool correctly interfaces with the summary generation logic
+   - Test the auto-generation feature triggers correctly when enabled
+   - Verify storage and retrieval of daily summaries works as expected
+
+3. User Acceptance Testing:
+   - Create test scenarios for common user workflows
+   - Verify the feature works with the journal system's existing data
+   - Test with different user permission levels if applicable
+
+4. Performance Testing:
+   - Measure and benchmark summary generation time for various day sizes
+   - Test auto-generation impact on system resources
+   - Verify the system remains responsive during summary generation
+
+5. Regression Testing:
+   - Ensure existing summary features (weekly, monthly) continue to work
+   - Verify that the prioritization of manual reflections works consistently
+
+6. Automated Test Suite:
+   - Add new test cases to the comprehensive testing suite (from Task #15)
+   - Create specific test fixtures for daily summary testing
+
+7. Documentation Testing:
+   - Verify help documentation accurately describes the new options
+   - Test that error messages are clear and actionable
 
 # Subtasks:
-## 1. Provide generic client/editor config block example [pending]
+## 1. Implement Single-Day Summary Generation Core Logic [pending]
 ### Dependencies: None
-### Description: Add a JSON example of a configuration block for connecting to the MCP server, showing command, args, and optional env vars.
+### Description: Create the core functionality to generate summaries for a specific day in the journal system
 ### Details:
+Develop a dedicated function that accepts a date parameter and generates a summary for that specific day. Reuse existing summary algorithms but modify them to focus on single-day context. Ensure the function handles edge cases like days with no entries. Include relevant statistics (commit count, activity patterns) and prioritize manual reflections in the summary output. Format the output consistently with other summary types. This function will serve as the foundation for both CLI and MCP tool implementations.
 
-
-## 2. Clarify API key/env var requirements [pending]
-### Dependencies: None
-### Description: Document that API keys or environment variables are only required if the underlying SDK or provider needs them, not for all deployments.
+## 2. Enhance CLI Interface with Day-Specific Summary Option [pending]
+### Dependencies: 18.1
+### Description: Add a new command-line option to generate summaries for a specific day
 ### Details:
+Extend the CLI interface by adding a new '--day' or '--date' option that accepts date input in YYYY-MM-DD format. Implement argument parsing and validation for the new option. Connect this option to the single-day summary generation function. Ensure backward compatibility with existing CLI commands. Implement proper error handling for invalid date formats or dates with no journal entries. Update the help documentation to include information about the new option and provide usage examples.
 
-
-## 3. Ensure separation of MCP server config from journal config [pending]
-### Dependencies: None
-### Description: Make sure documentation clearly distinguishes between MCP server configuration and the journal system's .mcp-journalrc.yaml.
+## 3. Integrate Day-Specific Summary Feature into MCP Tool [pending]
+### Dependencies: 18.1
+### Description: Add UI elements to the MCP tool for selecting and generating summaries for specific days
 ### Details:
+Design and implement UI components in the MCP tool for date selection, such as a date picker or calendar widget. Create a dedicated panel or section for day-specific summaries. Connect the UI elements to the single-day summary generation function. Implement loading indicators and success/error messages to provide clear feedback during and after summary generation. Ensure the UI is intuitive and consistent with the existing design patterns of the MCP tool.
 
+## 4. Implement Storage and Retrieval System for Daily Summaries [pending]
+### Dependencies: 18.1
+### Description: Design and implement a system to store and retrieve daily summaries efficiently
+### Details:
+Design a consistent storage approach for daily summaries, considering file structure and naming conventions. Implement functions to save generated summaries to the appropriate storage location. Create efficient retrieval methods for viewing past daily summaries. Consider implementing a caching mechanism for frequently accessed summaries to improve performance. Ensure the storage system can handle concurrent access and is resilient to failures. Update existing code to use this new storage system when appropriate.
 
-## 4. Review and update README/docs [pending]
-### Dependencies: 18.1, 18.2, 18.3
+## 5. Develop Auto-Generation Feature for Daily Summaries [pending]
+### Dependencies: 18.1, 18.4
+### Description: Create functionality to automatically generate summaries for days with new commits
+### Details:
+Implement configuration options to enable/disable auto-generation of daily summaries. Create a mechanism to detect if new commits were added for a previous day. Design a background process or trigger that runs at specified intervals to check for days needing summaries. Implement the auto-generation logic that calls the single-day summary function for relevant days. Add notification functionality to inform users of newly auto-generated summaries. Provide configuration options for users to set the time window for auto-generation and other preferences. Ensure the feature is performant and doesn't interfere with other system operations.
+
+## 6. Review and update README/docs [pending]
+### Dependencies: 18.1, 18.2, 18.3, 18.4, 18.5
 ### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
 ### Details:
 

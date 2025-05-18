@@ -1,0 +1,37 @@
+# Task ID: 19
+# Title: Document MCP Server Configuration and Integration
+# Status: pending
+# Dependencies: None
+# Priority: medium
+# Description: Ensure the MCP server launch/discovery/configuration requirements are documented in the PRD, README, and codebase. The MCP server must be launchable as a standalone process, expose the required journal operations, and be discoverable by compatible clients. The method for launching the MCP server is not prescribed; it may be started via CLI, Python entry point, etc.
+# Details:
+
+
+# Test Strategy:
+
+
+# Subtasks:
+## 1. Provide generic client/editor config block example [pending]
+### Dependencies: None
+### Description: Add a JSON example of a configuration block for connecting to the MCP server, showing command, args, and optional env vars.
+### Details:
+
+
+## 2. Clarify API key/env var requirements [pending]
+### Dependencies: None
+### Description: Document that API keys or environment variables are only required if the underlying SDK or provider needs them, not for all deployments.
+### Details:
+
+
+## 3. Ensure separation of MCP server config from journal config [pending]
+### Dependencies: None
+### Description: Make sure documentation clearly distinguishes between MCP server configuration and the journal system's .mcp-journalrc.yaml.
+### Details:
+
+
+## 4. Review and update README/docs [pending]
+### Dependencies: 19.1, 19.2, 19.3
+### Description: Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.
+### Details:
+
+

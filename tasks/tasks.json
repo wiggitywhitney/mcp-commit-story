@@ -492,6 +492,236 @@
       ],
       "status": "pending",
       "subtasks": []
+    },
+    {
+      "id": 16,
+      "title": "Rename Python Package from 'mcp_journal' to 'mcp_commit_story'",
+      "description": "Rename the Python package from 'mcp_journal' to 'mcp_commit_story' to align with the repository name, including all necessary code and configuration updates to maintain functionality.",
+      "details": "This task involves a comprehensive package rename to ensure consistency between the codebase and repository name. The developer should:\n\n1. Create a branch specifically for this rename operation\n2. Rename the source directory from 'mcp_journal' to 'mcp_commit_story'\n3. Update all import statements throughout the codebase, including:\n   - Internal imports within the package\n   - Import statements in test files\n   - Any examples or documentation code\n4. Modify pyproject.toml to reflect the new package name, including:\n   - Package metadata (name, description)\n   - Entry points\n   - Build configuration\n5. Update any references in README.md and other documentation\n6. Check for hardcoded references to the package name in:\n   - CLI commands\n   - Configuration files\n   - Environment variables\n   - Log messages\n7. Update any CI/CD configuration files (.github/workflows, etc.) that reference the package name\n8. Ensure compatibility with Task 3 (Git Utilities) by coordinating with the developer responsible for that task\n9. Create a migration guide for other developers to understand the change\n\nThis rename should be done early in the development process to minimize technical debt but should not block current in-progress tasks. The developer should coordinate with the team to find an appropriate time window for merging these changes.",
+      "testStrategy": "To verify the successful completion of this task:\n\n1. Run a comprehensive search across the codebase to ensure no instances of 'mcp_journal' remain:\n   ```\n   grep -r \"mcp_journal\" --include=\"*.py\" --include=\"*.md\" --include=\"*.toml\" .\n   ```\n\n2. Verify the package can be installed correctly:\n   ```\n   pip install -e .\n   ```\n\n3. Run the full test suite to ensure all functionality works with the new package name:\n   ```\n   pytest\n   ```\n\n4. Verify imports work in a new Python environment:\n   ```python\n   from mcp_commit_story import *\n   # Test basic functionality\n   ```\n\n5. Check that any CLI commands or entry points still function:\n   ```\n   mcp-commit-story --version  # or whatever the command is\n   ```\n\n6. Run CI/CD pipelines to ensure they pass with the new package name\n\n7. Have another developer review the changes to ensure nothing was missed\n\n8. Create a test plan for other developers to verify their work is compatible with the renamed package\n\n9. Document any issues encountered during testing and their resolutions",
+      "status": "pending",
+      "dependencies": [
+        3
+      ],
+      "priority": "high",
+      "subtasks": []
+    },
+    {
+      "id": 17,
+      "title": "Prioritize Manual Reflections in Summary Generation",
+      "description": "Modify the summary generation algorithm to prioritize user-added manual reflections over inferred content in daily, weekly, and monthly summaries, ensuring that intentional user input is prominently displayed.",
+      "status": "pending",
+      "dependencies": [
+        13
+      ],
+      "priority": "medium",
+      "details": "This task involves restructuring the summary generation process to give precedence to manual reflections. Key implementation details include:\n\n1. Identify all manual reflections within the summary period (daily, weekly, monthly)\n2. Modify the summary template to include a dedicated \"Manual Reflections\" section at the beginning of each summary\n3. Apply visual highlighting (e.g., different formatting, color, or icons) to distinguish manual reflections from inferred content\n4. Update the sorting algorithm to prioritize manual reflections chronologically at the top of summaries\n5. Ensure that inferred mood, tone, or accomplishments appear after manual reflections, with clear visual separation\n6. Implement fallback logic for periods with no manual reflections to gracefully handle this case\n7. Update the summary preview functionality to reflect these changes\n8. Maintain backward compatibility with existing summary data structures\n9. Document the changes in the summary generation process for future reference\n10. Consider adding a configuration option to allow users to toggle this behavior if desired\n\nThe implementation should build upon the existing manual reflection functionality from Task #13 and integrate with the current summary generation system.",
+      "testStrategy": "# Test Strategy:\nTesting for this feature should include:\n\n1. Unit tests:\n   - Verify that manual reflections are correctly identified and extracted from journal entries\n   - Test the sorting algorithm to ensure manual reflections appear before inferred content\n   - Validate that the summary template correctly positions manual reflections at the beginning\n\n2. Integration tests:\n   - Create test journals with various combinations of manual and inferred content\n   - Generate summaries for different time periods (daily, weekly, monthly) and verify correct prioritization\n   - Test edge cases: summaries with only manual reflections, only inferred content, or no content at all\n\n3. UI/UX tests:\n   - Verify that manual reflections are visually distinct and prominently displayed in the UI\n   - Test that the visual hierarchy clearly communicates the importance of manual reflections\n   - Ensure responsive design maintains this prioritization across different devices and screen sizes\n\n4. User acceptance testing:\n   - Create test scenarios with sample journal data containing both manual reflections and inferred content\n   - Have test users review summaries to confirm that manual reflections are more noticeable\n   - Collect feedback on the effectiveness of the prioritization implementation\n\n5. Regression testing:\n   - Verify that existing summary functionality remains intact\n   - Ensure that historical summaries can be regenerated with the new prioritization rules if needed\n\nDocument all test results with screenshots comparing before and after implementations.",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Identify and Extract Manual Reflections from Summary Period",
+          "description": "Create a function to identify and extract all manual reflections within a given summary period (daily, weekly, monthly).",
+          "details": "Implement a new function `extractManualReflections(startDate, endDate)` that queries the database for all manual reflections created between the specified dates. The function should return an array of reflection objects sorted chronologically. Each object should contain the reflection text, timestamp, and any associated metadata. This function will serve as the foundation for prioritizing manual reflections in the summary generation process.",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 17
+        },
+        {
+          "id": 2,
+          "title": "Modify Summary Templates to Include Dedicated Manual Reflections Section",
+          "description": "Update the summary templates for daily, weekly, and monthly views to include a dedicated section for manual reflections at the beginning.",
+          "details": "Modify the existing summary template structure to add a new 'Manual Reflections' section that appears before any inferred content. Design the section with appropriate headings and styling to make it visually distinct. Include conditional rendering logic to hide this section if no manual reflections exist for the period. Update the template rendering engine to pass the extracted manual reflections to this new section.",
+          "status": "pending",
+          "dependencies": [
+            "17.1"
+          ],
+          "parentTaskId": 17
+        },
+        {
+          "id": 3,
+          "title": "Implement Visual Highlighting for Manual Reflections",
+          "description": "Create visual differentiation between manual reflections and inferred content in summaries through styling, icons, or formatting.",
+          "details": "Design and implement a visual system to distinguish manual reflections from inferred content. Add CSS classes to manual reflection elements that apply distinct styling (e.g., different background color, border, or font weight). Consider adding an icon indicator next to manual reflections. Ensure the styling is consistent across all summary types and responsive to different screen sizes. Update the summary rendering code to apply these visual indicators when displaying manual reflections.",
+          "status": "pending",
+          "dependencies": [
+            "17.2"
+          ],
+          "parentTaskId": 17
+        },
+        {
+          "id": 4,
+          "title": "Update Summary Generation Algorithm to Prioritize Manual Reflections",
+          "description": "Modify the core summary generation algorithm to prioritize manual reflections and ensure they appear before inferred content.",
+          "details": "Refactor the existing summary generation algorithm to incorporate the extracted manual reflections at the beginning of the summary. Implement the sorting logic to display manual reflections chronologically. Create clear visual separation between the manual reflections section and subsequent inferred content. Develop fallback logic that gracefully handles periods with no manual reflections by showing only inferred content with appropriate messaging. Ensure the algorithm maintains backward compatibility with existing summary data structures.",
+          "status": "pending",
+          "dependencies": [
+            "17.1",
+            "17.2",
+            "17.3"
+          ],
+          "parentTaskId": 17
+        },
+        {
+          "id": 5,
+          "title": "Update Summary Preview and Add User Configuration Options",
+          "description": "Update the summary preview functionality to reflect the new prioritization and add user configuration options for controlling this behavior.",
+          "details": "Modify the summary preview component to accurately display the new prioritized structure with manual reflections. Implement a user configuration option in the settings panel that allows users to toggle between prioritized manual reflections and the original summary format. Create appropriate UI controls and persistence for this preference. Update the documentation to explain the new summary generation process and configuration options. Test the preview functionality to ensure it accurately represents the final summary output.",
+          "status": "pending",
+          "dependencies": [
+            "17.4"
+          ],
+          "parentTaskId": 17
+        },
+        {
+          "id": 6,
+          "title": "Review and update README/docs",
+          "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
+          "details": "Document the changes in the summary generation process, explaining how manual reflections are now prioritized over inferred content. Include information about the new user configuration option that allows toggling this behavior. Update any relevant developer documentation to explain the implementation details and design decisions. Ensure that user-facing documentation clearly explains the new summary structure and how manual reflections are displayed.\n<info added on 2025-05-18T22:52:53.110Z>\nDocument the changes in the summary generation process, explaining how manual reflections are now prioritized over inferred content. Include information about the new user configuration option that allows toggling this behavior. Update any relevant developer documentation to explain the implementation details and design decisions. Ensure that user-facing documentation clearly explains the new summary structure and how manual reflections are displayed.\n\nThe documentation update should include:\n\n1. README.md Updates:\n   - Add a new section titled \"Manual Reflections in Summaries\" explaining the prioritization feature\n   - Update the configuration options section to include the new toggle for manual reflection prioritization\n   - Include screenshots or examples showing the difference between prioritized and non-prioritized summaries\n   - Update any relevant command-line arguments or API parameters\n\n2. User Documentation:\n   - Create clear explanations of what manual reflections are and how they differ from inferred content\n   - Provide step-by-step instructions for enabling/disabling the prioritization feature\n   - Include visual examples showing before/after comparisons\n   - Add troubleshooting tips for common issues users might encounter\n\n3. Developer Documentation:\n   - Document the technical implementation of the prioritization algorithm\n   - Explain the data flow and how manual reflections are identified and extracted\n   - Detail the changes made to the summary generation pipeline\n   - Include code examples showing how to interact with the new functionality programmatically\n   - Document any new classes, methods, or configuration parameters added\n   - Explain design decisions and trade-offs considered during implementation\n\n4. API Documentation:\n   - Update any API reference documentation to include new endpoints or parameters\n   - Provide example requests and responses showing the feature in action\n   - Document any changes to response formats or structures\n\n5. Changelog:\n   - Add an entry describing this feature addition with appropriate version number\n   - Highlight backward compatibility considerations\n\nEnsure all documentation maintains a consistent tone and style with existing documentation. Use clear, concise language appropriate for the target audience of each document type.\n</info added on 2025-05-18T22:52:53.110Z>",
+          "status": "pending",
+          "dependencies": [
+            "17.1",
+            "17.2",
+            "17.3",
+            "17.4",
+            "17.5"
+          ],
+          "parentTaskId": 17
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "title": "Implement Daily Summary Generation Feature",
+      "description": "Add functionality to generate summaries for a single day in the journal system via CLI and MCP tool, with consideration for auto-generating summaries for days with new commits.",
+      "status": "pending",
+      "dependencies": [],
+      "priority": "medium",
+      "details": "",
+      "testStrategy": "# Test Strategy:\nTesting should cover all aspects of the daily summary feature:\n\n1. Unit Tests:\n   - Test the date parsing and validation logic\n   - Verify the summary generation algorithm produces correct output for various input scenarios\n   - Test edge cases: empty days, days with single entries, days with many entries\n   - Verify proper handling of manual reflections prioritization\n\n2. Integration Tests:\n   - Test the CLI interface with various date formats and options\n   - Verify the MCP tool correctly interfaces with the summary generation logic\n   - Test the auto-generation feature triggers correctly when enabled\n   - Verify storage and retrieval of daily summaries works as expected\n\n3. User Acceptance Testing:\n   - Create test scenarios for common user workflows\n   - Verify the feature works with the journal system's existing data\n   - Test with different user permission levels if applicable\n\n4. Performance Testing:\n   - Measure and benchmark summary generation time for various day sizes\n   - Test auto-generation impact on system resources\n   - Verify the system remains responsive during summary generation\n\n5. Regression Testing:\n   - Ensure existing summary features (weekly, monthly) continue to work\n   - Verify that the prioritization of manual reflections works consistently\n\n6. Automated Test Suite:\n   - Add new test cases to the comprehensive testing suite (from Task #15)\n   - Create specific test fixtures for daily summary testing\n\n7. Documentation Testing:\n   - Verify help documentation accurately describes the new options\n   - Test that error messages are clear and actionable",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Single-Day Summary Generation Core Logic",
+          "description": "Create the core functionality to generate summaries for a specific day in the journal system",
+          "details": "Develop a dedicated function that accepts a date parameter and generates a summary for that specific day. Reuse existing summary algorithms but modify them to focus on single-day context. Ensure the function handles edge cases like days with no entries. Include relevant statistics (commit count, activity patterns) and prioritize manual reflections in the summary output. Format the output consistently with other summary types. This function will serve as the foundation for both CLI and MCP tool implementations.",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 18
+        },
+        {
+          "id": 2,
+          "title": "Enhance CLI Interface with Day-Specific Summary Option",
+          "description": "Add a new command-line option to generate summaries for a specific day",
+          "details": "Extend the CLI interface by adding a new '--day' or '--date' option that accepts date input in YYYY-MM-DD format. Implement argument parsing and validation for the new option. Connect this option to the single-day summary generation function. Ensure backward compatibility with existing CLI commands. Implement proper error handling for invalid date formats or dates with no journal entries. Update the help documentation to include information about the new option and provide usage examples.",
+          "status": "pending",
+          "dependencies": [
+            "18.1"
+          ],
+          "parentTaskId": 18
+        },
+        {
+          "id": 3,
+          "title": "Integrate Day-Specific Summary Feature into MCP Tool",
+          "description": "Add UI elements to the MCP tool for selecting and generating summaries for specific days",
+          "details": "Design and implement UI components in the MCP tool for date selection, such as a date picker or calendar widget. Create a dedicated panel or section for day-specific summaries. Connect the UI elements to the single-day summary generation function. Implement loading indicators and success/error messages to provide clear feedback during and after summary generation. Ensure the UI is intuitive and consistent with the existing design patterns of the MCP tool.",
+          "status": "pending",
+          "dependencies": [
+            "18.1"
+          ],
+          "parentTaskId": 18
+        },
+        {
+          "id": 4,
+          "title": "Implement Storage and Retrieval System for Daily Summaries",
+          "description": "Design and implement a system to store and retrieve daily summaries efficiently",
+          "details": "Design a consistent storage approach for daily summaries, considering file structure and naming conventions. Implement functions to save generated summaries to the appropriate storage location. Create efficient retrieval methods for viewing past daily summaries. Consider implementing a caching mechanism for frequently accessed summaries to improve performance. Ensure the storage system can handle concurrent access and is resilient to failures. Update existing code to use this new storage system when appropriate.",
+          "status": "pending",
+          "dependencies": [
+            "18.1"
+          ],
+          "parentTaskId": 18
+        },
+        {
+          "id": 5,
+          "title": "Develop Auto-Generation Feature for Daily Summaries",
+          "description": "Create functionality to automatically generate summaries for days with new commits",
+          "details": "Implement configuration options to enable/disable auto-generation of daily summaries. Create a mechanism to detect if new commits were added for a previous day. Design a background process or trigger that runs at specified intervals to check for days needing summaries. Implement the auto-generation logic that calls the single-day summary function for relevant days. Add notification functionality to inform users of newly auto-generated summaries. Provide configuration options for users to set the time window for auto-generation and other preferences. Ensure the feature is performant and doesn't interfere with other system operations.",
+          "status": "pending",
+          "dependencies": [
+            "18.1",
+            "18.4"
+          ],
+          "parentTaskId": 18
+        },
+        {
+          "id": 6,
+          "title": "Review and update README/docs",
+          "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [
+            "18.1",
+            "18.2",
+            "18.3",
+            "18.4",
+            "18.5"
+          ],
+          "parentTaskId": 18
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "title": "Document MCP Server Configuration and Integration",
+      "description": "Ensure the MCP server launch/discovery/configuration requirements are documented in the PRD, README, and codebase. The MCP server must be launchable as a standalone process, expose the required journal operations, and be discoverable by compatible clients. The method for launching the MCP server is not prescribed; it may be started via CLI, Python entry point, etc.",
+      "details": "",
+      "testStrategy": "",
+      "status": "pending",
+      "dependencies": [],
+      "priority": "medium",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Provide generic client/editor config block example",
+          "description": "Add a JSON example of a configuration block for connecting to the MCP server, showing command, args, and optional env vars.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 19
+        },
+        {
+          "id": 2,
+          "title": "Clarify API key/env var requirements",
+          "description": "Document that API keys or environment variables are only required if the underlying SDK or provider needs them, not for all deployments.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 19
+        },
+        {
+          "id": 3,
+          "title": "Ensure separation of MCP server config from journal config",
+          "description": "Make sure documentation clearly distinguishes between MCP server configuration and the journal system's .mcp-journalrc.yaml.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 19
+        },
+        {
+          "id": 4,
+          "title": "Review and update README/docs",
+          "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [
+            "19.1",
+            "19.2",
+            "19.3"
+          ],
+          "parentTaskId": 19
+        }
+      ]
     }
   ]
 }
