@@ -10,7 +10,7 @@ This project is designed to be used primarily by AI agents (such as Cursor or ot
 ## Badges
 
 [![Build Status](https://github.com/wiggitywhitney/mcp-commit-story/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/wiggitywhitney/mcp-commit-story/actions/workflows/tests.yml)
-[![codecov](https://codecov.io/gh/wiggitywhitney/mcp-commit-story/branch/main/graph/badge.svg)](https://codecov.io/gh/wiggitywhitney/mcp-commit-story)
+<!-- [![codecov](https://codecov.io/gh/wiggitywhitney/mcp-commit-story/branch/main/graph/badge.svg)](https://codecov.io/gh/wiggitywhitney/mcp-commit-story) -->
 
 ## Quick Start
 
