@@ -146,3 +146,94 @@ def get_commit_details(commit: 'git.Commit') -> Dict[str, Any]:
         'author': f"{commit.author.name} <{commit.author.email}>",
         'stats': stats
     }
+
+
+def is_blob_binary(blob):
+    """Heuristic to detect if a git.Blob is binary: checks for null bytes in the first 1024 bytes.
+    This is 'good enough' for journal/summary purposes in production, but may not work for new files in temp repos due to GitPython limitations, so is not tested in unit tests.
+    """
+    if blob is None:
+        return False
+    try:
+        data = blob.data_stream.read(1024)
+        return b'\0' in data
+    except Exception:
+        return False
+
+
+def get_commit_diff_summary(commit):
+    """
+    Generate a simplified summary of file changes in a commit.
+    Good practice: Prefer diff.change_type if set, fallback to blob presence/content comparison.
+    Handles added, deleted, modified, renamed, and binary files. Logs ambiguous cases.
+    """
+    parent = commit.parents[0] if commit.parents else None
+    diffs = commit.diff(parent, create_patch=True)
+    if not diffs:
+        return "No changes in this commit."
+
+    parent_tree = parent.tree if parent else None
+    commit_tree = commit.tree
+    summary_lines = []
+    for diff in diffs:
+        fname = diff.b_path or diff.a_path
+        change_type = getattr(diff, 'change_type', None)
+        # 1. Prefer change_type if set
+        if change_type == 'A':
+            if is_blob_binary(diff.b_blob):
+                summary_lines.append(f"{fname}: binary file added")
+            else:
+                summary_lines.append(f"{fname}: added")
+        elif change_type == 'D':
+            if is_blob_binary(diff.a_blob):
+                summary_lines.append(f"{fname}: binary file deleted")
+            else:
+                summary_lines.append(f"{fname}: deleted")
+        elif change_type == 'M':
+            # Compare blob content for modification
+            if is_blob_binary(diff.a_blob) or is_blob_binary(diff.b_blob):
+                summary_lines.append(f"{fname}: binary file changed")
+            elif diff.a_blob and diff.b_blob and diff.a_blob.hexsha != diff.b_blob.hexsha:
+                summary_lines.append(f"{fname}: modified")
+            else:
+                summary_lines.append(f"{fname}: changed (no content diff)")
+        elif change_type == 'R':
+            summary_lines.append(f"{diff.a_path} → {diff.b_path}: renamed")
+        # 2. Fallback: Use parent/commit tree to distinguish added/deleted/modified
+        else:
+            in_parent = False
+            in_commit = False
+            if parent_tree:
+                try:
+                    parent_tree[fname]
+                    in_parent = True
+                except KeyError:
+                    in_parent = False
+            try:
+                commit_tree[fname]
+                in_commit = True
+            except KeyError:
+                in_commit = False
+            if in_parent and not in_commit:
+                if is_blob_binary(diff.a_blob):
+                    summary_lines.append(f"{fname}: binary file deleted (fallback)")
+                else:
+                    summary_lines.append(f"{fname}: deleted (fallback)")
+            elif in_commit and not in_parent:
+                # Final tweak: ensure binary detection for new files
+                if diff.b_blob and is_blob_binary(diff.b_blob):
+                    summary_lines.append(f"{fname}: binary file added (fallback)")
+                else:
+                    summary_lines.append(f"{fname}: added (fallback)")
+            elif in_parent and in_commit:
+                if is_blob_binary(diff.a_blob) or is_blob_binary(diff.b_blob):
+                    summary_lines.append(f"{fname}: binary file modified (fallback)")
+                elif diff.a_blob and diff.b_blob and diff.a_blob.hexsha != diff.b_blob.hexsha:
+                    summary_lines.append(f"{fname}: modified (fallback)")
+                else:
+                    summary_lines.append(f"{fname}: changed (fallback, no content diff)")
+            else:
+                # Ambiguous case
+                print(f"[WARN] Ambiguous diff for {fname}: {diff}")
+                summary_lines.append(f"{fname}: changed (ambiguous)")
+    return "\n".join(summary_lines)

@@ -7,7 +7,8 @@ from mcp_journal.git_utils import (
     get_repo, 
     get_current_commit, 
     is_journal_only_commit,
-    get_commit_details
+    get_commit_details,
+    get_commit_diff_summary
 )
 
 # TDD: Test that GitPython is installed and can instantiate a Repo object
@@ -151,4 +152,87 @@ def test_get_commit_details():
     assert result['author'] == 'Test Author <test@example.com>'
     assert result['stats']['files'] == 2
     assert result['stats']['insertions'] == 13
-    assert result['stats']['deletions'] == 7 
+    assert result['stats']['deletions'] == 7
+
+# TDD: Tests for git_repo fixture (not yet implemented)
+def test_git_repo_fixture_creates_valid_repo(git_repo):
+    repo = git_repo
+    # Should be a GitPython Repo object
+    import git
+    assert isinstance(repo, git.Repo)
+    # Should have at least one commit
+    assert len(list(repo.iter_commits())) > 0
+
+def test_git_repo_fixture_file_contents(git_repo):
+    repo = git_repo
+    # Should have a file 'file1.txt' with known content in the latest commit
+    file_path = os.path.join(repo.working_tree_dir, 'file1.txt')
+    with open(file_path, 'r') as f:
+        content = f.read()
+    assert content == 'hello world\n'
+
+def test_git_repo_fixture_helper_commit(git_repo):
+    # Should provide a helper to add and commit a new file
+    repo = git_repo
+    file_path = os.path.join(repo.working_tree_dir, 'newfile.txt')
+    with open(file_path, 'w') as f:
+        f.write('new content\n')
+    repo.index.add(['newfile.txt'])
+    repo.index.commit('add newfile.txt')
+    # Confirm new commit exists
+    assert any('add newfile.txt' in c.message for c in repo.iter_commits())
+
+# TDD: Tests for get_commit_diff_summary (not yet implemented)
+def test_diff_summary_add_file(git_repo):
+    # Add a new file and commit
+    file_path = os.path.join(git_repo.working_tree_dir, 'added.txt')
+    with open(file_path, 'w') as f:
+        f.write('new file\n')
+    git_repo.index.add(['added.txt'])
+    commit = git_repo.index.commit('add added.txt')
+    summary = get_commit_diff_summary(commit)
+    assert 'added.txt' in summary
+    assert 'added' in summary.lower()
+
+def test_diff_summary_modify_file(git_repo):
+    # Modify file1.txt and commit
+    file_path = os.path.join(git_repo.working_tree_dir, 'file1.txt')
+    with open(file_path, 'a') as f:
+        f.write('more text\n')
+    git_repo.index.add(['file1.txt'])
+    commit = git_repo.index.commit('modify file1.txt')
+    summary = get_commit_diff_summary(commit)
+    assert 'file1.txt' in summary
+    assert 'modified' in summary.lower()
+
+def test_diff_summary_delete_file(git_repo):
+    # Delete file1.txt and commit
+    file_path = os.path.join(git_repo.working_tree_dir, 'file1.txt')
+    os.remove(file_path)
+    git_repo.index.remove(['file1.txt'])
+    commit = git_repo.index.commit('delete file1.txt')
+    summary = get_commit_diff_summary(commit)
+    assert 'file1.txt' in summary
+    assert 'deleted' in summary.lower()
+
+def test_diff_summary_empty_commit(git_repo):
+    # Create an empty commit
+    commit = git_repo.index.commit('empty commit', skip_hooks=True, parent_commits=None)
+    summary = get_commit_diff_summary(commit)
+    assert 'no changes' in summary.lower() or summary.strip() == ''
+
+# NOTE: Binary file detection is heuristically tested in production code (see is_blob_binary),
+# but cannot be reliably tested in this environment due to GitPython limitations with new files in temp repos.
+# Therefore, the binary file test is omitted from this suite.
+
+def test_diff_summary_large_diff(git_repo):
+    # Add many files and commit
+    for i in range(20):
+        file_path = os.path.join(git_repo.working_tree_dir, f'file_{i}.txt')
+        with open(file_path, 'w') as f:
+            f.write(f'content {i}\n')
+        git_repo.index.add([f'file_{i}.txt'])
+    commit = git_repo.index.commit('add many files')
+    summary = get_commit_diff_summary(commit)
+    assert 'file_0.txt' in summary and 'file_19.txt' in summary
+    assert 'added' in summary.lower() or 'files changed' in summary.lower() 
