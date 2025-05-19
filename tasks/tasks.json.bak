@@ -70,7 +70,7 @@
       "id": 2,
       "title": "Implement Configuration System",
       "description": "Create the configuration system that handles loading, validation, and merging of configuration files from local and global sources.",
-      "status": "in-progress",
+      "status": "done",
       "dependencies": [
         1
       ],
@@ -145,15 +145,15 @@
           "id": 2.9,
           "title": "Fix failing configuration tests",
           "description": "Address the 3 failing tests by fixing implementation issues in config.py",
-          "status": "in-progress",
+          "status": "done",
           "details": "- Fix the find_config_files function to correctly locate configuration files\n- Fix load_config_with_precedence to properly apply configuration precedence rules\n- Fix validate_config to correctly validate configuration against schema\n- Ensure all 12 tests pass before marking this task as complete\n\nImplementation Plan for Fixing Failing Configuration Tests:\n\n1. **Test-First Approach (TDD)**\n   - Run the failing tests to understand exactly what's failing\n   - Review the test expectations and understand what the implementations should do\n   - Document the specific errors and failure reasons\n   - Fix one test at a time, verifying each fix before moving on\n\n2. **fix_find_config_files Function**\n   - Focus on handling the different cases correctly:\n     * When both config files exist\n     * When only local config exists\n     * When only global config exists\n     * When neither config exists\n   - Make sure path handling is correct for home directory expansion\n   - Verify it works consistently across operating systems\n\n3. **fix_load_config_with_precedence Function**\n   - Ensure local config properly overrides global config values\n   - Implement deep merging of configuration dictionaries\n   - Verify default values are applied correctly\n   - Handle the case when configs are empty or missing\n\n4. **fix_validate_config Function**\n   - Implement schema validation against the required configuration structure\n   - Check for required fields and add appropriate defaults\n   - Add type validation for configuration values\n   - Handle malformed input gracefully with proper error messages\n\n5. **Testing and Verification**\n   - Run tests after each fix to verify progress\n   - Ensure all tests pass before marking the subtask complete\n   - Look for edge cases that might not be covered by tests"
         },
         {
           "id": 2.11,
           "title": "Final review and optimization",
           "description": "Review the configuration system implementation and optimize as needed",
-          "status": "pending",
-          "details": "- Review code for performance optimizations\n- Check for any redundant code or logic\n- Ensure all edge cases are handled\n- Verify documentation is complete and accurate\n- Confirm all tests are passing consistently"
+          "status": "done",
+          "details": "- Review code for performance optimizations\n- Check for any redundant code or logic\n- Ensure all edge cases are handled\n- Verify documentation is complete and accurate\n- Confirm all tests are passing consistently\n\nImplementation Plan (TDD-first):\n\n1. **Identify Optimization and Review Targets**\n   - Review the current configuration system code for potential performance improvements, redundant logic, and edge cases.\n   - List specific areas or functions that may benefit from optimization or additional testing.\n\n2. **Add Tests First (TDD)**\n   - Write new or enhanced tests in `tests/unit/test_config.py` to cover:\n     - Performance edge cases (e.g., large config files, repeated loads)\n     - Redundant or dead code paths\n     - Edge cases not previously tested (e.g., deeply nested configs, invalid types)\n     - Documentation completeness (e.g., docstring presence, usage examples)\n   - Run the new tests to confirm they fail (or are not yet passing) before making code changes.\n\n3. **Optimize and Refactor Implementation**\n   - Refactor code to address performance bottlenecks and remove redundant logic.\n   - Handle any newly discovered edge cases.\n   - Update or add docstrings and usage examples as needed.\n\n4. **Verify and Finalize**\n   - Run the full test suite to ensure all tests pass, including the new ones.\n   - Review documentation for completeness and accuracy.\n   - Confirm that all checklist items for this subtask are satisfied.\n\n5. **Log Progress and Mark Complete**\n   - Document the changes and findings in the subtask details.\n   - Mark subtask 2.11 as done when all criteria are met.\n\n---\n\n**Next Action:**\n- Begin with step 1: Identify optimization and review targets, then proceed to add failing tests before any implementation changes."
         }
       ]
     },
@@ -168,7 +168,140 @@
         1
       ],
       "status": "pending",
-      "subtasks": []
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Assess existing Git utilities code structure",
+          "description": "Review the current state of git_utils.py to understand what's already implemented and what needs to be added.",
+          "dependencies": [],
+          "details": "Examine the existing git_utils.py file to identify: 1) Which functions are already implemented, 2) Code style and patterns to follow, 3) Dependencies being used, 4) Any existing test coverage. Create a report documenting findings and identifying gaps.",
+          "status": "pending",
+          "testStrategy": "No tests needed for this assessment task."
+        },
+        {
+          "id": 2,
+          "title": "Verify GitPython dependency and setup",
+          "description": "Ensure GitPython is properly installed and configured for the project.",
+          "dependencies": [
+            1
+          ],
+          "details": "Check if GitPython is in requirements.txt or pyproject.toml. Install if missing. Create a simple script to verify GitPython can access a test repository. Document any version constraints or issues encountered.",
+          "status": "pending",
+          "testStrategy": "Create a simple verification script that imports GitPython and performs a basic operation."
+        },
+        {
+          "id": 3,
+          "title": "Create test fixtures for Git operations",
+          "description": "Develop test fixtures that provide consistent Git repositories for testing.",
+          "dependencies": [
+            2
+          ],
+          "details": "Create a pytest fixture that: 1) Sets up a temporary Git repository, 2) Creates sample commits with known content, 3) Provides helper methods to manipulate the repo state. This fixture will be used by all subsequent test tasks.",
+          "status": "pending",
+          "testStrategy": "Write tests for the fixture itself to ensure it correctly creates repositories with the expected state."
+        },
+        {
+          "id": 4,
+          "title": "Write tests for get_commit_diff_summary function",
+          "description": "Create comprehensive tests for the get_commit_diff_summary function before implementation.",
+          "dependencies": [
+            3
+          ],
+          "details": "Write tests that verify: 1) Basic diff summary for a simple commit, 2) Handling of file additions, modifications, and deletions, 3) Proper formatting of the summary output, 4) Edge cases like empty commits, binary files, etc.",
+          "status": "pending",
+          "testStrategy": "Use pytest with the Git repository fixture. Tests should initially fail since the function isn't implemented yet."
+        },
+        {
+          "id": 5,
+          "title": "Implement get_commit_diff_summary function",
+          "description": "Implement the function to generate a simplified summary of file changes in a commit.",
+          "dependencies": [
+            4
+          ],
+          "details": "Implement get_commit_diff_summary to: 1) Extract diff information from a commit object, 2) Categorize changes (added, modified, deleted), 3) Format the summary in a consistent way, 4) Handle edge cases identified in tests.",
+          "status": "pending",
+          "testStrategy": "Run the previously created tests to verify implementation. All tests should now pass."
+        },
+        {
+          "id": 6,
+          "title": "Write tests for backup_existing_hook function",
+          "description": "Create tests for the backup_existing_hook function to verify it correctly preserves existing Git hooks.",
+          "dependencies": [
+            3
+          ],
+          "details": "Write tests that verify: 1) Existing hooks are properly backed up with timestamp, 2) Permissions are preserved, 3) Function handles missing hooks gracefully, 4) Function handles read-only filesystem scenarios.",
+          "status": "pending",
+          "testStrategy": "Use pytest with temporary directories and mock files to simulate Git hook scenarios."
+        },
+        {
+          "id": 7,
+          "title": "Implement backup_existing_hook function",
+          "description": "Implement the function to safely backup existing Git hooks before modification.",
+          "dependencies": [
+            6
+          ],
+          "details": "Implement backup_existing_hook to: 1) Check if a hook exists at the specified path, 2) Create a timestamped backup copy if it exists, 3) Preserve file permissions, 4) Return the backup path or None if no backup was needed.",
+          "status": "pending",
+          "testStrategy": "Run the previously created tests to verify implementation. All tests should now pass."
+        },
+        {
+          "id": 8,
+          "title": "Write tests for install_post_commit_hook function",
+          "description": "Create tests for the install_post_commit_hook function to verify it correctly installs the hook.",
+          "dependencies": [
+            7
+          ],
+          "details": "Write tests that verify: 1) Hook is correctly installed with proper content, 2) Existing hooks are backed up (using the previously implemented function), 3) Proper permissions are set on the hook file, 4) Function handles various error conditions gracefully.",
+          "status": "pending",
+          "testStrategy": "Use pytest with the Git repository fixture and mock filesystem operations where appropriate."
+        },
+        {
+          "id": 9,
+          "title": "Implement install_post_commit_hook function",
+          "description": "Implement the function to install the post-commit hook in a Git repository.",
+          "dependencies": [
+            8
+          ],
+          "details": "Implement install_post_commit_hook to: 1) Determine the correct hook path, 2) Back up any existing hook using backup_existing_hook, 3) Write the new hook content with appropriate shebang and commands, 4) Set executable permissions, 5) Handle potential errors.",
+          "status": "pending",
+          "testStrategy": "Run the previously created tests to verify implementation. All tests should now pass."
+        },
+        {
+          "id": 10,
+          "title": "Write tests for get_commits_since_last_entry function",
+          "description": "Create tests for the get_commits_since_last_entry function to verify it correctly identifies commits without journal entries.",
+          "dependencies": [
+            3
+          ],
+          "details": "Write tests that verify: 1) Commits after the last journal entry are correctly identified, 2) Function handles repositories with no journal entries, 3) Function correctly filters out journal-only commits, 4) Edge cases like empty repositories are handled properly.",
+          "status": "pending",
+          "testStrategy": "Use pytest with the Git repository fixture, creating both regular commits and journal entries in a controlled sequence."
+        },
+        {
+          "id": 11,
+          "title": "Implement get_commits_since_last_entry function",
+          "description": "Implement the function to identify commits that don't have corresponding journal entries.",
+          "dependencies": [
+            10
+          ],
+          "details": "Implement get_commits_since_last_entry to: 1) Find the most recent commit that modified the journal, 2) Get all commits since that point, 3) Filter out any commits that only modified the journal, 4) Return the list of commits that need entries, 5) Handle edge cases identified in tests.",
+          "status": "pending",
+          "testStrategy": "Run the previously created tests to verify implementation. All tests should now pass."
+        },
+        {
+          "id": 12,
+          "title": "Document Git utilities and perform final verification",
+          "description": "Add comprehensive docstrings and verify all Git utility functions work together correctly.",
+          "dependencies": [
+            5,
+            9,
+            11
+          ],
+          "details": "1) Add or update docstrings for all functions following project conventions, 2) Create usage examples for the README, 3) Perform integration testing to ensure all functions work together correctly, 4) Verify error handling and edge cases across the entire module.",
+          "status": "pending",
+          "testStrategy": "Create an integration test that uses multiple Git utility functions together in realistic scenarios."
+        }
+      ]
     },
     {
       "id": 4,
@@ -358,6 +491,258 @@
         14
       ],
       "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 16,
+      "title": "Rename Python Package from 'mcp_journal' to 'mcp_commit_story'",
+      "description": "Rename the Python package from 'mcp_journal' to 'mcp_commit_story' to align with the repository name, including all necessary code and configuration updates to maintain functionality.",
+      "details": "This task involves a comprehensive package rename to ensure consistency between the codebase and repository name. The developer should:\n\n1. Create a branch specifically for this rename operation\n2. Rename the source directory from 'mcp_journal' to 'mcp_commit_story'\n3. Update all import statements throughout the codebase, including:\n   - Internal imports within the package\n   - Import statements in test files\n   - Any examples or documentation code\n4. Modify pyproject.toml to reflect the new package name, including:\n   - Package metadata (name, description)\n   - Entry points\n   - Build configuration\n5. Update any references in README.md and other documentation\n6. Check for hardcoded references to the package name in:\n   - CLI commands\n   - Configuration files\n   - Environment variables\n   - Log messages\n7. Update any CI/CD configuration files (.github/workflows, etc.) that reference the package name\n8. Ensure compatibility with Task 3 (Git Utilities) by coordinating with the developer responsible for that task\n9. Create a migration guide for other developers to understand the change\n\nThis rename should be done early in the development process to minimize technical debt but should not block current in-progress tasks. The developer should coordinate with the team to find an appropriate time window for merging these changes.",
+      "testStrategy": "To verify the successful completion of this task:\n\n1. Run a comprehensive search across the codebase to ensure no instances of 'mcp_journal' remain:\n   ```\n   grep -r \"mcp_journal\" --include=\"*.py\" --include=\"*.md\" --include=\"*.toml\" .\n   ```\n\n2. Verify the package can be installed correctly:\n   ```\n   pip install -e .\n   ```\n\n3. Run the full test suite to ensure all functionality works with the new package name:\n   ```\n   pytest\n   ```\n\n4. Verify imports work in a new Python environment:\n   ```python\n   from mcp_commit_story import *\n   # Test basic functionality\n   ```\n\n5. Check that any CLI commands or entry points still function:\n   ```\n   mcp-commit-story --version  # or whatever the command is\n   ```\n\n6. Run CI/CD pipelines to ensure they pass with the new package name\n\n7. Have another developer review the changes to ensure nothing was missed\n\n8. Create a test plan for other developers to verify their work is compatible with the renamed package\n\n9. Document any issues encountered during testing and their resolutions",
+      "status": "pending",
+      "dependencies": [
+        3
+      ],
+      "priority": "high",
+      "subtasks": []
+    },
+    {
+      "id": 17,
+      "title": "Prioritize Manual Reflections in Summary Generation",
+      "description": "Modify the summary generation algorithm to prioritize user-added manual reflections over inferred content in daily, weekly, and monthly summaries, ensuring that intentional user input is prominently displayed.",
+      "status": "pending",
+      "dependencies": [
+        13
+      ],
+      "priority": "medium",
+      "details": "This task involves restructuring the summary generation process to give precedence to manual reflections. Key implementation details include:\n\n1. Identify all manual reflections within the summary period (daily, weekly, monthly)\n2. Modify the summary template to include a dedicated \"Manual Reflections\" section at the beginning of each summary\n3. Apply visual highlighting (e.g., different formatting, color, or icons) to distinguish manual reflections from inferred content\n4. Update the sorting algorithm to prioritize manual reflections chronologically at the top of summaries\n5. Ensure that inferred mood, tone, or accomplishments appear after manual reflections, with clear visual separation\n6. Implement fallback logic for periods with no manual reflections to gracefully handle this case\n7. Update the summary preview functionality to reflect these changes\n8. Maintain backward compatibility with existing summary data structures\n9. Document the changes in the summary generation process for future reference\n10. Consider adding a configuration option to allow users to toggle this behavior if desired\n\nThe implementation should build upon the existing manual reflection functionality from Task #13 and integrate with the current summary generation system.",
+      "testStrategy": "# Test Strategy:\nTesting for this feature should include:\n\n1. Unit tests:\n   - Verify that manual reflections are correctly identified and extracted from journal entries\n   - Test the sorting algorithm to ensure manual reflections appear before inferred content\n   - Validate that the summary template correctly positions manual reflections at the beginning\n\n2. Integration tests:\n   - Create test journals with various combinations of manual and inferred content\n   - Generate summaries for different time periods (daily, weekly, monthly) and verify correct prioritization\n   - Test edge cases: summaries with only manual reflections, only inferred content, or no content at all\n\n3. UI/UX tests:\n   - Verify that manual reflections are visually distinct and prominently displayed in the UI\n   - Test that the visual hierarchy clearly communicates the importance of manual reflections\n   - Ensure responsive design maintains this prioritization across different devices and screen sizes\n\n4. User acceptance testing:\n   - Create test scenarios with sample journal data containing both manual reflections and inferred content\n   - Have test users review summaries to confirm that manual reflections are more noticeable\n   - Collect feedback on the effectiveness of the prioritization implementation\n\n5. Regression testing:\n   - Verify that existing summary functionality remains intact\n   - Ensure that historical summaries can be regenerated with the new prioritization rules if needed\n\nDocument all test results with screenshots comparing before and after implementations.",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Identify and Extract Manual Reflections from Summary Period",
+          "description": "Create a function to identify and extract all manual reflections within a given summary period (daily, weekly, monthly).",
+          "details": "Implement a new function `extractManualReflections(startDate, endDate)` that queries the database for all manual reflections created between the specified dates. The function should return an array of reflection objects sorted chronologically. Each object should contain the reflection text, timestamp, and any associated metadata. This function will serve as the foundation for prioritizing manual reflections in the summary generation process.",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 17
+        },
+        {
+          "id": 2,
+          "title": "Modify Summary Templates to Include Dedicated Manual Reflections Section",
+          "description": "Update the summary templates for daily, weekly, and monthly views to include a dedicated section for manual reflections at the beginning.",
+          "details": "Modify the existing summary template structure to add a new 'Manual Reflections' section that appears before any inferred content. Design the section with appropriate headings and styling to make it visually distinct. Include conditional rendering logic to hide this section if no manual reflections exist for the period. Update the template rendering engine to pass the extracted manual reflections to this new section.",
+          "status": "pending",
+          "dependencies": [
+            "17.1"
+          ],
+          "parentTaskId": 17
+        },
+        {
+          "id": 3,
+          "title": "Implement Visual Highlighting for Manual Reflections",
+          "description": "Create visual differentiation between manual reflections and inferred content in summaries through styling, icons, or formatting.",
+          "details": "Design and implement a visual system to distinguish manual reflections from inferred content. Add CSS classes to manual reflection elements that apply distinct styling (e.g., different background color, border, or font weight). Consider adding an icon indicator next to manual reflections. Ensure the styling is consistent across all summary types and responsive to different screen sizes. Update the summary rendering code to apply these visual indicators when displaying manual reflections.",
+          "status": "pending",
+          "dependencies": [
+            "17.2"
+          ],
+          "parentTaskId": 17
+        },
+        {
+          "id": 4,
+          "title": "Update Summary Generation Algorithm to Prioritize Manual Reflections",
+          "description": "Modify the core summary generation algorithm to prioritize manual reflections and ensure they appear before inferred content.",
+          "details": "Refactor the existing summary generation algorithm to incorporate the extracted manual reflections at the beginning of the summary. Implement the sorting logic to display manual reflections chronologically. Create clear visual separation between the manual reflections section and subsequent inferred content. Develop fallback logic that gracefully handles periods with no manual reflections by showing only inferred content with appropriate messaging. Ensure the algorithm maintains backward compatibility with existing summary data structures.",
+          "status": "pending",
+          "dependencies": [
+            "17.1",
+            "17.2",
+            "17.3"
+          ],
+          "parentTaskId": 17
+        },
+        {
+          "id": 5,
+          "title": "Update Summary Preview and Add User Configuration Options",
+          "description": "Update the summary preview functionality to reflect the new prioritization and add user configuration options for controlling this behavior.",
+          "details": "Modify the summary preview component to accurately display the new prioritized structure with manual reflections. Implement a user configuration option in the settings panel that allows users to toggle between prioritized manual reflections and the original summary format. Create appropriate UI controls and persistence for this preference. Update the documentation to explain the new summary generation process and configuration options. Test the preview functionality to ensure it accurately represents the final summary output.",
+          "status": "pending",
+          "dependencies": [
+            "17.4"
+          ],
+          "parentTaskId": 17
+        },
+        {
+          "id": 6,
+          "title": "Review and update README/docs",
+          "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
+          "details": "Document the changes in the summary generation process, explaining how manual reflections are now prioritized over inferred content. Include information about the new user configuration option that allows toggling this behavior. Update any relevant developer documentation to explain the implementation details and design decisions. Ensure that user-facing documentation clearly explains the new summary structure and how manual reflections are displayed.\n<info added on 2025-05-18T22:52:53.110Z>\nDocument the changes in the summary generation process, explaining how manual reflections are now prioritized over inferred content. Include information about the new user configuration option that allows toggling this behavior. Update any relevant developer documentation to explain the implementation details and design decisions. Ensure that user-facing documentation clearly explains the new summary structure and how manual reflections are displayed.\n\nThe documentation update should include:\n\n1. README.md Updates:\n   - Add a new section titled \"Manual Reflections in Summaries\" explaining the prioritization feature\n   - Update the configuration options section to include the new toggle for manual reflection prioritization\n   - Include screenshots or examples showing the difference between prioritized and non-prioritized summaries\n   - Update any relevant command-line arguments or API parameters\n\n2. User Documentation:\n   - Create clear explanations of what manual reflections are and how they differ from inferred content\n   - Provide step-by-step instructions for enabling/disabling the prioritization feature\n   - Include visual examples showing before/after comparisons\n   - Add troubleshooting tips for common issues users might encounter\n\n3. Developer Documentation:\n   - Document the technical implementation of the prioritization algorithm\n   - Explain the data flow and how manual reflections are identified and extracted\n   - Detail the changes made to the summary generation pipeline\n   - Include code examples showing how to interact with the new functionality programmatically\n   - Document any new classes, methods, or configuration parameters added\n   - Explain design decisions and trade-offs considered during implementation\n\n4. API Documentation:\n   - Update any API reference documentation to include new endpoints or parameters\n   - Provide example requests and responses showing the feature in action\n   - Document any changes to response formats or structures\n\n5. Changelog:\n   - Add an entry describing this feature addition with appropriate version number\n   - Highlight backward compatibility considerations\n\nEnsure all documentation maintains a consistent tone and style with existing documentation. Use clear, concise language appropriate for the target audience of each document type.\n</info added on 2025-05-18T22:52:53.110Z>",
+          "status": "pending",
+          "dependencies": [
+            "17.1",
+            "17.2",
+            "17.3",
+            "17.4",
+            "17.5"
+          ],
+          "parentTaskId": 17
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "title": "Implement Daily Summary Generation Feature",
+      "description": "Add functionality to generate summaries for a single day in the journal system via CLI and MCP tool, with consideration for auto-generating summaries for days with new commits.",
+      "status": "pending",
+      "dependencies": [],
+      "priority": "medium",
+      "details": "",
+      "testStrategy": "# Test Strategy:\nTesting should cover all aspects of the daily summary feature:\n\n1. Unit Tests:\n   - Test the date parsing and validation logic\n   - Verify the summary generation algorithm produces correct output for various input scenarios\n   - Test edge cases: empty days, days with single entries, days with many entries\n   - Verify proper handling of manual reflections prioritization\n\n2. Integration Tests:\n   - Test the CLI interface with various date formats and options\n   - Verify the MCP tool correctly interfaces with the summary generation logic\n   - Test the auto-generation feature triggers correctly when enabled\n   - Verify storage and retrieval of daily summaries works as expected\n\n3. User Acceptance Testing:\n   - Create test scenarios for common user workflows\n   - Verify the feature works with the journal system's existing data\n   - Test with different user permission levels if applicable\n\n4. Performance Testing:\n   - Measure and benchmark summary generation time for various day sizes\n   - Test auto-generation impact on system resources\n   - Verify the system remains responsive during summary generation\n\n5. Regression Testing:\n   - Ensure existing summary features (weekly, monthly) continue to work\n   - Verify that the prioritization of manual reflections works consistently\n\n6. Automated Test Suite:\n   - Add new test cases to the comprehensive testing suite (from Task #15)\n   - Create specific test fixtures for daily summary testing\n\n7. Documentation Testing:\n   - Verify help documentation accurately describes the new options\n   - Test that error messages are clear and actionable",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Single-Day Summary Generation Core Logic",
+          "description": "Create the core functionality to generate summaries for a specific day in the journal system",
+          "details": "Develop a dedicated function that accepts a date parameter and generates a summary for that specific day. Reuse existing summary algorithms but modify them to focus on single-day context. Ensure the function handles edge cases like days with no entries. Include relevant statistics (commit count, activity patterns) and prioritize manual reflections in the summary output. Format the output consistently with other summary types. This function will serve as the foundation for both CLI and MCP tool implementations.",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 18
+        },
+        {
+          "id": 2,
+          "title": "Enhance CLI Interface with Day-Specific Summary Option",
+          "description": "Add a new command-line option to generate summaries for a specific day",
+          "details": "Extend the CLI interface by adding a new '--day' or '--date' option that accepts date input in YYYY-MM-DD format. Implement argument parsing and validation for the new option. Connect this option to the single-day summary generation function. Ensure backward compatibility with existing CLI commands. Implement proper error handling for invalid date formats or dates with no journal entries. Update the help documentation to include information about the new option and provide usage examples.",
+          "status": "pending",
+          "dependencies": [
+            "18.1"
+          ],
+          "parentTaskId": 18
+        },
+        {
+          "id": 3,
+          "title": "Integrate Day-Specific Summary Feature into MCP Tool",
+          "description": "Add UI elements to the MCP tool for selecting and generating summaries for specific days",
+          "details": "Design and implement UI components in the MCP tool for date selection, such as a date picker or calendar widget. Create a dedicated panel or section for day-specific summaries. Connect the UI elements to the single-day summary generation function. Implement loading indicators and success/error messages to provide clear feedback during and after summary generation. Ensure the UI is intuitive and consistent with the existing design patterns of the MCP tool.",
+          "status": "pending",
+          "dependencies": [
+            "18.1"
+          ],
+          "parentTaskId": 18
+        },
+        {
+          "id": 4,
+          "title": "Implement Storage and Retrieval System for Daily Summaries",
+          "description": "Design and implement a system to store and retrieve daily summaries efficiently",
+          "details": "Design a consistent storage approach for daily summaries, considering file structure and naming conventions. Implement functions to save generated summaries to the appropriate storage location. Create efficient retrieval methods for viewing past daily summaries. Consider implementing a caching mechanism for frequently accessed summaries to improve performance. Ensure the storage system can handle concurrent access and is resilient to failures. Update existing code to use this new storage system when appropriate.",
+          "status": "pending",
+          "dependencies": [
+            "18.1"
+          ],
+          "parentTaskId": 18
+        },
+        {
+          "id": 5,
+          "title": "Develop Auto-Generation Feature for Daily Summaries",
+          "description": "Create functionality to automatically generate summaries for days with new commits",
+          "details": "Implement configuration options to enable/disable auto-generation of daily summaries. Create a mechanism to detect if new commits were added for a previous day. Design a background process or trigger that runs at specified intervals to check for days needing summaries. Implement the auto-generation logic that calls the single-day summary function for relevant days. Add notification functionality to inform users of newly auto-generated summaries. Provide configuration options for users to set the time window for auto-generation and other preferences. Ensure the feature is performant and doesn't interfere with other system operations.",
+          "status": "pending",
+          "dependencies": [
+            "18.1",
+            "18.4"
+          ],
+          "parentTaskId": 18
+        },
+        {
+          "id": 6,
+          "title": "Review and update README/docs",
+          "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [
+            "18.1",
+            "18.2",
+            "18.3",
+            "18.4",
+            "18.5"
+          ],
+          "parentTaskId": 18
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "title": "Document MCP Server Configuration and Integration",
+      "description": "Ensure the MCP server launch/discovery/configuration requirements are documented in the PRD, README, and codebase. The MCP server must be launchable as a standalone process, expose the required journal operations, and be discoverable by compatible clients. The method for launching the MCP server is not prescribed; it may be started via CLI, Python entry point, etc.",
+      "details": "",
+      "testStrategy": "",
+      "status": "pending",
+      "dependencies": [],
+      "priority": "medium",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Provide generic client/editor config block example",
+          "description": "Add a JSON example of a configuration block for connecting to the MCP server, showing command, args, and optional env vars.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 19
+        },
+        {
+          "id": 2,
+          "title": "Clarify API key/env var requirements",
+          "description": "Document that API keys or environment variables are only required if the underlying SDK or provider needs them, not for all deployments.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 19
+        },
+        {
+          "id": 3,
+          "title": "Ensure separation of MCP server config from journal config",
+          "description": "Make sure documentation clearly distinguishes between MCP server configuration and the journal system's .mcp-journalrc.yaml.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 19
+        },
+        {
+          "id": 4,
+          "title": "Review and update README/docs",
+          "description": "Review and update the README.md and other documentation to reflect changes made in this task. Ensure documentation is clear, accurate, and up to date.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [
+            "19.1",
+            "19.2",
+            "19.3"
+          ],
+          "parentTaskId": 19
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "title": "Validate Agent/Model Interpretation and Generation of Structured Data",
+      "description": "Design and execute tests to validate that the agent/model can reliably interpret and generate valuable, consistent entries from the structured data format specified in the engineering spec.",
+      "details": "This task involves three key components:\n\n1. Test Design and Execution:\n   - Create a comprehensive test suite using both real journal data (if available) and synthetic sample data that covers all data structures and edge cases defined in the engineering spec\n   - Design specific test scenarios that validate the agent/model's ability to:\n     - Parse and interpret different types of journal entries (daily notes, reflections, etc.)\n     - Generate appropriate summaries at different time scales (daily, weekly, monthly)\n     - Handle special cases like prioritizing manual reflections over inferred content\n     - Process metadata and relationships between entries\n   - Execute tests systematically, recording all inputs and outputs for analysis\n\n2. Quality and Consistency Evaluation:\n   - Develop objective metrics to evaluate output quality (e.g., relevance, accuracy, completeness)\n   - Assess consistency across multiple runs with similar inputs\n   - Compare outputs against expected results defined in the engineering spec\n   - Analyze how well the agent/model handles edge cases and unusual inputs\n   - Evaluate performance across different data volumes and complexity levels\n\n3. Documentation and Recommendations:\n   - Create detailed documentation of all test results, including successful and failed cases\n   - Identify and categorize any limitations, inconsistencies, or errors in the agent/model's processing\n   - Document specific examples where the model performs well or poorly\n   - Provide actionable recommendations for improving model performance\n   - Suggest any necessary modifications to the data structure or processing pipeline\n\nThe implementation should integrate with the existing MCP server infrastructure and be compatible with the journal system's CLI tools.",
+      "testStrategy": "The validation of this task will follow a multi-stage approach:\n\n1. Test Suite Verification:\n   - Review the test suite to ensure it covers all data structures and edge cases defined in the engineering spec\n   - Verify that both real and synthetic test data are representative of actual usage patterns\n   - Confirm that test scenarios address all required functionality (parsing, generation, prioritization, etc.)\n\n2. Execution and Results Analysis:\n   - Execute the complete test suite in a controlled environment\n   - Verify that all test results are properly recorded and organized\n   - Review the quality and consistency metrics for objectivity and relevance\n   - Confirm that the evaluation methodology is sound and repeatable\n\n3. Documentation Review:\n   - Assess the completeness and clarity of the test documentation\n   - Verify that all identified issues are well-described with reproducible examples\n   - Evaluate the actionability of the recommendations\n   - Ensure that both successful and problematic cases are thoroughly documented\n\n4. Acceptance Testing:\n   - Demonstrate the agent/model successfully processing at least 5 different types of structured data inputs\n   - Show examples of correctly generated outputs that meet the requirements\n   - If blockers exist, verify they are clearly documented with:\n     - Specific description of the issue\n     - Impact on functionality\n     - Potential workarounds\n     - Recommended path forward\n\n5. Integration Verification:\n   - Confirm that the testing methodology integrates with the existing MCP server\n   - Verify compatibility with the journal system's CLI tools\n   - Ensure the validation process can be repeated for future model iterations\n\nThe task will be considered complete when either the agent/model demonstrates reliable interpretation and generation capabilities across all test cases, or when clear documentation of limitations with actionable recommendations is provided.",
+      "status": "pending",
+      "dependencies": [],
+      "priority": "high",
+      "subtasks": []
+    },
+    {
+      "id": 21,
+      "title": "Integrate Codecov for Test Coverage Reporting",
+      "description": "Set up Codecov integration with the GitHub repository to track and report test coverage metrics, culminating in a functional coverage badge in the README.",
+      "details": "This task involves establishing a connection between the repository and Codecov to enable automated test coverage reporting. Implementation steps include:\n\n1. Create a Codecov account if not already available and link it to the organization's GitHub account\n2. Add the repository to Codecov's dashboard\n3. Generate a Codecov token for secure communication between CI and Codecov\n4. Update the CI pipeline configuration (GitHub Actions, CircleCI, etc.) to:\n   - Install necessary coverage tools (e.g., pytest-cov for Python)\n   - Run tests with coverage collection enabled\n   - Upload coverage reports to Codecov using the token\n5. Add a `.codecov.yml` configuration file to the repository root to customize coverage settings (thresholds, exclusions, etc.)\n6. Uncomment or add the Codecov badge in the README.md file using the format provided by Codecov\n7. Verify the badge displays the actual coverage percentage after the first successful upload\n\nConsider setting coverage thresholds to maintain code quality and potentially configure PR comments from Codecov to highlight coverage changes in code reviews.",
+      "testStrategy": "To verify successful completion of this task:\n\n1. Manually trigger a CI build and confirm the coverage report is generated and uploaded to Codecov\n2. Check the Codecov dashboard to ensure:\n   - The repository appears with correct coverage data\n   - Historical data begins tracking from the first upload\n   - Coverage reports include all relevant files (no critical omissions)\n3. Verify the Codecov badge in the README:\n   - Badge is properly displayed (not broken)\n   - Badge shows an actual percentage value (not \"unknown\" or \"N/A\")\n   - The percentage matches what's shown in the Codecov dashboard\n4. Create a test PR with code changes that would affect coverage (both positively and negatively) to confirm:\n   - Codecov reports the coverage change in the PR\n   - The badge updates accordingly after merging\n5. Document the integration process in the project documentation for future reference\n6. Have another team member verify they can access the Codecov dashboard for the repository",
+      "status": "pending",
+      "dependencies": [],
+      "priority": "medium",
       "subtasks": []
     }
   ]
