@@ -65,17 +65,96 @@ def get_commits_since_last_entry(repo, journal_path):
 7. Mock Git repositories for testing
 
 # Subtasks:
-## 1. Assess existing Git utilities code structure [pending]
+## 1. Assess existing Git utilities code structure [done]
 ### Dependencies: None
 ### Description: Review the current state of git_utils.py to understand what's already implemented and what needs to be added.
 ### Details:
 Examine the existing git_utils.py file to identify: 1) Which functions are already implemented, 2) Code style and patterns to follow, 3) Dependencies being used, 4) Any existing test coverage. Create a report documenting findings and identifying gaps.
+<info added on 2025-05-19T21:40:39.524Z>
+Implementation Plan for Subtask 3.1: Assess existing Git utilities code structure
 
-## 2. Verify GitPython dependency and setup [pending]
+1. Review the current state of src/mcp_journal/git_utils.py:
+   - List all functions currently implemented.
+   - Note code style, docstring usage, and type hints.
+   - Identify which required functions (per spec/task) are missing or stubbed.
+   - Check for conditional imports and error handling patterns.
+2. Review dependencies:
+   - Confirm GitPython usage and import style.
+   - Check pyproject.toml for GitPython entry.
+3. Review test coverage:
+   - List all test files related to git_utils.py (e.g., tests/unit/test_git_utils.py).
+   - Note which functions are already covered by tests and which are not.
+   - Check for the presence of test fixtures for git repo manipulation.
+4. Create a report:
+   - Summarize findings: implemented functions, missing functions, code style, dependencies, test coverage, and gaps.
+   - Identify any immediate cleanup or setup needed before further TDD work.
+</info added on 2025-05-19T21:40:39.524Z>
+<info added on 2025-05-19T21:43:52.003Z>
+Examine the existing git_utils.py file to identify: 1) Which functions are already implemented, 2) Code style and patterns to follow, 3) Dependencies being used, 4) Any existing test coverage. Create a report documenting findings and identifying gaps.
+
+<info added on 2025-05-19T21:40:39.524Z>
+Implementation Plan for Subtask 3.1: Assess existing Git utilities code structure
+
+1. Review the current state of src/mcp_journal/git_utils.py:
+   - List all functions currently implemented.
+   - Note code style, docstring usage, and type hints.
+   - Identify which required functions (per spec/task) are missing or stubbed.
+   - Check for conditional imports and error handling patterns.
+2. Review dependencies:
+   - Confirm GitPython usage and import style.
+   - Check pyproject.toml for GitPython entry.
+3. Review test coverage:
+   - List all test files related to git_utils.py (e.g., tests/unit/test_git_utils.py).
+   - Note which functions are already covered by tests and which are not.
+   - Check for the presence of test fixtures for git repo manipulation.
+4. Create a report:
+   - Summarize findings: implemented functions, missing functions, code style, dependencies, test coverage, and gaps.
+   - Identify any immediate cleanup or setup needed before further TDD work.
+</info added on 2025-05-19T21:40:39.524Z>
+
+Assessment Report for Subtask 3.1: Existing Git Utilities Code Structure
+
+1. Current State of src/mcp_journal/git_utils.py
+- Functions implemented: is_git_repo, get_repo, get_current_commit, is_journal_only_commit, get_commit_details
+- Code style: Uses docstrings, type hints, error handling, and conditional import of GitPython. Follows project conventions.
+- Missing functions (per spec/task): get_commit_diff_summary, install_post_commit_hook, backup_existing_hook, get_commits_since_last_entry
+
+2. Dependencies
+- GitPython is conditionally imported and used. Should be present in pyproject.toml (verify and add if missing).
+
+3. Test Coverage
+- Test file: tests/unit/test_git_utils.py exists and is substantial (140 lines).
+- Coverage: Tests for existing functions likely present, but not for missing functions. No test fixtures for git repo manipulation in tests/fixtures/.
+- Recommendation: Create pytest fixtures for temporary git repositories to support robust TDD for new and existing functions.
+
+4. Summary of Gaps and Immediate Needs
+- Gaps: Several required functions are not yet implemented or stubbed. No test fixtures for git repo setup/teardown. Need to verify GitPython is in pyproject.toml.
+- Immediate needs before further TDD: Add/verify GitPython in dependencies. Create pytest fixture for temporary git repos. Review and, if needed, expand test coverage for existing functions.
+
+This assessment is logged for traceability and future reference.
+</info added on 2025-05-19T21:43:52.003Z>
+
+## 2. Verify GitPython dependency and setup [done]
 ### Dependencies: 3.1
 ### Description: Ensure GitPython is properly installed and configured for the project.
 ### Details:
 Check if GitPython is in requirements.txt or pyproject.toml. Install if missing. Create a simple script to verify GitPython can access a test repository. Document any version constraints or issues encountered.
+<info added on 2025-05-19T21:45:13.239Z>
+Check if GitPython is in requirements.txt or pyproject.toml. Install if missing. Create a simple script to verify GitPython can access a test repository. Document any version constraints or issues encountered.
+
+Implementation Plan:
+1. Check pyproject.toml for a GitPython dependency entry. If missing, add it and install dependencies.
+2. Write a minimal test in tests/unit/test_git_utils.py (or a new test file if more appropriate) that:
+   - Attempts to import git (GitPython)
+   - Attempts to instantiate a Repo object for the current directory (or a temp directory)
+   - Asserts that the Repo object is created or raises a clear error if not a git repo
+3. Run the test to confirm it fails if GitPython is missing or misconfigured.
+4. If the test fails due to missing dependency, install GitPython and rerun the test to confirm it passes.
+5. Document any version constraints or issues encountered in the subtask log.
+</info added on 2025-05-19T21:45:13.239Z>
+<info added on 2025-05-19T21:46:22.303Z>
+GitPython dependency has been successfully verified and set up. The package is present in pyproject.toml with version constraint 'gitpython>=3.1.0'. A test-driven development approach was used to verify the functionality by creating a test case named 'test_gitpython_import_and_repo_instantiation' in the tests/unit/test_git_utils.py file. This test confirms that GitPython can be properly imported and that a Repo object can be instantiated without errors. The test was executed and passed successfully, confirming that GitPython is correctly installed and functioning as expected. No version constraints issues or other problems were encountered during the verification process. The subtask has been completed successfully and is ready to be marked as done.
+</info added on 2025-05-19T21:46:22.303Z>
 
 ## 3. Create test fixtures for Git operations [pending]
 ### Dependencies: 3.2

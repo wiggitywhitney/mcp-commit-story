@@ -10,6 +10,20 @@ from mcp_journal.git_utils import (
     get_commit_details
 )
 
+# TDD: Test that GitPython is installed and can instantiate a Repo object
+# This test should fail if GitPython is missing or misconfigured
+
+def test_gitpython_import_and_repo_instantiation():
+    try:
+        import git
+        repo = git.Repo(os.getcwd())
+        assert repo is not None
+    except ImportError:
+        pytest.fail("GitPython is not installed. Run: pip install gitpython")
+    except git.InvalidGitRepositoryError:
+        # Acceptable if not in a git repo, but the import should still succeed
+        pass
+
 def test_is_git_repo_valid():
     """Test detection of valid Git repository"""
     with patch('os.path.exists') as mock_exists:
