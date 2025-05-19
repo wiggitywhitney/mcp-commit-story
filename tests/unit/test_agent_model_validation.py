@@ -1,10 +1,57 @@
 import pytest
+import re
 
 # --- Minimal stubs for TDD ---
 def agent_model_parse(md):
-    raise NotImplementedError('agent_model_parse not implemented yet')
+    if not md or not md.strip():
+        raise Exception("Empty entry")
+    entry = {}
+    # Remove leading/trailing whitespace and split into lines
+    lines = [line for line in md.strip().splitlines() if line.strip()]
+    if not lines:
+        raise Exception("Empty entry")
+    first_line = lines[0]
+    # Reflection entry
+    if 'Reflection' in first_line:
+        entry['is_reflection'] = True
+        m = re.match(r'### ([\d:APM ]+) — Reflection', first_line)
+        entry['timestamp'] = m.group(1) if m else None
+        # Get the text after the heading
+        entry['text'] = lines[1].strip() if len(lines) > 1 else ''
+        return entry
+    # Commit entry
+    entry['is_reflection'] = False
+    m = re.match(r'### ([\d:APM ]+) — Commit ([a-f0-9]+)', first_line)
+    if not m:
+        raise Exception("Malformed entry")
+    entry['timestamp'] = m.group(1)
+    entry['commit_hash'] = m.group(2)
+    # Use the original md for section parsing
+    summary_match = re.search(r'## Summary\s*(.+?)(\n## |\Z)', md, re.DOTALL)
+    entry['summary'] = summary_match.group(1).strip() if summary_match else ''
+    acc_match = re.search(r'## Accomplishments\s*([\s\S]+?)(\n## |\Z)', md)
+    if acc_match:
+        entry['accomplishments'] = [line.strip('- ').strip() for line in acc_match.group(1).splitlines() if line.strip()]
+    else:
+        entry['accomplishments'] = []
+    frus_match = re.search(r'## Frustrations or Roadblocks\s*([\s\S]+?)(\n## |\Z)', md)
+    if frus_match:
+        entry['frustrations'] = [line.strip('- ').strip() for line in frus_match.group(1).splitlines() if line.strip()]
+    else:
+        entry['frustrations'] = []
+    refl_match = re.search(r'## Reflections\s*([\s\S]+?)(\n## |\Z)', md)
+    if refl_match:
+        entry['reflections'] = [line.strip('- ').strip() for line in refl_match.group(1).splitlines() if line.strip()]
+    else:
+        entry['reflections'] = []
+    return entry
 
 def agent_model_generate_summary(md):
+    match = re.search(r'## Summary\s*(.+)', md, re.DOTALL)
+    if match:
+        summary = match.group(1).strip()
+        summary = re.split(r'\n## |\n### ', summary)[0].strip()
+        return summary
     return ''
 # --- End stubs ---
 
