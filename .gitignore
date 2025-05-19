@@ -52,4 +52,14 @@ eggs/
 venv/
 .venv/
 ENV/
-env/ 
+env/
+
+# Python virtual environment
+.venv/
+
+# Python bytecode and cache
+__pycache__/
+*.pyc
+
+# Build artifacts
+src/mcp_journal.egg-info/ 
