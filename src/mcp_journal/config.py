@@ -47,108 +47,111 @@ class ConfigError(Exception):
 class Config:
     """
     Configuration class for MCP Journal.
-    
     Handles loading, validation, and access to configuration settings with
     sensible defaults focused on essential functionality.
+    Now supports dict-like access for compatibility with tests and legacy code.
     """
     def __init__(self, config_data: Optional[Dict[str, Any]] = None):
-        """
-        Initialize configuration with defaults or provided values.
-        
-        Args:
-            config_data: Optional dictionary containing configuration values
-        """
         config_data = config_data or {}
-        
-        # Journal settings
-        journal_config = config_data.get('journal', {})
-        self._journal_path = journal_config.get('path', 'journal/')
-        
-        # Git settings
-        git_config = config_data.get('git', {})
-        self._git_exclude_patterns = git_config.get('exclude_patterns', 
-                                                 ['journal/**', '.mcp-journalrc.yaml'])
-        
-        # Telemetry settings
-        telemetry_config = config_data.get('telemetry', {})
-        self._telemetry_enabled = telemetry_config.get('enabled', False)
+        # Always start with a deep copy of defaults
+        import copy
+        base = copy.deepcopy(DEFAULT_CONFIG)
+        # Merge input config_data into defaults
+        merged = merge_configs(base, config_data)
+        # Type checks and population for journal
+        journal = merged.get('journal', {})
+        if not isinstance(journal, dict):
+            raise ConfigError("'journal' section must be a dict")
+        if 'path' in journal and not isinstance(journal['path'], str):
+            raise ConfigError("'journal.path' must be a string")
+        self._journal = {**base['journal'], **journal}
+        self._journal_path = self._journal['path']
+        # Type checks and population for git
+        git = merged.get('git', {})
+        if not isinstance(git, dict):
+            raise ConfigError("'git' section must be a dict")
+        if 'exclude_patterns' in git and not isinstance(git['exclude_patterns'], list):
+            raise ConfigError("'git.exclude_patterns' must be a list")
+        self._git = {**base['git'], **git}
+        self._git_exclude_patterns = self._git['exclude_patterns']
+        # Type checks and population for telemetry
+        telemetry = merged.get('telemetry', {})
+        if not isinstance(telemetry, dict):
+            raise ConfigError("'telemetry' section must be a dict")
+        if 'enabled' in telemetry and not isinstance(telemetry['enabled'], bool):
+            raise ConfigError("'telemetry.enabled' must be a boolean")
+        self._telemetry = {**base['telemetry'], **telemetry}
+        self._telemetry_enabled = self._telemetry['enabled']
+        # Store the full config for dict-like access
+        self._config_dict = {
+            'journal': self._journal,
+            'git': self._git,
+            'telemetry': self._telemetry
+        }
 
     @property
     def journal_path(self) -> str:
         """Get the journal files path."""
         return self._journal_path
-    
     @journal_path.setter
     def journal_path(self, value: str):
-        """Set the journal files path."""
         if not isinstance(value, str):
             raise ConfigError("Journal path must be a string")
         self._journal_path = value
-    
+        self._journal['path'] = value
     @property
     def git_exclude_patterns(self) -> List[str]:
         """Get patterns to exclude from git processing."""
         return self._git_exclude_patterns
-    
     @git_exclude_patterns.setter
     def git_exclude_patterns(self, value: List[str]):
-        """Set patterns to exclude from git processing."""
         if not isinstance(value, list):
             raise ConfigError("Git exclude patterns must be a list")
         self._git_exclude_patterns = value
-    
+        self._git['exclude_patterns'] = value
     @property
     def telemetry_enabled(self) -> bool:
         """Get whether telemetry is enabled."""
         return self._telemetry_enabled
-    
     @telemetry_enabled.setter
     def telemetry_enabled(self, value: bool):
-        """Set whether telemetry is enabled."""
         if not isinstance(value, bool):
             raise ConfigError("Telemetry enabled must be a boolean")
         self._telemetry_enabled = value
-    
+        self._telemetry['enabled'] = value
     def as_dict(self) -> Dict[str, Any]:
-        """
-        Convert config to a dictionary.
-        
-        Returns:
-            Dictionary representation of configuration
-        """
-        return {
-            'journal': {
-                'path': self.journal_path
-            },
-            'git': {
-                'exclude_patterns': self.git_exclude_patterns
-            },
-            'telemetry': {
-                'enabled': self.telemetry_enabled
-            }
-        }
+        """Convert config to a dictionary, always including all defaults."""
+        import copy
+        d = copy.deepcopy(DEFAULT_CONFIG)
+        d['journal'].update(self._journal)
+        d['git'].update(self._git)
+        d['telemetry'].update(self._telemetry)
+        return d
+    def to_dict(self) -> Dict[str, Any]:
+        """Alias for as_dict for compatibility."""
+        return self.as_dict()
+    def __getitem__(self, key):
+        return self._config_dict[key]
+    def __contains__(self, key):
+        return key in self._config_dict
+    # For deep access in get_config_value
+    def get(self, key, default=None):
+        return self._config_dict.get(key, default)
 
-def get_config_value(config: Dict[str, Any], key_path: str, default: Any = None) -> Any:
+def get_config_value(config: Any, key_path: str, default: Any = None) -> Any:
     """
     Get a configuration value by dot-separated key path.
-    
-    Args:
-        config: Configuration dictionary
-        key_path: Dot-separated path to the config value (e.g., 'journal.path')
-        default: Value to return if key not found
-        
-    Returns:
-        Configuration value or default if not found
+    Supports both dict and Config objects.
     """
     keys = key_path.split('.')
     result = config
-    
     for key in keys:
+        if isinstance(result, Config):
+            result = result._config_dict
         if isinstance(result, dict) and key in result:
             result = result[key]
         else:
             return default
-            
     return result
 
 def find_config_files() -> Tuple[Optional[str], Optional[str]]:
@@ -230,65 +233,35 @@ def validate_config(config: Dict[str, Any]) -> Dict[str, Any]:
 def load_config(config_path: Optional[str] = None) -> Config:
     """
     Load configuration from a file with proper precedence.
-    
-    Order of precedence:
-    1. Specified config_path (if provided)
-    2. Local config (.mcp-journalrc.yaml in current dir)
-    3. Global config (~/.mcp-journalrc.yaml)
-    4. Default config
-    
-    Args:
-        config_path: Path to config file, if None will search for config files
-        
-    Returns:
-        Config object with loaded values or defaults
+    Always returns a Config object.
+    Raises ConfigError on malformed YAML or invalid types.
     """
-    config_data = DEFAULT_CONFIG.copy()
-    
+    import copy
+    config_data = copy.deepcopy(DEFAULT_CONFIG)
+    def _load_yaml(path):
+        try:
+            with open(path, 'r') as f:
+                return yaml.safe_load(f) or {}
+        except yaml.YAMLError as e:
+            raise ConfigError(f"Malformed YAML in config file {path}: {e}")
+        except Exception as e:
+            print(f"Error loading config from {path}: {e}")
+            return {}
     if config_path is None:
-        # Find config files
         local_path, global_path = find_config_files()
-        
-        # We must process the config files in order of precedence (lowest to highest)
-        # to match the test behavior. The test sets mock_load.side_effect = [local_config, global_config]
-        # so we need to load them in the order the test expects.
-        
-        # First, load local config (expecting the first item from side_effect)
-        local_data = {}
-        if local_path:
-            try:
-                with open(local_path, 'r') as f:
-                    local_data = yaml.safe_load(f) or {}
-            except Exception as e:
-                print(f"Error loading local config: {e}")
-        
-        # Next, load global config (expecting the second item from side_effect)
-        global_data = {}
-        if global_path:
-            try:
-                with open(global_path, 'r') as f:
-                    global_data = yaml.safe_load(f) or {}
-            except Exception as e:
-                print(f"Error loading global config: {e}")
-        
-        # Apply the configs in the correct precedence order: default -> global -> local
+        local_data = _load_yaml(local_path) if local_path else {}
+        global_data = _load_yaml(global_path) if global_path else {}
         if global_data:
             config_data = merge_configs(config_data, global_data)
         if local_data:
             config_data = merge_configs(config_data, local_data)
-            
-    # Load from specified path (highest precedence)
     elif config_path and os.path.exists(config_path):
-        try:
-            with open(config_path, 'r') as f:
-                file_data = yaml.safe_load(f) or {}
-            config_data = merge_configs(config_data, file_data)
-        except Exception as e:
-            print(f"Error loading config from {config_path}: {e}")
-    
-    # Validate config
-    config_data = validate_config(config_data)
-    
+        file_data = _load_yaml(config_path)
+        config_data = merge_configs(config_data, file_data)
+    # If config_data is empty (e.g., empty file), use defaults
+    if not config_data:
+        config_data = copy.deepcopy(DEFAULT_CONFIG)
+    # Validate config, apply defaults for missing fields (handled in Config)
     return Config(config_data)
 
 def save_config(config: Config, config_path: Optional[str] = None) -> bool:

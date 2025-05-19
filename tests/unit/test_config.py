@@ -15,6 +15,7 @@ from mcp_journal.config import (
     validate_config,
     DEFAULT_CONFIG
 )
+import inspect
 
 def test_config_defaults():
     """Test config object has correct defaults"""
@@ -320,4 +321,67 @@ def test_handle_malformed_yaml():
         assert config is not None
         assert isinstance(config, Config)
         # Should use default values
-        assert config.journal_path == 'journal/' 
+        assert config.journal_path == 'journal/'
+
+# ---
+# Additional TDD tests for subtask 2.11: Final review and optimization
+
+def test_load_large_config_file(tmp_path):
+    """Test loading a very large config file."""
+    config_path = tmp_path / ".mcp-journalrc.yaml"
+    with open(config_path, "w") as f:
+        f.write("journal:\n")
+        for i in range(1000):
+            f.write(f"  key{i}: value{i}\n")
+    config = load_config(str(config_path))
+    assert config["journal"]["key999"] == "value999"
+
+def test_repeated_load_config_is_consistent(tmp_path):
+    """Test repeated calls to load_config return consistent results."""
+    config_path = tmp_path / ".mcp-journalrc.yaml"
+    config_path.write_text("journal:\n  path: journal/")
+    config1 = load_config(str(config_path))
+    config2 = load_config(str(config_path))
+    assert config1.as_dict() == config2.as_dict()
+
+def test_malformed_yaml_raises_error(tmp_path):
+    """Test that malformed YAML raises a ConfigError."""
+    config_path = tmp_path / ".mcp-journalrc.yaml"
+    config_path.write_text("journal: [unclosed_list\n")
+    with pytest.raises(ConfigError):
+        load_config(str(config_path))
+
+def test_missing_required_fields(tmp_path):
+    """Test that missing required fields are handled (defaults applied or error raised)."""
+    config_path = tmp_path / ".mcp-journalrc.yaml"
+    config_path.write_text("journal: {}\n")
+    config = load_config(str(config_path))
+    assert "path" in config["journal"]
+
+def test_unexpected_data_type(tmp_path):
+    """Test that unexpected data types raise a ConfigError."""
+    config_path = tmp_path / ".mcp-journalrc.yaml"
+    config_path.write_text("journal: 123\n")
+    with pytest.raises(ConfigError):
+        load_config(str(config_path))
+
+def test_deeply_nested_config_access(tmp_path):
+    """Test access to deeply nested config keys."""
+    config_path = tmp_path / ".mcp-journalrc.yaml"
+    config_path.write_text("journal:\n  auto_summarize:\n    yearly: false\n")
+    config = load_config(str(config_path))
+    assert get_config_value(config, "journal.auto_summarize.yearly") is False
+
+def test_empty_config_file(tmp_path):
+    """Test that an empty config file loads as a valid config object."""
+    config_path = tmp_path / ".mcp-journalrc.yaml"
+    config_path.write_text("")
+    config = load_config(str(config_path))
+    assert isinstance(config, Config)
+
+def test_docstrings_and_usage_examples():
+    """Test that all public functions in config module have docstrings."""
+    import mcp_journal.config as config_mod
+    for name, obj in inspect.getmembers(config_mod):
+        if inspect.isfunction(obj) and not name.startswith("_"):
+            assert obj.__doc__ is not None and len(obj.__doc__) > 0 
