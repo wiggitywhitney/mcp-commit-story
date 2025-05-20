@@ -255,7 +255,7 @@ def backup_existing_hook(hook_path: str) -> Optional[str]:
     return backup_path
 
 
-def install_post_commit_hook(repo_path=None):
+def install_post_commit_hook(repo_path: str = None) -> None:
     """
     Install the post-commit hook in the given repo's .git/hooks directory.
     - If a hook exists, back it up using backup_existing_hook.
@@ -263,4 +263,22 @@ def install_post_commit_hook(repo_path=None):
     - Set the hook file as executable.
     - Handle errors (missing repo, permissions, etc.).
     """
-    raise NotImplementedError("install_post_commit_hook is not yet implemented.")
+    import stat
+    if repo_path is None:
+        repo_path = os.getcwd()
+    hooks_dir = os.path.join(repo_path, '.git', 'hooks')
+    if not os.path.isdir(hooks_dir):
+        raise FileNotFoundError(f"Hooks directory not found: {hooks_dir}")
+    if not os.access(hooks_dir, os.W_OK):
+        raise PermissionError(f"Hooks directory is not writable: {hooks_dir}")
+    hook_path = os.path.join(hooks_dir, 'post-commit')
+    # Backup existing hook if present
+    if os.path.exists(hook_path):
+        backup_existing_hook(hook_path)
+    # Write new hook content
+    hook_content = "#!/bin/sh\necho 'Post-commit hook triggered'\n"
+    with open(hook_path, 'w') as f:
+        f.write(hook_content)
+    # Set executable permissions
+    st = os.stat(hook_path)
+    os.chmod(hook_path, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)

@@ -256,7 +256,7 @@ Implement backup_existing_hook to: 1) Check if a hook exists at the specified pa
 ### Details:
 Write tests that verify: 1) Hook is correctly installed with proper content, 2) Existing hooks are backed up (using the previously implemented function), 3) Proper permissions are set on the hook file, 4) Function handles various error conditions gracefully.
 
-## 9. Implement install_post_commit_hook function [pending]
+## 9. Implement install_post_commit_hook function [done]
 ### Dependencies: 3.8
 ### Description: Implement the function to install the post-commit hook in a Git repository.
 ### Details:
