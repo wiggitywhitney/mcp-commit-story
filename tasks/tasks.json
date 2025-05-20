@@ -519,8 +519,8 @@
           "title": "Update test files and external imports",
           "description": "Update all import statements in test files and any examples or documentation code to reference the new package name.",
           "dependencies": [],
-          "details": "1. Identify all test files in the 'tests/' directory\n2. Update all import statements from 'mcp_journal' to 'mcp_commit_story'\n3. Check for any example code in documentation or standalone examples\n4. Update imports in those files as well\n5. Run tests to verify they pass with the new imports",
-          "status": "pending",
+          "details": "1. Identify all test files in the 'tests/' directory\n2. Update all import statements from 'mcp_journal' to 'mcp_commit_story'\n3. Check for any example code in documentation or standalone examples\n4. Update imports in those files as well\n5. Run tests to verify they pass with the new imports\n<info added on 2025-05-20T13:14:13.864Z>\n1. Search the entire codebase for any remaining references to 'mcp_journal', including:\n   - All test files in the 'tests/' directory\n   - Documentation files (e.g., .md, .rst)\n   - Example code in scripts, docs, or root files\n   - Configuration files (e.g., pyproject.toml, .gitignore)\n2. For each match, update import statements and references from 'mcp_journal' to 'mcp_commit_story'.\n3. For documentation and sample code, update code blocks and prose to use the new package name.\n4. Run the full test suite to verify all tests pass and no import errors remain.\n5. Confirm that all documentation, config, and example code is consistent with the new package name.\n6. Log any non-trivial changes or issues encountered in the subtask details.\n</info added on 2025-05-20T13:14:13.864Z>",
+          "status": "done",
           "testStrategy": "Run the full test suite to ensure all tests pass with the updated imports. Check for any import errors or test failures."
         },
         {

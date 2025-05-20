@@ -62,4 +62,4 @@ __pycache__/
 *.pyc
 
 # Build artifacts
-src/mcp_journal.egg-info/ 
+src/mcp_commit_story.egg-info/ 

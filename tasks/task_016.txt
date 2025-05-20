@@ -83,7 +83,7 @@ To verify the successful completion of this task:
 Note: No internal imports in the package source files reference mcp_journal, so only test files need updating. __init__.py and placeholder files will be copied as-is.
 </info added on 2025-05-20T13:06:27.064Z>
 
-## 2. Update test files and external imports [pending]
+## 2. Update test files and external imports [done]
 ### Dependencies: None
 ### Description: Update all import statements in test files and any examples or documentation code to reference the new package name.
 ### Details:
@@ -92,6 +92,18 @@ Note: No internal imports in the package source files reference mcp_journal, so 
 3. Check for any example code in documentation or standalone examples
 4. Update imports in those files as well
 5. Run tests to verify they pass with the new imports
+<info added on 2025-05-20T13:14:13.864Z>
+1. Search the entire codebase for any remaining references to 'mcp_journal', including:
+   - All test files in the 'tests/' directory
+   - Documentation files (e.g., .md, .rst)
+   - Example code in scripts, docs, or root files
+   - Configuration files (e.g., pyproject.toml, .gitignore)
+2. For each match, update import statements and references from 'mcp_journal' to 'mcp_commit_story'.
+3. For documentation and sample code, update code blocks and prose to use the new package name.
+4. Run the full test suite to verify all tests pass and no import errors remain.
+5. Confirm that all documentation, config, and example code is consistent with the new package name.
+6. Log any non-trivial changes or issues encountered in the subtask details.
+</info added on 2025-05-20T13:14:13.864Z>
 
 ## 3. Update package configuration in pyproject.toml [pending]
 ### Dependencies: None

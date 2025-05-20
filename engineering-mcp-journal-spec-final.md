@@ -58,7 +58,7 @@ The MCP server must be launchable as a standalone process and expose the require
 ```
 mcp-journal/
 ├── src/
-│   └── mcp_journal/
+│   └── mcp_commit_story/
 │       ├── __init__.py
 │       ├── cli.py        # Click commands
 │       ├── server.py     # MCP server implementation
@@ -117,7 +117,7 @@ mypy = "^1.0.0"
 
 ### Core Components
 ```
-src/mcp_journal/
+src/mcp_commit_story/
 ├── __init__.py
 ├── cli.py        # Click commands
 ├── server.py     # MCP server implementation  
@@ -594,7 +594,7 @@ def mock_telemetry_exporter():
 import logging
 
 # Configure debug logging
-debug_logger = logging.getLogger('mcp_journal.debug')
+debug_logger = logging.getLogger('mcp_commit_story.debug')
 
 def format_terminal_commands(commands):
     """Deduplicate adjacent identical commands"""

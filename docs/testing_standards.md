@@ -102,7 +102,7 @@ Use mocking for testing components that depend on external systems:
 ```python
 def test_git_operations():
     """Test Git operations with mocking"""
-    with patch('mcp_journal.git_utils.git.Repo') as mock_repo:
+    with patch('mcp_commit_story.git_utils.git.Repo') as mock_repo:
         # Setup mock
         mock_instance = mock_repo.return_value
         mock_instance.head.commit.hexsha = 'abcdef'
