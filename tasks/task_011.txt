@@ -1,7 +1,7 @@
 # Task ID: 11
 # Title: Implement Summary Generation
 # Status: pending
-# Dependencies: 5, 6, 7
+# Dependencies: 5, 6, 7, 17, 18
 # Priority: medium
 # Description: Create the functionality to generate daily, weekly, monthly, and yearly summaries of journal entries.
 # Details:

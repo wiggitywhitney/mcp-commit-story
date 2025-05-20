@@ -1,7 +1,7 @@
 # Task ID: 18
 # Title: Implement Daily Summary Generation Feature
 # Status: pending
-# Dependencies: None
+# Dependencies: 17
 # Priority: medium
 # Description: Add functionality to generate summaries for a single day in the journal system via CLI and MCP tool, with consideration for auto-generating summaries for days with new commits.
 # Details:
