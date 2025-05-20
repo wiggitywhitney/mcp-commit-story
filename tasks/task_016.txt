@@ -5,40 +5,41 @@
 # Priority: high
 # Description: Rename the Python package from 'mcp_journal' to 'mcp_commit_story' to align with the repository name, including all necessary code and configuration updates to maintain functionality.
 # Details:
-This task involves a comprehensive package rename to ensure consistency between the codebase and repository name. The developer should:
+This task involves a straightforward package rename to ensure consistency between the codebase and repository name. The developer should:
 
-1. Create a branch specifically for this rename operation
-2. Rename the source directory from 'mcp_journal' to 'mcp_commit_story'
-3. Update all import statements throughout the codebase, including:
+1. Rename the source directory from 'src/mcp_journal/' to 'src/mcp_commit_story/'
+2. Update all import statements throughout the codebase, including:
    - Internal imports within the package
    - Import statements in test files
    - Any examples or documentation code
-4. Modify pyproject.toml to reflect the new package name, including:
-   - Package metadata (name, description)
-   - Entry points
-   - Build configuration
-5. Update any references in README.md and other documentation
+3. Modify pyproject.toml to reflect the new package name, including:
+   - Package metadata (name) in [project] section
+   - Entry points in [project.scripts] section
+4. Update any references in README.md and other documentation
+5. Update configuration files like .mcp-journalrc.yaml to reflect the new name
 6. Check for hardcoded references to the package name in:
    - CLI commands
    - Configuration files
    - Environment variables
    - Log messages
 7. Update any CI/CD configuration files (.github/workflows, etc.) that reference the package name
-8. Ensure compatibility with Task 3 (Git Utilities) by coordinating with the developer responsible for that task
-9. Create a migration guide for other developers to understand the change
+8. Ensure compatibility with Task 3 (Git Utilities)
 
-This rename should be done early in the development process to minimize technical debt but should not block current in-progress tasks. The developer should coordinate with the team to find an appropriate time window for merging these changes.
+This rename should be done early in the development process to minimize technical debt.
 
 # Test Strategy:
 To verify the successful completion of this task:
 
 1. Run a comprehensive search across the codebase to ensure no instances of 'mcp_journal' remain:
    ```
-   grep -r "mcp_journal" --include="*.py" --include="*.md" --include="*.toml" .
+   grep -r "mcp_journal" --include="*.py" --include="*.md" --include="*.toml" --include="*.yaml" .
    ```
 
 2. Verify the package can be installed correctly:
    ```
+   # Uninstall old package if needed
+   pip uninstall mcp_journal -y
+   # Install new package
    pip install -e .
    ```
 
@@ -60,8 +61,57 @@ To verify the successful completion of this task:
 
 6. Run CI/CD pipelines to ensure they pass with the new package name
 
-7. Have another developer review the changes to ensure nothing was missed
+# Subtasks:
+## 1. Rename source directory and update package imports [pending]
+### Dependencies: None
+### Description: Rename the source directory from 'src/mcp_journal/' to 'src/mcp_commit_story/' and update all internal import statements within the package.
+### Details:
+1. Create a new directory 'src/mcp_commit_story/'
+2. Copy all files from 'src/mcp_journal/' to 'src/mcp_commit_story/'
+3. Update all import statements within the package files that reference 'mcp_journal' to 'mcp_commit_story'
+4. Ensure __init__.py and package structure is maintained
+5. Do not delete the original directory yet
 
-8. Create a test plan for other developers to verify their work is compatible with the renamed package
+## 2. Update test files and external imports [pending]
+### Dependencies: None
+### Description: Update all import statements in test files and any examples or documentation code to reference the new package name.
+### Details:
+1. Identify all test files in the 'tests/' directory
+2. Update all import statements from 'mcp_journal' to 'mcp_commit_story'
+3. Check for any example code in documentation or standalone examples
+4. Update imports in those files as well
+5. Run tests to verify they pass with the new imports
 
-9. Document any issues encountered during testing and their resolutions
+## 3. Update package configuration in pyproject.toml [pending]
+### Dependencies: None
+### Description: Modify pyproject.toml to reflect the new package name, including package metadata and entry points.
+### Details:
+1. Update the package name in the [project] section
+2. Update any references in dependencies or dev dependencies
+3. Update entry points in [project.scripts] section
+4. Update any other metadata that references the old package name
+5. Verify the package can still be installed locally with pip install -e .
+
+## 4. Update documentation and configuration files [pending]
+### Dependencies: None
+### Description: Update README.md, configuration files, and check for hardcoded references to the package name in various locations.
+### Details:
+1. Update README.md with the new package name
+2. Rename configuration files like .mcp-journalrc.yaml to .mcp-commit-storyrc.yaml
+3. Update any hardcoded references to 'mcp_journal' in:
+   - CLI commands
+   - Configuration files
+   - Environment variables
+   - Log messages
+4. Check for any other documentation files that need updating
+
+## 5. Update CI/CD configuration and clean up [pending]
+### Dependencies: None
+### Description: Update any CI/CD configuration files that reference the package name and remove the old package directory after verifying everything works.
+### Details:
+1. Update any GitHub workflow files in .github/workflows/
+2. Check for any other CI/CD configuration that might reference the old name
+3. Run a full verification of the package functionality
+4. Once everything is confirmed working, delete the original 'src/mcp_journal/' directory
+5. Verify the package still works after removal of the old directory
+

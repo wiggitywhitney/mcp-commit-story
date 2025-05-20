@@ -504,53 +504,7 @@
       "priority": "high",
       "details": "This task involves a straightforward package rename to ensure consistency between the codebase and repository name. The developer should:\n\n1. Rename the source directory from 'src/mcp_journal/' to 'src/mcp_commit_story/'\n2. Update all import statements throughout the codebase, including:\n   - Internal imports within the package\n   - Import statements in test files\n   - Any examples or documentation code\n3. Modify pyproject.toml to reflect the new package name, including:\n   - Package metadata (name) in [project] section\n   - Entry points in [project.scripts] section\n4. Update any references in README.md and other documentation\n5. Update configuration files like .mcp-journalrc.yaml to reflect the new name\n6. Check for hardcoded references to the package name in:\n   - CLI commands\n   - Configuration files\n   - Environment variables\n   - Log messages\n7. Update any CI/CD configuration files (.github/workflows, etc.) that reference the package name\n8. Ensure compatibility with Task 3 (Git Utilities)\n\nThis rename should be done early in the development process to minimize technical debt.",
       "testStrategy": "To verify the successful completion of this task:\n\n1. Run a comprehensive search across the codebase to ensure no instances of 'mcp_journal' remain:\n   ```\n   grep -r \"mcp_journal\" --include=\"*.py\" --include=\"*.md\" --include=\"*.toml\" --include=\"*.yaml\" .\n   ```\n\n2. Verify the package can be installed correctly:\n   ```\n   # Uninstall old package if needed\n   pip uninstall mcp_journal -y\n   # Install new package\n   pip install -e .\n   ```\n\n3. Run the full test suite to ensure all functionality works with the new package name:\n   ```\n   pytest\n   ```\n\n4. Verify imports work in a new Python environment:\n   ```python\n   from mcp_commit_story import *\n   # Test basic functionality\n   ```\n\n5. Check that any CLI commands or entry points still function:\n   ```\n   mcp-commit-story --version  # or whatever the command is\n   ```\n\n6. Run CI/CD pipelines to ensure they pass with the new package name",
-      "subtasks": [
-        {
-          "id": 1,
-          "title": "Rename source directory and update package imports",
-          "description": "Rename the source directory from 'src/mcp_journal/' to 'src/mcp_commit_story/' and update all internal import statements within the package.",
-          "dependencies": [],
-          "details": "1. Create a new directory 'src/mcp_commit_story/'\n2. Copy all files from 'src/mcp_journal/' to 'src/mcp_commit_story/'\n3. Update all import statements within the package files that reference 'mcp_journal' to 'mcp_commit_story'\n4. Ensure __init__.py and package structure is maintained\n5. Do not delete the original directory yet",
-          "status": "pending",
-          "testStrategy": "Run unit tests after changes to verify imports are working correctly. Check for import errors when running the package."
-        },
-        {
-          "id": 2,
-          "title": "Update test files and external imports",
-          "description": "Update all import statements in test files and any examples or documentation code to reference the new package name.",
-          "dependencies": [],
-          "details": "1. Identify all test files in the 'tests/' directory\n2. Update all import statements from 'mcp_journal' to 'mcp_commit_story'\n3. Check for any example code in documentation or standalone examples\n4. Update imports in those files as well\n5. Run tests to verify they pass with the new imports",
-          "status": "pending",
-          "testStrategy": "Run the full test suite to ensure all tests pass with the updated imports. Check for any import errors or test failures."
-        },
-        {
-          "id": 3,
-          "title": "Update package configuration in pyproject.toml",
-          "description": "Modify pyproject.toml to reflect the new package name, including package metadata and entry points.",
-          "dependencies": [],
-          "details": "1. Update the package name in the [project] section\n2. Update any references in dependencies or dev dependencies\n3. Update entry points in [project.scripts] section\n4. Update any other metadata that references the old package name\n5. Verify the package can still be installed locally with pip install -e .",
-          "status": "pending",
-          "testStrategy": "After updating pyproject.toml, run 'pip install -e .' to verify the package installs correctly with the new name. Test CLI commands to ensure entry points work."
-        },
-        {
-          "id": 4,
-          "title": "Update documentation and configuration files",
-          "description": "Update README.md, configuration files, and check for hardcoded references to the package name in various locations.",
-          "dependencies": [],
-          "details": "1. Update README.md with the new package name\n2. Rename configuration files like .mcp-journalrc.yaml to .mcp-commit-storyrc.yaml\n3. Update any hardcoded references to 'mcp_journal' in:\n   - CLI commands\n   - Configuration files\n   - Environment variables\n   - Log messages\n4. Check for any other documentation files that need updating",
-          "status": "pending",
-          "testStrategy": "Manually verify documentation accuracy. Test configuration file loading to ensure the application can find and load the renamed config files."
-        },
-        {
-          "id": 5,
-          "title": "Update CI/CD configuration and clean up",
-          "description": "Update any CI/CD configuration files that reference the package name and remove the old package directory after verifying everything works.",
-          "dependencies": [],
-          "details": "1. Update any GitHub workflow files in .github/workflows/\n2. Check for any other CI/CD configuration that might reference the old name\n3. Run a full verification of the package functionality\n4. Once everything is confirmed working, delete the original 'src/mcp_journal/' directory\n5. Verify the package still works after removal of the old directory",
-          "status": "pending",
-          "testStrategy": "Run the full test suite one final time after all changes. Manually test the main functionality of the package to ensure everything works with the new name and after removing the old directory."
-        }
-      ]
+      "subtasks": []
     },
     {
       "id": 17,
