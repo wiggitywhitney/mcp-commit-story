@@ -499,7 +499,7 @@
       "id": 16,
       "title": "Rename Python Package from 'mcp_journal' to 'mcp_commit_story'",
       "description": "Rename the Python package from 'mcp_journal' to 'mcp_commit_story' to align with the repository name, including all necessary code and configuration updates to maintain functionality.",
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         3
       ],
@@ -548,8 +548,8 @@
           "title": "Update CI/CD configuration and clean up",
           "description": "Update any CI/CD configuration files that reference the package name and remove the old package directory after verifying everything works.",
           "dependencies": [],
-          "details": "1. Update any GitHub workflow files in .github/workflows/\n2. Check for any other CI/CD configuration that might reference the old name\n3. Run a full verification of the package functionality\n4. Once everything is confirmed working, delete the original 'src/mcp_journal/' directory\n5. Verify the package still works after removal of the old directory",
-          "status": "pending",
+          "details": "1. Update any GitHub workflow files in .github/workflows/\n2. Check for any other CI/CD configuration that might reference the old name\n3. Run a full verification of the package functionality\n4. Once everything is confirmed working, delete the original 'src/mcp_journal/' directory\n5. Verify the package still works after removal of the old directory\n<info added on 2025-05-20T14:02:31.842Z>\n1. Review all GitHub Actions workflow files in .github/workflows/ for references to the old package name (mcp_journal).\n2. Update any references in workflow files, badges, or other CI/CD configs to use the new package name (mcp_commit_story).\n3. Run the full test suite to verify that everything works with the new package name.\n4. Once all tests pass and the package is verified, delete the old src/mcp_journal/ directory and its contents.\n5. Run the test suite again to confirm nothing is broken by the removal.\n6. Manually verify the main functionality of the package and CLI.\n7. Log any issues or non-trivial changes encountered during the process.\n</info added on 2025-05-20T14:02:31.842Z>",
+          "status": "done",
           "testStrategy": "Run the full test suite one final time after all changes. Manually test the main functionality of the package to ensure everything works with the new name and after removing the old directory."
         }
       ]
