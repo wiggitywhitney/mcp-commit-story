@@ -239,3 +239,45 @@ Added TDD tests and implementation for the `backup_existing_hook` function, ensu
 - (None; only include if manually added via `mcp-journal add-reflection`)
 
 ---
+
+### 8:27 PM — Commit 8f3e8eb
+
+## Summary
+Wrote comprehensive TDD tests for the `install_post_commit_hook` function, covering all required behaviors and error conditions. This commit ensures that the next implementation step will be robustly validated and spec-compliant.
+
+## Accomplishments
+- Added TDD tests for `install_post_commit_hook` to `tests/unit/test_git_utils.py`.
+- Covered scenarios: fresh install, backup of existing hook, permission setting, read-only and missing hooks directory errors, and correct invocation of `backup_existing_hook`.
+- Confirmed tests fail as expected with the current stub, validating the TDD cycle.
+- Updated task documentation in `tasks/task_003.txt` and `tasks/tasks.json` to reflect completion of subtask 3.8.
+
+## Frustrations or Roadblocks
+- None encountered; the TDD-first approach worked smoothly and all tests are ready for implementation.
+
+## Terminal Commands (AI Session)
+- `pytest tests/unit/test_git_utils.py | cat`
+- `git commit -m "Write tests for install_post_commit_hook function"`
+
+## Discussion Notes (from chat)
+> "Failing (TDD) tests for install_post_commit_hook have been added to your test suite. These tests cover all required behaviors and error conditions."
+>
+> "The test run failed because install_post_commit_hook is not yet defined or exported in src/mcp_journal/git_utils.py. This is expected at this TDD stage, as the function hasn't been implemented yet."
+
+## Tone + Mood (inferred)
+> Mood: Disciplined and methodical  
+> Indicators: TDD-first, no blockers, clear test coverage, ready for implementation
+
+## Behind the Commit
+- Commit hash: `8f3e8eb`
+- Message: `Write tests for install_post_commit_hook function`
+- Files touched:  
+  - `.taskmasterconfig`
+  - `src/mcp_journal/git_utils.py`
+  - `tasks/task_003.txt`
+  - `tasks/tasks.json`
+  - `tests/unit/test_git_utils.py`
+
+## Reflections
+- (None; only include if manually added via `mcp-journal add-reflection`)
+
+---
