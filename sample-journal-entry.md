@@ -281,3 +281,44 @@ Wrote comprehensive TDD tests for the `install_post_commit_hook` function, cover
 - (None; only include if manually added via `mcp-journal add-reflection`)
 
 ---
+
+### 8:31 PM — Commit cda9ef2
+
+## Summary
+Implemented the `install_post_commit_hook` function, completing the TDD cycle for Git hook management. This function now reliably installs a post-commit hook, backs up any existing hook, sets executable permissions, and handles error conditions as specified by the tests and engineering spec.
+
+## Accomplishments
+- Implemented `install_post_commit_hook` in `src/mcp_journal/git_utils.py` to pass all TDD tests.
+- Ensured the function backs up existing hooks, writes the correct content, and sets executable permissions.
+- Added robust error handling for missing or unwritable hooks directories.
+- Confirmed all tests pass in `tests/unit/test_git_utils.py`.
+- Updated task documentation in `tasks/task_003.txt` and `tasks/tasks.json` to reflect completion of subtask 3.9.
+
+## Frustrations or Roadblocks
+- None encountered; the implementation was straightforward thanks to the comprehensive TDD plan and tests.
+
+## Terminal Commands (AI Session)
+- `pytest tests/unit/test_git_utils.py | cat`
+- `git commit -m "Implement install_post_commit_hook function"`
+
+## Discussion Notes (from chat)
+> "The install_post_commit_hook function has been implemented in src/mcp_journal/git_utils.py to match the requirements and TDD tests. All tests—including those for install_post_commit_hook—have passed successfully!"
+>
+> "Subtask 3.9 (Implement install_post_commit_hook function) is now marked as done!"
+
+## Tone + Mood (inferred)
+> Mood: Satisfied and systematic  
+> Indicators: TDD-driven, all tests green, no blockers, clear progress
+
+## Behind the Commit
+- Commit hash: `cda9ef2`
+- Message: `Implement install_post_commit_hook function`
+- Files touched:  
+  - `src/mcp_journal/git_utils.py`
+  - `tasks/task_003.txt`
+  - `tasks/tasks.json`
+
+## Reflections
+- (None; only include if manually added via `mcp-journal add-reflection`)
+
+---
