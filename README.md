@@ -3,6 +3,8 @@
 # mcp-commit-story
 mcp-commit-story is a Model Context Protocol (MCP) server designed to generate engineering journal entries within a code repository. The journal records commits, technical progress, decision-making context, and emotional tone, with the goal of understanding larger-scale patterns, identifying trends, and producing content that can later be reused for storytelling (e.g., blog posts, conference talks).
 
+In addition to technical details, this journal system captures the emotional tone and context behind each engineering decision. By recording not just what happened, but how it felt, you'll be able to craft blog posts and conference talks that truly resonate with other engineers—turning dry changelogs into compelling stories of challenge, growth, and discovery.
+
 **Primary Usage Notice:**
 
 This project is designed to be used primarily by AI agents (such as Cursor or other MCP-compatible tools) via the Model Context Protocol (MCP). Human users may use the CLI for manual operations, but the main workflow is agent-driven.
@@ -41,6 +43,10 @@ compelling stories for conference talks using her automatically organized engine
 The tool made it easy for Bonnie to become a thought leader: she always had concrete examples and lessons learned at her fingertips. When her team 
 faced new challenges, they could review past journal entries to avoid repeating mistakes and to build on previous solutions. Over time, Bonnie's 
 journal became a springboard for content creation, knowledge sharing, and continuous improvement—turning everyday engineering into lasting impact.
+
+She often included quick notes about her feelings—"I felt like an imposter all morning, but when my PR finally passed review, I wanted to high-five the whole team."—so her journal captured not just what she did, but how she experienced it.
+
+When Bonnie prepared a blog post or conference talk, these emotional notes helped her transform technical summaries into engaging stories that connected with her audience and made her lessons memorable.
 
 ---
 ## Installation
