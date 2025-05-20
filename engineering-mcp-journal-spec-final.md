@@ -304,6 +304,7 @@ Commands executed by AI during this work session:
 ```
 
 **Rules:**
+
 - All sections are omitted if empty.
 - Terminal commands are always rendered as a bash code block with a descriptive line.
 - Discussion notes are blockquotes; if a note is a dict with `speaker` and `text`, use `> **Speaker:** text`. Multiline notes are supported.
@@ -317,6 +318,7 @@ Discussion notes rules: Include all relevant notes, support multiline and speake
 ### Content Quality Guidelines
 
 #### Focus on Signal vs. Noise
+
 - **Signal**: Unique decisions, technical challenges, emotional context, lessons learned, or anything that would help a future reader understand the story behind the work
 - **Noise**: Routine process notes, standard workflow descriptions, or anything that is always true and already established in project documentation
 
@@ -324,11 +326,11 @@ Journal entries should prioritize signal over noise to maintain narrative value.
 
 - ❌ "Followed TDD methodology by writing tests first" (noise, as this is standard practice)
 - ✅ "Test-first approach revealed an edge case in the API response handler" (signal, specific insight)
-
 - ❌ "Used git to commit changes" (noise, obvious from context)
 - ✅ "Split work into three focused commits to separate concerns" (signal, shows thought process)
 
 #### Highlighting What's Unique
+
 Each journal entry should capture what was distinctive about this particular development session:
 
 - Technical challenges encountered and how they were addressed
