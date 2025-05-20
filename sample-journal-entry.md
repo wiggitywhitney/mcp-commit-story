@@ -198,3 +198,44 @@ Implemented robust parsing logic for agent/model journal entries and ensured all
 - (None; only include if manually added via `mcp-journal add-reflection`) 
 
 ---
+
+### 7:18 PM — Commit 18dc1e6
+
+## Summary
+Added TDD tests and implementation for the `backup_existing_hook` function, ensuring robust backup of existing Git hooks with permission preservation and error handling. This work completes both the test-driven and implementation phases for this utility, further strengthening the reliability of the git utilities module.
+
+## Accomplishments
+- Wrote comprehensive TDD tests for `backup_existing_hook` covering backup creation, permission preservation, missing file handling, and read-only filesystem errors.
+- Implemented `backup_existing_hook` in `src/mcp_journal/git_utils.py` to pass all tests and meet spec requirements.
+- Confirmed all tests pass in `tests/unit/test_git_utils.py`.
+- Updated task documentation in `tasks/task_003.txt` and `tasks/tasks.json` to reflect completion of subtasks 3.6 and 3.7.
+
+## Frustrations or Roadblocks
+- None encountered; the TDD process was smooth and the implementation passed all tests on the first attempt.
+
+## Terminal Commands (AI Session)
+- `pytest tests/unit/test_git_utils.py | cat`
+- `git commit -m "Add TDD tests and implementation for backup_existing_hook with permission and error handling"`
+
+## Discussion Notes (from chat)
+> "You are correct! By implementing the backup_existing_hook function and confirming that all related tests pass, you have also completed subtask 3.7."
+>
+> "All tests for backup_existing_hook (and the rest of your git utilities) have passed successfully. Subtask 3.6 is now complete and has been marked as done."
+
+## Tone + Mood (inferred)
+> Mood: Efficient and confident  
+> Indicators: TDD-first, no blockers, rapid progress, all tests green
+
+## Behind the Commit
+- Commit hash: `18dc1e6`
+- Message: `Add TDD tests and implementation for backup_existing_hook with permission and error handling`
+- Files touched:  
+  - `src/mcp_journal/git_utils.py`
+  - `tasks/task_003.txt`
+  - `tasks/tasks.json`
+  - `tests/unit/test_git_utils.py`
+
+## Reflections
+- (None; only include if manually added via `mcp-journal add-reflection`)
+
+---
