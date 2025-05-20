@@ -371,3 +371,32 @@ Deliberate, collaborative, and optimistic—this plan sets the stage for a user-
 ## Behind-the-Commit
 This commit documents the planning and breakdown of Task 5, ensuring that the next phase of development will be both test-driven and user-centered. The project is now ready to proceed with confidence, knowing that every detail of journal entry generation will be shaped by user input and rigorous testing.
 
+### 2025-05-20 10:33 — Commit c082fe7
+
+## Summary
+Updated the README to more clearly highlight the value of recording emotional tone in engineering journal entries. The changes emphasize how capturing feelings and context can transform technical logs into engaging stories for blog posts, conference talks, and team knowledge sharing.
+
+## Accomplishments
+- Added a new paragraph to the introduction explaining why emotional tone matters for storytelling
+- Enhanced the fictional user story with a vivid emotional reflection and a note about its impact on future content creation
+- Reinforced the project's focus on authentic, relatable engineering narratives
+
+## Frustrations or Roadblocks
+- None; the update was straightforward and improved the clarity of the project's purpose
+
+## Terminal Commands (AI Session)
+- git commit -m "Update README to more clearly show the value of recording emotional tone"
+- git show --stat c082fe7 | cat
+- git show c082fe7 --patch-with-stat | cat
+
+## Discussion Notes
+- Discussed the importance of emotional context for making technical content memorable and engaging
+- Chose a more colorful, relatable example for the fictional user story
+- Ensured the README now appeals to engineers interested in storytelling and knowledge sharing
+
+## Tone / Mood
+Thoughtful, creative, and user-focused—this update makes the project's value proposition more compelling
+
+## Behind-the-Commit
+This commit refines the README to better communicate the unique benefits of the journal system, especially for engineers who want to turn their daily work into stories that resonate with others. The project now sets clear expectations for capturing both technical and emotional aspects of engineering work.
+
