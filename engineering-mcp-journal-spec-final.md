@@ -301,7 +301,7 @@ Commands executed by AI during this work session:
 - **files_changed:** {number}
 - **insertions:** {number}
 - **deletions:** {number}
-```
+
 
 **Rules:**
 
