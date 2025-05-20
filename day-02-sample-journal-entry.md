@@ -479,3 +479,42 @@ date '+%Y-%m-%d %H:%M:%S'
 - **insertions:** 127
 - **deletions:** 60
 
+### 2025-05-20 16:55 — Commit cb72d17
+
+## Summary
+Aligned the JournalEntry class, parser, and tests with the canonical engineering spec by removing legacy support for reflections and updating all related documentation and configuration. All tests now pass, confirming the codebase is fully consistent with the latest project standards.
+
+## Accomplishments
+- Removed 'reflections' and 'is_reflection' support from JournalEntry and parser
+- Updated tests/unit/test_journal.py to match the canonical structure
+- Cleaned up config, spec, and PRD to remove unused section_order and legacy fields
+- Marked subtask 5.1 as done in Taskmaster
+- Verified all tests pass (95/95)
+
+## Frustrations or Roadblocks
+- None; the cleanup was straightforward and improved project clarity
+
+## Terminal Commands (AI Session)
+Commands executed by AI during this work session:
+```bash
+git show --stat cb72d17 | cat
+git show cb72d17 --patch-with-stat | cat
+git log -1 --pretty=format:'%h' cb72d17
+date '+%Y-%m-%d %H:%M:%S'
+```
+
+## Discussion Notes (from chat)
+> **Human:** Are we ready to mark subtask 5.1 as complete?
+> **Agent:** Yes, you are ready to mark subtask 5.1 as complete. The JournalEntry class, parser, and tests are all aligned with the canonical spec, and all tests pass.
+> **Human:** Should the parser/tests be updated to match the new canonical JournalEntry structure (no reflections/is_reflection), or should the class regain support for these fields?
+> **Agent:** Update the parser and tests to match the new canonical structure. This keeps the codebase clean and focused on the agreed format.
+
+## Tone/Mood
+> Satisfied and confident
+> The codebase is now clean, consistent, and fully aligned with project standards
+
+## Behind the Commit
+- **files_changed:** 7
+- **insertions:** 7
+- **deletions:** 96
+
