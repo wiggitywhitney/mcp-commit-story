@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mcp-journal"
+name = "mcp-commit-story"
 version = "0.1.0"
-description = "A Model Context Protocol (MCP) server for engineering journal entries."
+description = "A Model Context Protocol (MCP) server for engineering commit story journal entries."
 authors = [
     { name = "Your Name", email = "your.email@example.com" }
 ]

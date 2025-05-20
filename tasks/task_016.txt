@@ -105,7 +105,7 @@ Note: No internal imports in the package source files reference mcp_journal, so 
 6. Log any non-trivial changes or issues encountered in the subtask details.
 </info added on 2025-05-20T13:14:13.864Z>
 
-## 3. Update package configuration in pyproject.toml [pending]
+## 3. Update package configuration in pyproject.toml [done]
 ### Dependencies: None
 ### Description: Modify pyproject.toml to reflect the new package name, including package metadata and entry points.
 ### Details:
@@ -114,6 +114,15 @@ Note: No internal imports in the package source files reference mcp_journal, so 
 3. Update entry points in [project.scripts] section
 4. Update any other metadata that references the old package name
 5. Verify the package can still be installed locally with pip install -e .
+<info added on 2025-05-20T13:18:51.016Z>
+1. Update the package name in the [project] section of pyproject.toml from 'mcp-journal' to 'mcp-commit-story'.
+2. Review and update any references to the old package name in dependencies, dev dependencies, and entry points ([project.scripts]).
+3. Update any other metadata fields (description, authors, etc.) if they reference the old name.
+4. Save and close pyproject.toml.
+5. Run 'pip install -e .' to verify the package installs correctly with the new name and entry points.
+6. Test the CLI entry point (e.g., 'mcp-commit-story --help') to ensure it works as expected.
+7. Log any issues or non-trivial changes encountered in the subtask details.
+</info added on 2025-05-20T13:18:51.016Z>
 
 ## 4. Update documentation and configuration files [pending]
 ### Dependencies: None

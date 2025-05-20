@@ -528,8 +528,8 @@
           "title": "Update package configuration in pyproject.toml",
           "description": "Modify pyproject.toml to reflect the new package name, including package metadata and entry points.",
           "dependencies": [],
-          "details": "1. Update the package name in the [project] section\n2. Update any references in dependencies or dev dependencies\n3. Update entry points in [project.scripts] section\n4. Update any other metadata that references the old package name\n5. Verify the package can still be installed locally with pip install -e .",
-          "status": "pending",
+          "details": "1. Update the package name in the [project] section\n2. Update any references in dependencies or dev dependencies\n3. Update entry points in [project.scripts] section\n4. Update any other metadata that references the old package name\n5. Verify the package can still be installed locally with pip install -e .\n<info added on 2025-05-20T13:18:51.016Z>\n1. Update the package name in the [project] section of pyproject.toml from 'mcp-journal' to 'mcp-commit-story'.\n2. Review and update any references to the old package name in dependencies, dev dependencies, and entry points ([project.scripts]).\n3. Update any other metadata fields (description, authors, etc.) if they reference the old name.\n4. Save and close pyproject.toml.\n5. Run 'pip install -e .' to verify the package installs correctly with the new name and entry points.\n6. Test the CLI entry point (e.g., 'mcp-commit-story --help') to ensure it works as expected.\n7. Log any issues or non-trivial changes encountered in the subtask details.\n</info added on 2025-05-20T13:18:51.016Z>",
+          "status": "done",
           "testStrategy": "After updating pyproject.toml, run 'pip install -e .' to verify the package installs correctly with the new name. Test CLI commands to ensure entry points work."
         },
         {
