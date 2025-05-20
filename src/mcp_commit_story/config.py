@@ -16,14 +16,6 @@ DEFAULT_CONFIG = {
         'include_terminal': True,
         'include_chat': True,
         'include_mood': True,
-        'section_order': [
-            'summary',
-            'accomplishments',
-            'frustrations',
-            'tone',
-            'commit_details',
-            'reflections'
-        ],
         'auto_summarize': {
             'daily': True,
             'weekly': True,

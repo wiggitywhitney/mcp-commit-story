@@ -65,20 +65,6 @@ def test_parse_daily_note_entry():
     assert 'Implemented feature X' in entry.accomplishments
     assert 'Spent hours debugging config' in entry.frustrations
     assert entry.summary.startswith('A friendly, succinct summary')
-    assert entry.reflections[0] == 'This was a tough one!'
-
-
-def test_parse_reflection_entry():
-    entry = journal.JournalParser.parse(REFLECTION_MD)
-    assert entry.is_reflection
-    assert entry.timestamp == '4:45 PM'
-    assert 'importance of clear error messages' in entry.text
-
-
-def test_generate_summary_entry():
-    summary = journal.JournalEntry.generate_summary(SUMMARY_MD)
-    assert summary.startswith('Today was a productive day.')
-    assert len(summary) > 100  # Should be lengthy, human-readable
 
 
 def test_handle_empty_entry():

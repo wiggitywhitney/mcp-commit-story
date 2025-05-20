@@ -171,13 +171,6 @@ journal:
   include_terminal: true
   include_chat: true
   include_mood: true
-  section_order:
-    - summary
-    - accomplishments
-    - frustrations
-    - tone
-    - commit_details
-    - reflections
   auto_summarize:
     daily: true     # Generate daily summary on first commit of new day
     weekly: true    # Generate weekly summary on first commit of week (Monday)
@@ -212,13 +205,6 @@ journal:
   include_terminal: true
   include_chat: true
   include_mood: true
-  section_order:
-    - summary
-    - accomplishments
-    - frustrations
-    - tone
-    - commit_details
-    - reflections
   auto_summarize:
     daily: true
     weekly: true
@@ -727,13 +713,6 @@ journal:
   include_terminal: true
   include_chat: true
   include_mood: true
-  section_order:
-    - summary
-    - accomplishments
-    - frustrations
-    - tone
-    - commit_details
-    - reflections
   auto_summarize:
     daily: true
     weekly: true
@@ -746,7 +725,6 @@ journal:
 - "friendly and encouraging"
 - "in the style of a pirate"
 - "for a 10-year-old"
-- "sarcastic"
 - "neutral"
 - "explanatory, as if teaching a beginner"
 

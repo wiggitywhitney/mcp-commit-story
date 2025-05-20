@@ -140,13 +140,6 @@ journal:
   include_terminal: true
   include_chat: true
   include_mood: true
-  section_order:
-    - summary
-    - accomplishments
-    - frustrations
-    - tone
-    - commit_details
-    - reflections
   auto_summarize:
     daily: true
     weekly: true
@@ -298,18 +291,11 @@ journal:
   include_terminal: true
   include_chat: true
   include_mood: true
-  section_order:
-    - summary
-    - accomplishments
-    - frustrations
-    - tone
-    - commit_details
-    - reflections
   auto_summarize:
-    daily: true     # Generate daily summary on first commit of new day
-    weekly: true    # Generate weekly summary on first commit of week (Monday)
-    monthly: true   # Generate monthly summary on first commit of month
-    yearly: true    # Generate yearly summary on first commit of year
+    daily: true
+    weekly: true
+    monthly: true
+    yearly: true
 
 # Minimal telemetry configuration
 telemetry:
@@ -430,13 +416,6 @@ journal:
   include_terminal: true
   include_chat: true
   include_mood: true
-  section_order:
-    - summary
-    - accomplishments
-    - frustrations
-    - tone
-    - commit_details
-    - reflections
   auto_summarize:
     daily: true
     weekly: true
@@ -795,13 +774,6 @@ journal:
   include_terminal: true
   include_chat: true
   include_mood: true
-  section_order:
-    - summary
-    - accomplishments
-    - frustrations
-    - tone
-    - commit_details
-    - reflections
   auto_summarize:
     daily: true
     weekly: true

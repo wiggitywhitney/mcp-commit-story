@@ -95,7 +95,7 @@ def create_journal_directories():
 8. Tests for incorporating user preferences and feedback
 
 # Subtasks:
-## 1. Implement JournalEntry class with tests [pending]
+## 1. Implement JournalEntry class with tests [done]
 ### Dependencies: None
 ### Description: Create the JournalEntry class structure and tests for initialization and markdown conversion, with explicit user collaboration at each step
 ### Details:

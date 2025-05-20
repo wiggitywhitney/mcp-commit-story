@@ -132,29 +132,12 @@ class JournalParser:
             m2 = re.search(r'## Frustrations or Roadblocks\n((?:- .+\n)+)', md)
             if m2:
                 frustrations = [line[2:].strip() for line in m2.group(1).splitlines() if line.startswith('- ')]
-            # Reflections
-            reflections = []
-            m2 = re.search(r'## Reflections\n((?:- .+\n)+)', md)
-            if m2:
-                reflections = [line[2:].strip() for line in m2.group(1).splitlines() if line.startswith('- ')]
             return JournalEntry(
                 timestamp=timestamp,
                 commit_hash=commit_hash,
                 accomplishments=accomplishments,
                 frustrations=frustrations,
                 summary=summary,
-                reflections=reflections,
             )
-        # Try to parse reflection entry
-        m = re.search(r'###\s+(\d{1,2}:\d{2} [AP]M) — Reflection', md)
-        if m:
-            timestamp = m.group(1)
-            # The rest is the reflection text
-            text_match = re.search(r'— Reflection\n+(.+)', md, re.DOTALL)
-            text = text_match.group(1).strip() if text_match else ''
-            return JournalEntry(
-                timestamp=timestamp,
-                is_reflection=True,
-                text=text,
-            )
+        # Reflection entries are not supported in the canonical JournalEntry structure
         raise JournalParseError('Unrecognized journal entry format')
