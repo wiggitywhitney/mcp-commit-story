@@ -62,7 +62,7 @@ To verify the successful completion of this task:
 6. Run CI/CD pipelines to ensure they pass with the new package name
 
 # Subtasks:
-## 1. Rename source directory and update package imports [pending]
+## 1. Rename source directory and update package imports [done]
 ### Dependencies: None
 ### Description: Rename the source directory from 'src/mcp_journal/' to 'src/mcp_commit_story/' and update all internal import statements within the package.
 ### Details:
@@ -71,6 +71,17 @@ To verify the successful completion of this task:
 3. Update all import statements within the package files that reference 'mcp_journal' to 'mcp_commit_story'
 4. Ensure __init__.py and package structure is maintained
 5. Do not delete the original directory yet
+<info added on 2025-05-20T13:06:27.064Z>
+3. Update all test files in tests/unit/ that reference mcp_journal to use mcp_commit_story:
+   - test_journal.py: from mcp_journal import journal → from mcp_commit_story import journal
+   - test_git_utils.py, test_config.py: update all from mcp_journal... and patch('mcp_journal...') to mcp_commit_story
+   - test_imports.py: update MODULES list
+   - test_structure.py: update REQUIRED_DIRS and REQUIRED_FILES lists
+4. Run all tests to confirm that imports fail (TDD: confirm the rename is needed and breaks tests).
+5. Once confirmed, proceed to update the rest of the codebase and tests to use the new package name.
+
+Note: No internal imports in the package source files reference mcp_journal, so only test files need updating. __init__.py and placeholder files will be copied as-is.
+</info added on 2025-05-20T13:06:27.064Z>
 
 ## 2. Update test files and external imports [pending]
 ### Dependencies: None

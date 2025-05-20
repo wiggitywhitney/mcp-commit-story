@@ -510,8 +510,8 @@
           "title": "Rename source directory and update package imports",
           "description": "Rename the source directory from 'src/mcp_journal/' to 'src/mcp_commit_story/' and update all internal import statements within the package.",
           "dependencies": [],
-          "details": "1. Create a new directory 'src/mcp_commit_story/'\n2. Copy all files from 'src/mcp_journal/' to 'src/mcp_commit_story/'\n3. Update all import statements within the package files that reference 'mcp_journal' to 'mcp_commit_story'\n4. Ensure __init__.py and package structure is maintained\n5. Do not delete the original directory yet",
-          "status": "pending",
+          "details": "1. Create a new directory 'src/mcp_commit_story/'\n2. Copy all files from 'src/mcp_journal/' to 'src/mcp_commit_story/'\n3. Update all import statements within the package files that reference 'mcp_journal' to 'mcp_commit_story'\n4. Ensure __init__.py and package structure is maintained\n5. Do not delete the original directory yet\n<info added on 2025-05-20T13:06:27.064Z>\n3. Update all test files in tests/unit/ that reference mcp_journal to use mcp_commit_story:\n   - test_journal.py: from mcp_journal import journal → from mcp_commit_story import journal\n   - test_git_utils.py, test_config.py: update all from mcp_journal... and patch('mcp_journal...') to mcp_commit_story\n   - test_imports.py: update MODULES list\n   - test_structure.py: update REQUIRED_DIRS and REQUIRED_FILES lists\n4. Run all tests to confirm that imports fail (TDD: confirm the rename is needed and breaks tests).\n5. Once confirmed, proceed to update the rest of the codebase and tests to use the new package name.\n\nNote: No internal imports in the package source files reference mcp_journal, so only test files need updating. __init__.py and placeholder files will be copied as-is.\n</info added on 2025-05-20T13:06:27.064Z>",
+          "status": "done",
           "testStrategy": "Run unit tests after changes to verify imports are working correctly. Check for import errors when running the package."
         },
         {

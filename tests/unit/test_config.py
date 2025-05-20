@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 import yaml
 from unittest.mock import patch, mock_open
-from mcp_journal.config import (
+from mcp_commit_story.config import (
     Config, 
     ConfigError,
     load_config, 
@@ -224,9 +224,9 @@ def test_load_config_with_precedence():
     }
     
     # Mock the config file finding and loading
-    with patch('mcp_journal.config.find_config_files') as mock_find, \
-         patch('mcp_journal.config.yaml.safe_load') as mock_load, \
-         patch('mcp_journal.config.DEFAULT_CONFIG', default_config), \
+    with patch('mcp_commit_story.config.find_config_files') as mock_find, \
+         patch('mcp_commit_story.config.yaml.safe_load') as mock_load, \
+         patch('mcp_commit_story.config.DEFAULT_CONFIG', default_config), \
          patch('builtins.open', mock_open()):
         
         # Case 1: Local and global exist
@@ -381,7 +381,7 @@ def test_empty_config_file(tmp_path):
 
 def test_docstrings_and_usage_examples():
     """Test that all public functions in config module have docstrings."""
-    import mcp_journal.config as config_mod
+    import mcp_commit_story.config as config_mod
     for name, obj in inspect.getmembers(config_mod):
         if inspect.isfunction(obj) and not name.startswith("_"):
             assert obj.__doc__ is not None and len(obj.__doc__) > 0 

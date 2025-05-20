@@ -2,20 +2,20 @@ import os
 import pytest
 
 REQUIRED_DIRS = [
-    'src/mcp_journal',
+    'src/mcp_commit_story',
     'tests/unit',
     'tests/integration',
     'tests/fixtures',
 ]
 
 REQUIRED_FILES = [
-    'src/mcp_journal/__init__.py',
-    'src/mcp_journal/cli.py',
-    'src/mcp_journal/server.py',
-    'src/mcp_journal/journal.py',
-    'src/mcp_journal/git_utils.py',
-    'src/mcp_journal/config.py',
-    'src/mcp_journal/telemetry.py',
+    'src/mcp_commit_story/__init__.py',
+    'src/mcp_commit_story/cli.py',
+    'src/mcp_commit_story/server.py',
+    'src/mcp_commit_story/journal.py',
+    'src/mcp_commit_story/git_utils.py',
+    'src/mcp_commit_story/config.py',
+    'src/mcp_commit_story/telemetry.py',
     'README.md',
     '.mcp-journalrc.yaml',
 ]

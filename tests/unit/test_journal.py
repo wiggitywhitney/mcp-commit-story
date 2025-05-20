@@ -3,7 +3,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src')))
 
 import pytest
-from mcp_journal import journal
+from mcp_commit_story import journal
 
 # Sample markdown for a daily note entry
 DAILY_NOTE_MD = '''

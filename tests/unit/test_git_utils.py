@@ -2,7 +2,7 @@ import pytest
 import os
 from unittest.mock import Mock, patch, MagicMock
 from pathlib import Path
-from mcp_journal.git_utils import (
+from mcp_commit_story.git_utils import (
     is_git_repo, 
     get_repo, 
     get_current_commit, 
@@ -54,7 +54,7 @@ def test_is_git_repo_invalid():
 
 def test_get_repo_with_path():
     """Test getting repo with specific path"""
-    with patch('mcp_journal.git_utils.git.Repo') as mock_repo:
+    with patch('mcp_commit_story.git_utils.git.Repo') as mock_repo:
         # Setup
         mock_repo_instance = Mock()
         mock_repo.return_value = mock_repo_instance
@@ -68,7 +68,7 @@ def test_get_repo_with_path():
 
 def test_get_repo_with_default_path():
     """Test getting repo with default path (current dir)"""
-    with patch('mcp_journal.git_utils.git.Repo') as mock_repo, \
+    with patch('mcp_commit_story.git_utils.git.Repo') as mock_repo, \
          patch('os.getcwd') as mock_getcwd:
         # Setup
         mock_repo_instance = Mock()
@@ -342,7 +342,7 @@ def test_install_post_commit_hook_backs_up_existing_hook(git_repo):
     with open(hook_path, 'w') as f:
         f.write('#!/bin/sh\necho old\n')
     # Patch backup_existing_hook to track calls
-    with patch('mcp_journal.git_utils.backup_existing_hook') as mock_backup:
+    with patch('mcp_commit_story.git_utils.backup_existing_hook') as mock_backup:
         mock_backup.return_value = hook_path + '.backup'
         install_post_commit_hook(git_repo.working_tree_dir)
         mock_backup.assert_called_once_with(hook_path)
@@ -381,7 +381,7 @@ def test_install_post_commit_hook_calls_backup_existing_hook(git_repo):
     hook_path = os.path.join(hooks_dir, 'post-commit')
     with open(hook_path, 'w') as f:
         f.write('old hook')
-    with patch('mcp_journal.git_utils.backup_existing_hook') as mock_backup:
+    with patch('mcp_commit_story.git_utils.backup_existing_hook') as mock_backup:
         mock_backup.return_value = hook_path + '.backup'
         install_post_commit_hook(git_repo.working_tree_dir)
         mock_backup.assert_called_once_with(hook_path)

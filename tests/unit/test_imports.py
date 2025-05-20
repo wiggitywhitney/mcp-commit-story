@@ -2,11 +2,11 @@ import importlib
 import pytest
 
 MODULES = [
-    'mcp_journal.cli',
-    'mcp_journal.server',
-    'mcp_journal.journal',
-    'mcp_journal.git_utils',
-    'mcp_journal.config',
+    'mcp_commit_story.cli',
+    'mcp_commit_story.server',
+    'mcp_commit_story.journal',
+    'mcp_commit_story.git_utils',
+    'mcp_commit_story.config',
 ]
 
 @pytest.mark.parametrize('module_name', MODULES)
