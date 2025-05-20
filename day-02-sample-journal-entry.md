@@ -518,3 +518,37 @@ date '+%Y-%m-%d %H:%M:%S'
 - **insertions:** 7
 - **deletions:** 96
 
+### 2025-05-20 17:16 — Commit 314e0ec
+
+## Summary
+Fixed a Markdown formatting issue in the engineering spec that caused the 'Rules' and subsequent sections to render as a code block on GitHub. The fix ensures that all guidelines and lists are now properly displayed as intended.
+
+## Accomplishments
+- Removed an unintended triple backtick from engineering-mcp-journal-spec-final.md
+- Verified that the 'Rules' and 'Content Quality Guidelines' sections now render correctly on GitHub
+
+## Frustrations or Roadblocks
+- Minor: The issue was subtle and only visible in GitHub's Markdown renderer
+
+## Terminal Commands (AI Session)
+Commands executed by AI during this work session:
+```bash
+git show --stat 314e0ec | cat
+git show 314e0ec --patch-with-stat | cat
+git log -1 --pretty=format:'%h' 314e0ec
+date '+%Y-%m-%d %H:%M:%S'
+```
+
+## Discussion Notes (from chat)
+> **Human:** Can you determine the problematic sections from this screenshot?
+> **Agent:** Yes, the 'Rules' and following sections were inside a code block due to an unclosed triple backtick. Removing it will fix the formatting.
+
+## Tone/Mood
+> Satisfied and relieved
+> The spec now renders cleanly and is easier to read on GitHub
+
+## Behind the Commit
+- **files_changed:** 1
+- **insertions:** 1
+- **deletions:** 1
+
