@@ -358,6 +358,11 @@ telemetry:
 - If data is unavailable (e.g., terminal history), omit that section
 
 ### Journal Entry Structure
+
+#### Discussion Notes Speaker Attribution
+- In the Discussion Notes section, always prefix each statement with **Human:** or **Agent:** (or **AI:**), to clearly indicate the speaker.
+- Use bold or clear formatting to make the distinction obvious.
+
 #### Example (Markdown format):
 ```markdown
 ### 2:17 PM — Commit def456
@@ -379,9 +384,13 @@ Commands executed by AI during this work session:
 - `git commit -m "fix: update validation logic"`
 
 ## Discussion Notes (from chat)
-> "Should we use PostgreSQL or MongoDB? I'm leaning toward PostgreSQL because we need ACID compliance for financial data..."
+> **Human:** Should we use PostgreSQL or MongoDB? I'm leaning toward PostgreSQL because we need ACID compliance for financial data...
 >
-> "Let's go with the fetch-on-demand approach instead of pre-loading everything. Simpler to implement and probably good enough for now."
+> **Agent:** PostgreSQL is a solid choice for ACID compliance. If you need horizontal scaling later, you can consider sharding or a managed service.
+>
+> **Human:** Let's go with the fetch-on-demand approach instead of pre-loading everything. Simpler to implement and probably good enough for now.
+>
+> **Agent:** Agreed. This will also reduce memory usage and make the codebase easier to maintain.
 
 ## Tone + Mood (inferred)
 > Mood: Focused and energized  
@@ -396,6 +405,45 @@ Commands executed by AI during this work session:
 ```
 
 Empty sections are omitted. Manual entries and reflections are clearly labeled and interleaved by timestamp.
+
+### AI Tone/Style Configuration
+
+The user can control the tone and style of AI-generated summaries in journal entries by setting the `ai_tone` field in `.mcp-journalrc.yaml`.
+
+**Supported values:**
+- `neutral` (default): Objective, factual, and balanced. No strong personality.
+- `concise`: Short, direct, and minimal. Focuses on brevity and essentials.
+- `explanatory`: Clear, step-by-step, and focused on making things easy to understand.
+- `technical`: Uses precise, domain-specific language. For advanced/engineering audiences.
+- `reflective`: Thoughtful, introspective, and focused on lessons learned.
+- `friendly`: Warm, encouraging, and positive—but still professional.
+
+If an unsupported value is set, the system will fall back to `neutral` and log a warning.
+
+#### Example Configuration:
+```yaml
+journal:
+  path: journal/
+  auto_generate: true
+  include_terminal: true
+  include_chat: true
+  include_mood: true
+  section_order:
+    - summary
+    - accomplishments
+    - frustrations
+    - tone
+    - commit_details
+    - reflections
+  auto_summarize:
+    daily: true
+    weekly: true
+    monthly: true
+    yearly: true
+```
+
+#### Journal Entry Structure Note
+- The **Summary** section of each journal entry will reflect the selected `ai_tone` style.
 
 ---
 
@@ -698,6 +746,51 @@ def generate_entry(debug=False):
 - Slack/Discord bot for entry sharing
 - GitHub Actions for automated summaries
 - Export to various formats (PDF, HTML)
+
+### Hyperlinked Commit Hashes in Journal Entries
+- In the "Behind the Commit" section, if a remote repository is detected, the commit hash must be hyperlinked to the commit page on the remote (e.g., GitHub, GitLab).
+- The system should support at least GitHub and GitLab, and fall back to plain text if no supported remote is found.
+- Example:
+  - Commit hash: [`cda9ef2`](https://github.com/your-org/your-repo/commit/cda9ef2)
+
+### Configurable AI Tone/Style for Summaries
+- Allow the user to control the tone and style of AI-generated summaries in journal entries by setting the `ai_tone` field in `.mcp-journalrc.yaml`.
+- The value of `ai_tone` can be any free-form string, such as a tone, style, persona, or creative instruction. This value will be passed directly to the AI to guide summary generation.
+- There is no fixed list of supported values. Users may specify anything, e.g., "concise and technical", "in the style of a pirate", "for a 10-year-old", "sarcastic", "neutral", etc.
+- If omitted, the default is "neutral and factual".
+- Results may vary depending on the AI's capabilities and the specificity of the instruction.
+
+#### Example Configuration:
+```yaml
+journal:
+  path: journal/
+  ai_tone: "like a pirate, but concise"
+  auto_generate: true
+  include_terminal: true
+  include_chat: true
+  include_mood: true
+  section_order:
+    - summary
+    - accomplishments
+    - frustrations
+    - tone
+    - commit_details
+    - reflections
+  auto_summarize:
+    daily: true
+    weekly: true
+    monthly: true
+    yearly: true
+```
+
+#### Example Values for `ai_tone`:
+- "concise and technical"
+- "friendly and encouraging"
+- "in the style of a pirate"
+- "for a 10-year-old"
+- "sarcastic"
+- "neutral"
+- "explanatory, as if teaching a beginner"
 
 ---
 
