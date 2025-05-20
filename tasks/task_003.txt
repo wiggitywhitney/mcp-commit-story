@@ -1,6 +1,6 @@
 # Task ID: 3
 # Title: Implement Git Utilities
-# Status: pending
+# Status: done
 # Dependencies: 1
 # Priority: high
 # Description: Create utility functions for Git operations including commit processing, repository detection, and hook management.
@@ -274,7 +274,7 @@ Write tests that verify: 1) Commits after the last journal entry are correctly i
 ### Details:
 Implement get_commits_since_last_entry to: 1) Find the most recent commit that modified the journal, 2) Get all commits since that point, 3) Filter out any commits that only modified the journal, 4) Return the list of commits that need entries, 5) Handle edge cases identified in tests.
 
-## 12. Document Git utilities and perform final verification [pending]
+## 12. Document Git utilities and perform final verification [done]
 ### Dependencies: 3.5, 3.9, 3.11
 ### Description: Add comprehensive docstrings and verify all Git utility functions work together correctly.
 ### Details:

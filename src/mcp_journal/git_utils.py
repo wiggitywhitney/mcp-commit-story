@@ -20,77 +20,69 @@ except ImportError:
 
 def is_git_repo(path: Optional[str] = None) -> bool:
     """
-    Check if the specified path is a Git repository.
-    
+    Determine if the specified path is a Git repository.
+
     Args:
-        path: Path to check, defaults to current directory
-        
+        path (str, optional): Path to check. Defaults to current directory.
+
     Returns:
-        True if the path is a Git repository, False otherwise
+        bool: True if the path is a Git repository, False otherwise.
     """
     if path is None:
         path = os.getcwd()
-    
-    # Check for .git directory
     git_dir = os.path.join(path, '.git')
     return os.path.exists(git_dir)
 
 
 def get_repo(path: Optional[str] = None) -> 'git.Repo':
     """
-    Get a Git repository object for the specified path.
-    
+    Get a GitPython Repo object for the specified path.
+
     Args:
-        path: Path to repository, defaults to current directory
-        
+        path (str, optional): Path to repository. Defaults to current directory.
+
     Returns:
-        Git repository object
-        
+        git.Repo: Git repository object.
+
     Raises:
-        git.InvalidGitRepositoryError: If the path is not a Git repository
-        ImportError: If GitPython is not installed
+        git.InvalidGitRepositoryError: If the path is not a Git repository.
+        ImportError: If GitPython is not installed.
     """
     if not GIT_AVAILABLE:
         raise ImportError("GitPython not installed. Run: pip install gitpython")
-    
     if path is None:
         path = os.getcwd()
-    
     return git.Repo(path)
 
 
 def get_current_commit(repo: Optional['git.Repo'] = None) -> 'git.Commit':
     """
-    Get the current commit (HEAD) from a repository.
-    
+    Get the current (HEAD) commit from a repository.
+
     Args:
-        repo: Git repository object, if None will be obtained from current directory
-        
+        repo (git.Repo, optional): Git repository object. If None, uses current directory.
+
     Returns:
-        Current commit object
-        
+        git.Commit: Current commit object.
+
     Raises:
-        git.InvalidGitRepositoryError: If the repository is invalid
+        git.InvalidGitRepositoryError: If the repository is invalid.
     """
     if repo is None:
         repo = get_repo()
-    
     return repo.head.commit
 
 
 def is_journal_only_commit(commit: 'git.Commit', journal_path: str) -> bool:
     """
-    Check if a commit only modifies journal files.
-    
-    This is used to prevent recursion when generating journal entries
-    for commits that only modify journal files.
-    
+    Determine if a commit only modifies files in the journal directory.
+
     Args:
-        commit: Git commit object to check
-        journal_path: Base path for journal files
-        
+        commit (git.Commit): Commit to check.
+        journal_path (str): Base path for journal files (relative to repo root).
+
     Returns:
-        True if all modified files are in the journal directory
+        bool: True if all changed files are in the journal directory, False otherwise.
     """
     try:
         changed_files = commit.diff()
@@ -100,37 +92,25 @@ def is_journal_only_commit(commit: 'git.Commit', journal_path: str) -> bool:
         except (AttributeError, TypeError):
             raise ValueError("Unable to get diff for commit")
     file_paths = [file.a_path for file in changed_files]
-    result = all(f.startswith(journal_path) for f in file_paths) if file_paths else False
-    print(f"[DEBUG is_journal_only_commit] Commit {getattr(commit, 'hexsha', '?')} files: {file_paths} result: {result}")
-    return result
+    return all(f.startswith(journal_path) for f in file_paths) if file_paths else False
 
 
 def get_commit_details(commit: 'git.Commit') -> Dict[str, Any]:
     """
-    Extract relevant details from a commit.
-    
+    Extract relevant details from a commit for reporting or journal entry generation.
+
     Args:
-        commit: Git commit object
-        
+        commit (git.Commit): Commit to extract details from.
+
     Returns:
-        Dictionary with commit details:
-            - hash: Commit hash
-            - message: Commit message
-            - timestamp: Commit timestamp (Unix timestamp)
-            - datetime: Commit datetime (formatted string)
-            - author: Author name and email
-            - stats: File statistics (insertions, deletions, files changed)
+        dict: Dictionary with commit details (hash, message, timestamp, datetime, author, stats).
     """
-    # Convert Unix timestamp to datetime
     dt = datetime.fromtimestamp(commit.committed_date)
-    
-    # Get file statistics
     stats = {
         'files': len(commit.stats.files),
         'insertions': sum(file_stats['insertions'] for file_stats in commit.stats.files.values()),
         'deletions': sum(file_stats['deletions'] for file_stats in commit.stats.files.values())
     }
-    
     return {
         'hash': commit.hexsha,
         'message': commit.message,
@@ -141,9 +121,18 @@ def get_commit_details(commit: 'git.Commit') -> Dict[str, Any]:
     }
 
 
-def is_blob_binary(blob):
-    """Heuristic to detect if a git.Blob is binary: checks for null bytes in the first 1024 bytes.
-    This is 'good enough' for journal/summary purposes in production, but may not work for new files in temp repos due to GitPython limitations, so is not tested in unit tests.
+def is_blob_binary(blob) -> bool:
+    """
+    Heuristically determine if a git.Blob is binary.
+
+    Args:
+        blob (git.Blob): Blob object to check.
+
+    Returns:
+        bool: True if the blob is likely binary, False otherwise.
+
+    Notes:
+        Checks for null bytes in the first 1024 bytes. May not work for new files in temp repos due to GitPython limitations.
     """
     if blob is None:
         return False
@@ -154,24 +143,30 @@ def is_blob_binary(blob):
         return False
 
 
-def get_commit_diff_summary(commit):
+def get_commit_diff_summary(commit) -> str:
     """
-    Generate a simplified summary of file changes in a commit.
-    Good practice: Prefer diff.change_type if set, fallback to blob presence/content comparison.
-    Handles added, deleted, modified, renamed, and binary files. Logs ambiguous cases.
+    Generate a human-readable summary of file changes in a commit.
+
+    Args:
+        commit (git.Commit): Commit to summarize.
+
+    Returns:
+        str: Summary of file changes (added, deleted, modified, renamed, binary, etc.).
+
+    Notes:
+        - Prefers diff.change_type if available, falls back to blob/content comparison.
+        - Handles ambiguous cases and logs warnings.
     """
     parent = commit.parents[0] if commit.parents else None
     diffs = commit.diff(parent, create_patch=True)
     if not diffs:
         return "No changes in this commit."
-
     parent_tree = parent.tree if parent else None
     commit_tree = commit.tree
     summary_lines = []
     for diff in diffs:
         fname = diff.b_path or diff.a_path
         change_type = getattr(diff, 'change_type', None)
-        # 1. Prefer change_type if set
         if change_type == 'A':
             if is_blob_binary(diff.b_blob):
                 summary_lines.append(f"{fname}: binary file added")
@@ -183,7 +178,6 @@ def get_commit_diff_summary(commit):
             else:
                 summary_lines.append(f"{fname}: deleted")
         elif change_type == 'M':
-            # Compare blob content for modification
             if is_blob_binary(diff.a_blob) or is_blob_binary(diff.b_blob):
                 summary_lines.append(f"{fname}: binary file changed")
             elif diff.a_blob and diff.b_blob and diff.a_blob.hexsha != diff.b_blob.hexsha:
@@ -192,7 +186,6 @@ def get_commit_diff_summary(commit):
                 summary_lines.append(f"{fname}: changed (no content diff)")
         elif change_type == 'R':
             summary_lines.append(f"{diff.a_path} → {diff.b_path}: renamed")
-        # 2. Fallback: Use parent/commit tree to distinguish added/deleted/modified
         else:
             in_parent = False
             in_commit = False
@@ -213,7 +206,6 @@ def get_commit_diff_summary(commit):
                 else:
                     summary_lines.append(f"{fname}: deleted (fallback)")
             elif in_commit and not in_parent:
-                # Final tweak: ensure binary detection for new files
                 if diff.b_blob and is_blob_binary(diff.b_blob):
                     summary_lines.append(f"{fname}: binary file added (fallback)")
                 else:
@@ -226,8 +218,6 @@ def get_commit_diff_summary(commit):
                 else:
                     summary_lines.append(f"{fname}: changed (fallback, no content diff)")
             else:
-                # Ambiguous case
-                print(f"[WARN] Ambiguous diff for {fname}: {diff}")
                 summary_lines.append(f"{fname}: changed (ambiguous)")
     return "\n".join(summary_lines)
 
@@ -235,25 +225,34 @@ def get_commit_diff_summary(commit):
 def backup_existing_hook(hook_path: str) -> Optional[str]:
     """
     Backup an existing Git hook file by copying it to a timestamped backup file.
-    Preserves file permissions. Returns the backup path, or None if no backup was needed.
-    Raises PermissionError if the filesystem is read-only.
+
+    Args:
+        hook_path (str): Path to the hook file.
+
+    Returns:
+        str or None: Path to the backup file, or None if no backup was needed.
+
+    Raises:
+        PermissionError: If the filesystem is read-only.
     """
     if not os.path.exists(hook_path):
         return None
     timestamp = time.strftime('%Y%m%d-%H%M%S')
     backup_path = f"{hook_path}.backup.{timestamp}"
-    # Copy file and preserve permissions
     shutil.copy2(hook_path, backup_path)
     return backup_path
 
 
 def install_post_commit_hook(repo_path: str = None) -> None:
     """
-    Install the post-commit hook in the given repo's .git/hooks directory.
-    - If a hook exists, back it up using backup_existing_hook.
-    - Write the new hook content (shebang, commands).
-    - Set the hook file as executable.
-    - Handle errors (missing repo, permissions, etc.).
+    Install or replace the post-commit hook in the given repo's .git/hooks directory.
+
+    Args:
+        repo_path (str, optional): Path to the repo. Defaults to current directory.
+
+    Raises:
+        FileNotFoundError: If the hooks directory does not exist.
+        PermissionError: If the hooks directory is not writable.
     """
     import stat
     if repo_path is None:
@@ -264,31 +263,32 @@ def install_post_commit_hook(repo_path: str = None) -> None:
     if not os.access(hooks_dir, os.W_OK):
         raise PermissionError(f"Hooks directory is not writable: {hooks_dir}")
     hook_path = os.path.join(hooks_dir, 'post-commit')
-    # Backup existing hook if present
     if os.path.exists(hook_path):
         backup_existing_hook(hook_path)
-    # Write new hook content
     hook_content = "#!/bin/sh\necho 'Post-commit hook triggered'\n"
     with open(hook_path, 'w') as f:
         f.write(hook_content)
-    # Set executable permissions
     st = os.stat(hook_path)
     os.chmod(hook_path, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
-def get_commits_since_last_entry(repo, journal_path: str):
+def get_commits_since_last_entry(repo, journal_path: str) -> list:
     """
-    Find the most recent commit that modified the journal, get all commits strictly after that point,
-    filter out commits that only modified the journal, and return the list of commits that need entries.
+    Find all code commits that need journal entries since the last journal-modifying commit.
+
     Args:
-        repo: GitPython Repo object
-        journal_path: Path to the journal directory (relative or absolute)
+        repo (git.Repo): GitPython Repo object.
+        journal_path (str): Path to the journal directory (relative or absolute).
+
     Returns:
-        List of git.Commit objects that need journal entries, in chronological order
+        list: List of git.Commit objects that need journal entries, in chronological order (oldest to newest).
+
+    Notes:
+        - If the tip is a journal-only commit, returns an empty list (prevents duplicate entries).
+        - Filters out commits that only modify journal files.
     """
     journal_rel = os.path.relpath(journal_path, repo.working_tree_dir)
     commits = list(repo.iter_commits('HEAD'))  # Newest to oldest
-    # If the tip is a journal-only commit, nothing to do
     if commits and is_journal_only_commit(commits[0], journal_rel):
         return []
     last_journal_commit_idx = None
