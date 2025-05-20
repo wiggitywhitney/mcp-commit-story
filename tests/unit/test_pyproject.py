@@ -3,7 +3,7 @@ import pytest
 import toml
 
 REQUIRED_METADATA = {
-    'name': 'mcp-journal',
+    'name': 'mcp-commit-story',
     'requires-python': '>=3.10',
 }
 

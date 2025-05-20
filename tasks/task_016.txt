@@ -124,7 +124,7 @@ Note: No internal imports in the package source files reference mcp_journal, so 
 7. Log any issues or non-trivial changes encountered in the subtask details.
 </info added on 2025-05-20T13:18:51.016Z>
 
-## 4. Update documentation and configuration files [pending]
+## 4. Update documentation and configuration files [done]
 ### Dependencies: None
 ### Description: Update README.md, configuration files, and check for hardcoded references to the package name in various locations.
 ### Details:
@@ -136,6 +136,22 @@ Note: No internal imports in the package source files reference mcp_journal, so 
    - Environment variables
    - Log messages
 4. Check for any other documentation files that need updating
+<info added on 2025-05-20T13:23:55.801Z>
+Implementation Plan:
+
+1. Update README.md:
+   - Change all references from 'mcp_journal' to 'mcp_commit_story' and from 'mcp-journal' to 'mcp-commit-story'.
+   - Update CLI usage examples and code blocks.
+2. Rename configuration files:
+   - If present, rename .mcp-journalrc.yaml to .mcp-commit-storyrc.yaml.
+   - Update any references to the config file name in documentation and code.
+3. Update hardcoded references:
+   - Search for 'mcp_journal', 'mcp-journal', and '.mcp-journalrc.yaml' in configuration files, environment variable docs, and log messages.
+   - Update to the new names as appropriate.
+4. Review other documentation files (docs/, scripts/, etc.) for any remaining references and update as needed.
+5. Manually verify that documentation is accurate and that the application can load the renamed config file.
+6. Log any non-trivial changes or issues encountered in the subtask details.
+</info added on 2025-05-20T13:23:55.801Z>
 
 ## 5. Update CI/CD configuration and clean up [pending]
 ### Dependencies: None

@@ -54,10 +54,10 @@ pip install mcp-commit-story
 A minimal configuration file is automatically generated when you initialize the project:
 
 ```bash
-mcp-journal init
+mcp-commit-story init
 ```
 
-The configuration file `.mcp-journalrc.yaml` contains essential settings:
+The configuration file `.mcp-commit-storyrc.yaml` contains essential settings:
 
 ```yaml
 # Journal settings
@@ -70,7 +70,7 @@ git:
   # Files to exclude from analysis in journal entries
   exclude_patterns:
     - "journal/**"        # Ignore journal directory to prevent recursion
-    - ".mcp-journalrc.yaml"  # Ignore config file itself
+    - ".mcp-commit-storyrc.yaml"  # Ignore config file itself
 
 # Telemetry settings
 telemetry:
@@ -104,7 +104,7 @@ journal/
 │   ├── weekly/
 │   ├── monthly/
 │   └── yearly/
-└── .mcp-journalrc.yaml
+└── .mcp-commit-storyrc.yaml
 ```
 
 ## Development

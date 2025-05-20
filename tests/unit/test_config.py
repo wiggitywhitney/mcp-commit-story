@@ -56,7 +56,7 @@ def test_config_as_dict():
 def test_load_config(tmp_path):
     """Test loading config from file"""
     # Create a test config file
-    config_path = tmp_path / '.mcp-journalrc.yaml'
+    config_path = tmp_path / '.mcp-commit-storyrc.yaml'
     test_config = {
         'journal': {'path': 'test_journal/'},
         'git': {'exclude_patterns': ['test/*.log']},
@@ -81,7 +81,7 @@ def test_load_config_missing_file():
 
 def test_save_config(tmp_path):
     """Test saving config to file"""
-    config_path = tmp_path / '.mcp-journalrc.yaml'
+    config_path = tmp_path / '.mcp-commit-storyrc.yaml'
     config = Config()
     config.journal_path = 'saved_journal/'
     config.git_exclude_patterns = ['saved/*.log']
@@ -126,20 +126,20 @@ def test_find_config_files():
          patch('os.path.expanduser') as mock_expanduser:
         
         # Mock paths
-        mock_expanduser.return_value = '/home/user/.mcp-journalrc.yaml'
-        local_path = os.path.join(os.getcwd(), '.mcp-journalrc.yaml')
+        mock_expanduser.return_value = '/home/user/.mcp-commit-storyrc.yaml'
+        local_path = os.path.join(os.getcwd(), '.mcp-commit-storyrc.yaml')
         
         # Case 1: Local and global exist
         mock_exists.return_value = True
         
         local, global_path = find_config_files()
         assert local == local_path
-        assert global_path == '/home/user/.mcp-journalrc.yaml'
+        assert global_path == '/home/user/.mcp-commit-storyrc.yaml'
         
         # Case 2: Only local exists
         def exists_side_effect(path):
             # Only return False for the exact global config path
-            if path == '/home/user/.mcp-journalrc.yaml':
+            if path == '/home/user/.mcp-commit-storyrc.yaml':
                 return False  # Global config does not exist
             return True  # Local config exists
         mock_exists.side_effect = exists_side_effect
@@ -151,14 +151,14 @@ def test_find_config_files():
         # Case 3: Only global exists
         def exists_side_effect2(path):
             # Only return True for the exact global config path
-            if path == '/home/user/.mcp-journalrc.yaml':
+            if path == '/home/user/.mcp-commit-storyrc.yaml':
                 return True  # Global config exists
             return False  # Local config does not exist
         mock_exists.side_effect = exists_side_effect2
         
         local, global_path = find_config_files()
         assert local is None
-        assert global_path == '/home/user/.mcp-journalrc.yaml'
+        assert global_path == '/home/user/.mcp-commit-storyrc.yaml'
         
         # Case 4: No configs exist - reset the mock
         mock_exists.side_effect = None
@@ -328,7 +328,7 @@ def test_handle_malformed_yaml():
 
 def test_load_large_config_file(tmp_path):
     """Test loading a very large config file."""
-    config_path = tmp_path / ".mcp-journalrc.yaml"
+    config_path = tmp_path / ".mcp-commit-storyrc.yaml"
     with open(config_path, "w") as f:
         f.write("journal:\n")
         for i in range(1000):
@@ -338,7 +338,7 @@ def test_load_large_config_file(tmp_path):
 
 def test_repeated_load_config_is_consistent(tmp_path):
     """Test repeated calls to load_config return consistent results."""
-    config_path = tmp_path / ".mcp-journalrc.yaml"
+    config_path = tmp_path / ".mcp-commit-storyrc.yaml"
     config_path.write_text("journal:\n  path: journal/")
     config1 = load_config(str(config_path))
     config2 = load_config(str(config_path))
@@ -346,35 +346,35 @@ def test_repeated_load_config_is_consistent(tmp_path):
 
 def test_malformed_yaml_raises_error(tmp_path):
     """Test that malformed YAML raises a ConfigError."""
-    config_path = tmp_path / ".mcp-journalrc.yaml"
+    config_path = tmp_path / ".mcp-commit-storyrc.yaml"
     config_path.write_text("journal: [unclosed_list\n")
     with pytest.raises(ConfigError):
         load_config(str(config_path))
 
 def test_missing_required_fields(tmp_path):
     """Test that missing required fields are handled (defaults applied or error raised)."""
-    config_path = tmp_path / ".mcp-journalrc.yaml"
+    config_path = tmp_path / ".mcp-commit-storyrc.yaml"
     config_path.write_text("journal: {}\n")
     config = load_config(str(config_path))
     assert "path" in config["journal"]
 
 def test_unexpected_data_type(tmp_path):
     """Test that unexpected data types raise a ConfigError."""
-    config_path = tmp_path / ".mcp-journalrc.yaml"
+    config_path = tmp_path / ".mcp-commit-storyrc.yaml"
     config_path.write_text("journal: 123\n")
     with pytest.raises(ConfigError):
         load_config(str(config_path))
 
 def test_deeply_nested_config_access(tmp_path):
     """Test access to deeply nested config keys."""
-    config_path = tmp_path / ".mcp-journalrc.yaml"
+    config_path = tmp_path / ".mcp-commit-storyrc.yaml"
     config_path.write_text("journal:\n  auto_summarize:\n    yearly: false\n")
     config = load_config(str(config_path))
     assert get_config_value(config, "journal.auto_summarize.yearly") is False
 
 def test_empty_config_file(tmp_path):
     """Test that an empty config file loads as a valid config object."""
-    config_path = tmp_path / ".mcp-journalrc.yaml"
+    config_path = tmp_path / ".mcp-commit-storyrc.yaml"
     config_path.write_text("")
     config = load_config(str(config_path))
     assert isinstance(config, Config)

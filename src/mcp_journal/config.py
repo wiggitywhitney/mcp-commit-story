@@ -32,11 +32,11 @@ DEFAULT_CONFIG = {
         }
     },
     'git': {
-        'exclude_patterns': ['journal/**', '.mcp-journalrc.yaml']
+        'exclude_patterns': ['journal/**', '.mcp-commit-storyrc.yaml']
     },
     'telemetry': {
         'enabled': False,
-        'service_name': 'mcp-journal'
+        'service_name': 'mcp-commit-story'
     }
 }
 
@@ -162,12 +162,12 @@ def find_config_files() -> Tuple[Optional[str], Optional[str]]:
         Tuple of (local_config_path, global_config_path), either may be None if not found
     """
     # Get local config path and check if it exists
-    local_config_path = os.path.join(os.getcwd(), '.mcp-journalrc.yaml')
+    local_config_path = os.path.join(os.getcwd(), '.mcp-commit-storyrc.yaml')
     local_exists = os.path.exists(local_config_path)
     local_config = local_config_path if local_exists else None
     
     # Get global config path and check if it exists
-    global_config_path = os.path.expanduser('~/.mcp-journalrc.yaml')
+    global_config_path = os.path.expanduser('~/.mcp-commit-storyrc.yaml')
     global_exists = os.path.exists(global_config_path)
     global_config = global_config_path if global_exists else None
     
@@ -270,13 +270,13 @@ def save_config(config: Config, config_path: Optional[str] = None) -> bool:
     
     Args:
         config: Config object to save
-        config_path: Path to save config file, defaults to .mcp-journalrc.yaml in current directory
+        config_path: Path to save config file, defaults to .mcp-commit-storyrc.yaml in current directory
         
     Returns:
         True if successful, False otherwise
     """
     if config_path is None:
-        config_path = os.path.join(os.getcwd(), '.mcp-journalrc.yaml')
+        config_path = os.path.join(os.getcwd(), '.mcp-commit-storyrc.yaml')
     
     try:
         # Ensure directory exists

@@ -4,12 +4,12 @@ This utility script verifies that a configuration file exists and is readable.
 It is a development tool used for testing, not part of the main application.
 
 The main application will generate the configuration file during initialization,
-referencing the .mcp-journalrc.yaml.example if it exists.
+referencing the .mcp-commit-storyrc.yaml.example if it exists.
 """
 from pathlib import Path
 import sys
 
-def verify_config_file(config_path=".mcp-journalrc.yaml"):
+def verify_config_file(config_path=".mcp-commit-storyrc.yaml"):
     """Verify that the configuration file exists and is readable"""
     try:
         config_path = Path(config_path)
@@ -56,7 +56,7 @@ def verify_config_file(config_path=".mcp-journalrc.yaml"):
 
 def main():
     """Main function to verify configuration file"""
-    config_path = ".mcp-journalrc.yaml"
+    config_path = ".mcp-commit-storyrc.yaml"
     
     # Check if custom path provided
     if len(sys.argv) > 1:

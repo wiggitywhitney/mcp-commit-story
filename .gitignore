@@ -1,7 +1,7 @@
 .env
-.mcp-journalrc.yaml  # Ignore local configuration
+.mcp-commit-storyrc.yaml  # Ignore local configuration
 # But track the example configuration
-!.mcp-journalrc.yaml.example
+!.mcp-commit-storyrc.yaml.example
 !verify_config.py  # Utility script for verifying configuration 
 
 # Added by Claude Task Master

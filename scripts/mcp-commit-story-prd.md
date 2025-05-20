@@ -51,14 +51,14 @@ The MCP server must be launchable as a standalone process and expose the require
   - Environment variables such as API keys may be required if the underlying MCP SDK or AI provider requires them, but are not strictly necessary for local operation unless needed by dependencies.
 
 - **Separation of Concerns:**
-  - The MCP server configuration (how it is launched and discovered) is separate from the journal system's own configuration, which is managed via `.mcp-journalrc.yaml` as described elsewhere in this specification.
+  - The MCP server configuration (how it is launched and discovered) is separate from the journal system's own configuration, which is managed via `.mcp-commit-storyrc.yaml` as described elsewhere in this specification.
 
 ## Key Features
 - MCP server with tools for journal operations (new-entry, summarize, blogify, etc.)
 - CLI interface for all operations
 - Journal entries per Git commit, written to daily Markdown files
 - Chat and terminal history collection for context
-- Configurable via .mcp-journalrc.yaml (local and global precedence)
+- Configurable via .mcp-commit-storyrc.yaml (local and global precedence)
 - Error handling: fail fast on hard errors, skip with notes on soft errors
 - Git integration: post-commit hook, backfill, commit processing
 - Testing: TDD, >90% coverage, unit/integration/fixtures
@@ -175,7 +175,7 @@ This document specifies a Model Context Protocol (MCP) server designed to captur
 - **Language**: Python 3.9+
 - **MCP Framework**: Official Anthropic MCP Python SDK
 - **CLI Framework**: Click (for command parsing and user interface)
-- **Configuration**: PyYAML (for .mcp-journalrc.yaml files)
+- **Configuration**: PyYAML (for .mcp-commit-storyrc.yaml files)
 - **Git Integration**: GitPython library
 - **File I/O**: Standard library (pathlib, datetime)
 - **Testing**: pytest for unit/integration tests
@@ -199,7 +199,7 @@ mcp-commit-story/
 │   └── fixtures/
 ├── pyproject.toml       # Modern Python packaging
 ├── README.md
-└── .mcp-journalrc.yaml  # Default config
+└── .mcp-commit-storyrc.yaml  # Default config
 ```
 
 ### Development Methodology
@@ -274,15 +274,15 @@ journal/
 │   └── yearly/
 │       ├── 2025.md
 │       └── ...
-└── .mcp-journalrc.yaml
+└── .mcp-commit-storyrc.yaml
 ```
 
 ### Configuration
-Configurable via a `.mcp-journalrc.yaml` file at repo root. Global defaults supported via `~/.mcp-journalrc.yaml`.
+Configurable via a `.mcp-commit-storyrc.yaml` file at repo root. Global defaults supported via `~/.mcp-commit-storyrc.yaml`.
 
 #### Configuration Precedence
-1. Local config (`.mcp-journalrc.yaml` in repo root)
-2. Global config (`~/.mcp-journalrc.yaml`)
+1. Local config (`.mcp-commit-storyrc.yaml` in repo root)
+2. Global config (`~/.mcp-commit-storyrc.yaml`)
 3. Built-in defaults
 
 #### Configuration Validation
@@ -314,7 +314,7 @@ journal:
 # Minimal telemetry configuration
 telemetry:
   enabled: true                 # Toggle telemetry collection
-  service_name: "mcp-journal"   # Service name for traces
+  service_name: "mcp-commit-story"   # Service name for traces
 ```
 
 ---
@@ -400,7 +400,7 @@ Commands executed by AI during this work session:
 - Commit hash, message, files touched
 
 ## Reflections
-- Only include reflections manually added by human using `mcp-journal add-reflection`
+- Only include reflections manually added by human using `mcp-commit-story add-reflection`
 - Never infer or generate reflections from chat context
 ```
 
@@ -408,7 +408,7 @@ Empty sections are omitted. Manual entries and reflections are clearly labeled a
 
 ### AI Tone/Style Configuration
 
-The user can control the tone and style of AI-generated summaries in journal entries by setting the `ai_tone` field in `.mcp-journalrc.yaml`.
+The user can control the tone and style of AI-generated summaries in journal entries by setting the `ai_tone` field in `.mcp-commit-storyrc.yaml`.
 
 **Supported values:**
 - `neutral` (default): Objective, factual, and balanced. No strong personality.
@@ -494,20 +494,20 @@ journal:
 
 ### Command Structure
 ```bash
-mcp-journal [operation] [options]
+mcp-commit-story [operation] [options]
 ```
 
 ### Supported Commands
-- `mcp-journal init` - Initialize journal in current repository
-- `mcp-journal new-entry [--debug]` - Create journal entry for current commit (with AI command collection)
-- `mcp-journal add-reflection "text"` - Add manual reflection to today's journal
-- `mcp-journal summarize --week [--debug]` - Generate summary for most recent week
-- `mcp-journal summarize --month [--debug]` - Generate summary for most recent month
-- `mcp-journal summarize --week 2025-01-13` - Week containing specific date
-- `mcp-journal summarize --range "2025-01-01:2025-01-31"` - Arbitrary range
-- `mcp-journal blogify <file1> [file2] ...` - Convert to blog post
-- `mcp-journal install-hook` - Install git post-commit hook
-- `mcp-journal backfill [--debug]` - Manually trigger missed commit check
+- `mcp-commit-story init` - Initialize journal in current repository
+- `mcp-commit-story new-entry [--debug]` - Create journal entry for current commit (with AI command collection)
+- `mcp-commit-story add-reflection "text"` - Add manual reflection to today's journal
+- `mcp-commit-story summarize --week [--debug]` - Generate summary for most recent week
+- `mcp-commit-story summarize --month [--debug]` - Generate summary for most recent month
+- `mcp-commit-story summarize --week 2025-01-13` - Week containing specific date
+- `mcp-commit-story summarize --range "2025-01-01:2025-01-31"` - Arbitrary range
+- `mcp-commit-story blogify <file1> [file2] ...` - Convert to blog post
+- `mcp-commit-story install-hook` - Install git post-commit hook
+- `mcp-commit-story backfill [--debug]` - Manually trigger missed commit check
 
 ### Global Options
 - `--config <path>` - Override config file location
@@ -563,12 +563,12 @@ These errors are skipped with optional notes in output:
 ## Git Integration
 
 ### Hook Installation
-- `mcp-journal install-hook` command
+- `mcp-commit-story install-hook` command
 - Checks for existing hooks and prompts for action
 - Creates simple hook:
   ```bash
   #!/bin/sh
-  mcp-journal new-entry
+  mcp-commit-story new-entry
   ```
 - Backs up existing hooks before modification
 
@@ -754,7 +754,7 @@ def generate_entry(debug=False):
   - Commit hash: [`cda9ef2`](https://github.com/your-org/your-repo/commit/cda9ef2)
 
 ### Configurable AI Tone/Style for Summaries
-- Allow the user to control the tone and style of AI-generated summaries in journal entries by setting the `ai_tone` field in `.mcp-journalrc.yaml`.
+- Allow the user to control the tone and style of AI-generated summaries in journal entries by setting the `ai_tone` field in `.mcp-commit-storyrc.yaml`.
 - The value of `ai_tone` can be any free-form string, such as a tone, style, persona, or creative instruction. This value will be passed directly to the AI to guide summary generation.
 - There is no fixed list of supported values. Users may specify anything, e.g., "concise and technical", "in the style of a pirate", "for a 10-year-old", "sarcastic", "neutral", etc.
 - If omitted, the default is "neutral and factual".
@@ -819,8 +819,8 @@ This tool is designed to be **developer-friendly**, **minimally intrusive**, and
 12. Package for distribution
 
 ### Initialization Workflow
-1. User runs `mcp-journal init` in their repository
-2. System checks if already initialized (look for `.mcp-journalrc.yaml`)
+1. User runs `mcp-commit-story init` in their repository
+2. System checks if already initialized (look for `.mcp-commit-storyrc.yaml`)
 3. Creates journal directory structure
 4. Generates default configuration file
 5. Prompts to install git post-commit hook

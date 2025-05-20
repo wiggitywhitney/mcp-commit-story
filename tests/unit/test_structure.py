@@ -17,7 +17,7 @@ REQUIRED_FILES = [
     'src/mcp_commit_story/config.py',
     'src/mcp_commit_story/telemetry.py',
     'README.md',
-    '.mcp-journalrc.yaml',
+    '.mcp-commit-storyrc.yaml',
 ]
 
 def test_required_directories_exist():

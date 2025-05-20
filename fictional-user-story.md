@@ -6,7 +6,7 @@ Bonnie is a senior software engineer at a fintech startup. She's been coding for
 
 One Minute In
 
-Bonnie runs mcp-journal init after reading about the tool on Hacker News. She installs the git hook and makes a small commit.
+Bonnie runs mcp-commit-story init after reading about the tool on Hacker News. She installs the git hook and makes a small commit.
 
 ### 3:15 PM — Commit e4b7c9a
 
@@ -54,11 +54,11 @@ Bonnie's made 6 commits today, working on a complex feature for merchant onboard
 [bug fix for edge case]
 Bonnie scrolls through, remembering her day. "Oh right, that's when Cursor and I went back and forth about the schema design in the chat. And here's when I got stuck on that validation bug - I can see I ran npm test five times in a row!"
 
-She adds a reflection: mcp-journal add-reflection "The merchant schema needs to handle international addresses better. This will be tricky but important for our Q3 global expansion."
+She adds a reflection: mcp-commit-story add-reflection "The merchant schema needs to handle international addresses better. This will be tricky but important for our Q3 global expansion."
 
 One Week Later
 
-Bonnie uses the summarization feature: mcp-journal summarize --week
+Bonnie uses the summarization feature: mcp-commit-story summarize --week
 
 # Week Summary - May 12-18, 2025
 
@@ -88,7 +88,7 @@ Bonnie feels energized reading this. "I haven't felt this clear about my work in
 
 One Month Later
 
-Bonnie's manager asks her to write a post for the engineering blog about the merchant onboarding project. She runs: mcp-journal blogify journal/daily/2025-05-*.md
+Bonnie's manager asks her to write a post for the engineering blog about the merchant onboarding project. She runs: mcp-commit-story blogify journal/daily/2025-05-*.md
 
 # Building Global Merchant Onboarding: A Month-Long Journey
 
@@ -109,7 +109,7 @@ Her manager reads the draft: "Bonnie, this is exactly the kind of technical stor
 
 One Year Later
 
-Bonnie is now using the journal for performance reviews, job interviews, and conference talk proposals. She runs mcp-journal summarize --range "2024-05-01:2025-05-01" to see her full year.
+Bonnie is now using the journal for performance reviews, job interviews, and conference talk proposals. She runs mcp-commit-story summarize --range "2024-05-01:2025-05-01" to see her full year.
 
 What Bonnie Does With the Output:
 

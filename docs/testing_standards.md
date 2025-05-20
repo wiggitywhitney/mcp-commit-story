@@ -67,7 +67,7 @@ def test_config_loading_from_file():
     """Test loading configuration from a file"""
     with tempfile.TemporaryDirectory() as tmp_dir:
         # Create a test config file
-        config_path = Path(tmp_dir) / '.mcp-journalrc.yaml'
+        config_path = Path(tmp_dir) / '.mcp-commit-storyrc.yaml'
         with open(config_path, 'w') as f:
             f.write('journal:\n  path: test/\n')
         
