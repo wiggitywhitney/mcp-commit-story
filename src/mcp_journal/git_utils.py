@@ -6,6 +6,7 @@ and processing commits for journal entry generation.
 """
 import os
 import time
+import shutil
 from datetime import datetime
 from typing import Dict, List, Any, Optional, Union
 
@@ -237,3 +238,18 @@ def get_commit_diff_summary(commit):
                 print(f"[WARN] Ambiguous diff for {fname}: {diff}")
                 summary_lines.append(f"{fname}: changed (ambiguous)")
     return "\n".join(summary_lines)
+
+
+def backup_existing_hook(hook_path: str) -> Optional[str]:
+    """
+    Backup an existing Git hook file by copying it to a timestamped backup file.
+    Preserves file permissions. Returns the backup path, or None if no backup was needed.
+    Raises PermissionError if the filesystem is read-only.
+    """
+    if not os.path.exists(hook_path):
+        return None
+    timestamp = time.strftime('%Y%m%d-%H%M%S')
+    backup_path = f"{hook_path}.backup.{timestamp}"
+    # Copy file and preserve permissions
+    shutil.copy2(hook_path, backup_path)
+    return backup_path

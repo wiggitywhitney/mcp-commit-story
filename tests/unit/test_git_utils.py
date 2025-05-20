@@ -1,6 +1,6 @@
 import pytest
 import os
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, MagicMock
 from pathlib import Path
 from mcp_journal.git_utils import (
     is_git_repo, 
@@ -8,8 +8,10 @@ from mcp_journal.git_utils import (
     get_current_commit, 
     is_journal_only_commit,
     get_commit_details,
-    get_commit_diff_summary
+    get_commit_diff_summary,
+    backup_existing_hook
 )
+import stat
 
 # TDD: Test that GitPython is installed and can instantiate a Repo object
 # This test should fail if GitPython is missing or misconfigured
@@ -235,4 +237,46 @@ def test_diff_summary_large_diff(git_repo):
     commit = git_repo.index.commit('add many files')
     summary = get_commit_diff_summary(commit)
     assert 'file_0.txt' in summary and 'file_19.txt' in summary
-    assert 'added' in summary.lower() or 'files changed' in summary.lower() 
+    assert 'added' in summary.lower() or 'files changed' in summary.lower()
+
+def test_backup_existing_hook_backs_up_file_with_timestamp(tmp_path):
+    # Create a fake hook file
+    hook_path = tmp_path / 'pre-commit'
+    hook_path.write_text('#!/bin/sh\necho test\n')
+    orig_mode = hook_path.stat().st_mode
+    # Patch time to return a fixed value
+    with patch('time.strftime', return_value='20240520-123456'):
+        backup_path = backup_existing_hook(str(hook_path))
+    # Check backup file exists with correct name
+    expected_backup = tmp_path / 'pre-commit.backup.20240520-123456'
+    assert backup_path == str(expected_backup)
+    assert expected_backup.exists()
+    # Check content matches
+    assert expected_backup.read_text() == '#!/bin/sh\necho test\n'
+    # Check permissions preserved
+    assert expected_backup.stat().st_mode == orig_mode
+
+def test_backup_existing_hook_no_file(tmp_path):
+    # No hook file exists
+    hook_path = tmp_path / 'pre-commit'
+    backup_path = backup_existing_hook(str(hook_path))
+    assert backup_path is None
+
+def test_backup_existing_hook_preserves_permissions(tmp_path):
+    hook_path = tmp_path / 'pre-commit'
+    hook_path.write_text('echo hi\n')
+    # Set custom permissions
+    hook_path.chmod(0o750)
+    with patch('time.strftime', return_value='20240520-123456'):
+        backup_path = backup_existing_hook(str(hook_path))
+    backup_file = tmp_path / 'pre-commit.backup.20240520-123456'
+    assert backup_file.exists()
+    assert oct(backup_file.stat().st_mode & 0o777) == '0o750'
+
+def test_backup_existing_hook_readonly_filesystem(tmp_path):
+    hook_path = tmp_path / 'pre-commit'
+    hook_path.write_text('echo hi\n')
+    # Simulate read-only filesystem by patching shutil.copy2 to raise
+    with patch('shutil.copy2', side_effect=PermissionError):
+        with pytest.raises(PermissionError):
+            backup_existing_hook(str(hook_path)) 

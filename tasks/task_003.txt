@@ -238,13 +238,13 @@ Implementation Plan:
 ### Details:
 Implement get_commit_diff_summary to: 1) Extract diff information from a commit object, 2) Categorize changes (added, modified, deleted), 3) Format the summary in a consistent way, 4) Handle edge cases identified in tests.
 
-## 6. Write tests for backup_existing_hook function [pending]
+## 6. Write tests for backup_existing_hook function [done]
 ### Dependencies: 3.3
 ### Description: Create tests for the backup_existing_hook function to verify it correctly preserves existing Git hooks.
 ### Details:
 Write tests that verify: 1) Existing hooks are properly backed up with timestamp, 2) Permissions are preserved, 3) Function handles missing hooks gracefully, 4) Function handles read-only filesystem scenarios.
 
-## 7. Implement backup_existing_hook function [pending]
+## 7. Implement backup_existing_hook function [done]
 ### Dependencies: 3.6
 ### Description: Implement the function to safely backup existing Git hooks before modification.
 ### Details:

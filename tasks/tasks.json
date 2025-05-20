@@ -230,7 +230,7 @@
             3
           ],
           "details": "Write tests that verify: 1) Existing hooks are properly backed up with timestamp, 2) Permissions are preserved, 3) Function handles missing hooks gracefully, 4) Function handles read-only filesystem scenarios.",
-          "status": "pending",
+          "status": "done",
           "testStrategy": "Use pytest with temporary directories and mock files to simulate Git hook scenarios."
         },
         {
@@ -241,7 +241,7 @@
             6
           ],
           "details": "Implement backup_existing_hook to: 1) Check if a hook exists at the specified path, 2) Create a timestamped backup copy if it exists, 3) Preserve file permissions, 4) Return the backup path or None if no backup was needed.",
-          "status": "pending",
+          "status": "done",
           "testStrategy": "Run the previously created tests to verify implementation. All tests should now pass."
         },
         {
