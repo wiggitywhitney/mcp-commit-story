@@ -92,3 +92,150 @@ def create_journal_directories():
 5. Tests for handling missing context gracefully
 6. Integration tests for full entry generation
 7. Tests for anti-hallucination rules
+8. Tests for incorporating user preferences and feedback
+
+# Subtasks:
+## 1. Implement JournalEntry class with tests [pending]
+### Dependencies: None
+### Description: Create the JournalEntry class structure and tests for initialization and markdown conversion, with explicit user collaboration at each step
+### Details:
+Create tests in `tests/test_journal_entry.py` that verify: 1) JournalEntry initializes with commit and config, 2) sections are created based on config, 3) to_markdown() produces correct format. Then implement the JournalEntry class in `src/mcp_journal/journal.py`.
+
+Collaboration steps:
+1. Present proposed JournalEntry class structure to user for review
+2. Ask specific questions about user preferences:
+   - What should the default order of sections be?
+   - What timestamp format do you prefer (24h or 12h)?
+   - How should section headers be formatted in markdown?
+   - What metadata should be included in each entry?
+3. Create test cases based on user feedback and present for approval
+4. Document all user decisions in code comments and docstrings
+5. Implement the class based on approved design
+6. Present implementation for final review before marking complete
+
+## 2. Implement file operations with tests [pending]
+### Dependencies: None
+### Description: Create tests and implement file operation functions for journal management, with explicit user collaboration at each step
+### Details:
+Create tests in `tests/test_file_operations.py` for get_journal_file_path(), append_to_journal_file(), and create_journal_directories(). Then implement these functions in `src/mcp_journal/journal.py`. Use mocking for file system operations.
+
+Collaboration steps:
+1. Present proposed file structure and naming conventions to user
+2. Ask specific questions about user preferences:
+   - What directory structure do you prefer for journal files?
+   - How should files be named (date format, prefixes, etc.)?
+   - Should entries be appended to existing files or create new files?
+   - What file permissions should be set?
+3. Create test cases based on user feedback and present for approval
+4. Document all user decisions in code comments and docstrings
+5. Implement functions based on approved design
+6. Present implementation for final review before marking complete
+
+## 3. Implement context collection functions with tests [pending]
+### Dependencies: None
+### Description: Create tests and implement functions to collect terminal history, chat history, and AI commands, with explicit user collaboration at each step
+### Details:
+Create tests in `tests/test_context_collection.py` for collect_terminal_history(), collect_chat_history(), and collect_ai_terminal_commands(). Then implement these functions in `src/mcp_journal/journal.py`. Use mocking for external dependencies.
+
+Collaboration steps:
+1. Present proposed context collection approach to user
+2. Ask specific questions about user preferences:
+   - How far back should terminal history be collected?
+   - What format should chat history be stored in?
+   - How should AI commands be distinguished from user commands?
+   - What context should be excluded or filtered out?
+3. Create test cases based on user feedback and present for approval
+4. Document all user decisions in code comments and docstrings
+5. Implement functions based on approved design
+6. Present implementation for final review before marking complete
+
+## 4. Implement commit-based section generators with tests [pending]
+### Dependencies: 5.1
+### Description: Create tests and implement section generators that use commit information, with explicit user collaboration at each step
+### Details:
+Create tests in `tests/test_commit_sections.py` for generate_summary_section(), generate_accomplishments_section(), generate_frustrations_section(), and generate_commit_details_section(). Then implement these functions in `src/mcp_journal/journal.py`.
+
+Collaboration steps:
+1. Present proposed section generator designs to user
+2. Ask specific questions about user preferences:
+   - What information should be included in the summary section?
+   - How should accomplishments be formatted and categorized?
+   - What tone and style should be used for frustrations?
+   - What commit details are most important to include?
+3. Create test cases based on user feedback and present for approval
+4. Document all user decisions in code comments and docstrings
+5. Implement functions based on approved design
+6. Present implementation for final review before marking complete
+
+## 5. Implement context-based section generators with tests [pending]
+### Dependencies: 5.1, 5.3
+### Description: Create tests and implement section generators that use terminal and chat context, with explicit user collaboration at each step
+### Details:
+Create tests in `tests/test_context_sections.py` for generate_terminal_section(), generate_discussion_section(), and generate_tone_section(). Then implement these functions in `src/mcp_journal/journal.py`.
+
+Collaboration steps:
+1. Present proposed context-based section generator designs to user
+2. Ask specific questions about user preferences:
+   - How should terminal commands be grouped or categorized?
+   - What aspects of discussions should be highlighted?
+   - How should the tone/mood section be structured?
+   - What context should be prioritized or filtered out?
+3. Create test cases based on user feedback and present for approval
+4. Document all user decisions in code comments and docstrings
+5. Implement functions based on approved design
+6. Present implementation for final review before marking complete
+
+## 6. Create integration test for journal entry generation [pending]
+### Dependencies: 5.1, 5.2, 5.3, 5.4, 5.5
+### Description: Create an integration test that verifies the full journal entry generation process, with explicit user collaboration at each step
+### Details:
+Create an integration test in `tests/test_journal_integration.py` that verifies the complete flow: collecting context, creating a journal entry with all sections, and writing to a file.
+
+Collaboration steps:
+1. Present proposed integration test approach to user
+2. Ask specific questions about user preferences:
+   - What end-to-end scenarios are most important to test?
+   - What sample inputs should be used for realistic testing?
+   - What aspects of the output should be validated?
+   - How should the integration test handle dependencies?
+3. Create test cases based on user feedback and present for approval
+4. Document all user decisions in code comments and docstrings
+5. Implement integration test based on approved design
+6. Present implementation for final review before marking complete
+
+## 7. Implement edge case handling and error recovery [pending]
+### Dependencies: 5.1, 5.2, 5.3, 5.4, 5.5
+### Description: Add robust error handling and edge case management to all journal functions, with explicit user collaboration at each step
+### Details:
+Update all functions to handle edge cases like missing data, API failures, or permission issues. Add appropriate error handling, logging, and fallback mechanisms.
+
+Collaboration steps:
+1. Present proposed error handling approach to user
+2. Ask specific questions about user preferences:
+   - How should errors be communicated to the user?
+   - What fallback behavior is preferred for missing data?
+   - What level of logging detail is appropriate?
+   - Which errors should be fatal vs. non-fatal?
+3. Create test cases based on user feedback and present for approval
+4. Document all user decisions in code comments and docstrings
+5. Implement error handling based on approved design
+6. Present implementation for final review before marking complete
+
+## 8. Create CLI command for manual journal generation [pending]
+### Dependencies: 5.6, 5.7
+### Description: Implement a command-line interface for manually generating journal entries, with explicit user collaboration at each step
+### Details:
+Create a CLI command in `src/mcp_journal/cli.py` that allows users to manually generate journal entries for specific commits or time periods. Connect this to the journal generation functionality.
+
+Collaboration steps:
+1. Present proposed CLI design to user
+2. Ask specific questions about user preferences:
+   - What command syntax is most intuitive?
+   - What options and flags should be available?
+   - How should output be displayed in the terminal?
+   - What confirmation steps should be included?
+3. Create test cases based on user feedback and present for approval
+4. Document all user decisions in code comments and docstrings
+5. Implement CLI based on approved design
+6. Present implementation for final review before marking complete
+

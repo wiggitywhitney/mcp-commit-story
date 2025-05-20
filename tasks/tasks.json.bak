@@ -416,7 +416,9 @@
       "dependencies": [
         5,
         6,
-        7
+        7,
+        "17",
+        "18"
       ],
       "status": "pending",
       "subtasks": []
@@ -497,14 +499,60 @@
       "id": 16,
       "title": "Rename Python Package from 'mcp_journal' to 'mcp_commit_story'",
       "description": "Rename the Python package from 'mcp_journal' to 'mcp_commit_story' to align with the repository name, including all necessary code and configuration updates to maintain functionality.",
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         3
       ],
       "priority": "high",
       "details": "This task involves a straightforward package rename to ensure consistency between the codebase and repository name. The developer should:\n\n1. Rename the source directory from 'src/mcp_journal/' to 'src/mcp_commit_story/'\n2. Update all import statements throughout the codebase, including:\n   - Internal imports within the package\n   - Import statements in test files\n   - Any examples or documentation code\n3. Modify pyproject.toml to reflect the new package name, including:\n   - Package metadata (name) in [project] section\n   - Entry points in [project.scripts] section\n4. Update any references in README.md and other documentation\n5. Update configuration files like .mcp-journalrc.yaml to reflect the new name\n6. Check for hardcoded references to the package name in:\n   - CLI commands\n   - Configuration files\n   - Environment variables\n   - Log messages\n7. Update any CI/CD configuration files (.github/workflows, etc.) that reference the package name\n8. Ensure compatibility with Task 3 (Git Utilities)\n\nThis rename should be done early in the development process to minimize technical debt.",
       "testStrategy": "To verify the successful completion of this task:\n\n1. Run a comprehensive search across the codebase to ensure no instances of 'mcp_journal' remain:\n   ```\n   grep -r \"mcp_journal\" --include=\"*.py\" --include=\"*.md\" --include=\"*.toml\" --include=\"*.yaml\" .\n   ```\n\n2. Verify the package can be installed correctly:\n   ```\n   # Uninstall old package if needed\n   pip uninstall mcp_journal -y\n   # Install new package\n   pip install -e .\n   ```\n\n3. Run the full test suite to ensure all functionality works with the new package name:\n   ```\n   pytest\n   ```\n\n4. Verify imports work in a new Python environment:\n   ```python\n   from mcp_commit_story import *\n   # Test basic functionality\n   ```\n\n5. Check that any CLI commands or entry points still function:\n   ```\n   mcp-commit-story --version  # or whatever the command is\n   ```\n\n6. Run CI/CD pipelines to ensure they pass with the new package name",
-      "subtasks": []
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Rename source directory and update package imports",
+          "description": "Rename the source directory from 'src/mcp_journal/' to 'src/mcp_commit_story/' and update all internal import statements within the package.",
+          "dependencies": [],
+          "details": "1. Create a new directory 'src/mcp_commit_story/'\n2. Copy all files from 'src/mcp_journal/' to 'src/mcp_commit_story/'\n3. Update all import statements within the package files that reference 'mcp_journal' to 'mcp_commit_story'\n4. Ensure __init__.py and package structure is maintained\n5. Do not delete the original directory yet\n<info added on 2025-05-20T13:06:27.064Z>\n3. Update all test files in tests/unit/ that reference mcp_journal to use mcp_commit_story:\n   - test_journal.py: from mcp_journal import journal → from mcp_commit_story import journal\n   - test_git_utils.py, test_config.py: update all from mcp_journal... and patch('mcp_journal...') to mcp_commit_story\n   - test_imports.py: update MODULES list\n   - test_structure.py: update REQUIRED_DIRS and REQUIRED_FILES lists\n4. Run all tests to confirm that imports fail (TDD: confirm the rename is needed and breaks tests).\n5. Once confirmed, proceed to update the rest of the codebase and tests to use the new package name.\n\nNote: No internal imports in the package source files reference mcp_journal, so only test files need updating. __init__.py and placeholder files will be copied as-is.\n</info added on 2025-05-20T13:06:27.064Z>",
+          "status": "done",
+          "testStrategy": "Run unit tests after changes to verify imports are working correctly. Check for import errors when running the package."
+        },
+        {
+          "id": 2,
+          "title": "Update test files and external imports",
+          "description": "Update all import statements in test files and any examples or documentation code to reference the new package name.",
+          "dependencies": [],
+          "details": "1. Identify all test files in the 'tests/' directory\n2. Update all import statements from 'mcp_journal' to 'mcp_commit_story'\n3. Check for any example code in documentation or standalone examples\n4. Update imports in those files as well\n5. Run tests to verify they pass with the new imports\n<info added on 2025-05-20T13:14:13.864Z>\n1. Search the entire codebase for any remaining references to 'mcp_journal', including:\n   - All test files in the 'tests/' directory\n   - Documentation files (e.g., .md, .rst)\n   - Example code in scripts, docs, or root files\n   - Configuration files (e.g., pyproject.toml, .gitignore)\n2. For each match, update import statements and references from 'mcp_journal' to 'mcp_commit_story'.\n3. For documentation and sample code, update code blocks and prose to use the new package name.\n4. Run the full test suite to verify all tests pass and no import errors remain.\n5. Confirm that all documentation, config, and example code is consistent with the new package name.\n6. Log any non-trivial changes or issues encountered in the subtask details.\n</info added on 2025-05-20T13:14:13.864Z>",
+          "status": "done",
+          "testStrategy": "Run the full test suite to ensure all tests pass with the updated imports. Check for any import errors or test failures."
+        },
+        {
+          "id": 3,
+          "title": "Update package configuration in pyproject.toml",
+          "description": "Modify pyproject.toml to reflect the new package name, including package metadata and entry points.",
+          "dependencies": [],
+          "details": "1. Update the package name in the [project] section\n2. Update any references in dependencies or dev dependencies\n3. Update entry points in [project.scripts] section\n4. Update any other metadata that references the old package name\n5. Verify the package can still be installed locally with pip install -e .\n<info added on 2025-05-20T13:18:51.016Z>\n1. Update the package name in the [project] section of pyproject.toml from 'mcp-journal' to 'mcp-commit-story'.\n2. Review and update any references to the old package name in dependencies, dev dependencies, and entry points ([project.scripts]).\n3. Update any other metadata fields (description, authors, etc.) if they reference the old name.\n4. Save and close pyproject.toml.\n5. Run 'pip install -e .' to verify the package installs correctly with the new name and entry points.\n6. Test the CLI entry point (e.g., 'mcp-commit-story --help') to ensure it works as expected.\n7. Log any issues or non-trivial changes encountered in the subtask details.\n</info added on 2025-05-20T13:18:51.016Z>",
+          "status": "done",
+          "testStrategy": "After updating pyproject.toml, run 'pip install -e .' to verify the package installs correctly with the new name. Test CLI commands to ensure entry points work."
+        },
+        {
+          "id": 4,
+          "title": "Update documentation and configuration files",
+          "description": "Update README.md, configuration files, and check for hardcoded references to the package name in various locations.",
+          "dependencies": [],
+          "details": "1. Update README.md with the new package name\n2. Rename configuration files like .mcp-journalrc.yaml to .mcp-commit-storyrc.yaml\n3. Update any hardcoded references to 'mcp_journal' in:\n   - CLI commands\n   - Configuration files\n   - Environment variables\n   - Log messages\n4. Check for any other documentation files that need updating\n<info added on 2025-05-20T13:23:55.801Z>\nImplementation Plan:\n\n1. Update README.md:\n   - Change all references from 'mcp_journal' to 'mcp_commit_story' and from 'mcp-journal' to 'mcp-commit-story'.\n   - Update CLI usage examples and code blocks.\n2. Rename configuration files:\n   - If present, rename .mcp-journalrc.yaml to .mcp-commit-storyrc.yaml.\n   - Update any references to the config file name in documentation and code.\n3. Update hardcoded references:\n   - Search for 'mcp_journal', 'mcp-journal', and '.mcp-journalrc.yaml' in configuration files, environment variable docs, and log messages.\n   - Update to the new names as appropriate.\n4. Review other documentation files (docs/, scripts/, etc.) for any remaining references and update as needed.\n5. Manually verify that documentation is accurate and that the application can load the renamed config file.\n6. Log any non-trivial changes or issues encountered in the subtask details.\n</info added on 2025-05-20T13:23:55.801Z>",
+          "status": "done",
+          "testStrategy": "Manually verify documentation accuracy. Test configuration file loading to ensure the application can find and load the renamed config files."
+        },
+        {
+          "id": 5,
+          "title": "Update CI/CD configuration and clean up",
+          "description": "Update any CI/CD configuration files that reference the package name and remove the old package directory after verifying everything works.",
+          "dependencies": [],
+          "details": "1. Update any GitHub workflow files in .github/workflows/\n2. Check for any other CI/CD configuration that might reference the old name\n3. Run a full verification of the package functionality\n4. Once everything is confirmed working, delete the original 'src/mcp_journal/' directory\n5. Verify the package still works after removal of the old directory\n<info added on 2025-05-20T14:02:31.842Z>\n1. Review all GitHub Actions workflow files in .github/workflows/ for references to the old package name (mcp_journal).\n2. Update any references in workflow files, badges, or other CI/CD configs to use the new package name (mcp_commit_story).\n3. Run the full test suite to verify that everything works with the new package name.\n4. Once all tests pass and the package is verified, delete the old src/mcp_journal/ directory and its contents.\n5. Run the test suite again to confirm nothing is broken by the removal.\n6. Manually verify the main functionality of the package and CLI.\n7. Log any issues or non-trivial changes encountered during the process.\n</info added on 2025-05-20T14:02:31.842Z>",
+          "status": "done",
+          "testStrategy": "Run the full test suite one final time after all changes. Manually test the main functionality of the package to ensure everything works with the new name and after removing the old directory."
+        }
+      ]
     },
     {
       "id": 17,
@@ -595,7 +643,9 @@
       "title": "Implement Daily Summary Generation Feature",
       "description": "Add functionality to generate summaries for a single day in the journal system via CLI and MCP tool, with consideration for auto-generating summaries for days with new commits.",
       "status": "pending",
-      "dependencies": [],
+      "dependencies": [
+        "17"
+      ],
       "priority": "medium",
       "details": "",
       "testStrategy": "# Test Strategy:\nTesting should cover all aspects of the daily summary feature:\n\n1. Unit Tests:\n   - Test the date parsing and validation logic\n   - Verify the summary generation algorithm produces correct output for various input scenarios\n   - Test edge cases: empty days, days with single entries, days with many entries\n   - Verify proper handling of manual reflections prioritization\n\n2. Integration Tests:\n   - Test the CLI interface with various date formats and options\n   - Verify the MCP tool correctly interfaces with the summary generation logic\n   - Test the auto-generation feature triggers correctly when enabled\n   - Verify storage and retrieval of daily summaries works as expected\n\n3. User Acceptance Testing:\n   - Create test scenarios for common user workflows\n   - Verify the feature works with the journal system's existing data\n   - Test with different user permission levels if applicable\n\n4. Performance Testing:\n   - Measure and benchmark summary generation time for various day sizes\n   - Test auto-generation impact on system resources\n   - Verify the system remains responsive during summary generation\n\n5. Regression Testing:\n   - Ensure existing summary features (weekly, monthly) continue to work\n   - Verify that the prioritization of manual reflections works consistently\n\n6. Automated Test Suite:\n   - Add new test cases to the comprehensive testing suite (from Task #15)\n   - Create specific test fixtures for daily summary testing\n\n7. Documentation Testing:\n   - Verify help documentation accurately describes the new options\n   - Test that error messages are clear and actionable",

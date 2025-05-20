@@ -321,15 +321,108 @@
       "id": 5,
       "title": "Implement Journal Entry Generation",
       "description": "Create the core functionality for generating journal entries from Git commits, terminal history, and chat context.",
-      "details": "Implement journal entry generation in `src/mcp_journal/journal.py` with the following features:\n\n1. Journal entry structure:\n```python\nclass JournalEntry:\n    \"\"\"Represents a journal entry with all sections\"\"\"\n    def __init__(self, commit, config):\n        self.commit = commit\n        self.config = config\n        self.timestamp = datetime.now()\n        self.sections = {}\n        # Initialize sections based on config\n    \n    def to_markdown(self):\n        \"\"\"Convert entry to markdown format\"\"\"\n        # Implementation\n```\n\n2. Section generators:\n```python\ndef generate_summary_section(commit, context):\n    \"\"\"Generate the summary section\"\"\"\n    # Implementation\n\ndef generate_accomplishments_section(commit, context):\n    \"\"\"Generate the accomplishments section\"\"\"\n    # Implementation\n\ndef generate_frustrations_section(commit, context):\n    \"\"\"Generate the frustrations section\"\"\"\n    # Implementation\n\ndef generate_terminal_section(context):\n    \"\"\"Generate the terminal commands section\"\"\"\n    # Implementation\n\ndef generate_discussion_section(context):\n    \"\"\"Generate the discussion notes section\"\"\"\n    # Implementation\n\ndef generate_tone_section(commit, context):\n    \"\"\"Generate the tone/mood section\"\"\"\n    # Implementation\n\ndef generate_commit_details_section(commit):\n    \"\"\"Generate the commit details section\"\"\"\n    # Implementation\n```\n\n3. Context collection:\n```python\ndef collect_terminal_history(since_timestamp=None):\n    \"\"\"Collect terminal history since timestamp\"\"\"\n    # Implementation\n\ndef collect_chat_history(since_commit=None):\n    \"\"\"Collect chat history since commit reference\"\"\"\n    # Implementation\n\ndef collect_ai_terminal_commands():\n    \"\"\"Collect terminal commands executed by AI\"\"\"\n    # Implementation\n```\n\n4. File operations:\n```python\ndef get_journal_file_path(date=None):\n    \"\"\"Get path to journal file for date\"\"\"\n    # Implementation\n\ndef append_to_journal_file(entry, file_path):\n    \"\"\"Append entry to journal file\"\"\"\n    # Implementation\n\ndef create_journal_directories():\n    \"\"\"Create journal directory structure\"\"\"\n    # Implementation\n```",
-      "testStrategy": "1. Unit tests for each section generator\n2. Tests for context collection methods\n3. Tests for file operations\n4. Tests for markdown formatting\n5. Tests for handling missing context gracefully\n6. Integration tests for full entry generation\n7. Tests for anti-hallucination rules",
-      "priority": "high",
+      "status": "pending",
       "dependencies": [
         2,
         3
       ],
-      "status": "pending",
-      "subtasks": []
+      "priority": "high",
+      "details": "Implement journal entry generation in `src/mcp_journal/journal.py` with the following features:\n\n1. Journal entry structure:\n```python\nclass JournalEntry:\n    \"\"\"Represents a journal entry with all sections\"\"\"\n    def __init__(self, commit, config):\n        self.commit = commit\n        self.config = config\n        self.timestamp = datetime.now()\n        self.sections = {}\n        # Initialize sections based on config\n    \n    def to_markdown(self):\n        \"\"\"Convert entry to markdown format\"\"\"\n        # Implementation\n```\n\n2. Section generators:\n```python\ndef generate_summary_section(commit, context):\n    \"\"\"Generate the summary section\"\"\"\n    # Implementation\n\ndef generate_accomplishments_section(commit, context):\n    \"\"\"Generate the accomplishments section\"\"\"\n    # Implementation\n\ndef generate_frustrations_section(commit, context):\n    \"\"\"Generate the frustrations section\"\"\"\n    # Implementation\n\ndef generate_terminal_section(context):\n    \"\"\"Generate the terminal commands section\"\"\"\n    # Implementation\n\ndef generate_discussion_section(context):\n    \"\"\"Generate the discussion notes section\"\"\"\n    # Implementation\n\ndef generate_tone_section(commit, context):\n    \"\"\"Generate the tone/mood section\"\"\"\n    # Implementation\n\ndef generate_commit_details_section(commit):\n    \"\"\"Generate the commit details section\"\"\"\n    # Implementation\n```\n\n3. Context collection:\n```python\ndef collect_terminal_history(since_timestamp=None):\n    \"\"\"Collect terminal history since timestamp\"\"\"\n    # Implementation\n\ndef collect_chat_history(since_commit=None):\n    \"\"\"Collect chat history since commit reference\"\"\"\n    # Implementation\n\ndef collect_ai_terminal_commands():\n    \"\"\"Collect terminal commands executed by AI\"\"\"\n    # Implementation\n```\n\n4. File operations:\n```python\ndef get_journal_file_path(date=None):\n    \"\"\"Get path to journal file for date\"\"\"\n    # Implementation\n\ndef append_to_journal_file(entry, file_path):\n    \"\"\"Append entry to journal file\"\"\"\n    # Implementation\n\ndef create_journal_directories():\n    \"\"\"Create journal directory structure\"\"\"\n    # Implementation\n```",
+      "testStrategy": "1. Unit tests for each section generator\n2. Tests for context collection methods\n3. Tests for file operations\n4. Tests for markdown formatting\n5. Tests for handling missing context gracefully\n6. Integration tests for full entry generation\n7. Tests for anti-hallucination rules\n8. Tests for incorporating user preferences and feedback",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement JournalEntry class with tests",
+          "description": "Create the JournalEntry class structure and tests for initialization and markdown conversion, with explicit user collaboration at each step",
+          "dependencies": [],
+          "details": "Create tests in `tests/test_journal_entry.py` that verify: 1) JournalEntry initializes with commit and config, 2) sections are created based on config, 3) to_markdown() produces correct format. Then implement the JournalEntry class in `src/mcp_journal/journal.py`.\n\nCollaboration steps:\n1. Present proposed JournalEntry class structure to user for review\n2. Ask specific questions about user preferences:\n   - What should the default order of sections be?\n   - What timestamp format do you prefer (24h or 12h)?\n   - How should section headers be formatted in markdown?\n   - What metadata should be included in each entry?\n3. Create test cases based on user feedback and present for approval\n4. Document all user decisions in code comments and docstrings\n5. Implement the class based on approved design\n6. Present implementation for final review before marking complete",
+          "status": "pending",
+          "testStrategy": "Write failing tests first that verify initialization with different configs and markdown output formatting. Then implement the class to make tests pass. Present test cases to user for review and approval before implementation. Update tests based on user feedback about formatting preferences and structural requirements."
+        },
+        {
+          "id": 2,
+          "title": "Implement file operations with tests",
+          "description": "Create tests and implement file operation functions for journal management, with explicit user collaboration at each step",
+          "dependencies": [],
+          "details": "Create tests in `tests/test_file_operations.py` for get_journal_file_path(), append_to_journal_file(), and create_journal_directories(). Then implement these functions in `src/mcp_journal/journal.py`. Use mocking for file system operations.\n\nCollaboration steps:\n1. Present proposed file structure and naming conventions to user\n2. Ask specific questions about user preferences:\n   - What directory structure do you prefer for journal files?\n   - How should files be named (date format, prefixes, etc.)?\n   - Should entries be appended to existing files or create new files?\n   - What file permissions should be set?\n3. Create test cases based on user feedback and present for approval\n4. Document all user decisions in code comments and docstrings\n5. Implement functions based on approved design\n6. Present implementation for final review before marking complete",
+          "status": "pending",
+          "testStrategy": "Write tests that verify correct path generation, directory creation, and file appending. Use unittest.mock to patch filesystem operations. Present test cases to user for review and approval before implementation. Update tests based on user feedback about file organization preferences."
+        },
+        {
+          "id": 3,
+          "title": "Implement context collection functions with tests",
+          "description": "Create tests and implement functions to collect terminal history, chat history, and AI commands, with explicit user collaboration at each step",
+          "dependencies": [],
+          "details": "Create tests in `tests/test_context_collection.py` for collect_terminal_history(), collect_chat_history(), and collect_ai_terminal_commands(). Then implement these functions in `src/mcp_journal/journal.py`. Use mocking for external dependencies.\n\nCollaboration steps:\n1. Present proposed context collection approach to user\n2. Ask specific questions about user preferences:\n   - How far back should terminal history be collected?\n   - What format should chat history be stored in?\n   - How should AI commands be distinguished from user commands?\n   - What context should be excluded or filtered out?\n3. Create test cases based on user feedback and present for approval\n4. Document all user decisions in code comments and docstrings\n5. Implement functions based on approved design\n6. Present implementation for final review before marking complete",
+          "status": "pending",
+          "testStrategy": "Write tests that verify correct data collection with various inputs. Mock shell history access, chat history retrieval, and command parsing. Present test cases to user for review and approval before implementation. Update tests based on user feedback about context collection preferences."
+        },
+        {
+          "id": 4,
+          "title": "Implement commit-based section generators with tests",
+          "description": "Create tests and implement section generators that use commit information, with explicit user collaboration at each step",
+          "dependencies": [
+            1
+          ],
+          "details": "Create tests in `tests/test_commit_sections.py` for generate_summary_section(), generate_accomplishments_section(), generate_frustrations_section(), and generate_commit_details_section(). Then implement these functions in `src/mcp_journal/journal.py`.\n\nCollaboration steps:\n1. Present proposed section generator designs to user\n2. Ask specific questions about user preferences:\n   - What information should be included in the summary section?\n   - How should accomplishments be formatted and categorized?\n   - What tone and style should be used for frustrations?\n   - What commit details are most important to include?\n3. Create test cases based on user feedback and present for approval\n4. Document all user decisions in code comments and docstrings\n5. Implement functions based on approved design\n6. Present implementation for final review before marking complete",
+          "status": "pending",
+          "testStrategy": "Write tests that verify each generator produces appropriate content based on different commit inputs. Test edge cases like empty commits or unusual formatting. Present test cases to user for review and approval before implementation. Update tests based on user feedback about section content and formatting preferences."
+        },
+        {
+          "id": 5,
+          "title": "Implement context-based section generators with tests",
+          "description": "Create tests and implement section generators that use terminal and chat context, with explicit user collaboration at each step",
+          "dependencies": [
+            1,
+            3
+          ],
+          "details": "Create tests in `tests/test_context_sections.py` for generate_terminal_section(), generate_discussion_section(), and generate_tone_section(). Then implement these functions in `src/mcp_journal/journal.py`.\n\nCollaboration steps:\n1. Present proposed context-based section generator designs to user\n2. Ask specific questions about user preferences:\n   - How should terminal commands be grouped or categorized?\n   - What aspects of discussions should be highlighted?\n   - How should the tone/mood section be structured?\n   - What context should be prioritized or filtered out?\n3. Create test cases based on user feedback and present for approval\n4. Document all user decisions in code comments and docstrings\n5. Implement functions based on approved design\n6. Present implementation for final review before marking complete",
+          "status": "pending",
+          "testStrategy": "Write tests that verify each generator produces appropriate content based on different context inputs. Test with various terminal histories and chat contexts. Present test cases to user for review and approval before implementation. Update tests based on user feedback about context-based section preferences."
+        },
+        {
+          "id": 6,
+          "title": "Create integration test for journal entry generation",
+          "description": "Create an integration test that verifies the full journal entry generation process, with explicit user collaboration at each step",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "details": "Create an integration test in `tests/test_journal_integration.py` that verifies the complete flow: collecting context, creating a journal entry with all sections, and writing to a file.\n\nCollaboration steps:\n1. Present proposed integration test approach to user\n2. Ask specific questions about user preferences:\n   - What end-to-end scenarios are most important to test?\n   - What sample inputs should be used for realistic testing?\n   - What aspects of the output should be validated?\n   - How should the integration test handle dependencies?\n3. Create test cases based on user feedback and present for approval\n4. Document all user decisions in code comments and docstrings\n5. Implement integration test based on approved design\n6. Present implementation for final review before marking complete",
+          "status": "pending",
+          "testStrategy": "Create a test that mocks external dependencies but tests the full workflow from commit to file writing. Verify the final markdown output contains all expected sections. Present test cases to user for review and approval before implementation. Update tests based on user feedback about end-to-end workflow preferences."
+        },
+        {
+          "id": 7,
+          "title": "Implement edge case handling and error recovery",
+          "description": "Add robust error handling and edge case management to all journal functions, with explicit user collaboration at each step",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "details": "Update all functions to handle edge cases like missing data, API failures, or permission issues. Add appropriate error handling, logging, and fallback mechanisms.\n\nCollaboration steps:\n1. Present proposed error handling approach to user\n2. Ask specific questions about user preferences:\n   - How should errors be communicated to the user?\n   - What fallback behavior is preferred for missing data?\n   - What level of logging detail is appropriate?\n   - Which errors should be fatal vs. non-fatal?\n3. Create test cases based on user feedback and present for approval\n4. Document all user decisions in code comments and docstrings\n5. Implement error handling based on approved design\n6. Present implementation for final review before marking complete",
+          "status": "pending",
+          "testStrategy": "Create tests in `tests/test_error_handling.py` that verify graceful handling of various error conditions and edge cases. Present test cases to user for review and approval before implementation. Update tests based on user feedback about error handling preferences."
+        },
+        {
+          "id": 8,
+          "title": "Create CLI command for manual journal generation",
+          "description": "Implement a command-line interface for manually generating journal entries, with explicit user collaboration at each step",
+          "dependencies": [
+            6,
+            7
+          ],
+          "details": "Create a CLI command in `src/mcp_journal/cli.py` that allows users to manually generate journal entries for specific commits or time periods. Connect this to the journal generation functionality.\n\nCollaboration steps:\n1. Present proposed CLI design to user\n2. Ask specific questions about user preferences:\n   - What command syntax is most intuitive?\n   - What options and flags should be available?\n   - How should output be displayed in the terminal?\n   - What confirmation steps should be included?\n3. Create test cases based on user feedback and present for approval\n4. Document all user decisions in code comments and docstrings\n5. Implement CLI based on approved design\n6. Present implementation for final review before marking complete",
+          "status": "pending",
+          "testStrategy": "Write tests that verify the CLI correctly parses arguments and calls the appropriate journal generation functions with the right parameters. Present test cases to user for review and approval before implementation. Update tests based on user feedback about CLI preferences."
+        }
+      ]
     },
     {
       "id": 6,
