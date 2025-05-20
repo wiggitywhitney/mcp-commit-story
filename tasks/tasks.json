@@ -285,7 +285,7 @@
             10
           ],
           "details": "Implement get_commits_since_last_entry to: 1) Find the most recent commit that modified the journal, 2) Get all commits since that point, 3) Filter out any commits that only modified the journal, 4) Return the list of commits that need entries, 5) Handle edge cases identified in tests.",
-          "status": "pending",
+          "status": "done",
           "testStrategy": "Run the previously created tests to verify implementation. All tests should now pass."
         },
         {

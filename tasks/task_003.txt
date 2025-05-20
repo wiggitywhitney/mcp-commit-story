@@ -268,7 +268,7 @@ Implement install_post_commit_hook to: 1) Determine the correct hook path, 2) Ba
 ### Details:
 Write tests that verify: 1) Commits after the last journal entry are correctly identified, 2) Function handles repositories with no journal entries, 3) Function correctly filters out journal-only commits, 4) Edge cases like empty repositories are handled properly.
 
-## 11. Implement get_commits_since_last_entry function [pending]
+## 11. Implement get_commits_since_last_entry function [done]
 ### Dependencies: 3.10
 ### Description: Implement the function to identify commits that don't have corresponding journal entries.
 ### Details:
