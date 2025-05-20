@@ -250,7 +250,7 @@ Write tests that verify: 1) Existing hooks are properly backed up with timestamp
 ### Details:
 Implement backup_existing_hook to: 1) Check if a hook exists at the specified path, 2) Create a timestamped backup copy if it exists, 3) Preserve file permissions, 4) Return the backup path or None if no backup was needed.
 
-## 8. Write tests for install_post_commit_hook function [pending]
+## 8. Write tests for install_post_commit_hook function [done]
 ### Dependencies: 3.7
 ### Description: Create tests for the install_post_commit_hook function to verify it correctly installs the hook.
 ### Details:

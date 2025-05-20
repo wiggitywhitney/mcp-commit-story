@@ -253,3 +253,14 @@ def backup_existing_hook(hook_path: str) -> Optional[str]:
     # Copy file and preserve permissions
     shutil.copy2(hook_path, backup_path)
     return backup_path
+
+
+def install_post_commit_hook(repo_path=None):
+    """
+    Install the post-commit hook in the given repo's .git/hooks directory.
+    - If a hook exists, back it up using backup_existing_hook.
+    - Write the new hook content (shebang, commands).
+    - Set the hook file as executable.
+    - Handle errors (missing repo, permissions, etc.).
+    """
+    raise NotImplementedError("install_post_commit_hook is not yet implemented.")

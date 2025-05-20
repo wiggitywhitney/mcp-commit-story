@@ -9,9 +9,12 @@ from mcp_journal.git_utils import (
     is_journal_only_commit,
     get_commit_details,
     get_commit_diff_summary,
-    backup_existing_hook
+    backup_existing_hook,
+    install_post_commit_hook
 )
 import stat
+from unittest.mock import call
+import shutil
 
 # TDD: Test that GitPython is installed and can instantiate a Repo object
 # This test should fail if GitPython is missing or misconfigured
@@ -279,4 +282,69 @@ def test_backup_existing_hook_readonly_filesystem(tmp_path):
     # Simulate read-only filesystem by patching shutil.copy2 to raise
     with patch('shutil.copy2', side_effect=PermissionError):
         with pytest.raises(PermissionError):
-            backup_existing_hook(str(hook_path)) 
+            backup_existing_hook(str(hook_path))
+
+POST_COMMIT_CONTENT = """#!/bin/sh\necho 'Post-commit hook triggered'\n"""
+
+def test_install_post_commit_hook_creates_hook_with_content(git_repo):
+    hooks_dir = os.path.join(git_repo.working_tree_dir, '.git', 'hooks')
+    hook_path = os.path.join(hooks_dir, 'post-commit')
+    # Remove hook if exists
+    if os.path.exists(hook_path):
+        os.remove(hook_path)
+    install_post_commit_hook(git_repo.working_tree_dir)
+    assert os.path.exists(hook_path)
+    with open(hook_path) as f:
+        content = f.read()
+    assert 'echo' in content and 'Post-commit' in content
+
+def test_install_post_commit_hook_backs_up_existing_hook(git_repo):
+    hooks_dir = os.path.join(git_repo.working_tree_dir, '.git', 'hooks')
+    hook_path = os.path.join(hooks_dir, 'post-commit')
+    # Create an existing hook
+    with open(hook_path, 'w') as f:
+        f.write('#!/bin/sh\necho old\n')
+    # Patch backup_existing_hook to track calls
+    with patch('mcp_journal.git_utils.backup_existing_hook') as mock_backup:
+        mock_backup.return_value = hook_path + '.backup'
+        install_post_commit_hook(git_repo.working_tree_dir)
+        mock_backup.assert_called_once_with(hook_path)
+    # New hook should exist
+    assert os.path.exists(hook_path)
+    with open(hook_path) as f:
+        content = f.read()
+    assert 'Post-commit' in content
+
+def test_install_post_commit_hook_sets_executable(git_repo):
+    hooks_dir = os.path.join(git_repo.working_tree_dir, '.git', 'hooks')
+    hook_path = os.path.join(hooks_dir, 'post-commit')
+    if os.path.exists(hook_path):
+        os.remove(hook_path)
+    install_post_commit_hook(git_repo.working_tree_dir)
+    mode = os.stat(hook_path).st_mode
+    assert mode & 0o111, 'Hook file should be executable'
+
+def test_install_post_commit_hook_readonly_hooks_dir(git_repo):
+    hooks_dir = os.path.join(git_repo.working_tree_dir, '.git', 'hooks')
+    os.chmod(hooks_dir, 0o500)  # Remove write permission
+    try:
+        with pytest.raises(PermissionError):
+            install_post_commit_hook(git_repo.working_tree_dir)
+    finally:
+        os.chmod(hooks_dir, 0o700)  # Restore permissions
+
+def test_install_post_commit_hook_missing_hooks_dir(git_repo):
+    hooks_dir = os.path.join(git_repo.working_tree_dir, '.git', 'hooks')
+    shutil.rmtree(hooks_dir)
+    with pytest.raises(FileNotFoundError):
+        install_post_commit_hook(git_repo.working_tree_dir)
+
+def test_install_post_commit_hook_calls_backup_existing_hook(git_repo):
+    hooks_dir = os.path.join(git_repo.working_tree_dir, '.git', 'hooks')
+    hook_path = os.path.join(hooks_dir, 'post-commit')
+    with open(hook_path, 'w') as f:
+        f.write('old hook')
+    with patch('mcp_journal.git_utils.backup_existing_hook') as mock_backup:
+        mock_backup.return_value = hook_path + '.backup'
+        install_post_commit_hook(git_repo.working_tree_dir)
+        mock_backup.assert_called_once_with(hook_path) 
