@@ -1,6 +1,17 @@
 import re
 from typing import List, Optional, Dict, Union
 
+"""
+Journal entry generation for engineering work.
+
+Content Quality Guidelines:
+- Focus on signal (unique insights, decisions, challenges) over noise (routine procedures)
+- Highlight what makes each entry unique rather than repeating standard practices
+- Capture the narrative "story" behind the code changes
+- Include emotional context when relevant, but only with clear supporting evidence
+- Omit standard workflow details unless they're directly relevant to understanding the work
+"""
+
 class JournalParseError(Exception):
     pass
 
@@ -8,6 +19,10 @@ class JournalEntry:
     """
     Represents a single engineering journal entry, with Markdown serialization.
     Only non-empty sections are included in output.
+
+    Content should prioritize unique insights and developments over routine
+    workflow steps. The goal is to create entries that provide value when
+    reviewed in the future, focusing on "why" and "how" rather than just "what".
     """
 
     def __init__(

@@ -357,54 +357,56 @@ telemetry:
 - Mood/tone must be backed by language cues ("ugh", "finally", etc.)
 - If data is unavailable (e.g., terminal history), omit that section
 
-### Journal Entry Structure
+### Journal Entry Structure (Canonical Format)
 
-#### Discussion Notes Speaker Attribution
-- In the Discussion Notes section, always prefix each statement with **Human:** or **Agent:** (or **AI:**), to clearly indicate the speaker.
-- Use bold or clear formatting to make the distinction obvious.
+Each journal entry is written in Markdown and includes only non-empty sections. The canonical structure is:
 
-#### Example (Markdown format):
 ```markdown
-### 2:17 PM — Commit def456
+### {timestamp} — Commit {commit_hash}
 
 ## Summary
-A friendly, succinct summary that captures what was accomplished. Can be multiple sentences if needed to convey the facts clearly. Written in a natural, human-readable style that would make sense to your future self.
+{summary text}
 
 ## Accomplishments
-- Facts based on file diffs and chat context
+- {accomplishment 1}
+- {accomplishment 2}
 
 ## Frustrations or Roadblocks
-- Inferred from repeated terminal commands, failure messages, or explicit mentions in chat
+- {frustration 1}
+- {frustration 2}
 
 ## Terminal Commands (AI Session)
 Commands executed by AI during this work session:
-- `git add . && git status`
-- `npm test` x3
-- `git diff auth.js`
-- `git commit -m "fix: update validation logic"`
-
-## Discussion Notes (from chat)
-> **Human:** Should we use PostgreSQL or MongoDB? I'm leaning toward PostgreSQL because we need ACID compliance for financial data...
->
-> **Agent:** PostgreSQL is a solid choice for ACID compliance. If you need horizontal scaling later, you can consider sharding or a managed service.
->
-> **Human:** Let's go with the fetch-on-demand approach instead of pre-loading everything. Simpler to implement and probably good enough for now.
->
-> **Agent:** Agreed. This will also reduce memory usage and make the codebase easier to maintain.
-
-## Tone + Mood (inferred)
-> Mood: Focused and energized  
-> Indicators: "finally", rapid commits, lack of errors
-
-## Behind the Commit
-- Commit hash, message, files touched
-
-## Reflections
-- Only include reflections manually added by human using `mcp-commit-story add-reflection`
-- Never infer or generate reflections from chat context
+```bash
+{command 1}
+{command 2}
 ```
 
-Empty sections are omitted. Manual entries and reflections are clearly labeled and interleaved by timestamp.
+## Discussion Notes (from chat)
+> **Human:** {note text}
+> **Agent:** {note text}
+> {plain string note}
+
+## Tone/Mood
+> {mood}
+> {indicators}
+
+## Behind the Commit
+- **files_changed:** {number}
+- **insertions:** {number}
+- **deletions:** {number}
+```
+
+**Rules:**
+- All sections are omitted if empty.
+- Terminal commands are always rendered as a bash code block with a descriptive line.
+- Discussion notes are blockquotes; if a note is a dict with `speaker` and `text`, use `> **Speaker:** text`. Multiline notes are supported.
+- Tone/Mood is only included if there is clear evidence (from commit messages, chat, or terminal commands) and is always for the human developer only. Render as two blockquote lines: mood and indicators. Omit if insufficient evidence.
+- Never hallucinate or assume mood; always base on evidence.
+- Markdown is the canonical format for all journal entries.
+
+Mood inference rules: Only infer human developer's mood, must be evidence-based, omit if insufficient evidence, never hallucinate.
+Discussion notes rules: Include all relevant notes, support multiline and speaker attribution, blockquote formatting.
 
 ### AI Tone/Style Configuration
 
@@ -444,6 +446,30 @@ journal:
 
 #### Journal Entry Structure Note
 - The **Summary** section of each journal entry will reflect the selected `ai_tone` style.
+
+### Content Quality Guidelines
+
+#### Focus on Signal vs. Noise
+- **Signal**: Unique decisions, technical challenges, emotional context, lessons learned, or anything that would help a future reader understand the story behind the work
+- **Noise**: Routine process notes, standard workflow descriptions, or anything that is always true and already established in project documentation
+
+Journal entries should prioritize signal over noise to maintain narrative value. For example:
+
+- ❌ "Followed TDD methodology by writing tests first" (noise, as this is standard practice)
+- ✅ "Test-first approach revealed an edge case in the API response handler" (signal, specific insight)
+
+- ❌ "Used git to commit changes" (noise, obvious from context)
+- ✅ "Split work into three focused commits to separate concerns" (signal, shows thought process)
+
+#### Highlighting What's Unique
+Each journal entry should capture what was distinctive about this particular development session:
+
+- Technical challenges encountered and how they were addressed
+- Design decisions made and their rationales
+- Insights gained that weren't obvious at the start
+- Emotional context that influenced the work approach
+
+The Summary section should focus on these unique aspects rather than restating routine workflow steps.
 
 ---
 
