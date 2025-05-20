@@ -92,25 +92,17 @@ def is_journal_only_commit(commit: 'git.Commit', journal_path: str) -> bool:
     Returns:
         True if all modified files are in the journal directory
     """
-    # Get the list of files changed in this commit
-    # For test purposes, we check if it's a mock more thoroughly
     try:
         changed_files = commit.diff()
     except (AttributeError, TypeError):
-        # If there's an error, it may be because we're accessing a real Git commit
-        # that expects a parent commit parameter
         try:
             changed_files = commit.diff(commit.parents[0] if commit.parents else None)
         except (AttributeError, TypeError):
-            # If both fail, we can't handle this commit
             raise ValueError("Unable to get diff for commit")
-    
-    # Check if all changed files are in the journal directory
-    for file in changed_files:
-        if not file.a_path.startswith(journal_path):
-            return False
-    
-    return True
+    file_paths = [file.a_path for file in changed_files]
+    result = all(f.startswith(journal_path) for f in file_paths) if file_paths else False
+    print(f"[DEBUG is_journal_only_commit] Commit {getattr(commit, 'hexsha', '?')} files: {file_paths} result: {result}")
+    return result
 
 
 def get_commit_details(commit: 'git.Commit') -> Dict[str, Any]:
@@ -282,3 +274,38 @@ def install_post_commit_hook(repo_path: str = None) -> None:
     # Set executable permissions
     st = os.stat(hook_path)
     os.chmod(hook_path, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+
+def get_commits_since_last_entry(repo, journal_path: str):
+    """
+    Find the most recent commit that modified the journal, get all commits strictly after that point,
+    filter out commits that only modified the journal, and return the list of commits that need entries.
+    Args:
+        repo: GitPython Repo object
+        journal_path: Path to the journal directory (relative or absolute)
+    Returns:
+        List of git.Commit objects that need journal entries, in chronological order
+    """
+    journal_rel = os.path.relpath(journal_path, repo.working_tree_dir)
+    commits = list(repo.iter_commits('HEAD'))  # Newest to oldest
+    # If the tip is a journal-only commit, nothing to do
+    if commits and is_journal_only_commit(commits[0], journal_rel):
+        return []
+    last_journal_commit_idx = None
+    for idx, commit in enumerate(commits):
+        for file in commit.stats.files:
+            if file.startswith(journal_rel):
+                last_journal_commit_idx = idx
+                break
+        if last_journal_commit_idx is not None:
+            break
+    if last_journal_commit_idx is not None:
+        candidate_commits = commits[:last_journal_commit_idx]
+    else:
+        candidate_commits = commits
+    candidate_commits = list(reversed(candidate_commits))
+    result = []
+    for commit in candidate_commits:
+        if not is_journal_only_commit(commit, journal_rel):
+            result.append(commit)
+    return result

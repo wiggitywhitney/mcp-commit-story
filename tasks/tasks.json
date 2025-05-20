@@ -274,7 +274,7 @@
             3
           ],
           "details": "Write tests that verify: 1) Commits after the last journal entry are correctly identified, 2) Function handles repositories with no journal entries, 3) Function correctly filters out journal-only commits, 4) Edge cases like empty repositories are handled properly.",
-          "status": "pending",
+          "status": "done",
           "testStrategy": "Use pytest with the Git repository fixture, creating both regular commits and journal entries in a controlled sequence."
         },
         {

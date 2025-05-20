@@ -262,7 +262,7 @@ Write tests that verify: 1) Hook is correctly installed with proper content, 2) 
 ### Details:
 Implement install_post_commit_hook to: 1) Determine the correct hook path, 2) Back up any existing hook using backup_existing_hook, 3) Write the new hook content with appropriate shebang and commands, 4) Set executable permissions, 5) Handle potential errors.
 
-## 10. Write tests for get_commits_since_last_entry function [pending]
+## 10. Write tests for get_commits_since_last_entry function [done]
 ### Dependencies: 3.3
 ### Description: Create tests for the get_commits_since_last_entry function to verify it correctly identifies commits without journal entries.
 ### Details:

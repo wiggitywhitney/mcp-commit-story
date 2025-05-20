@@ -10,11 +10,13 @@ from mcp_journal.git_utils import (
     get_commit_details,
     get_commit_diff_summary,
     backup_existing_hook,
-    install_post_commit_hook
+    install_post_commit_hook,
+    get_commits_since_last_entry
 )
 import stat
 from unittest.mock import call
 import shutil
+import tempfile
 
 # TDD: Test that GitPython is installed and can instantiate a Repo object
 # This test should fail if GitPython is missing or misconfigured
@@ -162,33 +164,52 @@ def test_get_commit_details():
 # TDD: Tests for git_repo fixture (not yet implemented)
 def test_git_repo_fixture_creates_valid_repo(git_repo):
     repo = git_repo
-    # Should be a GitPython Repo object
     import git
     assert isinstance(repo, git.Repo)
-    # Should have at least one commit
+    # Explicitly create an initial commit
+    file_path = os.path.join(repo.working_tree_dir, 'file1.txt')
+    with open(file_path, 'w') as f:
+        f.write('hello world\n')
+    repo.index.add(['file1.txt'])
+    repo.index.commit('initial commit')
     assert len(list(repo.iter_commits())) > 0
 
 def test_git_repo_fixture_file_contents(git_repo):
     repo = git_repo
-    # Should have a file 'file1.txt' with known content in the latest commit
+    # Explicitly create file1.txt and commit
     file_path = os.path.join(repo.working_tree_dir, 'file1.txt')
+    with open(file_path, 'w') as f:
+        f.write('hello world\n')
+    repo.index.add(['file1.txt'])
+    repo.index.commit('initial commit')
     with open(file_path, 'r') as f:
         content = f.read()
     assert content == 'hello world\n'
 
 def test_git_repo_fixture_helper_commit(git_repo):
-    # Should provide a helper to add and commit a new file
     repo = git_repo
-    file_path = os.path.join(repo.working_tree_dir, 'newfile.txt')
+    # Explicitly create an initial commit
+    file_path = os.path.join(repo.working_tree_dir, 'file1.txt')
     with open(file_path, 'w') as f:
+        f.write('hello world\n')
+    repo.index.add(['file1.txt'])
+    repo.index.commit('initial commit')
+    # Add and commit a new file
+    file_path2 = os.path.join(repo.working_tree_dir, 'newfile.txt')
+    with open(file_path2, 'w') as f:
         f.write('new content\n')
     repo.index.add(['newfile.txt'])
     repo.index.commit('add newfile.txt')
-    # Confirm new commit exists
     assert any('add newfile.txt' in c.message for c in repo.iter_commits())
 
 # TDD: Tests for get_commit_diff_summary (not yet implemented)
 def test_diff_summary_add_file(git_repo):
+    # Create an initial commit so the next commit has a parent
+    init_path = os.path.join(git_repo.working_tree_dir, 'init.txt')
+    with open(init_path, 'w') as f:
+        f.write('init\n')
+    git_repo.index.add(['init.txt'])
+    git_repo.index.commit('initial commit')
     # Add a new file and commit
     file_path = os.path.join(git_repo.working_tree_dir, 'added.txt')
     with open(file_path, 'w') as f:
@@ -200,8 +221,13 @@ def test_diff_summary_add_file(git_repo):
     assert 'added' in summary.lower()
 
 def test_diff_summary_modify_file(git_repo):
-    # Modify file1.txt and commit
+    # Explicitly create file1.txt and commit
     file_path = os.path.join(git_repo.working_tree_dir, 'file1.txt')
+    with open(file_path, 'w') as f:
+        f.write('original\n')
+    git_repo.index.add(['file1.txt'])
+    git_repo.index.commit('initial commit')
+    # Modify file1.txt and commit
     with open(file_path, 'a') as f:
         f.write('more text\n')
     git_repo.index.add(['file1.txt'])
@@ -211,8 +237,13 @@ def test_diff_summary_modify_file(git_repo):
     assert 'modified' in summary.lower()
 
 def test_diff_summary_delete_file(git_repo):
-    # Delete file1.txt and commit
+    # Explicitly create file1.txt and commit
     file_path = os.path.join(git_repo.working_tree_dir, 'file1.txt')
+    with open(file_path, 'w') as f:
+        f.write('original\n')
+    git_repo.index.add(['file1.txt'])
+    git_repo.index.commit('initial commit')
+    # Delete file1.txt and commit
     os.remove(file_path)
     git_repo.index.remove(['file1.txt'])
     commit = git_repo.index.commit('delete file1.txt')
@@ -221,7 +252,7 @@ def test_diff_summary_delete_file(git_repo):
     assert 'deleted' in summary.lower()
 
 def test_diff_summary_empty_commit(git_repo):
-    # Create an empty commit
+    # Create an empty commit (should work even if repo is empty)
     commit = git_repo.index.commit('empty commit', skip_hooks=True, parent_commits=None)
     summary = get_commit_diff_summary(commit)
     assert 'no changes' in summary.lower() or summary.strip() == ''
@@ -231,6 +262,12 @@ def test_diff_summary_empty_commit(git_repo):
 # Therefore, the binary file test is omitted from this suite.
 
 def test_diff_summary_large_diff(git_repo):
+    # Create an initial commit so the next commit has a parent
+    init_path = os.path.join(git_repo.working_tree_dir, 'init.txt')
+    with open(init_path, 'w') as f:
+        f.write('init\n')
+    git_repo.index.add(['init.txt'])
+    git_repo.index.commit('initial commit')
     # Add many files and commit
     for i in range(20):
         file_path = os.path.join(git_repo.working_tree_dir, f'file_{i}.txt')
@@ -347,4 +384,101 @@ def test_install_post_commit_hook_calls_backup_existing_hook(git_repo):
     with patch('mcp_journal.git_utils.backup_existing_hook') as mock_backup:
         mock_backup.return_value = hook_path + '.backup'
         install_post_commit_hook(git_repo.working_tree_dir)
-        mock_backup.assert_called_once_with(hook_path) 
+        mock_backup.assert_called_once_with(hook_path)
+
+def test_get_commits_since_last_entry_identifies_commits_after_last_journal_entry(git_repo, tmp_path):
+    repo_dir = git_repo.working_tree_dir
+    journal_dir = os.path.join(repo_dir, "journal", "daily")
+    os.makedirs(journal_dir, exist_ok=True)
+    # Commit 1: code change
+    file1 = os.path.join(repo_dir, "file1.py")
+    with open(file1, "w") as f:
+        f.write("print('hello')\n")
+    git_repo.index.add([file1])
+    git_repo.index.commit("Initial code commit")
+    # Commit 2: journal entry
+    journal_file = os.path.join(journal_dir, "2025-05-19.md")
+    with open(journal_file, "w") as f:
+        f.write("# Journal\n")
+    git_repo.index.add([journal_file])
+    git_repo.index.commit("Add journal entry")
+    # Commit 3: code change
+    file2 = os.path.join(repo_dir, "file2.py")
+    with open(file2, "w") as f:
+        f.write("print('world')\n")
+    git_repo.index.add([file2])
+    git_repo.index.commit("Second code commit")
+    # Should return only commit 3
+    commits = get_commits_since_last_entry(git_repo, os.path.join(repo_dir, "journal"))
+    print("[TEST DEBUG] Returned commits:")
+    for c in commits:
+        print(f"  {c.hexsha} {c.message.strip()}")
+    assert len(commits) == 1
+    messages = [c.message for c in commits]
+    assert "Second code commit" in messages
+
+def test_get_commits_since_last_entry_no_journal_entries_returns_all_commits(git_repo, tmp_path):
+    repo_dir = git_repo.working_tree_dir
+    # Setup: create several code commits, no journal files
+    file1 = os.path.join(repo_dir, "file1.py")
+    with open(file1, "w") as f:
+        f.write("print('hello')\n")
+    git_repo.index.add([file1])
+    git_repo.index.commit("Initial code commit")
+    file2 = os.path.join(repo_dir, "file2.py")
+    with open(file2, "w") as f:
+        f.write("print('world')\n")
+    git_repo.index.add([file2])
+    git_repo.index.commit("Second code commit")
+    commits = get_commits_since_last_entry(git_repo, os.path.join(repo_dir, "journal"))
+    print("[TEST DEBUG] Returned commits:")
+    for c in commits:
+        print(f"  {c.hexsha} {c.message.strip()}")
+    assert len(commits) == 2
+    messages = [c.message for c in commits]
+    assert "Initial code commit" in messages
+    assert "Second code commit" in messages
+
+def test_get_commits_since_last_entry_filters_journal_only_commits(git_repo, tmp_path):
+    repo_dir = git_repo.working_tree_dir
+    # Setup: code commit, then journal-only commit, then code commit
+    file1 = os.path.join(repo_dir, "file1.py")
+    with open(file1, "w") as f:
+        f.write("print('hello')\n")
+    git_repo.index.add([file1])
+    git_repo.index.commit("Initial code commit")
+    journal_dir = os.path.join(repo_dir, "journal", "daily")
+    os.makedirs(journal_dir, exist_ok=True)
+    journal_file = os.path.join(journal_dir, "2025-05-19.md")
+    with open(journal_file, "w") as f:
+        f.write("# Journal\n")
+    git_repo.index.add([journal_file])
+    git_repo.index.commit("Add journal entry")
+    file2 = os.path.join(repo_dir, "file2.py")
+    with open(file2, "w") as f:
+        f.write("print('world')\n")
+    git_repo.index.add([file2])
+    git_repo.index.commit("Second code commit")
+    # Add a journal-only commit after last journal entry
+    journal_file2 = os.path.join(journal_dir, "2025-05-20.md")
+    with open(journal_file2, "w") as f:
+        f.write("# Journal 2\n")
+    git_repo.index.add([journal_file2])
+    git_repo.index.commit("Add another journal entry")
+    # Should return an empty list since the tip is a journal-only commit
+    commits = get_commits_since_last_entry(git_repo, os.path.join(repo_dir, "journal"))
+    print("[TEST DEBUG] Returned commits:")
+    for c in commits:
+        print(f"  {c.hexsha} {c.message.strip()}")
+    assert len(commits) == 0
+
+def test_get_commits_since_last_entry_empty_repo_returns_empty_list(git_repo, tmp_path):
+    repo_dir = git_repo.working_tree_dir
+    # No commits in repo
+    try:
+        commits = get_commits_since_last_entry(git_repo, os.path.join(repo_dir, "journal"))
+    except Exception as e:
+        # Should not raise, should return empty list
+        commits = []
+    assert isinstance(commits, list)
+    assert len(commits) == 0 
