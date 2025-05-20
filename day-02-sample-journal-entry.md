@@ -441,3 +441,41 @@ git log -1 --pretty=format:'%h' 6021db1
 - Updated src/mcp_commit_story/journal.py (full implementation)
 - Updated tasks/task_005.txt and tasks/tasks.json (task and plan details)
 
+### 2025-05-20 16:44 — Commit 5cfb86f
+
+## Summary
+Added content quality guidelines to the engineering spec, PRD, and journal.py to help ensure journal entries focus on unique insights and narrative value, rather than routine process notes. This change aims to make future entries more useful and engaging for retrospectives and storytelling.
+
+## Accomplishments
+- Updated engineering-mcp-journal-spec-final.md with a new 'Content Quality Guidelines' section
+- Updated scripts/mcp-commit-story-prd.md to match the new standards
+- Added module and class docstrings to journal.py reflecting the guidelines
+- Provided concrete examples of 'signal' vs. 'noise' for journal entry authors
+
+## Frustrations or Roadblocks
+- None; the update was straightforward and well-scoped
+
+## Terminal Commands (AI Session)
+Commands executed by AI during this work session:
+```bash
+git show --stat 5cfb86f | cat
+git show 5cfb86f --patch-with-stat | cat
+git log -1 --pretty=format:'%h' 5cfb86f
+date '+%Y-%m-%d %H:%M:%S'
+```
+
+## Discussion Notes (from chat)
+> **Human:** Is the section order already implemented? It seems like overengineering. But with tasks already made, etc it would probably be more trouble than its worth to remove it?
+> **Agent:** The section order is not implemented in code. It's not harmful to leave it in the config/spec, but it's not providing value. Removing it is a minor simplification, but not necessary unless you want to keep things ultra-lean.
+> **Human:** Adding guidance about highlighting what's unique and focusing on signal versus noise is an excellent idea for improving journal entry quality. Here's how I would recommend adding these concepts to both the spec and the code: ...
+> **Agent:** Your proposed additions are excellent—clear, actionable, and perfectly aligned with the goal of making journal entries genuinely valuable and narrative-driven. ...
+
+## Tone/Mood
+> Satisfied and optimistic
+> Clear improvements to documentation and future journal entry quality; collaborative decision-making
+
+## Behind the Commit
+- **files_changed:** 3
+- **insertions:** 127
+- **deletions:** 60
+
