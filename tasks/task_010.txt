@@ -2,7 +2,7 @@
 # Title: Implement Manual Reflection Addition
 # Status: pending
 # Dependencies: 5, 6, 7
-# Priority: medium
+# Priority: high
 # Description: Create the functionality to add manual reflections to journal entries, ensuring they are prioritized in summaries.
 # Details:
 Implement manual reflection addition in both the MCP server and CLI with the following features:
