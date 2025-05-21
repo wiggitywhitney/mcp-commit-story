@@ -321,7 +321,7 @@
       "id": 5,
       "title": "Implement Journal Entry Generation",
       "description": "Create the core functionality for generating journal entries from Git commits, terminal history, and chat context.",
-      "status": "pending",
+      "status": "in-progress",
       "dependencies": [
         2,
         3
@@ -345,7 +345,7 @@
           "description": "Create tests and implement file operation functions for journal management, with explicit user collaboration at each step",
           "dependencies": [],
           "details": "Create tests in `tests/test_file_operations.py` for get_journal_file_path(), append_to_journal_file(), and create_journal_directories(). Then implement these functions in `src/mcp_journal/journal.py`. Use mocking for file system operations.\n\nCollaboration steps:\n1. Present proposed file structure and naming conventions to user\n2. Ask specific questions about user preferences:\n   - What directory structure do you prefer for journal files?\n   - How should files be named (date format, prefixes, etc.)?\n   - Should entries be appended to existing files or create new files?\n   - What file permissions should be set?\n3. Create test cases based on user feedback and present for approval\n4. Document all user decisions in code comments and docstrings\n5. Implement functions based on approved design\n6. Present implementation for final review before marking complete",
-          "status": "pending",
+          "status": "done",
           "testStrategy": "Write tests that verify correct path generation, directory creation, and file appending. Use unittest.mock to patch filesystem operations. Present test cases to user for review and approval before implementation. Update tests based on user feedback about file organization preferences."
         },
         {

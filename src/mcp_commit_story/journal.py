@@ -1,5 +1,7 @@
 import re
 from typing import List, Optional, Dict, Union
+from pathlib import Path
+import os
 
 """
 Journal entry generation for engineering work.
@@ -163,3 +165,49 @@ class JournalParser:
             )
         # Reflection entries are not supported in the canonical JournalEntry structure
         raise JournalParseError('Unrecognized journal entry format')
+
+def get_journal_file_path(date, entry_type):
+    """
+    Return the correct journal file path based on date and entry type.
+    entry_type: 'daily', 'daily_summary', 'weekly_summary', 'monthly_summary', 'yearly_summary'
+    """
+    if entry_type == "daily":
+        return Path("journal/daily") / f"{date}-journal.md"
+    elif entry_type == "daily_summary":
+        return Path("journal/summaries/daily") / f"{date}-daily.md"
+    elif entry_type == "weekly_summary":
+        return Path("journal/summaries/weekly") / f"{date}-weekly.md"
+    elif entry_type == "monthly_summary":
+        return Path("journal/summaries/monthly") / f"{date}-monthly.md"
+    elif entry_type == "yearly_summary":
+        return Path("journal/summaries/yearly") / f"{date}-yearly.md"
+    else:
+        raise ValueError(f"Unknown entry_type: {entry_type}")
+
+def create_journal_directories(base_dir):
+    """
+    Create all required journal subdirectories under base_dir.
+    """
+    (Path(base_dir) / "daily").mkdir(parents=True, exist_ok=True)
+    (Path(base_dir) / "summaries" / "daily").mkdir(parents=True, exist_ok=True)
+    (Path(base_dir) / "summaries" / "weekly").mkdir(parents=True, exist_ok=True)
+    (Path(base_dir) / "summaries" / "monthly").mkdir(parents=True, exist_ok=True)
+    (Path(base_dir) / "summaries" / "yearly").mkdir(parents=True, exist_ok=True)
+
+def append_to_journal_file(entry, file_path):
+    """
+    Append a journal entry to the file at file_path. If the file does not exist, create it.
+    If the file exists and is not empty, prepend a horizontal rule (---) before the new entry.
+    Automatically create parent directories as needed.
+    """
+    file_path = Path(file_path)
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        if file_path.exists() and file_path.stat().st_size > 0:
+            with open(file_path, "a", encoding="utf-8") as f:
+                f.write("\n---\n" + entry)
+        else:
+            with open(file_path, "a", encoding="utf-8") as f:
+                f.write(entry)
+    except Exception as e:
+        raise

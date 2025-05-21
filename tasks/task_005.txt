@@ -1,6 +1,6 @@
 # Task ID: 5
 # Title: Implement Journal Entry Generation
-# Status: pending
+# Status: in-progress
 # Dependencies: 2, 3
 # Priority: high
 # Description: Create the core functionality for generating journal entries from Git commits, terminal history, and chat context.
@@ -141,7 +141,7 @@ Finalized the implementation plan for the JournalEntry class and its tests, inco
 2. Implement the JournalEntry class in `src/mcp_commit_story/journal.py` to pass all tests and match the agreed formatting.
 </info added on 2025-05-20T21:16:38.374Z>
 
-## 2. Implement file operations with tests [pending]
+## 2. Implement file operations with tests [done]
 ### Dependencies: None
 ### Description: Create tests and implement file operation functions for journal management, with explicit user collaboration at each step
 ### Details:
