@@ -159,7 +159,7 @@ Collaboration steps:
 5. Implement functions based on approved design
 6. Present implementation for final review before marking complete
 
-## 3. Implement context collection functions with tests [pending]
+## 3. Implement context collection functions with tests [done]
 ### Dependencies: None
 ### Description: Create tests and implement functions to collect terminal history, chat history, and AI commands, with explicit user collaboration at each step
 ### Details:
@@ -176,6 +176,29 @@ Collaboration steps:
 4. Document all user decisions in code comments and docstrings
 5. Implement functions based on approved design
 6. Present implementation for final review before marking complete
+<info added on 2025-05-21T21:51:00.769Z>
+Implementation Plan for Context Collection Functions:
+
+1. Adaptive lookback approach:
+   - Search backward through current conversation for last "mcp-commit-story new-entry" command
+   - Use this command as boundary for context collection
+   - Default to 18-hour window if boundary command not found
+
+2. Filtering specifications:
+   - Apply terminal command and discussion note filtering as specified
+   - No additional exclusions needed
+   - No logging of filtered commands required
+
+3. Content handling:
+   - Exclude ambiguous discussion notes
+   - Rely on AI prompt instructions for sensitive data filtering
+   - No persistent storage of chat/discussion history beyond journal entries
+
+4. Implementation process:
+   - Develop AI prompts with checklists for both chat and terminal command extraction
+   - Present checklists to user for review and approval before implementation
+   - Implement approved design in collect_terminal_history(), collect_chat_history(), and collect_ai_terminal_commands()
+</info added on 2025-05-21T21:51:00.769Z>
 
 ## 4. Implement commit-based section generators with tests [pending]
 ### Dependencies: 5.1

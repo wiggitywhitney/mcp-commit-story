@@ -211,3 +211,135 @@ def append_to_journal_file(entry, file_path):
                 f.write(entry)
     except Exception as e:
         raise
+
+def collect_chat_history(since_timestamp=None, last_journal_entry=None):
+    """
+    Collect relevant chat history for journal entry.
+
+    AI Prompt:
+    Please analyze our ENTIRE chat history within the specified boundary and extract ALL relevant discussion points for the journal entry.
+    - Search backward through the current conversation for the last time you invoked the mcp-commit-story new-entry command (or a similar journal generation function).
+    - If no such reference is found, review all available conversation history within your context window.
+    IMPORTANT: Review ALL chat messages and terminal commands within this boundary, not just the most recent ones.
+    Be thorough and comprehensive in your review—do not skip or summarize large portions of the conversation.
+    Focus on:
+      1. Technical decisions and reasoning
+      2. Problem-solving approaches and solutions
+      3. Challenges encountered and how they were addressed
+      4. Expressions of frustration, satisfaction, or other emotions
+      5. Key questions and answers that shaped the work
+    Do NOT include:
+      - Passwords, API keys, authentication tokens
+      - Personal identifiable information (PII)
+      - Other sensitive data
+      - Routine procedural discussions that don't provide insight
+      - Ambiguous notes that don't add clear value
+    If in doubt about whether to include a note, err on the side of exclusion unless it clearly adds value to the engineering narrative.
+    Format each discussion note as a dictionary with 'speaker' and 'text' fields when the speaker is identifiable, or just 'text' for unattributed notes.
+    These entries may be used to generate developer-facing summaries or historical narratives. Please ensure clarity and accuracy.
+    The goal is to capture the complete narrative and decision-making process, reviewing ALL available information within the boundary.
+    
+    ANTI-HALLUCINATION RULES:
+    - Do NOT invent, infer, or summarize information that is not explicitly present in the actual conversation history.
+    - Only include discussion points that are directly supported by the chat transcript.
+    - If a detail is not present, do NOT speculate or fill in gaps.
+
+    Checklist:
+    - [ ] Search backward through the current conversation for the last invocation of the mcp-commit-story new-entry command (or similar journal generation function)
+    - [ ] If no such reference is found, review all available conversation history within your context window
+    - [ ] Review ALL chat messages and terminal commands within this boundary, not just the most recent ones
+    - [ ] Be thorough and comprehensive—do not skip or summarize large portions of the conversation
+    - [ ] Focus on extracting:
+        - Technical decisions and reasoning
+        - Problem-solving approaches and solutions
+        - Challenges encountered and how they were addressed
+        - Expressions of frustration, satisfaction, or other emotions
+        - Key questions and answers that shaped the work
+    - [ ] Exclude:
+        - Passwords, API keys, authentication tokens
+        - Personal identifiable information (PII)
+        - Other sensitive data
+        - Routine procedural discussions that don't provide insight
+        - Ambiguous notes that don't add clear value
+    - [ ] If in doubt about whether to include a note, err on the side of exclusion unless it clearly adds value to the engineering narrative
+    - [ ] Format each discussion note as a dictionary with 'speaker' and 'text' fields when the speaker is identifiable, or just 'text' for unattributed notes
+    - [ ] Ensure clarity and accuracy, as these entries may be used for developer-facing summaries or historical narratives
+    - [ ] ANTI-HALLUCINATION: Do NOT invent, infer, or summarize information that is not explicitly present in the actual conversation history
+    - [ ] ANTI-HALLUCINATION: Only include discussion points directly supported by the chat transcript
+    - [ ] ANTI-HALLUCINATION: If a detail is not present, do NOT speculate or fill in gaps
+    """
+    return []
+
+def collect_ai_terminal_commands(since_timestamp=None, last_journal_entry=None):
+    """
+    Collect terminal commands executed by AI during the current work session.
+
+    AI Prompt:
+    Please analyze our ENTIRE terminal command history within the specified boundary and extract ALL relevant commands executed by the AI for the journal entry.
+    - Search backward through the current conversation for the last time you invoked the mcp-commit-story new-entry command (or a similar journal generation function).
+    - If no such reference is found, review all available terminal command history within your context window.
+    IMPORTANT: Review ALL terminal commands within this boundary, not just the most recent ones.
+    Be thorough and comprehensive in your review—do not skip or summarize large portions of the command history.
+    Focus on including:
+      - Commands that demonstrate problem-solving steps
+      - Commands that show the technical approach
+      - Failed commands that highlight challenges or errors
+      - Repetitive commands that might indicate frustrations or iteration
+    Exclude:
+      - Routine git commands (add, status, commit) unless they are significant to the narrative
+      - Commands run specifically as part of journal entry creation
+      - Commands containing passwords, API keys, tokens, or other sensitive information
+      - Commands that reveal personal identifiable information (PII)
+    If in doubt about whether to include a command, err on the side of exclusion unless it clearly adds value to the engineering narrative.
+    Format the output as a chronological list of terminal commands, suitable for inclusion in a developer-facing journal entry.
+    These entries may be used to generate developer-facing summaries or historical narratives. Please ensure clarity and accuracy.
+    The goal is to document the complete technical steps taken during the work session, reviewing ALL available information within the boundary.
+
+    ANTI-HALLUCINATION RULES:
+    - Do NOT invent, infer, or summarize commands that are not explicitly present in the actual terminal history.
+    - Only include commands that are directly supported by the terminal transcript.
+    - If a command is not present, do NOT speculate or fill in gaps.
+
+    Checklist:
+    - [ ] Search backward through the current conversation for the last invocation of the mcp-commit-story new-entry command (or similar journal generation function)
+    - [ ] If no such reference is found, review all available terminal command history within your context window
+    - [ ] Review ALL terminal commands within this boundary, not just the most recent ones
+    - [ ] Be thorough and comprehensive—do not skip or summarize large portions of the command history
+    - [ ] Focus on including:
+        - Commands that demonstrate problem-solving steps
+        - Commands that show the technical approach
+        - Failed commands that highlight challenges or errors
+        - Repetitive commands that might indicate frustrations or iteration
+    - [ ] Exclude:
+        - Routine git commands (add, status, commit) unless significant to the narrative
+        - Commands run specifically as part of journal entry creation
+        - Commands containing passwords, API keys, tokens, or other sensitive information
+        - Commands that reveal personal identifiable information (PII)
+    - [ ] If in doubt about whether to include a command, err on the side of exclusion unless it clearly adds value to the engineering narrative
+    - [ ] Format the output as a chronological list of terminal commands, suitable for a developer-facing journal entry
+    - [ ] Ensure clarity and accuracy, as these entries may be used for developer-facing summaries or historical narratives
+    - [ ] ANTI-HALLUCINATION: Do NOT invent, infer, or summarize commands that are not explicitly present in the actual terminal history
+    - [ ] ANTI-HALLUCINATION: Only include commands directly supported by the terminal transcript
+    - [ ] ANTI-HALLUCINATION: If a command is not present, do NOT speculate or fill in gaps
+    """
+    return []
+
+def get_commit_metadata(commit_hash):
+    """Mock implementation: Retrieve commit metadata (hash, author, date, message) for a given commit hash."""
+    # This is a mock implementation for TDD; replace with real logic later
+    return {
+        "hash": commit_hash,
+        "author": "Test User",
+        "date": "2025-05-21",
+        "message": "Test commit"
+    }
+
+def get_code_diff(commit_hash):
+    """Mock implementation: Retrieve code diff for a given commit hash."""
+    # This is a mock implementation for TDD; replace with real logic later
+    return "diff --git a/file.py b/file.py"
+
+def get_changed_files(commit_hash):
+    """Mock implementation: Retrieve list of changed files for a given commit hash."""
+    # This is a mock implementation for TDD; replace with real logic later
+    return ["file1.py", "file2.py"]
