@@ -48,63 +48,85 @@ class JournalEntry:
         self.behind_the_commit = behind_the_commit or {}
 
     def to_markdown(self) -> str:
+        """
+        Serialize the journal entry to Markdown with improved formatting:
+        - H3 for entry header
+        - H4 for section headers
+        - Blank line after section headers
+        - Blank line between bullet points
+        - Blank line on speaker change in discussion notes
+        - Terminal commands as a single bash code block
+        - Blockquotes visually distinct
+        - (Horizontal rule between entries is handled externally)
+        """
         lines = [f"### {self.timestamp} — Commit {self.commit_hash}", ""]
 
+        def section(header, content_lines):
+            if not content_lines:
+                return []
+            out = [f"#### {header}", ""]
+            out.extend(content_lines)
+            out.append("")
+            return out
+
         if self.summary:
-            lines.append("## Summary")
-            lines.append(self.summary)
-            lines.append("")
+            lines += section("Summary", [self.summary])
 
         if self.accomplishments:
-            lines.append("## Accomplishments")
-            for item in self.accomplishments:
-                lines.append(f"- {item}")
-            lines.append("")
+            acc_lines = []
+            for i, item in enumerate(self.accomplishments):
+                acc_lines.append(f"- {item}")
+                if i < len(self.accomplishments) - 1:
+                    acc_lines.append("")  # blank line between bullets
+            lines += section("Accomplishments", acc_lines)
 
         if self.frustrations:
-            lines.append("## Frustrations or Roadblocks")
-            for item in self.frustrations:
-                lines.append(f"- {item}")
-            lines.append("")
+            frus_lines = []
+            for i, item in enumerate(self.frustrations):
+                frus_lines.append(f"- {item}")
+                if i < len(self.frustrations) - 1:
+                    frus_lines.append("")
+            lines += section("Frustrations or Roadblocks", frus_lines)
 
         if self.terminal_commands:
-            lines.append("## Terminal Commands (AI Session)")
-            lines.append("Commands executed by AI during this work session:")
-            lines.append("```bash")
-            for cmd in self.terminal_commands:
-                lines.append(cmd)
-            lines.append("```")
-            lines.append("")
+            tc_lines = ["Commands executed by AI during this work session:", "```bash"]
+            tc_lines.extend(self.terminal_commands)
+            tc_lines.append("```")
+            lines += section("Terminal Commands (AI Session)", tc_lines)
 
         if self.discussion_notes:
-            lines.append("## Discussion Notes (from chat)")
+            dn_lines = []
+            prev_speaker = None
             for note in self.discussion_notes:
                 if isinstance(note, dict) and 'speaker' in note and 'text' in note:
+                    speaker = note['speaker']
                     text_lines = note['text'].splitlines()
+                    if prev_speaker is not None and speaker != prev_speaker:
+                        dn_lines.append("")  # blank line on speaker change
                     if text_lines:
-                        lines.append(f"> **{note['speaker']}:** {text_lines[0]}")
+                        dn_lines.append(f"> **{speaker}:** {text_lines[0]}")
                         for l in text_lines[1:]:
-                            lines.append(f"> {l}")
+                            dn_lines.append(f"> {l}")
                     else:
-                        lines.append(f"> **{note['speaker']}:**")
+                        dn_lines.append(f"> **{speaker}:**")
+                    prev_speaker = speaker
                 else:
                     text_lines = str(note).splitlines()
                     for l in text_lines:
-                        lines.append(f"> {l}")
-            lines.append("")
+                        dn_lines.append(f"> {l}")
+            lines += section("Discussion Notes (from chat)", dn_lines)
 
         if self.tone_mood and self.tone_mood.get("mood") and self.tone_mood.get("indicators"):
-            lines.append("## Tone/Mood")
-            lines.append(f"> {self.tone_mood['mood']}")
-            lines.append(f"> {self.tone_mood['indicators']}")
-            lines.append("")
+            tm_lines = [f"> {self.tone_mood['mood']}", f"> {self.tone_mood['indicators']}"]
+            lines += section("Tone/Mood", tm_lines)
 
         if self.behind_the_commit:
-            lines.append("## Behind the Commit")
-            for k, v in self.behind_the_commit.items():
-                lines.append(f"- **{k}:** {v}")
-            lines.append("")
+            btc_lines = [f"- **{k}:** {v}" for k, v in self.behind_the_commit.items()]
+            lines += section("Behind the Commit", btc_lines)
 
+        # Remove trailing blank lines
+        while lines and lines[-1] == "":
+            lines.pop()
         return "\n".join(lines).strip()
 
 class JournalParser:

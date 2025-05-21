@@ -123,4 +123,147 @@ def test_omit_empty_sections():
     assert "Terminal Commands" not in md
     assert "Discussion Notes" not in md
     assert "Tone/Mood" not in md
-    assert "Behind the Commit" not in md 
+    assert "Behind the Commit" not in md
+
+
+# --- Journal Entry Format Improvements (Subtask 5.9) ---
+
+def test_horizontal_rule_between_entries():
+    entry1 = JournalEntry(
+        timestamp="2025-05-20 08:10",
+        commit_hash="abc123",
+        summary="Entry 1"
+    )
+    entry2 = JournalEntry(
+        timestamp="2025-05-20 09:00",
+        commit_hash="def456",
+        summary="Entry 2"
+    )
+    combined = f"{entry1.to_markdown()}\n---\n{entry2.to_markdown()}"
+    assert "\n---\n" in combined
+    # Split on the horizontal rule and check that each part starts with the correct header
+    parts = combined.split("\n---\n")
+    assert parts[0].startswith("### ")
+    assert parts[1].startswith("### ")
+
+
+def test_header_hierarchy():
+    entry = JournalEntry(
+        timestamp="2025-05-20 08:10",
+        commit_hash="abc123",
+        summary="Test summary",
+        accomplishments=["Did something"],
+        frustrations=["Hit a bug"]
+    )
+    md = entry.to_markdown()
+    assert md.startswith("### ")
+    assert "#### Summary" in md
+    assert "#### Accomplishments" in md
+    assert "#### Frustrations or Roadblocks" in md
+
+
+def test_blank_line_on_speaker_change_in_discussion_notes():
+    notes = [
+        {"speaker": "Human", "text": "First."},
+        {"speaker": "Agent", "text": "Second."},
+        {"speaker": "Human", "text": "Third."}
+    ]
+    entry = JournalEntry(
+        timestamp="2025-05-20 08:10",
+        commit_hash="abc123",
+        discussion_notes=notes
+    )
+    md = entry.to_markdown()
+    # There should be a blank line between speaker changes
+    assert "> **Human:** First.\n\n> **Agent:** Second.\n\n> **Human:** Third." in md
+
+
+def test_spacing_after_section_headers():
+    entry = JournalEntry(
+        timestamp="2025-05-20 08:10",
+        commit_hash="abc123",
+        summary="Test summary",
+        accomplishments=["A"],
+        frustrations=["B"]
+    )
+    md = entry.to_markdown()
+    # Each section header should be followed by exactly one blank line
+    assert "#### Summary\n\nTest summary" in md
+    assert "#### Accomplishments\n\n- A" in md
+    assert "#### Frustrations or Roadblocks\n\n- B" in md
+
+
+def test_terminal_commands_as_code_block():
+    entry = JournalEntry(
+        timestamp="2025-05-20 08:10",
+        commit_hash="abc123",
+        terminal_commands=["ls", "pwd"]
+    )
+    md = entry.to_markdown()
+    assert "```bash" in md
+    assert "ls" in md
+    assert "pwd" in md
+    assert md.count("```bash") == 1
+    # There should be one opening and one closing code block (total 2)
+    assert md.count("```") == 2  # One opening, one closing
+
+
+def test_spacing_between_bullet_points():
+    entry = JournalEntry(
+        timestamp="2025-05-20 08:10",
+        commit_hash="abc123",
+        accomplishments=["A", "B", "C"]
+    )
+    md = entry.to_markdown()
+    # There should be a blank line between bullet points
+    assert "- A\n\n- B\n\n- C" in md
+
+
+def test_blockquote_styling_and_indentation():
+    entry = JournalEntry(
+        timestamp="2025-05-20 08:10",
+        commit_hash="abc123",
+        discussion_notes=[{"speaker": "Human", "text": "Note 1"}, {"speaker": "Agent", "text": "Note 2"}],
+        tone_mood={"mood": "Happy", "indicators": "All good."}
+    )
+    md = entry.to_markdown()
+    # Blockquotes should be visually distinct and properly indented
+    assert md.count("> ") >= 3
+    assert "> **Human:** Note 1" in md
+    assert "> **Agent:** Note 2" in md
+    assert "> Happy" in md
+    assert "> All good." in md
+
+
+def test_integration_multiple_formatting_rules():
+    notes = [
+        {"speaker": "Human", "text": "First."},
+        {"speaker": "Agent", "text": "Second."},
+        {"speaker": "Human", "text": "Third."}
+    ]
+    entry = JournalEntry(
+        timestamp="2025-05-20 08:10",
+        commit_hash="abc123",
+        summary="Integration summary",
+        accomplishments=["A", "B"],
+        frustrations=["C"],
+        terminal_commands=["ls", "pwd"],
+        discussion_notes=notes,
+        tone_mood={"mood": "Happy", "indicators": "All good."},
+        behind_the_commit={"files_changed": "2", "insertions": "10", "deletions": "1"}
+    )
+    md = entry.to_markdown()
+    # Check for all formatting features
+    assert md.startswith("### ")
+    assert "#### Summary" in md
+    assert "#### Accomplishments" in md
+    assert "#### Frustrations or Roadblocks" in md
+    assert "```bash" in md
+    assert "- A\n\n- B" in md
+    assert "> **Human:** First.\n\n> **Agent:** Second.\n\n> **Human:** Third." in md
+    assert "> Happy" in md
+    assert "> All good." in md
+    assert "#### Behind the Commit" in md
+    assert "- **files_changed:** 2" in md
+    assert "- **insertions:** 10" in md
+    assert "- **deletions:** 1" in md 

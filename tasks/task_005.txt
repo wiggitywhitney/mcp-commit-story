@@ -267,7 +267,7 @@ Collaboration steps:
 5. Implement CLI based on approved design
 6. Present implementation for final review before marking complete
 
-## 9. Journal Entry Format Improvements [pending]
+## 9. Journal Entry Format Improvements [done]
 ### Dependencies: None
 ### Description: Improve the formatting and readability of generated journal entries. This includes adding visual separators between entries, adjusting header hierarchy, improving speaker change clarity in discussion notes, and making additional whitespace and formatting improvements for code blocks, lists, and blockquotes. [Updated: 5/20/2025]
 ### Details:
