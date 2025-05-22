@@ -1,134 +1,132 @@
-**This project is currently under active development. Features and documentation may change rapidly.**
+# MCP Commit Story: Your Engineering Journey, Remembered
 
-# mcp-commit-story
-mcp-commit-story is a Model Context Protocol (MCP) server designed to generate engineering journal entries within a code repository. The journal records commits, technical progress, decision-making context, and emotional tone, with the goal of understanding larger-scale patterns, identifying trends, and producing content that can later be reused for storytelling (e.g., blog posts, conference talks).
+## What is MCP Commit Story?
 
-In addition to technical details, this journal system captures the emotional tone and context behind each engineering decision. By recording not just what happened, but how it felt, you'll be able to craft blog posts and conference talks that truly resonate with other engineers—turning dry changelogs into compelling stories of challenge, growth, and discovery.
+MCP Commit Story is a personal engineering journal for developers who want to capture not just what they built, but how it felt and why it mattered.  
+It's a tool-in-progress, built by and for developers who care about the story behind the code.
 
-**Primary Usage Notice:**
-
-This project is designed to be used primarily by AI agents (such as Cursor or other MCP-compatible tools) via the Model Context Protocol (MCP). Human users may use the CLI for manual operations, but the main workflow is agent-driven.
-
-## Badges
-
-[![Build Status](https://github.com/wiggitywhitney/mcp-commit-story/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/wiggitywhitney/mcp-commit-story/actions/workflows/tests.yml)
-<!-- [![codecov](https://codecov.io/gh/wiggitywhitney/mcp-commit-story/branch/main/graph/badge.svg)](https://codecov.io/gh/wiggitywhitney/mcp-commit-story) -->
-
-## Quick Start
-
-### MCP Server Integration
-The MCP server must be discoverable by compatible clients via a standard configuration mechanism. Here's an example configuration:
-
-```json
-{
-  "mcpServers": {
-    "mcp-commit-story": {
-      "command": "npx",
-      "args": ["-y", "--package=mcp-commit-story", "mcp-commit-story"],
-      "env": {
-        "ANTHROPIC_API_KEY": "YOUR_ANTHROPIC_API_KEY_HERE"
-      }
-    }
-  }
-}
-```
----
-
-## User Story: Real-World Impact (Fictional Example)
-
-In this fictional scenario, Bonnie—a senior engineer—transformed her daily work into a powerful resource for professional growth using the MCP Journal 
-tool. Instead of scrambling to remember what happened during a project, she could quickly generate blog posts, spot recurring themes, and prepare 
-compelling stories for conference talks using her automatically organized engineering journal.
-
-The tool made it easy for Bonnie to become a thought leader: she always had concrete examples and lessons learned at her fingertips. When her team 
-faced new challenges, they could review past journal entries to avoid repeating mistakes and to build on previous solutions. Over time, Bonnie's 
-journal became a springboard for content creation, knowledge sharing, and continuous improvement—turning everyday engineering into lasting impact.
-
-She often included quick notes about her feelings—"I felt like an imposter all morning, but when my PR finally passed review, I wanted to high-five the whole team."—so her journal captured not just what she did, but how she experienced it.
-
-When Bonnie prepared a blog post or conference talk, these emotional notes helped her transform technical summaries into engaging stories that connected with her audience and made her lessons memorable.
+MCP Commit Story runs as a Model Context Protocol (MCP) server, designed to work hand-in-hand with AI agents. These agents help gather and summarize the real context from your development workflow—so your journal entries are always grounded in what actually happened.
 
 ---
-## Installation
 
-```bash
-pip install mcp-commit-story
+## Why Build This?
+
+As a developer, it's easy to forget the "why" behind your work—what challenged you, what you learned, and how you grew.  
+MCP Commit Story helps you:
+
+- **Capture the narrative:** Each commit becomes a journal entry, recording not just the technical changes, but the decisions, frustrations, and small wins along the way.
+- **Remember how it felt:** The journal includes mood and emotional context, so you can look back and see not just what you did, but how you experienced it.
+- **Surface stories and insights:** By collecting real context from your workflow (AI Agent chat, terminal, code changes, commit messages), you can spot threads of challenge and triumph—perfect for blog posts, conference talks, or just understanding your own growth (no small thing!)
+- **Support retrospectives and reviews:** Summaries and insights make it easier to reflect, ask for promotion, or explain why certain choices were made.
+
+---
+
+## What Does a Day Look Like?
+
+Here's an example daily summary, generated from real sample data:
+
+```markdown
+# 2025-05-20-daily.md
+
+## Summary
+Completed package rename from mcp_journal to mcp_commit_story, implemented journal entry generation with comprehensive TDD testing, and improved documentation quality. Resolved major duplication bug in journal file. Key milestone: project rebranding is complete and core journal functionality is operational.
+
+## Key Accomplishments
+- Successfully renamed entire package structure from mcp_journal to mcp_commit_story
+- Implemented JournalEntry class with full test coverage (9/9 tests passing)
+- Fixed major data integrity issue: removed 1,400+ duplicate entries from journal
+- Updated all documentation, configuration, and CI/CD references
+- Added content quality guidelines to engineering spec
+
+## Challenges Overcome
+- Tedious but critical package rename across multiple files and configs
+- Subtle duplication problem required careful diagnosis and scripting to resolve
+- Markdown formatting issue in engineering spec affecting GitHub rendering
+
+## Technical Progress
+- 9 commits made throughout the day
+- Files changed: 50+ across multiple commits
+- Test coverage: All tests passing (95/95)
+- Major refactoring completed without breaking functionality
+
+## Learning & Insights
+- Package rename process made much easier with AI agent assistance
+- Importance of data integrity validation in automated workflows
+- TDD approach prevented issues during major structural changes
+
+## Next Steps
+- Continue with Task 5 implementation: file operations for journal management
+- Implement MCP server operations
+- Add CLI interface with Click framework
+
+## Mood Indicators
+Methodical and satisfied - complex refactoring completed successfully with no major blockers. Relieved to have data integrity issues resolved and project properly rebranded.
 ```
 
-## Configuration
+---
 
-A minimal configuration file is automatically generated when you initialize the project:
+## How Does It Work?
 
-```bash
-mcp-commit-story init
-```
+- **Automatic context collection:** The MCP server works with AI agents to pull in commit messages, code changes, terminal commands, and AI chat history, building a rich, evidence-based journal entry.
+- **No hallucinated summaries:** Everything in your journal is grounded in real actions and conversations.
+- **Mood and emotion:** If you express frustration, relief, or excitement in your AI chat interactions, the 
+journal captures it—so you can look back and see not just what you did, but how you felt.
+- **Summaries and threads:** Daily, weekly, monthly, and yearly summaries help you spot patterns, track 
+progress, and find the stories worth sharing.
 
-The configuration file `.mcp-commit-storyrc.yaml` contains essential settings:
+---
 
-```yaml
-# Journal settings
-journal:
-  # Base path for all journal files (relative to repo root)
-  path: "journal/"
+## The Story in Action
 
-# Git repository settings
-git:
-  # Files to exclude from analysis in journal entries
-  exclude_patterns:
-    - "journal/**"        # Ignore journal directory to prevent recursion
-    - ".mcp-commit-storyrc.yaml"  # Ignore config file itself
+Bonnie, a developer, used MCP Commit Story for several months. When her manager asked about a past architecture decision, she didn't have to rely on memory or dig through old tickets. Her journal had the exact discussion, the alternatives considered, and the rationale—complete with the commands and tests that backed it up.
 
-# Telemetry settings
-telemetry:
-  # Whether to collect anonymous usage data
-  enabled: false
-```
+Later, Bonnie used her journal to write a conference talk. She found not just the technical steps, but the frustrations, breakthroughs, and lessons learned along the way. Her talk resonated because it was grounded in real experience, not just a list of features.
 
-If you want to customize your configuration before initialization, you can copy the provided example file.
+Over time, Bonnie's journal became a resource for performance reviews, onboarding new teammates, and even her own career growth. The value wasn't in any single entry, but in the cumulative story of her engineering journey.
 
-## Commit Processing
-- Commits that only modify journal files are skipped (no journal entry generated)
-- For mixed commits (code + journal files), only code changes are analyzed for the journal entry
-- This recursion prevention logic is always-on and not configurable
+---
 
-## Goals
-- Record accurate, structured engineering activity and emotional context
-- Enable narrative storytelling across daily, weekly, and monthly timelines
-- Identify patterns and trends in development work over time
-- Keep entries truthful (anti-hallucination), useful, and minimally intrusive
-- Integrate seamlessly with Git workflows and existing dev tools
+## Unobtrusive by Design: Works Silently in the Background
 
-## Project Structure
+MCP Commit Story is triggered automatically by a Git hook with each commit. It works silently in the background, capturing context and generating journal entries without disrupting your workflow. There's no need for manual intervention—just commit as usual, and your engineering story is recorded for you.
 
-```
-journal/
-├── daily/
-│   ├── YYYY-MM-DD.md
-│   └── ...
-├── summaries/
-│   ├── daily/
-│   ├── weekly/
-│   ├── monthly/
-│   └── yearly/
-└── .mcp-commit-storyrc.yaml
-```
+---
 
-## Development
+## Why Use It?
 
-### Setting Up Test Environment
+- **For yourself:**  
+  - Remember why you made certain choices, and how you overcame obstacles.
+  - See your growth as a developer, not just a list of commits.
+  - Reflect on your work with more honesty and clarity.
 
-This project follows Test-Driven Development (TDD) principles. To set up the test environment:
+- **For content creation:**  
+  - Identify threads of challenge and triumph to turn into blog posts, talks, or portfolio pieces.
+  - Capture the real story behind your technical journey—perfect for developer advocacy, teaching, or sharing with your future self.
 
-```bash
-# Setup the test environment (creates virtual environment and installs dependencies)
-./scripts/setup_test_env.sh
+- **For retrospectives and reviews:**  
+  - Quickly find evidence of your impact, challenges, and decisions.
+  - Make performance reviews, promotion cases, or team retrospectives more meaningful and less stressful.
 
-# Run tests
-./scripts/run_tests.sh
-```
+---
 
-For more details on testing standards and practices, see [Testing Standards](docs/testing_standards.md).
+## Project Status
+
+This project is under active development by a solo developer.  
+The core journal engine, context collection, and summary generation are being built and tested with a TDD-first approach.  
+Installation and CLI instructions will be added as the tool matures.
+
+---
+
+## Getting Started
+
+MCP Commit Story is still in early development and not yet ready for general use. If you're interested in engineering storytelling, developer experience, or just want to follow the project's progress, feel free to watch the repo or open an issue with your thoughts, questions, or suggestions. Your feedback and curiosity are welcome as the project evolves!
+
+---
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+MIT
+
+---
+
+**MCP Commit Story: Because your engineering work is more than just code.**
