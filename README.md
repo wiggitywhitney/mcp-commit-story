@@ -3,6 +3,7 @@
 ## What is MCP Commit Story?
 
 MCP Commit Story is a personal engineering journal for developers who want to capture not just what they built, but how it felt and why it mattered.  
+
 It's a tool-in-progress, built by and for developers who care about the story behind the code.
 
 MCP Commit Story runs as a Model Context Protocol (MCP) server, designed to work hand-in-hand with AI agents. These agents help gather and summarize the real context from your development workflow—so your journal entries are always grounded in what actually happened.
