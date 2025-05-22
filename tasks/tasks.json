@@ -358,29 +358,6 @@
           "testStrategy": "Write tests that verify correct data collection with various inputs. Mock shell history access, chat history retrieval, and command parsing. Present test cases to user for review and approval before implementation. Update tests based on user feedback about context collection preferences."
         },
         {
-          "id": 4,
-          "title": "Implement commit-based section generators with tests",
-          "description": "Create tests and implement section generators that use commit information, with explicit user collaboration at each step",
-          "dependencies": [
-            1
-          ],
-          "details": "Create tests in `tests/test_commit_sections.py` for generate_summary_section(), generate_accomplishments_section(), generate_frustrations_section(), and generate_commit_details_section(). Then implement these functions in `src/mcp_journal/journal.py`.\n\nCollaboration steps:\n1. Present proposed section generator designs to user\n2. Ask specific questions about user preferences:\n   - What information should be included in the summary section?\n   - How should accomplishments be formatted and categorized?\n   - What tone and style should be used for frustrations?\n   - What commit details are most important to include?\n3. Create test cases based on user feedback and present for approval\n4. Document all user decisions in code comments and docstrings\n5. Implement functions based on approved design\n6. Present implementation for final review before marking complete",
-          "status": "pending",
-          "testStrategy": "Write tests that verify each generator produces appropriate content based on different commit inputs. Test edge cases like empty commits or unusual formatting. Present test cases to user for review and approval before implementation. Update tests based on user feedback about section content and formatting preferences."
-        },
-        {
-          "id": 5,
-          "title": "Implement context-based section generators with tests",
-          "description": "Create tests and implement section generators that use terminal and chat context, with explicit user collaboration at each step",
-          "dependencies": [
-            1,
-            3
-          ],
-          "details": "Create tests in `tests/test_context_sections.py` for generate_terminal_section(), generate_discussion_section(), and generate_tone_section(). Then implement these functions in `src/mcp_journal/journal.py`.\n\nCollaboration steps:\n1. Present proposed context-based section generator designs to user\n2. Ask specific questions about user preferences:\n   - How should terminal commands be grouped or categorized?\n   - What aspects of discussions should be highlighted?\n   - How should the tone/mood section be structured?\n   - What context should be prioritized or filtered out?\n3. Create test cases based on user feedback and present for approval\n4. Document all user decisions in code comments and docstrings\n5. Implement functions based on approved design\n6. Present implementation for final review before marking complete",
-          "status": "pending",
-          "testStrategy": "Write tests that verify each generator produces appropriate content based on different context inputs. Test with various terminal histories and chat contexts. Present test cases to user for review and approval before implementation. Update tests based on user feedback about context-based section preferences."
-        },
-        {
           "id": 6,
           "title": "Create integration test for journal entry generation",
           "description": "Create an integration test that verifies the full journal entry generation process, with explicit user collaboration at each step",
@@ -388,8 +365,7 @@
             1,
             2,
             3,
-            4,
-            5
+            "5.12"
           ],
           "details": "Create an integration test in `tests/test_journal_integration.py` that verifies the complete flow: collecting context, creating a journal entry with all sections, and writing to a file.\n\nCollaboration steps:\n1. Present proposed integration test approach to user\n2. Ask specific questions about user preferences:\n   - What end-to-end scenarios are most important to test?\n   - What sample inputs should be used for realistic testing?\n   - What aspects of the output should be validated?\n   - How should the integration test handle dependencies?\n3. Create test cases based on user feedback and present for approval\n4. Document all user decisions in code comments and docstrings\n5. Implement integration test based on approved design\n6. Present implementation for final review before marking complete",
           "status": "pending",
@@ -402,9 +378,7 @@
           "dependencies": [
             1,
             2,
-            3,
-            4,
-            5
+            3
           ],
           "details": "Update all functions to handle edge cases like missing data, API failures, or permission issues. Add appropriate error handling, logging, and fallback mechanisms.\n\nCollaboration steps:\n1. Present proposed error handling approach to user\n2. Ask specific questions about user preferences:\n   - How should errors be communicated to the user?\n   - What fallback behavior is preferred for missing data?\n   - What level of logging detail is appropriate?\n   - Which errors should be fatal vs. non-fatal?\n3. Create test cases based on user feedback and present for approval\n4. Document all user decisions in code comments and docstrings\n5. Implement error handling based on approved design\n6. Present implementation for final review before marking complete",
           "status": "pending",
@@ -416,7 +390,8 @@
           "description": "Implement a command-line interface for manually generating journal entries, with explicit user collaboration at each step",
           "dependencies": [
             6,
-            7
+            7,
+            "5.12"
           ],
           "details": "Create a CLI command in `src/mcp_journal/cli.py` that allows users to manually generate journal entries for specific commits or time periods. Connect this to the journal generation functionality.\n\nCollaboration steps:\n1. Present proposed CLI design to user\n2. Ask specific questions about user preferences:\n   - What command syntax is most intuitive?\n   - What options and flags should be available?\n   - How should output be displayed in the terminal?\n   - What confirmation steps should be included?\n3. Create test cases based on user feedback and present for approval\n4. Document all user decisions in code comments and docstrings\n5. Implement CLI based on approved design\n6. Present implementation for final review before marking complete",
           "status": "pending",
@@ -440,6 +415,89 @@
           "dependencies": [
             "5.3"
           ],
+          "parentTaskId": 5
+        },
+        {
+          "id": 12,
+          "title": "Implement Section Generators",
+          "description": "Design, test, and implement all journal entry section generator functions, each using all available data (commit, terminal context, chat context). Each subtask covers one section generator, with collaborative design, TDD (write failing tests first), implementation, and user approval before completion.",
+          "details": "Collapse previous commit-based and context-based section generator tasks into a single unified task. Each subtask will:\n- Collaboratively design the function with the user\n- Write and review comprehensive tests (verify failing tests before implementation)\n- Implement the function using all relevant data\n- Get user approval before marking complete\n\nSubtasks:\n1. generate_summary_section(commit, terminal_context, chat_context)\n2. generate_accomplishments_section(commit, terminal_context, chat_context)\n3. generate_frustrations_section(commit, terminal_context, chat_context)\n4. generate_tone_section(commit, terminal_context, chat_context)\n5. generate_terminal_section(terminal_context)\n6. generate_discussion_section(chat_context)\n7. generate_commit_details_section(commit)",
+          "status": "pending",
+          "dependencies": [
+            "5.11"
+          ],
+          "parentTaskId": 5
+        },
+        {
+          "id": 13,
+          "title": "Implement generate_summary_section(commit, terminal_context, chat_context)",
+          "description": "Design, test (write failing tests first), and implement the summary section generator using all available data sources. Collaborate with the user for design and approval.",
+          "details": "1. Collaboratively design the generate_summary_section function with the user.\n2. Write and review comprehensive tests (verify failing tests before implementation).\n3. Implement the function using commit, terminal, and chat context.\n4. Get user approval before marking complete.",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 5
+        },
+        {
+          "id": 14,
+          "title": "Implement generate_accomplishments_section(commit, terminal_context, chat_context)",
+          "description": "Design, test (write failing tests first), and implement the accomplishments section generator using all available data sources. Collaborate with the user for design and approval.",
+          "details": "1. Collaboratively design the generate_accomplishments_section function with the user.\n2. Write and review comprehensive tests (verify failing tests before implementation).\n3. Implement the function using commit, terminal, and chat context.\n4. Get user approval before marking complete.",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 5
+        },
+        {
+          "id": 15,
+          "title": "Implement generate_frustrations_section(commit, terminal_context, chat_context)",
+          "description": "Design, test (write failing tests first), and implement the frustrations section generator using all available data sources. Collaborate with the user for design and approval.",
+          "details": "1. Collaboratively design the generate_frustrations_section function with the user.\n2. Write and review comprehensive tests (verify failing tests before implementation).\n3. Implement the function using commit, terminal, and chat context.\n4. Get user approval before marking complete.",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 5
+        },
+        {
+          "id": 16,
+          "title": "Implement generate_tone_section(commit, terminal_context, chat_context)",
+          "description": "Design, test (write failing tests first), and implement the tone section generator using all available data sources. Collaborate with the user for design and approval.",
+          "details": "1. Collaboratively design the generate_tone_section function with the user.\n2. Write and review comprehensive tests (verify failing tests before implementation).\n3. Implement the function using commit, terminal, and chat context.\n4. Get user approval before marking complete.",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 5
+        },
+        {
+          "id": 17,
+          "title": "Implement generate_terminal_section(terminal_context)",
+          "description": "Design, test (write failing tests first), and implement the terminal section generator using all available terminal context. Collaborate with the user for design and approval.",
+          "details": "1. Collaboratively design the generate_terminal_section function with the user.\n2. Write and review comprehensive tests (verify failing tests before implementation).\n3. Implement the function using terminal context.\n4. Get user approval before marking complete.",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 5
+        },
+        {
+          "id": 18,
+          "title": "Implement generate_discussion_section(chat_context)",
+          "description": "Design, test (write failing tests first), and implement the discussion section generator using all available chat context. Collaborate with the user for design and approval.",
+          "details": "1. Collaboratively design the generate_discussion_section function with the user.\n2. Write and review comprehensive tests (verify failing tests before implementation).\n3. Implement the function using chat context.\n4. Get user approval before marking complete.",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 5
+        },
+        {
+          "id": 19,
+          "title": "Implement generate_commit_details_section(commit)",
+          "description": "Design, test (write failing tests first), and implement the commit details section generator using all available commit data. Collaborate with the user for design and approval.",
+          "details": "1. Collaboratively design the generate_commit_details_section function with the user.\n2. Write and review comprehensive tests (verify failing tests before implementation).\n3. Implement the function using commit data.\n4. Get user approval before marking complete.",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 5
+        },
+        {
+          "id": 20,
+          "title": "Integration: Test all section generators as a complete system",
+          "description": "Design, test (write failing tests first), and implement an integration test that brings together all section generators and verifies their combined output as a complete journal entry. Collaborate with the user for design and approval.",
+          "details": "1. Collaboratively design the integration test with the user.\n2. Write and review comprehensive tests (verify failing tests before implementation).\n3. Implement the integration test to ensure all section generators work together as a system.\n4. Get user approval before marking complete.",
+          "status": "pending",
+          "dependencies": [],
           "parentTaskId": 5
         }
       ]
