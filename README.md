@@ -17,7 +17,7 @@ MCP Commit Story helps you:
 - **Capture the narrative:** Each commit becomes a journal entry, recording not just the technical changes, but the decisions, frustrations, and small wins along the way.
 - **Remember how it felt:** The journal includes mood and emotional context, so you can look back and see not just what you did, but how you experienced it.
 - **Surface stories and insights:** By collecting real context from your workflow (AI Agent chat, terminal, code changes, commit messages), you can spot threads of challenge and triumph—perfect for blog posts, conference talks, or just understanding your own growth (no small thing!)
-- **Support retrospectives and reviews:** Summaries and insights make it easier to reflect, ask for promotion, or explain why certain choices were made.
+- **Support retrospectives and reviews:** Summaries and insights make it easier to reflect, ask for career advancement, or explain why certain choices were made.
 
 ---
 
@@ -69,10 +69,8 @@ Methodical and satisfied - complex refactoring completed successfully with no ma
 
 - **Automatic context collection:** The MCP server works with AI agents to pull in commit messages, code changes, terminal commands, and AI chat history, building a rich, evidence-based journal entry.
 - **No hallucinated summaries:** Everything in your journal is grounded in real actions and conversations.
-- **Mood and emotion:** If you express frustration, relief, or excitement in your AI chat interactions, the 
-journal captures it—so you can look back and see not just what you did, but how you felt.
-- **Summaries and threads:** Daily, weekly, monthly, and yearly summaries help you spot patterns, track 
-progress, and find the stories worth sharing.
+- **Mood and emotion:** The journal reflects your mood and tone based on how you talk to the AI agent or what you write in commit messages—so if you vent, celebrate, or reflect, those feelings are captured authentically.
+- **Summaries and threads:** Daily, weekly, monthly, and yearly summaries help you spot patterns, track progress, and find the stories worth sharing.
 
 ---
 
@@ -88,7 +86,7 @@ Over time, Bonnie's journal became a resource for performance reviews, onboardin
 
 ## Unobtrusive by Design: Works Silently in the Background
 
-MCP Commit Story is triggered automatically by a Git hook with each commit. It works silently in the background, capturing context and generating journal entries without disrupting your workflow. There's no need for manual intervention—just commit as usual, and your engineering story is recorded for you.
+MCP Commit Story is triggered automatically by a Git hook with each commit. It works silently in the background, capturing context and generating journal entries—plus daily, weekly, monthly, and yearly summaries—without disrupting your workflow. There's no need for manual intervention—just commit as usual, and your engineering story is recorded for you.
 
 ---
 
@@ -105,7 +103,7 @@ MCP Commit Story is triggered automatically by a Git hook with each commit. It w
 
 - **For retrospectives and reviews:**  
   - Quickly find evidence of your impact, challenges, and decisions.
-  - Make performance reviews, promotion cases, or team retrospectives more meaningful and less stressful.
+  - Make performance reviews, career advancement, or team retrospectives more meaningful and less stressful.
 
 ---
 
