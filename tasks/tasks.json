@@ -430,6 +430,17 @@
           "status": "done",
           "dependencies": [],
           "parentTaskId": 5
+        },
+        {
+          "id": 11,
+          "title": "Document and Formalize Context Collection Data Structures",
+          "description": "Define and document the data structures used for context collection functions (`collect_chat_history`, `collect_ai_terminal_commands`, etc.), and explicitly codify the in-memory-only rule. This includes:\n- Adding explicit type hints, `TypedDict`, or `dataclass` definitions for the returned data.\n- Documenting the expected structure in code and in the project documentation (README or `docs/`).\n- Ensuring all context remains ephemeral and is only persisted as part of the generated journal entry.\n- Updating the Taskmaster plan and code comments to reference these definitions.",
+          "details": "- Add explicit type hints, `TypedDict`, or `dataclass` definitions for the returned data in context collection functions.\n- Document the expected structure in code and in the project documentation (README or `docs/`).\n- Ensure all context remains ephemeral and is only persisted as part of the generated journal entry.\n- Update the Taskmaster plan and code comments to reference these definitions.",
+          "status": "pending",
+          "dependencies": [
+            "5.3"
+          ],
+          "parentTaskId": 5
         }
       ]
     },

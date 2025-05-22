@@ -332,3 +332,16 @@ Implement all journal entry formatting improvements using Test-Driven Developmen
 This subtask is prioritized as high importance and should be addressed next in the implementation sequence for journal entry formatting improvements.
 </info added on 2025-05-20T23:02:15.689Z>
 
+## 11. Document and Formalize Context Collection Data Structures [pending]
+### Dependencies: 5.3
+### Description: Define and document the data structures used for context collection functions (`collect_chat_history`, `collect_ai_terminal_commands`, etc.), and explicitly codify the in-memory-only rule. This includes:
+- Adding explicit type hints, `TypedDict`, or `dataclass` definitions for the returned data.
+- Documenting the expected structure in code and in the project documentation (README or `docs/`).
+- Ensuring all context remains ephemeral and is only persisted as part of the generated journal entry.
+- Updating the Taskmaster plan and code comments to reference these definitions.
+### Details:
+- Add explicit type hints, `TypedDict`, or `dataclass` definitions for the returned data in context collection functions.
+- Document the expected structure in code and in the project documentation (README or `docs/`).
+- Ensure all context remains ephemeral and is only persisted as part of the generated journal entry.
+- Update the Taskmaster plan and code comments to reference these definitions.
+
