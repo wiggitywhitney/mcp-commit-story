@@ -1,26 +1,39 @@
 import pytest
 from mcp_commit_story import journal
 from mcp_commit_story.git_utils import collect_git_context
+import git
+import os
+from pathlib import Path
 
 # Assume these will be imported from the journal module
 # from mcp_commit_story.journal import collect_commit_metadata, extract_code_diff, gather_discussion_notes, capture_file_changes, collect_chat_history, collect_ai_terminal_commands
 
-def test_collect_git_context_metadata_fields():
-    ctx = collect_git_context('HEAD')
+def setup_temp_repo_with_commit(tmp_path):
+    repo = git.Repo.init(tmp_path)
+    file_path = Path(tmp_path) / "file.txt"
+    file_path.write_text("hello")
+    repo.index.add([str(file_path)])
+    commit = repo.index.commit("test commit")
+    return repo, commit
+
+def test_collect_git_context_metadata_fields(tmp_path):
+    repo, commit = setup_temp_repo_with_commit(tmp_path)
+    ctx = collect_git_context(commit.hexsha, repo=repo)
     assert isinstance(ctx, dict)
     assert 'metadata' in ctx
     meta = ctx['metadata']
     for field in ['hash', 'author', 'date', 'message']:
         assert field in meta
 
-def test_collect_git_context_diff_summary():
-    ctx = collect_git_context('HEAD')
+def test_collect_git_context_diff_summary(tmp_path):
+    repo, commit = setup_temp_repo_with_commit(tmp_path)
+    ctx = collect_git_context(commit.hexsha, repo=repo)
     assert 'diff_summary' in ctx
     assert isinstance(ctx['diff_summary'], str)
 
-
-def test_collect_git_context_changed_files_and_stats():
-    ctx = collect_git_context('HEAD')
+def test_collect_git_context_changed_files_and_stats(tmp_path):
+    repo, commit = setup_temp_repo_with_commit(tmp_path)
+    ctx = collect_git_context(commit.hexsha, repo=repo)
     assert 'changed_files' in ctx
     assert isinstance(ctx['changed_files'], list)
     assert 'file_stats' in ctx
