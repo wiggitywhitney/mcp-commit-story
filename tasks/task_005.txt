@@ -296,7 +296,7 @@ Implement all journal entry formatting improvements using Test-Driven Developmen
 This subtask is prioritized as high importance and should be addressed next in the implementation sequence for journal entry formatting improvements.
 </info added on 2025-05-20T23:02:15.689Z>
 
-## 11. Document and Formalize Context Collection Data Structures [pending]
+## 11. Document and Formalize Context Collection Data Structures [in-progress]
 ### Dependencies: 5.3
 ### Description: Define and document the data structures used for context collection functions (`collect_chat_history`, `collect_ai_terminal_commands`, etc.), and explicitly codify the in-memory-only rule. This includes:
 - Adding explicit type hints, `TypedDict`, or `dataclass` definitions for the returned data.
@@ -308,6 +308,38 @@ This subtask is prioritized as high importance and should be addressed next in t
 - Document the expected structure in code and in the project documentation (README or `docs/`).
 - Ensure all context remains ephemeral and is only persisted as part of the generated journal entry.
 - Update the Taskmaster plan and code comments to reference these definitions.
+<info added on 2025-05-23T09:28:48.079Z>
+## Subtask Objective
+Formalize and document the data structures used for context collection in the journal entry generation system. This includes:
+- Adding TypedDict or dataclass definitions for all context collection return values (e.g., chat history, terminal context, commit info, etc.)
+- Documenting the expected structure in code and in developer docs
+- Ensuring the 'in-memory-only' rule is codified in comments and type hints
+- Updating code comments to reference these definitions
+
+## Collaboration Steps
+- Review the engineering spec and any related documentation for required data structure fields
+- Identify all functions in journal.py and related modules that return or manipulate context data
+- Propose initial TypedDict or dataclass definitions and review for completeness
+- Discuss/confirm with collaborators (if needed) before finalizing
+
+## Test Strategy
+- Add or update tests to check that all context collection functions return data matching the new type definitions
+- Ensure tests fail before implementation (test-driven)
+- Update existing tasks to require these data structures in their tests moving forward
+
+## Implementation Plan
+1. Search for all context collection functions (e.g., collect_chat_history, collect_terminal_context, etc.)
+2. Draft TypedDict or dataclass definitions for their return values
+3. Add/Update docstrings and comments to reference these types
+4. Update developer documentation to include these structures
+5. Add/Update tests to enforce the new types
+6. Update related tasks to reference the new data structures in their requirements
+
+## Notes
+- This work is foundational for all section generator tasks (5.13-5.19)
+- Adheres to the engineering spec's emphasis on explicit type hints and documentation
+- Will improve maintainability and reduce errors in downstream implementation
+</info added on 2025-05-23T09:28:48.079Z>
 
 ## 12. Implement Section Generators [pending]
 ### Dependencies: 5.11
