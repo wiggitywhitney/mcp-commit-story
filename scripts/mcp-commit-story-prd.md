@@ -316,7 +316,7 @@ telemetry:
 ### Chat History Collection Method
 - **Primary method**: AI scans backward through current conversation
 - **How it works**: AI has access to its own chat history within the current session
-- **Boundary**: Look back until finding previous commit reference OR 18-hour limit
+- **Boundary**: Look back until finding previous commit reference OR 150-message safety limit
 - **Usage**: Chat history may inform summary, accomplishments, frustrations, discussion notes, and tone/mood sections
 - **No external file access required** - AI uses its own conversation context
 - **Decision excerpts**: May include relevant conversation snippets in Discussion Notes section
@@ -334,7 +334,7 @@ telemetry:
 
 ### History Collection Boundaries
 - **Terminal history**: Between previous commit timestamp and current commit timestamp
-- **Chat history**: From current commit backward until finding previous commit reference OR 18-hour safety limit
+- **Chat history**: From current commit backward until finding previous commit reference OR 150-message safety limit
 - **AI session commands**: Request from AI assistant for commands executed during current work session
 - **No filtering**: Include all commands/messages within boundaries
 
@@ -823,3 +823,5 @@ This tool is designed to be **developer-friendly**, **minimally intrusive**, and
 4. Generates default configuration file
 5. Prompts to install git post-commit hook
 6. Displays next steps and usage instructions
+
+# Note: LLMs are terrible with time—use message counting for boundaries.

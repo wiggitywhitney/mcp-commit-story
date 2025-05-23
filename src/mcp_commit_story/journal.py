@@ -212,7 +212,7 @@ def append_to_journal_file(entry, file_path):
     except Exception as e:
         raise
 
-def collect_chat_history(since_timestamp=None, last_journal_entry=None):
+def collect_chat_history(since_commit=None, max_messages_back=150):
     """
     Collect relevant chat history for journal entry.
 
@@ -267,10 +267,18 @@ def collect_chat_history(since_timestamp=None, last_journal_entry=None):
     - [ ] ANTI-HALLUCINATION: Do NOT invent, infer, or summarize information that is not explicitly present in the actual conversation history
     - [ ] ANTI-HALLUCINATION: Only include discussion points directly supported by the chat transcript
     - [ ] ANTI-HALLUCINATION: If a detail is not present, do NOT speculate or fill in gaps
+
+    ---
+    ADDITIONAL INSTRUCTIONS (MESSAGE-BASED BOUNDARY):
+    - This function scans backward through the conversation for the last commit reference (e.g., last journal entry or new-entry command).
+    - If no such reference is found, scan up to `max_messages_back` messages.
+    - No time-based boundaries are used.
+    - Do not use timestamps or time-based calculations for chat history collection.
+    - All time boundaries in this function are deprecated in favor of message count.
     """
     return []
 
-def collect_ai_terminal_commands(since_timestamp=None, last_journal_entry=None):
+def collect_ai_terminal_commands(since_commit=None, max_messages_back=150):
     """
     Collect terminal commands executed by AI during the current work session.
 
@@ -321,6 +329,14 @@ def collect_ai_terminal_commands(since_timestamp=None, last_journal_entry=None):
     - [ ] ANTI-HALLUCINATION: Do NOT invent, infer, or summarize commands that are not explicitly present in the actual terminal history
     - [ ] ANTI-HALLUCINATION: Only include commands directly supported by the terminal transcript
     - [ ] ANTI-HALLUCINATION: If a command is not present, do NOT speculate or fill in gaps
+
+    ---
+    ADDITIONAL INSTRUCTIONS (MESSAGE-BASED BOUNDARY):
+    - This function scans backward through the conversation for the last commit reference (e.g., last journal entry or new-entry command).
+    - If no such reference is found, scan up to `max_messages_back` messages.
+    - No time-based boundaries are used.
+    - Do not use timestamps or time-based calculations for terminal command collection.
+    - All time boundaries in this function are deprecated in favor of message count.
     """
     return []
 

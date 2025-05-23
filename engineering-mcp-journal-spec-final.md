@@ -228,7 +228,7 @@ journal:
 ### Chat History Collection Method
 - **Primary method**: AI scans backward through current conversation
 - **How it works**: AI has access to its own chat history within the current session
-- **Boundary**: Look back until finding previous commit reference OR 18-hour limit
+- **Boundary**: Look back until finding previous commit reference OR 150-message safety limit
 - **Usage**: Chat history may inform summary, accomplishments, frustrations, discussion notes, and tone/mood sections
 - **No external file access required** - AI uses its own conversation context
 - **Decision excerpts**: May include relevant conversation snippets in Discussion Notes section
@@ -244,7 +244,7 @@ journal:
 - **AI session terminal commands** - commands executed by AI assistants during the work session
 
 ### History Collection Boundaries
-- **Chat history**: From current commit backward until finding previous commit reference OR 18-hour safety limit
+- **Chat history**: From current commit backward until finding previous commit reference OR 150-message safety limit
 - **AI session commands**: Request from AI assistant for commands executed during current work session
 - **No filtering**: Include all commands/messages within boundaries
 
@@ -483,7 +483,7 @@ When using `--debug` flag, all soft failures are logged to stderr with details:
 $ mcp-commit-story new-entry --debug
 [DEBUG] Failed to read terminal history: Permission denied for ~/.bash_history
 [DEBUG] AI command collection failed: AssistantNotSupportedError
-[DEBUG] Chat history scan stopped: Previous commit reference not found after 18 hours
+[DEBUG] Chat history scan stopped: Previous commit reference not found after 150 messages
 Generated journal entry successfully (some sections omitted)
 ```
 
@@ -767,3 +767,5 @@ This tool is designed to be **developer-friendly**, **minimally intrusive**, and
 4. Generates default configuration file
 5. Prompts to install git post-commit hook
 6. Displays next steps and usage instructions
+
+# Note: LLMs are terrible with time—use message counting for boundaries.
