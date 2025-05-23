@@ -339,23 +339,3 @@ def collect_ai_terminal_commands(since_commit=None, max_messages_back=150):
     - All time boundaries in this function are deprecated in favor of message count.
     """
     return []
-
-def get_commit_metadata(commit_hash):
-    """Mock implementation: Retrieve commit metadata (hash, author, date, message) for a given commit hash."""
-    # This is a mock implementation for TDD; replace with real logic later
-    return {
-        "hash": commit_hash,
-        "author": "Test User",
-        "date": "2025-05-21",
-        "message": "Test commit"
-    }
-
-def get_code_diff(commit_hash):
-    """Mock implementation: Retrieve code diff for a given commit hash."""
-    # This is a mock implementation for TDD; replace with real logic later
-    return "diff --git a/file.py b/file.py"
-
-def get_changed_files(commit_hash):
-    """Mock implementation: Retrieve list of changed files for a given commit hash."""
-    # This is a mock implementation for TDD; replace with real logic later
-    return ["file1.py", "file2.py"]

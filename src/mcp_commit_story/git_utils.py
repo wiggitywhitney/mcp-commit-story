@@ -17,6 +17,9 @@ try:
 except ImportError:
     GIT_AVAILABLE = False
 
+# SHA for the empty tree object in Git (used for initial commit diffs)
+NULL_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
+
 
 def is_git_repo(path: Optional[str] = None) -> bool:
     """
@@ -309,3 +312,86 @@ def get_commits_since_last_entry(repo, journal_path: str) -> list:
         if not is_journal_only_commit(commit, journal_rel):
             result.append(commit)
     return result
+
+
+def classify_file_type(filename):
+    """Classify file as source, config, docs, or tests based on extension and name."""
+    ext = os.path.splitext(filename)[1].lower()
+    name = os.path.basename(filename).lower()
+    if name.startswith('test_') or name.endswith('_test.py') or name.endswith('_test.js') or name.endswith('_test.ts') or name.startswith('test'):
+        return 'tests'
+    if ext in {'.py', '.js', '.ts', '.java', '.cpp', '.c', '.rb', '.go', '.rs'}:
+        return 'source'
+    if ext in {'.yaml', '.yml', '.json', '.ini', '.cfg', '.env'} or 'config' in name:
+        return 'config'
+    if ext in {'.md', '.rst', '.txt'} or 'readme' in name or 'docs' in name:
+        return 'docs'
+    return 'source'  # Default to source if unknown
+
+
+def classify_commit_size(insertions, deletions):
+    """Classify commit size as small, medium, or large based on total lines changed."""
+    total = insertions + deletions
+    if total < 10:
+        return 'small'
+    elif total < 50:
+        return 'medium'
+    else:
+        return 'large'
+
+
+def collect_git_context(commit_hash=None, repo=None):
+    """
+    Collect structured git context for a given commit hash (or HEAD if None).
+    Returns a dict with metadata, diff summary, changed files, file stats, and commit context.
+    Accepts an optional repo argument for testability.
+    """
+    if repo is None:
+        repo = get_repo()
+    if commit_hash is None:
+        commit = get_current_commit(repo)
+    else:
+        commit = repo.commit(commit_hash)
+    # Metadata
+    details = get_commit_details(commit)
+    metadata = {
+        'hash': details.get('hash'),
+        'author': details.get('author'),
+        'date': details.get('datetime'),
+        'message': details.get('message'),
+    }
+    # Diff summary
+    diff_summary = get_commit_diff_summary(commit)
+    # Changed files
+    parent = commit.parents[0] if commit.parents else None
+    # For the initial commit, diff against the empty tree (NULL_TREE)
+    diffs = commit.diff(parent) if parent else commit.diff(NULL_TREE)
+    changed_files = []
+    file_stats = {'source': 0, 'config': 0, 'docs': 0, 'tests': 0}
+    for diff in diffs:
+        fname = diff.b_path or diff.a_path
+        if fname:
+            changed_files.append(fname)
+            ftype = classify_file_type(fname)
+            if ftype in file_stats:
+                file_stats[ftype] += 1
+            else:
+                file_stats['source'] += 1  # Default bucket
+    # Commit size
+    stats = details.get('stats', {})
+    insertions = stats.get('insertions', 0)
+    deletions = stats.get('deletions', 0)
+    size_classification = classify_commit_size(insertions, deletions)
+    # Merge status
+    is_merge = len(commit.parents) > 1
+    commit_context = {
+        'size_classification': size_classification,
+        'is_merge': is_merge,
+    }
+    return {
+        'metadata': metadata,
+        'diff_summary': diff_summary,
+        'changed_files': changed_files,
+        'file_stats': file_stats,
+        'commit_context': commit_context,
+    }

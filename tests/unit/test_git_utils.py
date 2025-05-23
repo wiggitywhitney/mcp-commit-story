@@ -481,4 +481,73 @@ def test_get_commits_since_last_entry_empty_repo_returns_empty_list(git_repo, tm
         # Should not raise, should return empty list
         commits = []
     assert isinstance(commits, list)
-    assert len(commits) == 0 
+    assert len(commits) == 0
+
+# TDD: Tests for collect_git_context (not yet implemented)
+def test_collect_git_context_structure_and_fields(git_repo):
+    """Test that collect_git_context returns a dict with required fields for a given commit hash."""
+    from mcp_commit_story.git_utils import collect_git_context
+    # Create and commit a file
+    file_path = os.path.join(git_repo.working_tree_dir, 'main.py')
+    with open(file_path, 'w') as f:
+        f.write('print("hello")\n')
+    git_repo.index.add(['main.py'])
+    commit = git_repo.index.commit('add main.py')
+    # Call collect_git_context
+    ctx = collect_git_context(commit.hexsha, repo=git_repo)
+    # Required top-level fields
+    for field in ["metadata", "diff_summary", "changed_files", "file_stats", "commit_context"]:
+        assert field in ctx, f"Missing field: {field}"
+    # Metadata fields
+    for field in ["hash", "author", "date", "message"]:
+        assert field in ctx["metadata"], f"Missing metadata field: {field}"
+    assert isinstance(ctx["diff_summary"], str)
+    assert isinstance(ctx["changed_files"], list)
+    assert isinstance(ctx["file_stats"], dict)
+    assert isinstance(ctx["commit_context"], dict)
+
+def test_collect_git_context_file_classification(git_repo):
+    """Test that collect_git_context classifies changed files by type (source, config, docs, tests)."""
+    from mcp_commit_story.git_utils import collect_git_context
+    # Add files of different types
+    src = os.path.join(git_repo.working_tree_dir, 'src.py')
+    cfg = os.path.join(git_repo.working_tree_dir, 'config.yaml')
+    doc = os.path.join(git_repo.working_tree_dir, 'README.md')
+    tst = os.path.join(git_repo.working_tree_dir, 'test_sample.py')
+    for path in [src, cfg, doc, tst]:
+        with open(path, 'w') as f:
+            f.write('x\n')
+        git_repo.index.add([os.path.basename(path)])
+    commit = git_repo.index.commit('add various files')
+    ctx = collect_git_context(commit.hexsha, repo=git_repo)
+    stats = ctx["file_stats"]
+    # Should have keys for each type
+    for key in ["source", "config", "docs", "tests"]:
+        assert key in stats, f"Missing file type: {key}"
+        assert isinstance(stats[key], int)
+
+def test_collect_git_context_commit_size_classification(git_repo):
+    """Test that collect_git_context classifies commit size as small/medium/large based on lines changed."""
+    from mcp_commit_story.git_utils import collect_git_context
+    # Add a small change
+    file_path = os.path.join(git_repo.working_tree_dir, 'tiny.py')
+    with open(file_path, 'w') as f:
+        f.write('a\n')
+    git_repo.index.add(['tiny.py'])
+    commit = git_repo.index.commit('tiny change')
+    ctx = collect_git_context(commit.hexsha, repo=git_repo)
+    size = ctx["commit_context"].get("size_classification")
+    assert size in ("small", "medium", "large"), f"Unexpected size classification: {size}"
+
+def test_collect_git_context_merge_status(git_repo):
+    """Test that collect_git_context includes merge status in commit_context."""
+    from mcp_commit_story.git_utils import collect_git_context
+    # Just check the field exists for a normal commit
+    file_path = os.path.join(git_repo.working_tree_dir, 'foo.py')
+    with open(file_path, 'w') as f:
+        f.write('foo\n')
+    git_repo.index.add(['foo.py'])
+    commit = git_repo.index.commit('foo')
+    ctx = collect_git_context(commit.hexsha, repo=git_repo)
+    assert "is_merge" in ctx["commit_context"], "Missing is_merge in commit_context"
+    assert isinstance(ctx["commit_context"]["is_merge"], bool) 

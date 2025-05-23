@@ -296,7 +296,7 @@ Implement all journal entry formatting improvements using Test-Driven Developmen
 This subtask is prioritized as high importance and should be addressed next in the implementation sequence for journal entry formatting improvements.
 </info added on 2025-05-20T23:02:15.689Z>
 
-## 11. Document and Formalize Context Collection Data Structures [pending]
+## 11. Document and Formalize Context Collection Data Structures [in-progress]
 ### Dependencies: 5.3
 ### Description: Define and document the data structures used for context collection functions (`collect_chat_history`, `collect_ai_terminal_commands`, etc.), and explicitly codify the in-memory-only rule. This includes:
 - Adding explicit type hints, `TypedDict`, or `dataclass` definitions for the returned data.
@@ -449,7 +449,7 @@ Subtasks:
 3. Implement the integration test to ensure all section generators work together as a system.
 4. Get user approval before marking complete.
 
-## 21. Implement collect_git_context and Integrate Real Git Data Collection (TDD) [pending]
+## 21. Implement collect_git_context and Integrate Real Git Data Collection (TDD) [done]
 ### Dependencies: None
 ### Description: Replace the three mock functions (get_commit_metadata, get_code_diff, get_changed_files) in journal.py with a single collect_git_context() function that imports and uses the real git functions from git_utils.py.
 

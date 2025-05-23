@@ -1,27 +1,32 @@
 import pytest
 from mcp_commit_story import journal
+from mcp_commit_story.git_utils import collect_git_context
 
 # Assume these will be imported from the journal module
 # from mcp_commit_story.journal import collect_commit_metadata, extract_code_diff, gather_discussion_notes, capture_file_changes, collect_chat_history, collect_ai_terminal_commands
 
-def test_get_commit_metadata_returns_expected_fields():
-    # This test expects a real commit hash in the repo. We'll use 'HEAD' for latest commit.
-    meta = journal.get_commit_metadata('HEAD')
-    assert isinstance(meta, dict)
-    assert 'hash' in meta
-    assert 'author' in meta
-    assert 'date' in meta
-    assert 'message' in meta
+def test_collect_git_context_metadata_fields():
+    ctx = collect_git_context('HEAD')
+    assert isinstance(ctx, dict)
+    assert 'metadata' in ctx
+    meta = ctx['metadata']
+    for field in ['hash', 'author', 'date', 'message']:
+        assert field in meta
 
-def test_get_code_diff_returns_string():
-    diff = journal.get_code_diff('HEAD')
-    assert isinstance(diff, str)
-    assert diff.startswith('diff --git') or len(diff) == 0
+def test_collect_git_context_diff_summary():
+    ctx = collect_git_context('HEAD')
+    assert 'diff_summary' in ctx
+    assert isinstance(ctx['diff_summary'], str)
 
-def test_get_changed_files_returns_list():
-    files = journal.get_changed_files('HEAD')
-    assert isinstance(files, list)
-    # It's possible for HEAD to have no changed files, but type must be list
+
+def test_collect_git_context_changed_files_and_stats():
+    ctx = collect_git_context('HEAD')
+    assert 'changed_files' in ctx
+    assert isinstance(ctx['changed_files'], list)
+    assert 'file_stats' in ctx
+    for key in ['source', 'config', 'docs', 'tests']:
+        assert key in ctx['file_stats']
+        assert isinstance(ctx['file_stats'][key], int)
 
 def test_collect_chat_history_returns_list():
     # For now, just check that it returns a list (can be empty)
