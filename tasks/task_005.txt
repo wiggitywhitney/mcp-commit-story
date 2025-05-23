@@ -296,7 +296,7 @@ Implement all journal entry formatting improvements using Test-Driven Developmen
 This subtask is prioritized as high importance and should be addressed next in the implementation sequence for journal entry formatting improvements.
 </info added on 2025-05-20T23:02:15.689Z>
 
-## 11. Document and Formalize Context Collection Data Structures [in-progress]
+## 11. Document and Formalize Context Collection Data Structures [pending]
 ### Dependencies: 5.3
 ### Description: Define and document the data structures used for context collection functions (`collect_chat_history`, `collect_ai_terminal_commands`, etc.), and explicitly codify the in-memory-only rule. This includes:
 - Adding explicit type hints, `TypedDict`, or `dataclass` definitions for the returned data.
@@ -340,6 +340,23 @@ Formalize and document the data structures used for context collection in the jo
 - Adheres to the engineering spec's emphasis on explicit type hints and documentation
 - Will improve maintainability and reduce errors in downstream implementation
 </info added on 2025-05-23T09:28:48.079Z>
+<info added on 2025-05-23T10:23:29.228Z>
+## Dependencies
+This subtask depends on subtask 5.21 (Implement collect_git_context and Integrate Real Git Data Collection).
+
+## Implementation Order Clarification
+This subtask will formalize all context collection data structures, including the git context structure returned by collect_git_context. The correct implementation order is:
+1. First implement git context collection (subtask 5.21)
+2. Then formalize all context collection data structures together in this subtask
+
+This ensures that all context collection mechanisms are in place before we define and standardize their data structures, preventing rework and ensuring comprehensive type definitions across all context sources.
+</info added on 2025-05-23T10:23:29.228Z>
+<info added on 2025-05-23T10:29:24.353Z>
+## Dependencies
+This subtask depends on:
+- Subtask 5.3 (Define Journal Entry Structure)
+- Subtask 5.21 (Implement collect_git_context and Integrate Real Git Data Collection)
+</info added on 2025-05-23T10:29:24.353Z>
 
 ## 12. Implement Section Generators [pending]
 ### Dependencies: 5.11
@@ -431,4 +448,31 @@ Subtasks:
 2. Write and review comprehensive tests (verify failing tests before implementation).
 3. Implement the integration test to ensure all section generators work together as a system.
 4. Get user approval before marking complete.
+
+## 21. Implement collect_git_context and Integrate Real Git Data Collection (TDD) [pending]
+### Dependencies: None
+### Description: Replace the three mock functions (get_commit_metadata, get_code_diff, get_changed_files) in journal.py with a single collect_git_context() function that imports and uses the real git functions from git_utils.py.
+
+- **Function Design:**
+  - Implement collect_git_context(commit_hash=None) in git_utils.py. This function returns a structured dictionary containing all git data needed for journal entries.
+  - Use get_current_commit, get_commit_details, and get_commit_diff_summary from git_utils.py as the foundation.
+  - The returned dictionary should include: metadata (from get_commit_details), diff_summary (from get_commit_diff_summary), file_stats (count of different file types), and commit_context (merge status, commit size classification).
+- **Enhanced File Analysis:**
+  - Add helper functions to classify files by type (source code, config, docs, tests) and determine commit size (small/medium/large based on total lines changed). Keep analysis simple and journal-appropriate.
+- **Integration Points:**
+  - Update any code in journal.py that calls the mock functions to use collect_git_context instead, following the context collection pattern of collect_chat_history and collect_ai_terminal_commands.
+- **TypedDict Definition:**
+  - As part of Task 5.11, define a TypedDict for the git context structure to provide proper type hints and documentation for downstream section generators.
+- **Implementation Priority:**
+  - Start with basic functionality using existing git_utils functions, then add file classification and commit size analysis as enhancements. Do not implement full diff parsing or line-by-line analysis.
+- **Documentation Updates:**
+  - Update the engineering spec section on "Data Sources" to include git context collection. Add git context to context collection code examples in Task 5. Update function docstrings in journal.py to reference the new git context structure. Document the git context TypedDict in code comments and developer docs.
+- **TDD Approach:**
+  - Write failing tests for collect_git_context before implementation, covering structure, data accuracy, file classification, and commit size.
+- **Task Dependencies:**
+  - After this subtask is created, update Task 5.11 to depend on this subtask, since it will formalize the data structures created here.
+
+**Note:** collect_git_context() should live in git_utils.py, as it is a core git data collection utility.
+### Details:
+
 
