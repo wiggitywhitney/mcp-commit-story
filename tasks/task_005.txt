@@ -468,7 +468,7 @@ This subtask depends on:
 - Subtask 5.21 (Implement collect_git_context and Integrate Real Git Data Collection)
 </info added on 2025-05-23T10:29:24.353Z>
 
-## 13. Implement generate_summary_section(commit, terminal_context, chat_context) [pending]
+## 13. Implement generate_summary_section(commit, terminal_context, chat_context) [in-progress]
 ### Dependencies: None
 ### Description: Design, test (write failing tests first), and implement the summary section generator using all available data sources. Collaborate with the user for design and approval.
 ### Details:
@@ -488,6 +488,13 @@ This subtask depends on:
 7. Update test cases to verify proper handling of typed context objects rather than raw data structures.
 8. Include tests that validate type checking and appropriate error handling for malformed context objects.
 </info added on 2025-05-24T19:57:57.900Z>
+<info added on 2025-05-24T20:46:30.676Z>
+9. The summary section should focus purely on the "story" of what changed and why, avoiding technical details.
+10. Technical details should be completely omitted from the summary section as they will be handled by the new Technical Synopsis section.
+11. The summary should be written in plain language that explains the purpose and impact of the changes in a narrative format.
+12. Test cases should verify that the generated summary contains no technical jargon, code snippets, or implementation details.
+13. The function should extract and emphasize the motivation and user-facing impact from the commit messages and context.
+</info added on 2025-05-24T20:46:30.676Z>
 
 ## 14. Implement generate_accomplishments_section(commit, terminal_context, chat_context) [pending]
 ### Dependencies: None
@@ -621,4 +628,14 @@ The integration test must use the JournalContext TypedDict model as the primary 
 **Note:** collect_git_context() should live in git_utils.py, as it is a core git data collection utility.
 ### Details:
 
+
+## 22. Implement generate_technical_synopsis_section(context: JournalContext) [in-progress]
+### Dependencies: None
+### Description: Design, test (write failing tests first), and implement the technical synopsis section generator using all available context. This section should provide a code-focused analysis of what changed: architectural patterns, specific classes/functions modified, technical approach taken, etc. Use the same TDD approach as other section generators. The function must accept JournalContext as input.
+### Details:
+- Write failing TDD tests for generate_technical_synopsis_section(context: JournalContext)
+- Implement the function to extract and summarize technical details from the context
+- Ensure the section is self-contained and does not duplicate the summary
+- Collaborate with the user for design and approval
+- Update documentation and tests as needed
 

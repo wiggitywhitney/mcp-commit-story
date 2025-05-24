@@ -353,6 +353,9 @@ Each journal entry is written in Markdown and includes only non-empty sections. 
 ## Summary
 {summary text}
 
+## Technical Synopsis
+{technical details about code changes}
+
 ## Accomplishments
 - {accomplishment 1}
 - {accomplishment 2}

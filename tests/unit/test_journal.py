@@ -4,6 +4,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 
 import pytest
 from mcp_commit_story import journal
+from mcp_commit_story.context_types import JournalContext
 
 # Sample markdown for a daily note entry
 DAILY_NOTE_MD = '''
@@ -74,4 +75,85 @@ def test_handle_empty_entry():
 
 def test_handle_malformed_entry():
     with pytest.raises(journal.JournalParseError):
-        journal.JournalParser.parse(MALFORMED_MD) 
+        journal.JournalParser.parse(MALFORMED_MD)
+
+
+def test_generate_summary_section_basic_commit():
+    ctx = JournalContext(
+        chat=None,
+        terminal=None,
+        git={
+            'metadata': {
+                'hash': 'abc123',
+                'author': 'Alice <alice@example.com>',
+                'date': '2025-05-24 12:00:00',
+                'message': 'Add user authentication feature',
+            },
+            'diff_summary': 'auth.py: added, user.py: modified',
+            'changed_files': ['auth.py', 'user.py'],
+            'file_stats': {'source': 2, 'config': 0, 'docs': 0, 'tests': 0},
+            'commit_context': {'size_classification': 'medium', 'is_merge': False},
+        },
+    )
+    summary = journal.generate_summary_section(ctx)
+    assert isinstance(summary, str)
+    assert 'user authentication' in summary.lower()
+    assert 'auth.py' in summary
+    assert 'why' in summary.lower() or 'reason' in summary.lower() or 'intent' in summary.lower() or 'motivation' in summary.lower() or 'goal' in summary.lower() or 'purpose' in summary.lower() or 'because' in summary.lower() or 'to ' in summary.lower() or 'for ' in summary.lower()
+
+
+def test_generate_summary_section_with_chat_reasoning():
+    ctx = JournalContext(
+        chat={'messages': [
+            {'speaker': 'Human', 'text': 'We need to add authentication to protect user data.'},
+            {'speaker': 'Agent', 'text': 'Agreed, this will improve security.'},
+        ]},
+        terminal=None,
+        git={
+            'metadata': {
+                'hash': 'abc123',
+                'author': 'Alice <alice@example.com>',
+                'date': '2025-05-24 12:00:00',
+                'message': 'Add user authentication feature',
+            },
+            'diff_summary': 'auth.py: added, user.py: modified',
+            'changed_files': ['auth.py', 'user.py'],
+            'file_stats': {'source': 2, 'config': 0, 'docs': 0, 'tests': 0},
+            'commit_context': {'size_classification': 'medium', 'is_merge': False},
+        },
+    )
+    summary = journal.generate_summary_section(ctx)
+    assert 'protect user data' in summary.lower() or 'security' in summary.lower()
+
+
+def test_generate_summary_section_handles_missing_git():
+    ctx = JournalContext(chat=None, terminal=None, git=None)  # type: ignore
+    with pytest.raises(Exception):
+        journal.generate_summary_section(ctx)
+
+
+def test_generate_summary_section_ignores_how_and_errors():
+    ctx = JournalContext(
+        chat={'messages': [
+            {'speaker': 'Human', 'text': 'I fixed a bug in the login flow.'},
+            {'speaker': 'Agent', 'text': 'The test failed because of a typo.'},
+        ]},
+        terminal=None,
+        git={
+            'metadata': {
+                'hash': 'abc123',
+                'author': 'Alice <alice@example.com>',
+                'date': '2025-05-24 12:00:00',
+                'message': 'Fix login bug',
+            },
+            'diff_summary': 'login.py: fixed bug',
+            'changed_files': ['login.py'],
+            'file_stats': {'source': 1, 'config': 0, 'docs': 0, 'tests': 0},
+            'commit_context': {'size_classification': 'small', 'is_merge': False},
+        },
+    )
+    summary = journal.generate_summary_section(ctx)
+    assert 'how' not in summary.lower()
+    assert 'test failed' not in summary.lower()
+    assert 'typo' not in summary.lower()
+    assert 'fixed bug' in summary.lower() or 'login' in summary.lower() 

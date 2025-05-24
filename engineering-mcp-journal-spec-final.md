@@ -215,6 +215,11 @@ journal:
 #### Journal Entry Structure Note
 - The **Summary** section of each journal entry will reflect the selected `ai_tone` style.
 
+#### Technical Synopsis
+{technical details about code changes}
+
+- The Technical Synopsis section provides a code-focused analysis of what changed in the commit. It should include architectural patterns, specific classes/functions modified, technical approach taken, and any other relevant technical details. This section is self-contained and generated from the JournalContext.
+
 ---
 
 ## Journal Entry Behavior
@@ -272,6 +277,9 @@ Each journal entry is written in Markdown and includes only non-empty sections. 
 
 ## Summary
 {summary text}
+
+## Technical Synopsis
+{technical details about code changes}
 
 ## Accomplishments
 - {accomplishment 1}

@@ -30,4 +30,7 @@ class GitContext(TypedDict):
 class JournalContext(TypedDict):
     chat: Optional[ChatHistory]
     terminal: Optional[TerminalContext]
-    git: GitContext 
+    git: GitContext
+
+class SummarySection(TypedDict):
+    summary: str  # The finished summary paragraph for the journal entry 

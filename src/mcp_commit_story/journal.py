@@ -2,7 +2,7 @@ import re
 from typing import List, Optional, Dict, Union
 from pathlib import Path
 import os
-from mcp_commit_story.context_types import ChatHistory, TerminalContext
+from mcp_commit_story.context_types import ChatHistory, TerminalContext, SummarySection
 
 """
 Journal entry generation for engineering work.
@@ -33,6 +33,7 @@ class JournalEntry:
         timestamp: str,
         commit_hash: str,
         summary: Optional[str] = None,
+        technical_synopsis: Optional[str] = None,
         accomplishments: Optional[List[str]] = None,
         frustrations: Optional[List[str]] = None,
         terminal_commands: Optional[List[str]] = None,
@@ -43,6 +44,7 @@ class JournalEntry:
         self.timestamp = timestamp
         self.commit_hash = commit_hash
         self.summary = summary
+        self.technical_synopsis = technical_synopsis
         self.accomplishments = accomplishments or []
         self.frustrations = frustrations or []
         self.terminal_commands = terminal_commands or []
@@ -74,6 +76,9 @@ class JournalEntry:
 
         if self.summary:
             lines += section("Summary", [self.summary])
+
+        if self.technical_synopsis:
+            lines += section("Technical Synopsis", [self.technical_synopsis])
 
         if self.accomplishments:
             acc_lines = []
@@ -356,3 +361,60 @@ def collect_ai_terminal_commands(since_commit=None, max_messages_back=150) -> Te
     - All time boundaries in this function are deprecated in favor of message count.
     """
     return TerminalContext(commands=[])
+
+def generate_summary_section(journal_context) -> SummarySection:
+    """
+    AI Prompt for Summary Section Generation
+
+    Purpose: Generate a narrative paragraph that captures the essential "story" of what changed and why, using conversational language that preserves the developer's authentic voice and technical context.
+
+    Instructions:
+    Extract explicit purpose statements and technical context from chat history and git changes to create a conversational summary. Focus on WHAT changed and WHY, told as a story.
+
+    Priority for Content Sources:
+    1. Explicit developer statements in chat - their own words about motivation, goals, problems
+    2. Git commit messages - if they contain reasoning or context
+    3. Git changes description - what actually changed in the code
+
+    Purpose Statement Extraction:
+    Look for explicit purpose statements in chat, such as:
+    - "because..." / "since..." (reasoning)
+    - "to fix..." / "to solve..." (problem-solving)
+    - "so that..." / "in order to..." (goals)
+    - "trying to..." / "attempting to..." (objectives)
+    - Direct problem statements: "this is broken", "X isn't working"
+    - Goal statements: "want to make Y easier", "need to improve Z"
+
+    Evolution of Thinking:
+    If you find multiple purpose statements that evolved over time, show the progression:
+    "Started to [initial goal] but [what changed understanding] so [final approach]"
+
+    Language Translation Guidelines:
+    When using developer's chat language, translate respectfully:
+    - Unkind language toward others → professional description of technical challenges
+    - Self-belittlement → honest acknowledgment of difficulty without negative self-talk
+    - Offensive language → appropriate professional equivalents
+    - Preserve all technical meaning and emotional context - just use professional language
+
+    ANTI-HALLUCINATION RULES:
+    - Do NOT invent, infer, or summarize information not explicitly present in the context
+    - Only include purpose statements directly supported by chat transcript or commit messages
+    - If developer hasn't stated WHY something was done, describe WHAT was done without guessing motivation
+    - If chat context is unavailable, work only with git changes - do not speculate about reasons
+
+    Output Format:
+    Single paragraph, conversational tone, any length needed to tell the complete story.
+
+    CHECKLIST:
+    - [ ] Searched chat history for explicit purpose statements using keyword patterns
+    - [ ] Extracted developer's actual reasoning where explicitly stated
+    - [ ] Showed evolution of thinking if multiple purposes emerged over time
+    - [ ] Translated any unkind/offensive language while preserving technical meaning
+    - [ ] Used git changes as foundation when chat context unavailable
+    - [ ] Did NOT infer or speculate about unstated motivations
+    - [ ] Created conversational narrative that explains what changed and why
+    - [ ] Preserved developer's authentic voice through respectful translation
+    - [ ] Included technical context in story-telling format
+    - [ ] Verified all content is grounded in actual chat/git evidence
+    """
+    return SummarySection(summary="")
