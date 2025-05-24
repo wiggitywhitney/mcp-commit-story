@@ -1,6 +1,6 @@
 import pytest
-from mcp_commit_story.journal import JournalEntry, generate_summary_section
-from mcp_commit_story.context_types import SummarySection
+from mcp_commit_story.journal import JournalEntry, generate_summary_section, generate_technical_synopsis_section
+from mcp_commit_story.context_types import SummarySection, TechnicalSynopsisSection, JournalContext
 from fixtures.summary_test_data import (
     mock_context_with_explicit_purpose,
     mock_context_evolution_thinking,
@@ -391,3 +391,69 @@ def test_summary_no_chat_falls_back_to_git():
     assert "renamed variables in utils.py" in result["summary"].lower()
     # Should not invent a reason
     assert "because" not in result["summary"].lower() and "so that" not in result["summary"].lower() 
+
+@pytest.mark.xfail(reason="TDD: Not implemented yet")
+def test_generate_technical_synopsis_section_returns_section():
+    ctx = {
+        "git": {"changed_files": ["auth.py"]},
+        "chat": None,
+        "terminal": None,
+    }
+    result = generate_technical_synopsis_section(ctx)
+    assert isinstance(result, dict)
+    assert "technical_synopsis" in result
+    assert isinstance(result["technical_synopsis"], str)
+
+@pytest.mark.xfail(reason="TDD: Not implemented yet")
+def test_generate_technical_synopsis_section_non_empty():
+    ctx = {
+        "git": {"changed_files": ["auth.py", "user.py"]},
+        "chat": None,
+        "terminal": None,
+    }
+    result = generate_technical_synopsis_section(ctx)
+    assert result["technical_synopsis"]
+    assert "auth.py" in result["technical_synopsis"]
+    assert "user.py" in result["technical_synopsis"]
+
+@pytest.mark.xfail(reason="TDD: Not implemented yet")
+def test_generate_technical_synopsis_section_empty_context():
+    ctx = {}
+    result = generate_technical_synopsis_section(ctx)
+    assert result["technical_synopsis"] == ""
+
+@pytest.mark.xfail(reason="TDD: Not implemented yet")
+def test_generate_technical_synopsis_section_contains_technical_details():
+    ctx = {
+        "git": {
+            "changed_files": ["auth.py"],
+            "diff_summary": "Refactored authentication logic in auth.py.",
+        },
+        "chat": None,
+        "terminal": None,
+    }
+    result = generate_technical_synopsis_section(ctx)
+    assert "Refactored authentication logic" in result["technical_synopsis"]
+    assert "auth.py" in result["technical_synopsis"] 
+
+@pytest.mark.xfail(reason="TDD: Not implemented yet")
+def test_generate_technical_synopsis_section_returns_typed_dict():
+    ctx = JournalContext(chat=None, terminal=None, git=None)  # type: ignore
+    result = generate_technical_synopsis_section(ctx)
+    assert isinstance(result, dict)
+    assert "technical_synopsis" in result
+    assert isinstance(result["technical_synopsis"], str)
+
+@pytest.mark.xfail(reason="TDD: Not implemented yet")
+def test_generate_technical_synopsis_section_accepts_journal_context():
+    ctx = JournalContext(chat=None, terminal=None, git=None)  # type: ignore
+    try:
+        generate_technical_synopsis_section(ctx)
+    except Exception:
+        pytest.fail("Function should accept JournalContext without error")
+
+@pytest.mark.xfail(reason="TDD: Not implemented yet")
+def test_generate_technical_synopsis_section_handles_none():
+    result = generate_technical_synopsis_section(None)  # type: ignore
+    assert isinstance(result, dict)
+    assert result["technical_synopsis"] == "" 

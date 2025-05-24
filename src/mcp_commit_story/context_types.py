@@ -33,4 +33,7 @@ class JournalContext(TypedDict):
     git: GitContext
 
 class SummarySection(TypedDict):
-    summary: str  # The finished summary paragraph for the journal entry 
+    summary: str  # The finished summary paragraph for the journal entry
+
+class TechnicalSynopsisSection(TypedDict):
+    technical_synopsis: str  # The finished technical synopsis paragraph for the journal entry 
