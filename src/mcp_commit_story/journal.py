@@ -379,8 +379,7 @@ def generate_summary_section(journal_context) -> SummarySection:
 
     Purpose: Generate a narrative paragraph that captures the essential "story" of what changed and why, using conversational language that preserves the developer's authentic voice and technical context.
 
-    Instructions:
-    Extract explicit purpose statements and technical context from chat history and git changes to create a conversational summary. Focus on WHAT changed and WHY, told as a story.
+    Instructions: Extract explicit purpose statements and technical context from chat history and git changes to create a conversational summary. Focus on WHAT changed and WHY, told as a story.
 
     Priority for Content Sources:
     1. Explicit developer statements in chat - their own words about motivation, goals, problems
@@ -400,12 +399,21 @@ def generate_summary_section(journal_context) -> SummarySection:
     If you find multiple purpose statements that evolved over time, show the progression:
     "Started to [initial goal] but [what changed understanding] so [final approach]"
 
+    Adaptive Story Detail:
+    Match the narrative detail to what the commit actually accomplished. For example:
+    - Large architectural changes might focus on high-level goals and system-wide impact
+    - Focused bug fixes might tell the story of problem discovery and solution approach
+    - Feature additions might explain user needs and implementation decisions
+    - Refactoring might describe why cleanup was needed and what improved
+
     Language Translation Guidelines:
     When using developer's chat language, translate respectfully:
-    - Unkind language toward others → professional description of technical challenges
-    - Self-belittlement → honest acknowledgment of difficulty without negative self-talk
-    - Offensive language → appropriate professional equivalents
-    - Preserve all technical meaning and emotional context - just use professional language
+    - Keep honest self-reflection about work quality ("wrote terrible code here")
+    - Keep authentic frustration with technology ("this API is garbage")
+    - Translate identity-based criticism ("I am an idiot" → "encountered challenging complexity")
+    - Translate harsh personal judgments about others' work into professional descriptions of technical challenges
+    - Remove profanity while preserving technical meaning and frustration level
+    - Preserve "what I did" language, translate "who I am" language
 
     ANTI-HALLUCINATION RULES:
     - Do NOT invent, infer, or summarize information not explicitly present in the context
@@ -420,11 +428,11 @@ def generate_summary_section(journal_context) -> SummarySection:
     - [ ] Searched chat history for explicit purpose statements using keyword patterns
     - [ ] Extracted developer's actual reasoning where explicitly stated
     - [ ] Showed evolution of thinking if multiple purposes emerged over time
-    - [ ] Translated any unkind/offensive language while preserving technical meaning
+    - [ ] Translated harsh personal language while preserving technical meaning and authentic frustration
     - [ ] Used git changes as foundation when chat context unavailable
     - [ ] Did NOT infer or speculate about unstated motivations
     - [ ] Created conversational narrative that explains what changed and why
-    - [ ] Preserved developer's authentic voice through respectful translation
+    - [ ] Preserved authentic technical voice through respectful translation
     - [ ] Included technical context in story-telling format
     - [ ] Verified all content is grounded in actual chat/git evidence
     """
