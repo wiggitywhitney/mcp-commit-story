@@ -20,6 +20,8 @@ except ImportError:
 # SHA for the empty tree object in Git (used for initial commit diffs)
 NULL_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 
+from mcp_commit_story.context_types import GitContext
+
 
 def is_git_repo(path: Optional[str] = None) -> bool:
     """
@@ -340,18 +342,38 @@ def classify_commit_size(insertions, deletions):
         return 'large'
 
 
-def collect_git_context(commit_hash=None, repo=None):
+def collect_git_context(commit_hash=None, repo=None) -> GitContext:
     """
     Collect structured git context for a given commit hash (or HEAD if None).
-    Returns a dict with metadata, diff summary, changed files, file stats, and commit context.
-    Accepts an optional repo argument for testability.
+
+    Returns:
+        GitContext: Structured git context as defined in context_types.py
+
+    Notes:
+    - The GitContext type is a TypedDict defined in context_types.py.
+    - All context is ephemeral and only persisted as part of the generated journal entry.
+    - This function enforces the in-memory-only rule for context data.
+
+    Raises:
+        git.InvalidGitRepositoryError: If repo is invalid
+        git.BadName: If commit_hash doesn't exist
+
+    ... (rest of docstring unchanged) ...
     """
     if repo is None:
         repo = get_repo()
-    if commit_hash is None:
-        commit = get_current_commit(repo)
-    else:
-        commit = repo.commit(commit_hash)
+    try:
+        if commit_hash is None:
+            commit = get_current_commit(repo)
+        else:
+            commit = repo.commit(commit_hash)
+    except Exception as e:
+        import git as gitlib
+        if isinstance(e, gitlib.InvalidGitRepositoryError):
+            raise
+        if isinstance(e, gitlib.BadName):
+            raise
+        raise
     # Metadata
     details = get_commit_details(commit)
     metadata = {

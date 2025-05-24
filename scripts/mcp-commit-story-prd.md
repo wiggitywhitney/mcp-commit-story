@@ -825,3 +825,49 @@ This tool is designed to be **developer-friendly**, **minimally intrusive**, and
 6. Displays next steps and usage instructions
 
 # Note: LLMs are terrible with time—use message counting for boundaries.
+
+### Context Data Structures
+
+All context collection functions return explicit Python TypedDicts, defined in `src/mcp_commit_story/context_types.py`:
+
+- **JournalContext**: The unified context object passed to journal entry generators.
+    - `chat`: Optional chat history (`ChatHistory`)
+    - `terminal`: Optional terminal context (`TerminalContext`)
+    - `git`: Required git context (`GitContext`)
+
+#### Example Python Types
+```python
+class ChatMessage(TypedDict):
+    speaker: str
+    text: str
+
+class ChatHistory(TypedDict):
+    messages: List[ChatMessage]
+
+class TerminalCommand(TypedDict):
+    command: str
+    executed_by: str  # "user" or "ai"
+
+class TerminalContext(TypedDict):
+    commands: List[TerminalCommand]
+
+class GitMetadata(TypedDict):
+    hash: str
+    author: str
+    date: str
+    message: str
+
+class GitContext(TypedDict):
+    metadata: GitMetadata
+    diff_summary: str
+    changed_files: List[str]
+    file_stats: dict
+    commit_context: dict
+
+class JournalContext(TypedDict):
+    chat: Optional[ChatHistory]
+    terminal: Optional[TerminalContext]
+    git: GitContext
+```
+- All context is ephemeral and only persisted as part of the generated journal entry.
+- Tests enforce that all context collection functions return data matching these types.

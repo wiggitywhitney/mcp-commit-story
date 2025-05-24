@@ -201,7 +201,7 @@ Implementation Plan for Context Collection Functions:
 </info added on 2025-05-21T21:51:00.769Z>
 
 ## 6. Create integration test for journal entry generation [pending]
-### Dependencies: 5.1, 5.2, 5.3, 5.12
+### Dependencies: 5.1, 5.2, 5.3
 ### Description: Create an integration test that verifies the full journal entry generation process, with explicit user collaboration at each step
 ### Details:
 Create an integration test in `tests/test_journal_integration.py` that verifies the complete flow: collecting context, creating a journal entry with all sections, and writing to a file.
@@ -217,6 +217,39 @@ Collaboration steps:
 4. Document all user decisions in code comments and docstrings
 5. Implement integration test based on approved design
 6. Present implementation for final review before marking complete
+<info added on 2025-05-24T19:52:47.302Z>
+Update the integration test approach to use the TypedDict-based context model:
+
+1. Ensure integration tests import and utilize the JournalContext TypedDict
+2. Verify that context collection functions correctly populate the TypedDict structure
+3. Validate that section generators properly consume the TypedDict fields
+4. Add type checking to confirm all functions maintain type consistency throughout the journal generation pipeline
+5. Include test cases that exercise the complete context model with various data scenarios
+6. Add assertions to verify that the final journal output correctly reflects all context fields
+7. Document type expectations in test docstrings and comments
+
+When presenting the integration test approach to the user, specifically address how the TypedDict structure improves type safety and data consistency throughout the journal generation process.
+</info added on 2025-05-24T19:52:47.302Z>
+<info added on 2025-05-24T19:56:34.365Z>
+Integration Test Requirements Update:
+
+The integration test should be built around the new TypedDict-based context model:
+
+1. Import and utilize the JournalContext TypedDict as the central data structure
+2. Verify context collection functions correctly populate all required fields in the JournalContext structure
+3. Ensure section generators properly consume the appropriate TypedDict fields
+4. Implement type checking assertions to validate type consistency throughout the pipeline
+5. Create test scenarios with varied data to exercise all aspects of the context model
+6. Add specific assertions to verify the final journal output correctly reflects all context fields
+
+Test Strategy:
+- Mock necessary dependencies while maintaining the complete flow from context collection to file output
+- Use parameterized tests to validate different context scenarios
+- Include both happy path and edge cases to ensure robust type handling
+- Verify that type annotations are consistent with runtime behavior
+- Document type expectations clearly in test docstrings and comments
+- Demonstrate how the TypedDict structure improves data consistency and type safety
+</info added on 2025-05-24T19:56:34.365Z>
 
 ## 7. Implement edge case handling and error recovery [pending]
 ### Dependencies: 5.1, 5.2, 5.3
@@ -235,9 +268,46 @@ Collaboration steps:
 4. Document all user decisions in code comments and docstrings
 5. Implement error handling based on approved design
 6. Present implementation for final review before marking complete
+<info added on 2025-05-24T19:53:27.283Z>
+Update error handling approach to incorporate TypedDict-based context model:
+
+1. Implement error handling for all context collection functions that use the new TypedDict model
+2. Create specific test cases for:
+   - Type validation failures
+   - Missing required fields in context objects
+   - Invalid data types within context structures
+   - Boundary conditions for numeric and date fields
+3. Ensure logging captures type-related errors with appropriate detail
+4. Add graceful degradation when partial context is available
+5. Document TypedDict validation strategy in error handling documentation
+6. Update test fixtures to include both valid and invalid TypedDict examples
+7. Implement mock objects that simulate type errors in the context collection pipeline
+</info added on 2025-05-24T19:53:27.283Z>
+<info added on 2025-05-24T19:56:59.565Z>
+Update requirements and test strategy to incorporate TypedDict-based context model:
+
+1. Extend error handling to validate TypedDict structure integrity throughout the journal entry generation process
+2. Create comprehensive test suite covering:
+   - Type validation for all fields in context objects
+   - Required vs optional field handling
+   - Nested TypedDict validation
+   - Collection-type field validation (lists, dictionaries)
+3. Implement property-based testing to generate edge cases for TypedDict structures
+4. Add specific error types for context validation failures:
+   - ContextTypeError
+   - ContextValueError
+   - ContextStructureError
+5. Ensure error messages clearly identify which field and type constraint was violated
+6. Test context collection functions with:
+   - Completely valid TypedDict objects
+   - Partially valid objects with some type errors
+   - Completely invalid objects
+7. Document type validation strategy in both code and user-facing documentation
+8. Create recovery mechanisms when possible for non-critical type errors
+</info added on 2025-05-24T19:56:59.565Z>
 
 ## 8. Create CLI command for manual journal generation [pending]
-### Dependencies: 5.6, 5.7, 5.12
+### Dependencies: 5.6, 5.7
 ### Description: Implement a command-line interface for manually generating journal entries, with explicit user collaboration at each step
 ### Details:
 Create a CLI command in `src/mcp_journal/cli.py` that allows users to manually generate journal entries for specific commits or time periods. Connect this to the journal generation functionality.
@@ -253,6 +323,46 @@ Collaboration steps:
 4. Document all user decisions in code comments and docstrings
 5. Implement CLI based on approved design
 6. Present implementation for final review before marking complete
+<info added on 2025-05-24T19:55:04.163Z>
+Add support for the TypedDict-based JournalContext model:
+
+1. Update CLI command to accept a JournalContext parameter for manual journal generation
+2. Implement validation for the JournalContext structure when provided via CLI
+3. Add type hints and documentation for the JournalContext parameter
+4. Create test cases specifically for validating different JournalContext scenarios:
+   - Valid complete context
+   - Partial context with required fields
+   - Invalid context with missing required fields
+   - Invalid context with incorrect field types
+5. Document the JournalContext structure in CLI help text and docstrings
+6. Ensure error messages provide clear guidance when context validation fails
+</info added on 2025-05-24T19:55:04.163Z>
+<info added on 2025-05-24T19:57:20.961Z>
+Requirements for CLI implementation:
+
+1. CLI command must accept a JournalContext parameter for manual journal generation
+   - Support JSON input format for complex context objects
+   - Allow for file-based input of JournalContext data
+   - Provide clear examples in help documentation
+
+2. Implement robust validation for JournalContext:
+   - Validate all required fields are present
+   - Check type correctness for all fields
+   - Provide specific error messages identifying validation issues
+
+3. Test strategy:
+   - Create unit tests covering all JournalContext validation scenarios
+   - Test with valid complete context objects
+   - Test with partial context containing only required fields
+   - Test with invalid contexts (missing required fields, incorrect types)
+   - Test CLI argument parsing with various input methods
+   - Verify error handling produces user-friendly messages
+
+4. Documentation:
+   - Document JournalContext structure in CLI help text
+   - Add comprehensive docstrings explaining parameter requirements
+   - Include usage examples showing different context configurations
+</info added on 2025-05-24T19:57:20.961Z>
 
 ## 9. Journal Entry Format Improvements [done]
 ### Dependencies: None
@@ -296,7 +406,7 @@ Implement all journal entry formatting improvements using Test-Driven Developmen
 This subtask is prioritized as high importance and should be addressed next in the implementation sequence for journal entry formatting improvements.
 </info added on 2025-05-20T23:02:15.689Z>
 
-## 11. Document and Formalize Context Collection Data Structures [in-progress]
+## 11. Document and Formalize Context Collection Data Structures [done]
 ### Dependencies: 5.3
 ### Description: Define and document the data structures used for context collection functions (`collect_chat_history`, `collect_ai_terminal_commands`, etc.), and explicitly codify the in-memory-only rule. This includes:
 - Adding explicit type hints, `TypedDict`, or `dataclass` definitions for the returned data.
@@ -358,25 +468,6 @@ This subtask depends on:
 - Subtask 5.21 (Implement collect_git_context and Integrate Real Git Data Collection)
 </info added on 2025-05-23T10:29:24.353Z>
 
-## 12. Implement Section Generators [pending]
-### Dependencies: 5.11
-### Description: Design, test, and implement all journal entry section generator functions, each using all available data (commit, terminal context, chat context). Each subtask covers one section generator, with collaborative design, TDD (write failing tests first), implementation, and user approval before completion.
-### Details:
-Collapse previous commit-based and context-based section generator tasks into a single unified task. Each subtask will:
-- Collaboratively design the function with the user
-- Write and review comprehensive tests (verify failing tests before implementation)
-- Implement the function using all relevant data
-- Get user approval before marking complete
-
-Subtasks:
-1. generate_summary_section(commit, terminal_context, chat_context)
-2. generate_accomplishments_section(commit, terminal_context, chat_context)
-3. generate_frustrations_section(commit, terminal_context, chat_context)
-4. generate_tone_section(commit, terminal_context, chat_context)
-5. generate_terminal_section(terminal_context)
-6. generate_discussion_section(chat_context)
-7. generate_commit_details_section(commit)
-
 ## 13. Implement generate_summary_section(commit, terminal_context, chat_context) [pending]
 ### Dependencies: None
 ### Description: Design, test (write failing tests first), and implement the summary section generator using all available data sources. Collaborate with the user for design and approval.
@@ -385,6 +476,18 @@ Subtasks:
 2. Write and review comprehensive tests (verify failing tests before implementation).
 3. Implement the function using commit, terminal, and chat context.
 4. Get user approval before marking complete.
+<info added on 2025-05-24T19:55:42.550Z>
+5. Function must accept JournalContext (or relevant subtypes) as input parameters instead of raw data.
+6. Use the newly defined TypedDicts for all context data processing within the function.
+7. Update test cases to verify proper handling of typed context objects rather than raw data structures.
+8. Include tests that validate type checking and appropriate error handling for malformed context objects.
+</info added on 2025-05-24T19:55:42.550Z>
+<info added on 2025-05-24T19:57:57.900Z>
+5. Function must accept JournalContext (or relevant subtypes) as input parameters instead of raw data.
+6. Use the newly defined TypedDicts for all context data processing within the function.
+7. Update test cases to verify proper handling of typed context objects rather than raw data structures.
+8. Include tests that validate type checking and appropriate error handling for malformed context objects.
+</info added on 2025-05-24T19:57:57.900Z>
 
 ## 14. Implement generate_accomplishments_section(commit, terminal_context, chat_context) [pending]
 ### Dependencies: None
@@ -394,6 +497,12 @@ Subtasks:
 2. Write and review comprehensive tests (verify failing tests before implementation).
 3. Implement the function using commit, terminal, and chat context.
 4. Get user approval before marking complete.
+<info added on 2025-05-24T19:58:26.142Z>
+5. Ensure generate_accomplishments_section accepts JournalContext (or relevant subtypes) as input parameters instead of individual context objects.
+6. Update function signature to use the new TypedDict structures for all context data (commit, terminal, and chat).
+7. Modify test cases to reflect the new input parameter structure using TypedDicts.
+8. Verify type hints are correctly implemented and validated in tests.
+</info added on 2025-05-24T19:58:26.142Z>
 
 ## 15. Implement generate_frustrations_section(commit, terminal_context, chat_context) [pending]
 ### Dependencies: None
@@ -403,6 +512,9 @@ Subtasks:
 2. Write and review comprehensive tests (verify failing tests before implementation).
 3. Implement the function using commit, terminal, and chat context.
 4. Get user approval before marking complete.
+<info added on 2025-05-24T19:58:44.946Z>
+The generate_frustrations_section function must accept JournalContext (or relevant subtypes) as input parameters instead of individual context objects. Implementation should use the new TypedDict structures for all context data (commit, terminal, and chat). Tests should verify the function correctly handles the TypedDict structures and properly extracts frustration signals from the structured context data.
+</info added on 2025-05-24T19:58:44.946Z>
 
 ## 16. Implement generate_tone_section(commit, terminal_context, chat_context) [pending]
 ### Dependencies: None
@@ -412,6 +524,9 @@ Subtasks:
 2. Write and review comprehensive tests (verify failing tests before implementation).
 3. Implement the function using commit, terminal, and chat context.
 4. Get user approval before marking complete.
+<info added on 2025-05-24T20:00:12.894Z>
+The generate_tone_section function should accept JournalContext (or relevant subtypes) as input parameters instead of individual context objects. Use the new TypedDict structures for all context data including commit information, terminal context, and chat context. Tests should verify that the function properly handles the typed context objects, extracting the necessary information from the appropriate fields of the JournalContext structure. Ensure type annotations are correctly specified and that the implementation adheres to the TypedDict contracts.
+</info added on 2025-05-24T20:00:12.894Z>
 
 ## 17. Implement generate_terminal_section(terminal_context) [pending]
 ### Dependencies: None
@@ -421,6 +536,14 @@ Subtasks:
 2. Write and review comprehensive tests (verify failing tests before implementation).
 3. Implement the function using terminal context.
 4. Get user approval before marking complete.
+<info added on 2025-05-24T20:00:18.392Z>
+The generate_terminal_section function must accept JournalContext (or relevant subtypes) as input parameters and utilize the new TypedDict structures for all context data. Tests should verify:
+1. Function correctly handles the TypedDict structures for terminal context
+2. Function properly processes JournalContext objects
+3. Type annotations are correctly implemented and validated
+4. Edge cases with empty or partial context data are handled appropriately
+5. Function maintains compatibility with the overall journal generation pipeline
+</info added on 2025-05-24T20:00:18.392Z>
 
 ## 18. Implement generate_discussion_section(chat_context) [pending]
 ### Dependencies: None
@@ -430,6 +553,13 @@ Subtasks:
 2. Write and review comprehensive tests (verify failing tests before implementation).
 3. Implement the function using chat context.
 4. Get user approval before marking complete.
+<info added on 2025-05-24T20:00:24.476Z>
+The function should accept JournalContext or relevant subtypes as input parameters and utilize the TypedDict structures for all context data. Tests should verify:
+1. Proper handling of different JournalContext subtypes
+2. Correct extraction and formatting of discussion data from TypedDict structures
+3. Error handling for missing or malformed TypedDict fields
+4. Compatibility with the broader journal generation pipeline
+</info added on 2025-05-24T20:00:24.476Z>
 
 ## 19. Implement generate_commit_details_section(commit) [pending]
 ### Dependencies: None
@@ -439,6 +569,13 @@ Subtasks:
 2. Write and review comprehensive tests (verify failing tests before implementation).
 3. Implement the function using commit data.
 4. Get user approval before marking complete.
+<info added on 2025-05-24T20:00:33.940Z>
+The generate_commit_details_section function must accept JournalContext (or relevant subtypes) as input parameter and utilize the new TypedDicts for all context data. Tests should verify:
+1. Function correctly accepts and processes JournalContext objects
+2. Function properly handles the TypedDict structures for commit data
+3. Error cases when incorrect context types are provided
+4. Compatibility with the broader journal generation pipeline
+</info added on 2025-05-24T20:00:33.940Z>
 
 ## 20. Integration: Test all section generators as a complete system [pending]
 ### Dependencies: None
@@ -448,6 +585,15 @@ Subtasks:
 2. Write and review comprehensive tests (verify failing tests before implementation).
 3. Implement the integration test to ensure all section generators work together as a system.
 4. Get user approval before marking complete.
+<info added on 2025-05-24T20:00:39.676Z>
+The integration test must use the JournalContext TypedDict model as the primary data structure for passing context between section generators. Tests should verify that:
+
+1. Each section generator properly accepts the JournalContext parameter
+2. Section generators correctly extract their required data from the TypedDict structure
+3. The complete journal generation pipeline maintains context integrity through the TypedDict
+4. No section generator modifies the TypedDict in ways that break other generators
+5. The final output reflects proper handling of the structured context data
+</info added on 2025-05-24T20:00:39.676Z>
 
 ## 21. Implement collect_git_context and Integrate Real Git Data Collection (TDD) [done]
 ### Dependencies: None

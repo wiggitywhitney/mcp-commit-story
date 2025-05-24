@@ -2,6 +2,7 @@ import re
 from typing import List, Optional, Dict, Union
 from pathlib import Path
 import os
+from mcp_commit_story.context_types import ChatHistory, TerminalContext
 
 """
 Journal entry generation for engineering work.
@@ -212,8 +213,16 @@ def append_to_journal_file(entry, file_path):
     except Exception as e:
         raise
 
-def collect_chat_history(since_commit=None, max_messages_back=150):
+def collect_chat_history(since_commit=None, max_messages_back=150) -> ChatHistory:
     """
+    Returns:
+        ChatHistory: Structured chat history as defined in context_types.py
+
+    Notes:
+    - The ChatHistory type is a TypedDict defined in context_types.py.
+    - All context is ephemeral and only persisted as part of the generated journal entry.
+    - This function enforces the in-memory-only rule for context data.
+
     Collect relevant chat history for journal entry.
 
     AI Prompt:
@@ -276,10 +285,18 @@ def collect_chat_history(since_commit=None, max_messages_back=150):
     - Do not use timestamps or time-based calculations for chat history collection.
     - All time boundaries in this function are deprecated in favor of message count.
     """
-    return []
+    return ChatHistory(messages=[])
 
-def collect_ai_terminal_commands(since_commit=None, max_messages_back=150):
+def collect_ai_terminal_commands(since_commit=None, max_messages_back=150) -> TerminalContext:
     """
+    Returns:
+        TerminalContext: Structured terminal command context as defined in context_types.py
+
+    Notes:
+    - The TerminalContext type is a TypedDict defined in context_types.py.
+    - All context is ephemeral and only persisted as part of the generated journal entry.
+    - This function enforces the in-memory-only rule for context data.
+
     Collect terminal commands executed by AI during the current work session.
 
     AI Prompt:
@@ -338,4 +355,4 @@ def collect_ai_terminal_commands(since_commit=None, max_messages_back=150):
     - Do not use timestamps or time-based calculations for terminal command collection.
     - All time boundaries in this function are deprecated in favor of message count.
     """
-    return []
+    return TerminalContext(commands=[])

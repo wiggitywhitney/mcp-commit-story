@@ -4,6 +4,8 @@ from mcp_commit_story.git_utils import collect_git_context
 import git
 import os
 from pathlib import Path
+from mcp_commit_story.context_types import ChatMessage, ChatHistory, TerminalCommand, TerminalContext
+from typing import get_type_hints
 
 # Assume these will be imported from the journal module
 # from mcp_commit_story.journal import collect_commit_metadata, extract_code_diff, gather_discussion_notes, capture_file_changes, collect_chat_history, collect_ai_terminal_commands
@@ -41,16 +43,6 @@ def test_collect_git_context_changed_files_and_stats(tmp_path):
         assert key in ctx['file_stats']
         assert isinstance(ctx['file_stats'][key], int)
 
-def test_collect_chat_history_returns_list():
-    # For now, just check that it returns a list (can be empty)
-    result = journal.collect_chat_history()
-    assert isinstance(result, list)
-
-def test_collect_ai_terminal_commands_returns_list():
-    # For now, just check that it returns a list (can be empty)
-    result = journal.collect_ai_terminal_commands()
-    assert isinstance(result, list)
-
 def test_collect_chat_history_thoroughness_and_boundary():
     """
     collect_chat_history should:
@@ -77,4 +69,42 @@ def test_collect_ai_terminal_commands_thoroughness_and_boundary():
     """
     # This test would mock a terminal history and check that only the correct boundary is used,
     # all relevant commands are included, and filtering/formatting is correct.
-    pass 
+    pass
+
+def test_collect_chat_history_structure():
+    result = journal.collect_chat_history()
+    # Should be a dict with 'messages' key
+    assert isinstance(result, dict)
+    assert set(result.keys()) == set(ChatHistory.__annotations__.keys())
+    for msg in result['messages']:
+        assert set(msg.keys()) == set(ChatMessage.__annotations__.keys())
+
+def test_collect_chat_history_type_hint():
+    hints = get_type_hints(journal.collect_chat_history)
+    assert 'return' in hints
+    assert hints['return'].__name__ == 'ChatHistory'
+
+def test_collect_ai_terminal_commands_structure():
+    result = journal.collect_ai_terminal_commands()
+    assert isinstance(result, dict)
+    assert set(result.keys()) == set(TerminalContext.__annotations__.keys())
+    for cmd in result['commands']:
+        assert set(cmd.keys()) == set(TerminalCommand.__annotations__.keys())
+
+def test_collect_ai_terminal_commands_type_hint():
+    hints = get_type_hints(journal.collect_ai_terminal_commands)
+    assert 'return' in hints
+    assert hints['return'].__name__ == 'TerminalContext'
+
+def test_collect_git_context_invalid_repo(tmp_path):
+    # Create a directory that is not a git repo
+    non_repo_path = tmp_path / "not_a_repo"
+    non_repo_path.mkdir()
+    with pytest.raises(git.InvalidGitRepositoryError):
+        collect_git_context("HEAD", repo=git.Repo(str(non_repo_path)))
+
+def test_collect_git_context_bad_commit_hash(tmp_path):
+    repo = git.Repo.init(tmp_path)
+    # No commits yet, so any hash is bad
+    with pytest.raises(git.BadName):
+        collect_git_context("deadbeef", repo=repo) 
