@@ -1,5 +1,5 @@
 import pytest
-from mcp_commit_story.context_types import ChatMessage, ChatHistory, TerminalCommand, TerminalContext, GitMetadata, GitContext, JournalContext
+from mcp_commit_story.context_types import ChatMessage, ChatHistory, TerminalCommand, TerminalContext, GitMetadata, GitContext, JournalContext, AccomplishmentsSection
 from mcp_commit_story import journal, git_utils
 from typing import get_type_hints
 
@@ -42,4 +42,11 @@ def test_journal_context_type():
     assert set(ctx.keys()) == set(JournalContext.__annotations__.keys())
     assert set(ctx['chat'].keys()) == set(ChatHistory.__annotations__.keys())
     assert set(ctx['terminal'].keys()) == set(TerminalContext.__annotations__.keys())
-    assert set(ctx['git'].keys()) == set(GitContext.__annotations__.keys()) 
+    assert set(ctx['git'].keys()) == set(GitContext.__annotations__.keys())
+
+def test_accomplishments_section_type():
+    accomplishments = {'accomplishments': ['Implemented X', 'Refactored Y']}
+    assert set(accomplishments.keys()) == set(AccomplishmentsSection.__annotations__.keys())
+    assert isinstance(accomplishments['accomplishments'], list)
+    for item in accomplishments['accomplishments']:
+        assert isinstance(item, str) 

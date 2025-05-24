@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 
 import pytest
 from mcp_commit_story import journal
-from mcp_commit_story.context_types import JournalContext
+from mcp_commit_story.context_types import JournalContext, AccomplishmentsSection
 
 # Sample markdown for a daily note entry
 DAILY_NOTE_MD = '''
@@ -166,4 +166,186 @@ def test_generate_summary_section_ignores_how_and_errors():
     assert 'how' not in summary.lower()
     assert 'test failed' not in summary.lower()
     assert 'typo' not in summary.lower()
-    assert 'fixed bug' in summary.lower() or 'login' in summary.lower() 
+    assert 'fixed bug' in summary.lower() or 'login' in summary.lower()
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_accomplishments_section_happy_path():
+    ctx = JournalContext(
+        chat={'messages': [
+            {'speaker': 'Human', 'text': 'Finally got the authentication working!'},
+        ]},
+        terminal=None,
+        git={
+            'metadata': {
+                'hash': 'abc123',
+                'author': 'Alice <alice@example.com>',
+                'date': '2025-05-24 12:00:00',
+                'message': 'Fix authentication bug',
+            },
+            'diff_summary': 'auth.py: fixed bug',
+            'changed_files': ['auth.py'],
+            'file_stats': {},
+            'commit_context': {},
+        },
+    )
+    result = journal.generate_accomplishments_section(ctx)
+    assert isinstance(result, dict)
+    assert 'accomplishments' in result
+    assert any('authentication' in a.lower() for a in result['accomplishments'])
+    assert any('finally' in a.lower() or 'got' in a.lower() for a in result['accomplishments'])
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_accomplishments_section_pride_and_concern():
+    ctx = JournalContext(
+        chat={'messages': [
+            {'speaker': 'Human', 'text': "Finally got this working but it's probably terrible code."},
+        ]},
+        terminal=None,
+        git={
+            'metadata': {
+                'hash': 'abc123',
+                'author': 'Alice <alice@example.com>',
+                'date': '2025-05-24 12:00:00',
+                'message': 'Refactor',
+            },
+            'diff_summary': 'refactor.py: refactored',
+            'changed_files': ['refactor.py'],
+            'file_stats': {},
+            'commit_context': {},
+        },
+    )
+    result = journal.generate_accomplishments_section(ctx)
+    assert any('despite' in a.lower() or 'concern' in a.lower() for a in result['accomplishments'])
+    assert any('finally' in a.lower() or 'got' in a.lower() for a in result['accomplishments'])
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_accomplishments_section_git_only():
+    ctx = JournalContext(
+        chat=None,
+        terminal=None,
+        git={
+            'metadata': {
+                'hash': 'abc123',
+                'author': 'Alice <alice@example.com>',
+                'date': '2025-05-24 12:00:00',
+                'message': 'Add feature X',
+            },
+            'diff_summary': 'feature_x.py: added',
+            'changed_files': ['feature_x.py'],
+            'file_stats': {},
+            'commit_context': {},
+        },
+    )
+    result = journal.generate_accomplishments_section(ctx)
+    assert any('feature' in a.lower() for a in result['accomplishments'])
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_accomplishments_section_none_found():
+    ctx = JournalContext(chat=None, terminal=None, git=None)  # type: ignore
+    result = journal.generate_accomplishments_section(ctx)
+    assert isinstance(result, dict)
+    assert 'accomplishments' in result
+    assert result['accomplishments'] == []
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_accomplishments_section_high_energy():
+    ctx = JournalContext(
+        chat={'messages': [
+            {'speaker': 'Human', 'text': 'Breakthrough! Finally fixed the deployment pipeline!'},
+        ]},
+        terminal=None,
+        git={
+            'metadata': {
+                'hash': 'abc123',
+                'author': 'Alice <alice@example.com>',
+                'date': '2025-05-24 12:00:00',
+                'message': 'Fix deployment pipeline',
+            },
+            'diff_summary': 'deploy.py: fixed pipeline',
+            'changed_files': ['deploy.py'],
+            'file_stats': {},
+            'commit_context': {},
+        },
+    )
+    result = journal.generate_accomplishments_section(ctx)
+    assert any('breakthrough' in a.lower() or 'finally' in a.lower() for a in result['accomplishments'])
+    assert any('deployment' in a.lower() for a in result['accomplishments'])
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_accomplishments_section_matter_of_fact():
+    ctx = JournalContext(
+        chat={'messages': [
+            {'speaker': 'Human', 'text': 'Fixed typo in documentation.'},
+        ]},
+        terminal=None,
+        git={
+            'metadata': {
+                'hash': 'abc123',
+                'author': 'Alice <alice@example.com>',
+                'date': '2025-05-24 12:00:00',
+                'message': 'Fix typo',
+            },
+            'diff_summary': 'README.md: fixed typo',
+            'changed_files': ['README.md'],
+            'file_stats': {},
+            'commit_context': {},
+        },
+    )
+    result = journal.generate_accomplishments_section(ctx)
+    assert any('typo' in a.lower() for a in result['accomplishments'])
+    assert all('.' in a for a in result['accomplishments'])
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_accomplishments_section_relief():
+    ctx = JournalContext(
+        chat={'messages': [
+            {'speaker': 'Human', 'text': 'Finally! That did it.'},
+        ]},
+        terminal=None,
+        git={
+            'metadata': {
+                'hash': 'abc123',
+                'author': 'Alice <alice@example.com>',
+                'date': '2025-05-24 12:00:00',
+                'message': 'Fix bug',
+            },
+            'diff_summary': 'bug.py: fixed',
+            'changed_files': ['bug.py'],
+            'file_stats': {},
+            'commit_context': {},
+        },
+    )
+    result = journal.generate_accomplishments_section(ctx)
+    assert any('finally' in a.lower() or 'did it' in a.lower() for a in result['accomplishments'])
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_accomplishments_section_achievement_and_criticism():
+    ctx = JournalContext(
+        chat={'messages': [
+            {'speaker': 'Human', 'text': 'Got the tests passing, but the code is a mess.'},
+        ]},
+        terminal=None,
+        git={
+            'metadata': {
+                'hash': 'abc123',
+                'author': 'Alice <alice@example.com>',
+                'date': '2025-05-24 12:00:00',
+                'message': 'Test fixes',
+            },
+            'diff_summary': 'tests.py: fixed',
+            'changed_files': ['tests.py'],
+            'file_stats': {},
+            'commit_context': {},
+        },
+    )
+    result = journal.generate_accomplishments_section(ctx)
+    assert any('tests' in a.lower() for a in result['accomplishments'])
+    assert any('mess' in a.lower() or 'criticism' in a.lower() or 'concern' in a.lower() for a in result['accomplishments']) 

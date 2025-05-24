@@ -36,4 +36,7 @@ class SummarySection(TypedDict):
     summary: str  # The finished summary paragraph for the journal entry
 
 class TechnicalSynopsisSection(TypedDict):
-    technical_synopsis: str  # The finished technical synopsis paragraph for the journal entry 
+    technical_synopsis: str  # The finished technical synopsis paragraph for the journal entry
+
+class AccomplishmentsSection(TypedDict):
+    accomplishments: List[str]  # List of accomplishment bullet points for the journal entry 
