@@ -270,8 +270,6 @@ journal:
 
 ### Journal Entry Structure (Canonical Format)
 
-Each journal entry is written in Markdown and includes only non-empty sections. The canonical structure is:
-
 ```markdown
 ### {timestamp} — Commit {commit_hash}
 
@@ -289,6 +287,15 @@ Each journal entry is written in Markdown and includes only non-empty sections. 
 - {frustration 1}
 - {frustration 2}
 
+## Tone/Mood
+> {mood}
+> {indicators}
+
+## Discussion Notes (from chat)
+> **Human:** {note text}
+> **Agent:** {note text}
+> {plain string note}
+
 ## Terminal Commands (AI Session)
 Commands executed by AI during this work session:
 ```bash
@@ -296,22 +303,11 @@ Commands executed by AI during this work session:
 {command 2}
 ```
 
-## Discussion Notes (from chat)
-> **Human:** {note text}
-> **Agent:** {note text}
-> {plain string note}
-
-## Tone/Mood
-> {mood}
-> {indicators}
-
-## Behind the Commit
+## Commit Metadata
 - **files_changed:** {number}
 - **insertions:** {number}
 - **deletions:** {number}
-
-
-**Rules:**
+```
 
 - All sections are omitted if empty.
 - Terminal commands are always rendered as a bash code block with a descriptive line.

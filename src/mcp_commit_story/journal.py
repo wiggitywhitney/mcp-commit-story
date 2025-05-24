@@ -74,12 +74,15 @@ class JournalEntry:
             out.append("")
             return out
 
+        # 1. Summary
         if self.summary:
             lines += section("Summary", [self.summary])
 
+        # 2. Technical Synopsis
         if self.technical_synopsis:
             lines += section("Technical Synopsis", [self.technical_synopsis])
 
+        # 3. Accomplishments
         if self.accomplishments:
             acc_lines = []
             for i, item in enumerate(self.accomplishments):
@@ -88,6 +91,7 @@ class JournalEntry:
                     acc_lines.append("")  # blank line between bullets
             lines += section("Accomplishments", acc_lines)
 
+        # 4. Frustrations or Roadblocks
         if self.frustrations:
             frus_lines = []
             for i, item in enumerate(self.frustrations):
@@ -96,12 +100,12 @@ class JournalEntry:
                     frus_lines.append("")
             lines += section("Frustrations or Roadblocks", frus_lines)
 
-        if self.terminal_commands:
-            tc_lines = ["Commands executed by AI during this work session:", "```bash"]
-            tc_lines.extend(self.terminal_commands)
-            tc_lines.append("```")
-            lines += section("Terminal Commands (AI Session)", tc_lines)
+        # 5. Tone/Mood
+        if self.tone_mood and self.tone_mood.get("mood") and self.tone_mood.get("indicators"):
+            tm_lines = [f"> {self.tone_mood['mood']}", f"> {self.tone_mood['indicators']}"]
+            lines += section("Tone/Mood", tm_lines)
 
+        # 6. Discussion Notes (from chat)
         if self.discussion_notes:
             dn_lines = []
             prev_speaker = None
@@ -124,13 +128,17 @@ class JournalEntry:
                         dn_lines.append(f"> {l}")
             lines += section("Discussion Notes (from chat)", dn_lines)
 
-        if self.tone_mood and self.tone_mood.get("mood") and self.tone_mood.get("indicators"):
-            tm_lines = [f"> {self.tone_mood['mood']}", f"> {self.tone_mood['indicators']}"]
-            lines += section("Tone/Mood", tm_lines)
+        # 7. Terminal Commands (AI Session)
+        if self.terminal_commands:
+            tc_lines = ["Commands executed by AI during this work session:", "```bash"]
+            tc_lines.extend(self.terminal_commands)
+            tc_lines.append("```")
+            lines += section("Terminal Commands (AI Session)", tc_lines)
 
+        # 8. Commit Metadata (was 'Behind the Commit')
         if self.behind_the_commit:
             btc_lines = [f"- **{k}:** {v}" for k, v in self.behind_the_commit.items()]
-            lines += section("Behind the Commit", btc_lines)
+            lines += section("Commit Metadata", btc_lines)
 
         # Remove trailing blank lines
         while lines and lines[-1] == "":

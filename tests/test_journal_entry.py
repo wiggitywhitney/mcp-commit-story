@@ -1,6 +1,12 @@
 import pytest
 from mcp_commit_story.journal import JournalEntry, generate_summary_section
 from mcp_commit_story.context_types import SummarySection
+from fixtures.summary_test_data import (
+    mock_context_with_explicit_purpose,
+    mock_context_evolution_thinking,
+    mock_context_unkind_language,
+    mock_context_no_chat,
+)
 
 
 def test_header_includes_timestamp_and_commit_hash():
@@ -311,7 +317,7 @@ def test_integration_multiple_formatting_rules():
     assert "> **Human:** First.\n\n> **Agent:** Second.\n\n> **Human:** Third." in md
     assert "> Happy" in md
     assert "> All good." in md
-    assert "#### Behind the Commit" in md
+    assert "#### Commit Metadata" in md
     assert "- **files_changed:** 2" in md
     assert "- **insertions:** 10" in md
     assert "- **deletions:** 1" in md
@@ -349,3 +355,39 @@ def test_generate_summary_section_returns_placeholder():
 #     result = generate_summary_section(ctx)
 #     assert result["summary"]  # Should be non-empty and meaningful
 #     # Additional assertions for anti-hallucination, content, etc. 
+
+# These tests require an AI agent or a mock AI implementation.
+# Marked as xfail for local/dev runs.
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_summary_extracts_explicit_purpose():
+    context = mock_context_with_explicit_purpose()
+    result = generate_summary_section(context)
+    assert "refactoring auth" in result["summary"].lower()
+    assert "because" in result["summary"].lower()
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_summary_evolution_of_thinking():
+    context = mock_context_evolution_thinking()
+    result = generate_summary_section(context)
+    assert "started fixing auth timeout" in result["summary"].lower()
+    assert "real problem is connection pooling" in result["summary"].lower()
+    # Should narrate the evolution, not just list both statements
+    assert "but" in result["summary"].lower() or "so" in result["summary"].lower()
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_summary_translates_unkind_language():
+    context = mock_context_unkind_language()
+    result = generate_summary_section(context)
+    # Should not include "idiot" or self-belittling, but should acknowledge difficulty
+    assert "fixed the build" in result["summary"].lower()
+    assert "idiot" not in result["summary"].lower()
+    assert "struggled" in result["summary"].lower() or "difficulty" in result["summary"].lower() or "challenge" in result["summary"].lower() or "issue" in result["summary"].lower()
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_summary_no_chat_falls_back_to_git():
+    context = mock_context_no_chat()
+    result = generate_summary_section(context)
+    assert "renamed variables in utils.py" in result["summary"].lower()
+    # Should not invent a reason
+    assert "because" not in result["summary"].lower() and "so that" not in result["summary"].lower() 

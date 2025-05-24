@@ -49,8 +49,8 @@ def generate_tone_section(commit, context):
     """Generate the tone/mood section"""
     # Implementation
 
-def generate_commit_details_section(commit):
-    """Generate the commit details section"""
+def generate_commit_metadata_section(commit):
+    """Generate the commit metadata section"""
     # Implementation
 ```
 
@@ -116,7 +116,7 @@ Collaboration steps:
 Planned the JournalEntry class implementation based on explicit user preferences and project requirements.
 
 **User Decisions:**
-- Sections: Only the following will be included in standard journal entries: Summary, Accomplishments, Frustrations or Roadblocks, Terminal Commands (AI Session), Discussion Notes (from chat), Tone + Mood (inferred), Behind the Commit. The 'Reflections' section is omitted from standard entries and handled separately.
+- Sections: Only the following will be included in standard journal entries: Summary, Accomplishments, Frustrations or Roadblocks, Terminal Commands (AI Session), Discussion Notes (from chat), Tone + Mood (inferred), Commit Metadata. The 'Reflections' section is omitted from standard entries and handled separately.
 - Field Names: Use the names from the current documentation/spec. Omit empty sections in output; no need to designate required/optional fields.
 - Extensibility: No formal extension mechanism now; keep code modular and easy to extend via TDD in the future.
 - Output Format: Markdown only, following the established format (headers, lists, code blocks, blockquotes as in examples).
@@ -468,7 +468,7 @@ This subtask depends on:
 - Subtask 5.21 (Implement collect_git_context and Integrate Real Git Data Collection)
 </info added on 2025-05-23T10:29:24.353Z>
 
-## 13. Implement generate_summary_section(commit, terminal_context, chat_context) [in-progress]
+## 13. Implement generate_summary_section(commit, terminal_context, chat_context) [done]
 ### Dependencies: None
 ### Description: Design, test (write failing tests first), and implement the summary section generator using all available data sources. Collaborate with the user for design and approval.
 ### Details:
@@ -568,16 +568,16 @@ The function should accept JournalContext or relevant subtypes as input paramete
 4. Compatibility with the broader journal generation pipeline
 </info added on 2025-05-24T20:00:24.476Z>
 
-## 19. Implement generate_commit_details_section(commit) [pending]
+## 19. Implement generate_commit_metadata_section(commit) [pending]
 ### Dependencies: None
-### Description: Design, test (write failing tests first), and implement the commit details section generator using all available commit data. Collaborate with the user for design and approval.
+### Description: Design, test (write failing tests first), and implement the commit metadata section generator using all available commit data. Collaborate with the user for design and approval.
 ### Details:
-1. Collaboratively design the generate_commit_details_section function with the user.
+1. Collaboratively design the generate_commit_metadata_section function with the user.
 2. Write and review comprehensive tests (verify failing tests before implementation).
 3. Implement the function using commit data.
 4. Get user approval before marking complete.
 <info added on 2025-05-24T20:00:33.940Z>
-The generate_commit_details_section function must accept JournalContext (or relevant subtypes) as input parameter and utilize the new TypedDicts for all context data. Tests should verify:
+The generate_commit_metadata_section function must accept JournalContext (or relevant subtypes) as input parameter and utilize the new TypedDicts for all context data. Tests should verify:
 1. Function correctly accepts and processes JournalContext objects
 2. Function properly handles the TypedDict structures for commit data
 3. Error cases when incorrect context types are provided
@@ -638,4 +638,13 @@ The integration test must use the JournalContext TypedDict model as the primary 
 - Ensure the section is self-contained and does not duplicate the summary
 - Collaborate with the user for design and approval
 - Update documentation and tests as needed
+
+## 23. Create Test Fixtures and Mock Data for Section Generators [done]
+### Dependencies: None
+### Description: Create comprehensive mock context data and reusable test fixtures for all section generators. Cover edge cases (explicit purpose, evolution, unkind/self-belittling language, no chat, etc.). Dependency: 5.11 (Context Data Structures).
+### Details:
+- Scaffold tests/fixtures/summary_test_data.py and similar as needed
+- Add functions for mock contexts: explicit purpose, evolution of thinking, unkind language, no chat, etc.
+- Ensure fixtures are reusable for all section generator tests
+- Mark subtask complete after fixtures and tests are in place
 

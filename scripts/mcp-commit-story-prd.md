@@ -348,8 +348,6 @@ telemetry:
 Each journal entry is written in Markdown and includes only non-empty sections. The canonical structure is:
 
 ```markdown
-### {timestamp} — Commit {commit_hash}
-
 ## Summary
 {summary text}
 
@@ -364,6 +362,15 @@ Each journal entry is written in Markdown and includes only non-empty sections. 
 - {frustration 1}
 - {frustration 2}
 
+## Tone/Mood
+> {mood}
+> {indicators}
+
+## Discussion Notes (from chat)
+> **Human:** {note text}
+> **Agent:** {note text}
+> {plain string note}
+
 ## Terminal Commands (AI Session)
 Commands executed by AI during this work session:
 ```bash
@@ -371,16 +378,7 @@ Commands executed by AI during this work session:
 {command 2}
 ```
 
-## Discussion Notes (from chat)
-> **Human:** {note text}
-> **Agent:** {note text}
-> {plain string note}
-
-## Tone/Mood
-> {mood}
-> {indicators}
-
-## Behind the Commit
+## Commit Metadata
 - **files_changed:** {number}
 - **insertions:** {number}
 - **deletions:** {number}
@@ -756,7 +754,7 @@ def generate_entry(debug=False):
 - Export to various formats (PDF, HTML)
 
 ### Hyperlinked Commit Hashes in Journal Entries
-- In the "Behind the Commit" section, if a remote repository is detected, the commit hash must be hyperlinked to the commit page on the remote (e.g., GitHub, GitLab).
+- In the "Commit Metadata" section, if a remote repository is detected, the commit hash must be hyperlinked to the commit page on the remote (e.g., GitHub, GitLab).
 - The system should support at least GitHub and GitLab, and fall back to plain text if no supported remote is found.
 - Example:
   - Commit hash: [`cda9ef2`](https://github.com/your-org/your-repo/commit/cda9ef2)

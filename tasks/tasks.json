@@ -420,7 +420,7 @@
           "title": "Implement generate_summary_section(commit, terminal_context, chat_context)",
           "description": "Design, test (write failing tests first), and implement the summary section generator using all available data sources. Collaborate with the user for design and approval.",
           "details": "1. Collaboratively design the generate_summary_section function with the user.\n2. Write and review comprehensive tests (verify failing tests before implementation).\n3. Implement the function using commit, terminal, and chat context.\n4. Get user approval before marking complete.\n<info added on 2025-05-24T19:55:42.550Z>\n5. Function must accept JournalContext (or relevant subtypes) as input parameters instead of raw data.\n6. Use the newly defined TypedDicts for all context data processing within the function.\n7. Update test cases to verify proper handling of typed context objects rather than raw data structures.\n8. Include tests that validate type checking and appropriate error handling for malformed context objects.\n</info added on 2025-05-24T19:55:42.550Z>\n<info added on 2025-05-24T19:57:57.900Z>\n5. Function must accept JournalContext (or relevant subtypes) as input parameters instead of raw data.\n6. Use the newly defined TypedDicts for all context data processing within the function.\n7. Update test cases to verify proper handling of typed context objects rather than raw data structures.\n8. Include tests that validate type checking and appropriate error handling for malformed context objects.\n</info added on 2025-05-24T19:57:57.900Z>\n<info added on 2025-05-24T20:46:30.676Z>\n9. The summary section should focus purely on the \"story\" of what changed and why, avoiding technical details.\n10. Technical details should be completely omitted from the summary section as they will be handled by the new Technical Synopsis section.\n11. The summary should be written in plain language that explains the purpose and impact of the changes in a narrative format.\n12. Test cases should verify that the generated summary contains no technical jargon, code snippets, or implementation details.\n13. The function should extract and emphasize the motivation and user-facing impact from the commit messages and context.\n</info added on 2025-05-24T20:46:30.676Z>",
-          "status": "in-progress",
+          "status": "done",
           "dependencies": [],
           "parentTaskId": 5
         },
@@ -471,9 +471,9 @@
         },
         {
           "id": 19,
-          "title": "Implement generate_commit_details_section(commit)",
-          "description": "Design, test (write failing tests first), and implement the commit details section generator using all available commit data. Collaborate with the user for design and approval.",
-          "details": "1. Collaboratively design the generate_commit_details_section function with the user.\n2. Write and review comprehensive tests (verify failing tests before implementation).\n3. Implement the function using commit data.\n4. Get user approval before marking complete.\n<info added on 2025-05-24T20:00:33.940Z>\nThe generate_commit_details_section function must accept JournalContext (or relevant subtypes) as input parameter and utilize the new TypedDicts for all context data. Tests should verify:\n1. Function correctly accepts and processes JournalContext objects\n2. Function properly handles the TypedDict structures for commit data\n3. Error cases when incorrect context types are provided\n4. Compatibility with the broader journal generation pipeline\n</info added on 2025-05-24T20:00:33.940Z>",
+          "title": "Implement generate_commit_metadata_section(commit)",
+          "description": "Design, test (write failing tests first), and implement the commit metadata section generator using all available commit data. Collaborate with the user for design and approval.",
+          "details": "1. Collaboratively design the generate_commit_metadata_section function with the user.\n2. Write and review comprehensive tests (verify failing tests before implementation).\n3. Implement the function using commit data.\n4. Get user approval before marking complete.\n<info added on 2025-05-24T20:00:33.940Z>\nThe generate_commit_metadata_section function must accept JournalContext (or relevant subtypes) as input parameter and utilize the new TypedDicts for all context data. Tests should verify:\n1. Function correctly accepts and processes JournalContext objects\n2. Function properly handles the TypedDict structures for commit data\n3. Error cases when incorrect context types are provided\n4. Compatibility with the broader journal generation pipeline\n</info added on 2025-05-24T20:00:33.940Z>",
           "status": "pending",
           "dependencies": [],
           "parentTaskId": 5
@@ -502,6 +502,15 @@
           "description": "Design, test (write failing tests first), and implement the technical synopsis section generator using all available context. This section should provide a code-focused analysis of what changed: architectural patterns, specific classes/functions modified, technical approach taken, etc. Use the same TDD approach as other section generators. The function must accept JournalContext as input.",
           "details": "- Write failing TDD tests for generate_technical_synopsis_section(context: JournalContext)\n- Implement the function to extract and summarize technical details from the context\n- Ensure the section is self-contained and does not duplicate the summary\n- Collaborate with the user for design and approval\n- Update documentation and tests as needed",
           "status": "in-progress",
+          "dependencies": [],
+          "parentTaskId": 5
+        },
+        {
+          "id": 23,
+          "title": "Create Test Fixtures and Mock Data for Section Generators",
+          "description": "Create comprehensive mock context data and reusable test fixtures for all section generators. Cover edge cases (explicit purpose, evolution, unkind/self-belittling language, no chat, etc.). Dependency: 5.11 (Context Data Structures).",
+          "details": "- Scaffold tests/fixtures/summary_test_data.py and similar as needed\n- Add functions for mock contexts: explicit purpose, evolution of thinking, unkind language, no chat, etc.\n- Ensure fixtures are reusable for all section generator tests\n- Mark subtask complete after fixtures and tests are in place",
+          "status": "done",
           "dependencies": [],
           "parentTaskId": 5
         }
