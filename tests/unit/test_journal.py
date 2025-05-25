@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 
 import pytest
 from mcp_commit_story import journal
-from mcp_commit_story.context_types import JournalContext, AccomplishmentsSection, FrustrationsSection, ToneMoodSection
+from mcp_commit_story.context_types import JournalContext, AccomplishmentsSection, FrustrationsSection, ToneMoodSection, DiscussionNotesSection
 
 # Sample markdown for a daily note entry
 DAILY_NOTE_MD = '''
@@ -512,4 +512,57 @@ def test_generate_tone_mood_section_format():
     assert isinstance(result, dict)
     assert set(result.keys()) == {'mood', 'indicators'}
     assert isinstance(result['mood'], str)
-    assert isinstance(result['indicators'], str) 
+    assert isinstance(result['indicators'], str)
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_discussion_notes_section_happy_path():
+    ctx = JournalContext(
+        chat={'messages': [
+            {'speaker': 'Human', 'text': 'Should we use PostgreSQL or MongoDB? I prefer PostgreSQL.'},
+            {'speaker': 'Agent', 'text': 'PostgreSQL is a good choice for ACID compliance.'}
+        ]},
+        terminal=None,
+        git=None,
+    )
+    result = journal.generate_discussion_notes_section(ctx)
+    assert isinstance(result, dict)
+    assert 'discussion_notes' in result
+    notes = result['discussion_notes']
+    assert isinstance(notes, list)
+    assert any(isinstance(n, dict) and n.get('speaker') == 'Human' for n in notes)
+    assert any(isinstance(n, dict) and n.get('speaker') == 'Agent' for n in notes)
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_discussion_notes_section_empty_context():
+    ctx = JournalContext(chat=None, terminal=None, git=None)  # type: ignore
+    result = journal.generate_discussion_notes_section(ctx)
+    assert isinstance(result, dict)
+    assert 'discussion_notes' in result
+    assert result['discussion_notes'] == []
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_discussion_notes_section_malformed_chat():
+    ctx = JournalContext(chat={'messages': [
+        {'speaker': 'Human'},  # missing text
+        {'text': 'No speaker here.'}  # missing speaker
+    ]}, terminal=None, git=None)
+    result = journal.generate_discussion_notes_section(ctx)
+    assert isinstance(result, dict)
+    assert 'discussion_notes' in result
+    assert all(isinstance(n, (str, dict)) for n in result['discussion_notes'])
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_discussion_notes_section_format():
+    ctx = JournalContext(chat={'messages': [
+        {'speaker': 'Human', 'text': 'First line.'},
+        {'speaker': 'Agent', 'text': 'Second line.'}
+    ]}, terminal=None, git=None)
+    result = journal.generate_discussion_notes_section(ctx)
+    notes = result['discussion_notes']
+    assert isinstance(notes, list)
+    assert any(isinstance(n, dict) and n.get('speaker') == 'Human' for n in notes)
+    assert any(isinstance(n, dict) and n.get('speaker') == 'Agent' for n in notes) 

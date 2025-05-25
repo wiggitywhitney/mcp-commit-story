@@ -776,25 +776,84 @@ def generate_tone_mood_section(journal_context: JournalContext) -> ToneMoodSecti
     """
     return ToneMoodSection(mood="", indicators="")
 
+# Section Generator: Discussion Notes
+# Generates the Discussion Notes section for a journal entry using AI.
+# Assumptions: Only includes discussion points with explicit evidence in chat; does not paraphrase or invent content.
+# Limitations: Returns a placeholder until the AI agent executes the docstring prompt.
 def generate_discussion_notes_section(journal_context: JournalContext) -> DiscussionNotesSection:
     """
     AI Prompt for Discussion Notes Section Generation
 
-    Purpose: Extract and summarize all relevant discussion points from chat history, focusing on technical decisions, questions, and reasoning that shaped the work in this commit.
+    Purpose: Extract and summarize all relevant discussion points from chat history, focusing on technical decisions, emotions, problem-solving, and other valuable conversation that shaped the work in this commit.
 
-    Instructions:
-    - Include only discussion points that are directly supported by the chat transcript.
-    - Attribute notes to the correct speaker when possible; otherwise, include as unattributed text.
-    - Exclude routine or irrelevant conversation; focus on technical and decision-making content.
-    - Do not speculate or invent discussion points.
+    Instructions: Extract discussion points from chat history in chronological order, focusing on content that provides insight into the technical work and decision-making process. Include speaker attribution when possible, preserve conversational flow, and apply appropriate content filtering and length limits.
+
+    Priority for Content Sources (in order of importance):
+    1. Explicit mood expressions - quotes with clear emotional content
+    2. Technical decisions and tradeoffs - quotes about "should we use X or Y because...", "the tradeoff here is..."
+    3. Problem-solving dialogue - "what if we try Y?", "that won't work because..."
+    4. Questions and clarifications that shaped the work
+    5. Everything else - other relevant technical discussion
+
+    Discussion Content Extraction:
+    Focus on including content that matches these positive criteria:
+    - Emotional expressions and mood indicators
+    - Technical decision-making conversations and reasoning
+    - Problem-solving approaches and solutions
+    - Questions that led to important clarifications
+    - Statements explaining motivations, goals, or constraints
+    - Breakthrough moments or significant realizations
+    - Any other technical discussion that provides insight into the work process
+
+    Message Length and Content Guidelines:
+    - Limit each extracted discussion note to ~100-150 words, using excerpt notation when longer messages need to be shortened
+    - Include enough surrounding context to make quotes meaningful, within the ~100-150 word limit per note
+    - Preserve conversational flow (related back-and-forth discussion) when it fits within word limits
+    - Use `[...]` notation where content is omitted for length
+    - Focus on parts that match priority types and explicit reasoning keywords ("because", "since", "the tradeoff is")
+
+    Speaker Attribution and Formatting:
+    - Always try to attribute to speaker when possible, fall back to plain string if unclear
+    - Present in chronological order, grouping messages by topic with blank lines between different topics
+    - Trust AI judgment to recognize natural topic boundaries and appropriate granularity
+    - Preserve natural conversation flow and connections between related messages when length permits
+
+    Language Translation Guidelines:
+    When using developer's language from chat, translate respectfully:
+    - Preserve authentic emotional expression including colorful language
+    - Translate unkind language towards others into neutral descriptions, including:
+     - Personal attacks or harsh judgments about individuals
+     - Racism, sexism, or negative bias based on gender, sexual orientation, religion, etc.
+     - Mean statements about people's abilities or worth
+    - Preserve positive "who I am" language and translate only negative self-talk
+    - Examples:
+     - Keep: "this f***ing bug is driving me crazy", "I am awesome!", "I nailed that implementation"
+     - Translate: "I'm such an idiot" → "encountered challenging complexity", "Bob writes terrible code" → "encountered challenging legacy implementation"
 
     ANTI-HALLUCINATION RULES:
-    - Do NOT invent, infer, or summarize discussion points not explicitly present in the chat history.
-    - Only include items directly supported by the chat transcript.
-    - If no discussion notes are found, return an empty list.
+    - Do NOT invent, infer, or summarize discussion points not explicitly present in the chat history
+    - Only include discussion content directly supported by the chat transcript
+    - Do not paraphrase or rewrite quotes - extract actual conversation content
+    - If no relevant discussion is found, return an empty list and omit the section
+    - Never combine separate conversations or create composite quotes
 
     Output Format:
-    - List of strings or dicts with 'speaker' and 'text' fields, as appropriate.
+    - List of strings or dicts with 'speaker' and 'text' fields for attributed quotes
+    - Return empty list if no relevant discussion notes are found and omit the section
+    - Maintain chronological order grouped by topic
+    - Include `[...]` notation when content has been shortened
+
+    CHECKLIST:
+    - [ ] Searched chat history for content matching priority criteria (emotions, decisions, problem-solving, questions, technical discussion)
+    - [ ] Extracted actual conversation content without paraphrasing or invention
+    - [ ] Applied appropriate length limits with excerpt notation when needed
+    - [ ] Included sufficient context to make quotes meaningful
+    - [ ] Preserved conversational flow and speaker attribution when possible
+    - [ ] Grouped by topic with appropriate granularity and blank lines between topics
+    - [ ] Applied language translation guidelines while preserving authentic expression
+    - [ ] Used only content directly supported by chat transcript
+    - [ ] Returned empty list and omitted section if no relevant discussion was found
+    - [ ] Did NOT invent, combine, or composite any discussion content
     """
     return DiscussionNotesSection(discussion_notes=[])
 
