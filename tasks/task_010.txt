@@ -1,7 +1,7 @@
 # Task ID: 10
 # Title: Implement Manual Reflection Addition
 # Status: pending
-# Dependencies: 5, 6, 7
+# Dependencies: 5, 6
 # Priority: high
 # Description: Create the functionality to add manual reflections to journal entries, ensuring they are prioritized in summaries.
 # Details:

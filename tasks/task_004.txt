@@ -1,7 +1,7 @@
 # Task ID: 4
 # Title: Implement Telemetry System
 # Status: pending
-# Dependencies: 1, 2, 6, 9
+# Dependencies: 1, 2, 6, 9, 10
 # Priority: high
 # Description: Set up OpenTelemetry integration for tracing, metrics, and logging to provide observability for the MCP server.
 # Details:
