@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 
 import pytest
 from mcp_commit_story import journal
-from mcp_commit_story.context_types import JournalContext, AccomplishmentsSection, FrustrationsSection
+from mcp_commit_story.context_types import JournalContext, AccomplishmentsSection, FrustrationsSection, ToneMoodSection
 
 # Sample markdown for a daily note entry
 DAILY_NOTE_MD = '''
@@ -423,4 +423,93 @@ def test_generate_frustrations_section_multiple_indicators():
     result = journal.generate_frustrations_section(ctx)
     assert isinstance(result, dict)
     assert 'frustrations' in result
-    assert len(result['frustrations']) >= 2 
+    assert len(result['frustrations']) >= 2
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_tone_mood_section_happy_path():
+    ctx = JournalContext(
+        chat={'messages': [
+            {'speaker': 'Human', 'text': 'Feeling pretty good about this commit.'},
+            {'speaker': 'Agent', 'text': 'Nice work!'}
+        ]},
+        terminal={'commands': [
+            {'command': 'pytest', 'executed_by': 'user'}
+        ]},
+        git={
+            'metadata': {
+                'hash': 'abc123',
+                'author': 'Alice <alice@example.com>',
+                'date': '2025-05-24 12:00:00',
+                'message': 'Add tone section',
+            },
+            'diff_summary': 'tone.py: added',
+            'changed_files': ['tone.py'],
+            'file_stats': {},
+            'commit_context': {},
+        },
+    )
+    result = journal.generate_tone_mood_section(ctx)
+    assert isinstance(result, dict)
+    assert 'mood' in result
+    assert 'indicators' in result
+    assert isinstance(result['mood'], str)
+    assert isinstance(result['indicators'], str)
+    assert result['mood'] != ""
+    assert 'good' in result['mood'].lower() or 'positive' in result['mood'].lower()
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_tone_mood_section_empty_context():
+    ctx = JournalContext(chat=None, terminal=None, git=None)  # type: ignore
+    result = journal.generate_tone_mood_section(ctx)
+    assert isinstance(result, dict)
+    assert 'mood' in result
+    assert 'indicators' in result
+    assert result['mood'] == ""
+    assert result['indicators'] == ""
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_tone_mood_section_conflicting_signals():
+    ctx = JournalContext(
+        chat={'messages': [
+            {'speaker': 'Human', 'text': 'This was easy.'},
+            {'speaker': 'Human', 'text': 'Actually, the config bug was a nightmare.'},
+        ]},
+        terminal=None,
+        git={
+            'metadata': {'hash': 'abc123', 'author': 'Alice <alice@example.com>', 'date': '2025-05-24 12:00:00', 'message': 'Fix config bug'},
+            'diff_summary': 'config.py: fixed bug',
+            'changed_files': ['config.py'],
+            'file_stats': {},
+            'commit_context': {},
+        },
+    )
+    result = journal.generate_tone_mood_section(ctx)
+    assert isinstance(result, dict)
+    assert 'mood' in result
+    assert 'indicators' in result
+    assert 'conflict' in result['indicators'].lower() or 'ambiguous' in result['indicators'].lower() or result['mood'] == ""
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_tone_mood_section_format():
+    ctx = JournalContext(
+        chat={'messages': [
+            {'speaker': 'Human', 'text': 'Relieved to have this done.'},
+        ]},
+        terminal=None,
+        git={
+            'metadata': {'hash': 'abc123', 'author': 'Alice <alice@example.com>', 'date': '2025-05-24 12:00:00', 'message': 'Finish tone section'},
+            'diff_summary': 'tone.py: finished',
+            'changed_files': ['tone.py'],
+            'file_stats': {},
+            'commit_context': {},
+        },
+    )
+    result = journal.generate_tone_mood_section(ctx)
+    assert isinstance(result, dict)
+    assert set(result.keys()) == {'mood', 'indicators'}
+    assert isinstance(result['mood'], str)
+    assert isinstance(result['indicators'], str) 

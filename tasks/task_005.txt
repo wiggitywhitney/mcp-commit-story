@@ -636,7 +636,7 @@ The generate_frustrations_section function must accept JournalContext (or releva
 - If no frustrations are found, return an empty list
 </info added on 2025-05-25T00:35:25.672Z>
 
-## 16. Implement generate_tone_section(commit, terminal_context, chat_context) [pending]
+## 16. Implement generate_tone_section(commit, terminal_context, chat_context) [done]
 ### Dependencies: None
 ### Description: Design, test (write failing tests first), and implement the tone section generator using all available data sources. Collaborate with the user for design and approval.
 ### Details:
@@ -647,6 +647,66 @@ The generate_frustrations_section function must accept JournalContext (or releva
 <info added on 2025-05-24T20:00:12.894Z>
 The generate_tone_section function should accept JournalContext (or relevant subtypes) as input parameters instead of individual context objects. Use the new TypedDict structures for all context data including commit information, terminal context, and chat context. Tests should verify that the function properly handles the typed context objects, extracting the necessary information from the appropriate fields of the JournalContext structure. Ensure type annotations are correctly specified and that the implementation adheres to the TypedDict contracts.
 </info added on 2025-05-24T20:00:12.894Z>
+<info added on 2025-05-25T11:47:31.900Z>
+# 5.16 Section Generator generate_tone_section Implementation Plan
+
+## Step 0 - Log Implementation Plan 5.16 with Taskmaster
+- Document this implementation plan in the appropriate Taskmaster subtask 5.16
+- Note any section-specific considerations or requirements
+
+## Step 1 - Locate Required TypedDict
+- Find the appropriate [Section]Section TypedDict in `src/mcp_commit_story/context_types.py`
+- Import the TypedDict in the implementation file (`src/mcp_commit_story/journal.py`)
+- Verify the TypedDict structure matches what this section needs to return
+- Import JournalContext TypedDict as the input parameter type
+
+## Step 2 - Write Failing Tests for the Section Generator
+- Test basic function structure and return type
+- Test output format (string formatting, markdown structure, etc.)
+- Test with mock JournalContext data:
+ - Happy path: normal context with expected content
+ - Edge cases: empty context, missing data sources
+ - Section-specific scenarios (customize based on section type)
+- Run tests to confirm they fail (no implementation yet)
+
+## Step 3 - Design Section-Specific AI Prompt
+- **Ask me for the specific AI prompt content for this section**
+- Verify anti-hallucination rules and output format specifications are included
+
+## Step 4 - Write Tests for AI Pattern Compliance
+- Test that function returns correct TypedDict structure
+- Test that function accepts JournalContext parameter correctly
+- Test that function handles empty/None inputs gracefully
+- Run tests to confirm they fail (no implementation yet)
+
+## Step 5 - Implement generate_[section]_section Function
+- Add the function with approved AI prompt in the docstring
+- Return placeholder value using the correct TypedDict: `[Section]Section([field]="")`
+- Ensure proper type hints: `def generate_[section]_section(journal_context: JournalContext) -> [Section]Section:`
+- Follow the canonical AI-driven function pattern from engineering spec
+- Run tests to confirm they now pass
+
+## Step 6 - Final Test Run & Documentation
+- Run full test suite to confirm everything passes
+- Add brief code comments explaining the section's purpose
+- Note any assumptions or limitations in the implementation
+
+## Section-Specific Test Scenarios
+- For Technical Sections (technical_synopsis, commit_details):
+ - Test scenarios: no code changes, only config/docs, binary files
+ - Test output format: proper markdown structure for technical details
+- For Context Sections (discussion, terminal):
+ - Test scenarios: missing context source, malformed data, empty sessions
+ - Test output format: proper blockquotes, code blocks, speaker attribution
+- For Inference Sections (accomplishments, frustrations, tone_mood):
+ - Test scenarios: conflicting signals, insufficient evidence, multiple indicators
+ - Test output format: bullet points, blockquotes as appropriate
+- For Narrative Sections (summary):
+ - Test scenarios: explicit purpose statements, evolution of thinking
+ - Test output format: paragraph structure, narrative flow
+
+Section-specific considerations: This section is for tone inference, so tests should include scenarios with conflicting or ambiguous tone signals, and output should be clear about uncertainty when present.
+</info added on 2025-05-25T11:47:31.900Z>
 
 ## 17. Implement generate_terminal_section(terminal_context) [pending]
 ### Dependencies: None

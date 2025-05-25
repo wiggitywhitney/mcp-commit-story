@@ -407,13 +407,16 @@ def generate_summary_section(journal_context) -> SummarySection:
     - Refactoring might describe why cleanup was needed and what improved
 
     Language Translation Guidelines:
-    When using developer's chat language, translate respectfully:
-    - Keep honest self-reflection about work quality ("wrote terrible code here")
-    - Keep authentic frustration with technology ("this API is garbage")
-    - Translate identity-based criticism ("I am an idiot" → "encountered challenging complexity")
-    - Translate harsh personal judgments about others' work into professional descriptions of technical challenges
-    - Remove profanity while preserving technical meaning and frustration level
-    - Preserve "what I did" language, translate "who I am" language
+    When using developer's emotional language from chat and commit messages, translate respectfully:
+    - Preserve authentic emotional expression including colorful language
+    - Translate unkind language towards others into neutral descriptions, including:
+      - Personal attacks or harsh judgments about individuals
+      - Racism, sexism, or negative bias based on gender, sexual orientation, religion, etc.
+      - Mean statements about people's abilities or worth
+    - Preserve positive "who I am" language and translate only negative self-talk
+    - Examples:
+      - Keep: "this f***ing bug is driving me crazy", "I am awesome!", "I nailed that implementation"
+      - Translate: "I'm such an idiot" → "encountered challenging complexity", "Bob writes terrible code" → "encountered challenging legacy implementation"
 
     ANTI-HALLUCINATION RULES:
     - Do NOT invent, infer, or summarize information not explicitly present in the context
@@ -471,13 +474,16 @@ def generate_technical_synopsis_section(journal_context: JournalContext) -> Tech
     - Refactoring might explain structural improvements and code organization changes
 
     Language Translation Guidelines:
-    When using developer's technical language from chat, translate respectfully:
-    - Keep honest technical self-reflection about work quality ("wrote terrible code here")
-    - Keep authentic frustration with technology ("legacy API is garbage")
-    - Translate identity-based criticism ("I am an idiot" → "encountered challenging technical complexity")
-    - Translate harsh personal judgments about others' work into professional technical descriptions
-    - Remove profanity while preserving technical meaning and frustration level
-    - Preserve "what I did" language, translate "who I am" language
+    When using developer's emotional language from chat and commit messages, translate respectfully:
+    - Preserve authentic emotional expression including colorful language
+    - Translate unkind language towards others into neutral descriptions, including:
+      - Personal attacks or harsh judgments about individuals
+      - Racism, sexism, or negative bias based on gender, sexual orientation, religion, etc.
+      - Mean statements about people's abilities or worth
+    - Preserve positive "who I am" language and translate only negative self-talk
+    - Examples:
+      - Keep: "this f***ing bug is driving me crazy", "I am awesome!", "I nailed that implementation"
+      - Translate: "I'm such an idiot" → "encountered challenging complexity", "Bob writes terrible code" → "encountered challenging legacy implementation"
 
     ANTI-HALLUCINATION RULES:
     - Do NOT invent, infer, or summarize technical information not explicitly present in the context
@@ -552,13 +558,16 @@ def generate_accomplishments_section(journal_context: JournalContext) -> Accompl
     - Negativity and concerns are important feedback about the work
 
     Language Translation Guidelines:
-    When using developer's language from chat, translate respectfully:
-    - Keep honest self-reflection about work quality ("wrote terrible code here")
-    - Keep authentic excitement and satisfaction ("finally got this damn thing working!")
-    - Translate identity-based criticism ("I am an idiot" → "encountered challenging complexity")
-    - Translate harsh personal judgments about others' work into professional descriptions
-    - Remove profanity while preserving enthusiasm and technical meaning
-    - Preserve "what I did" language, translate "who I am" language
+    When using developer's emotional language from chat and commit messages, translate respectfully:
+    - Preserve authentic emotional expression including colorful language
+    - Translate unkind language towards others into neutral descriptions, including:
+      - Personal attacks or harsh judgments about individuals
+      - Racism, sexism, or negative bias based on gender, sexual orientation, religion, etc.
+      - Mean statements about people's abilities or worth
+    - Preserve positive "who I am" language and translate only negative self-talk
+    - Examples:
+      - Keep: "this f***ing bug is driving me crazy", "I am awesome!", "I nailed that implementation"
+      - Translate: "I'm such an idiot" → "encountered challenging complexity", "Bob writes terrible code" → "encountered challenging legacy implementation"
 
     ANTI-HALLUCINATION RULES:
     - Do NOT invent, infer, or assume accomplishments not explicitly indicated by evidence
@@ -632,13 +641,16 @@ def generate_frustrations_section(journal_context: JournalContext) -> Frustratio
     - Adaptive detail: Match detail level to significance and available context
 
     Language Translation Guidelines:
-    When using developer's frustration language from chat, translate respectfully:
-    - Keep honest self-reflection about technical approaches ("took a bad debugging approach here")
-    - Keep authentic frustration with technology ("this API is completely broken")
-    - Translate identity-based criticism ("I'm such an idiot" → "encountered challenging complexity")
-    - Translate harsh personal judgments about others' work into professional descriptions of technical challenges
-    - Remove profanity while preserving frustration intensity and technical meaning
-    - Preserve "what I did" language, translate "who I am" language
+    When using developer's emotional language from chat and commit messages, translate respectfully:
+    - Preserve authentic emotional expression including colorful language
+    - Translate unkind language towards others into neutral descriptions, including:
+      - Personal attacks or harsh judgments about individuals
+      - Racism, sexism, or negative bias based on gender, sexual orientation, religion, etc.
+      - Mean statements about people's abilities or worth
+    - Preserve positive "who I am" language and translate only negative self-talk
+    - Examples:
+      - Keep: "this f***ing bug is driving me crazy", "I am awesome!", "I nailed that implementation"
+      - Translate: "I'm such an idiot" → "encountered challenging complexity", "Bob writes terrible code" → "encountered challenging legacy implementation"
 
     ANTI-HALLUCINATION RULES:
     - Do NOT invent, infer, or assume frustrations not explicitly indicated by evidence
@@ -668,29 +680,101 @@ def generate_frustrations_section(journal_context: JournalContext) -> Frustratio
     # Limitations: Requires AI agent to fulfill the docstring prompt; placeholder implementation returns empty list.
     return FrustrationsSection(frustrations=[])
 
+# Section Generator: Tone/Mood
+# This function generates the Tone/Mood section for a journal entry using AI.
+# It analyzes chat, commit, and terminal context to infer the developer's emotional state and supporting evidence.
+# Assumptions: Only includes moods with explicit or strongly inferred evidence; does not speculate.
+# Limitations: Returns a placeholder until the AI agent executes the docstring prompt.
 def generate_tone_mood_section(journal_context: JournalContext) -> ToneMoodSection:
     """
     AI Prompt for Tone/Mood Section Generation
 
-    Purpose: Infer and summarize the overall mood or emotional tone of the developer during this commit, based on explicit or implicit evidence in chat, git, or terminal context.
+    Purpose: Extract and summarize the overall mood or emotional tone of the developer during this commit, capturing both stable emotional states and emotional progressions with rich narrative context.
 
-    Instructions:
-    - Extract explicit mood statements ("frustrated", "relieved", "satisfied") or infer from language and context.
-    - Provide a concise mood label (e.g., "Frustrated", "Relieved", "Satisfied").
-    - In the indicators field, provide supporting evidence (quotes, actions, or context) for the inferred mood.
-    - Do not speculate beyond what is reasonably supported by the evidence.
+    Instructions: Extract explicit mood statements and emotional indicators from chat history and commit messages. Use AI's ability to detect subtle emotional cues while indicating confidence level based on evidence strength. Create both a concise mood summary with confidence level and detailed narrative context explaining the emotional experience. If there is no evidence of tone or mood, omit this section entirely.
+
+    Priority for Content Sources:
+    1. Explicit emotional statements from chat - developer's own direct expressions of mood and feeling
+    2. Commit messages - explicit emotional language, frustration, satisfaction, or urgency in commit text
+    3. Subtle emotional indicators - language patterns, energy shifts, confidence changes (mark as lower confidence)
+    4. Behavioral patterns - persistence, breakthrough moments, response styles (mark as lower confidence)
+
+    Mood Evidence Extraction:
+    Look for explicit and subtly observable emotional indicators, such as:
+    - Explicit emotions: "this is frustrating", "finally got it working!", "feeling confident about this"
+    - Commit message emotion: "fix annoying bug", "finally resolve X", "ugh, another edge case", "clean up terrible code"
+    - Subtle language patterns: short responses suggesting frustration, exclamation points showing excitement, energy shifts
+    - Behavioral indicators: persistent attempts, giving up language, breakthrough excitement
+    - Confidence shifts: uncertain language ("maybe this will work") vs. confident assertions ("this should fix it")
+    - Relief/satisfaction: "phew", "thank god", "that was satisfying"
+    - Determination: "let me try again", "not giving up on this", "going to figure this out"
+
+    Confidence Level Guidelines:
+    - High confidence: Explicit emotional statements, clear emotional language in commits
+    - Medium confidence: Strong behavioral patterns with some explicit language
+    - Lower confidence: Subtle patterns, inferred from behavior without explicit statements
+
+    Mood Format Guidelines:
+    For stable moods: Single descriptive phrase with confidence level ("Focused and methodical (high confidence)")
+    For progressive moods: Timeline format with arrows and confidence level ("Frustrated → determined → relieved (high confidence)")
+
+    Indicators Format Guidelines:
+    For stable moods: Narrative explanation with supporting evidence and quotes
+    For progressive moods: Rich narrative context explaining transitions between emotional states, including:
+    - What technical events triggered emotional changes
+    - Specific quotes supporting each emotional phase (from both chat and commit messages)
+    - Causal connections between work progress and emotional responses
+    - Clear indication of evidence type (explicit vs. inferred)
+
+    Adaptive Detail Level:
+    Match the detail to the available emotional evidence:
+    - Rich emotional context: Full narrative with multiple quotes and transitions
+    - Moderate emotional context: Brief narrative with key supporting evidence
+    - Minimal emotional context: Simple mood description with basic indicators
+    - No emotional evidence: Return empty strings for both fields and omit section
+
+    Language Translation Guidelines:
+    When using developer's emotional language from chat and commit messages, translate respectfully:
+    - Preserve authentic emotional expression including colorful language
+    - Translate unkind language towards others into neutral descriptions, including:
+      - Personal attacks or harsh judgments about individuals
+      - Racism, sexism, or negative bias based on gender, sexual orientation, religion, etc.
+      - Mean statements about people's abilities or worth
+    - Preserve positive "who I am" language and translate only negative self-talk
+    - Examples:
+      - Keep: "this f***ing bug is driving me crazy", "I am awesome!", "I nailed that implementation"
+      - Translate: "I'm such an idiot" → "encountered challenging complexity", "Bob writes terrible code" → "encountered challenging legacy implementation"
 
     ANTI-HALLUCINATION RULES:
-    - Do NOT invent or infer mood without supporting evidence.
-    - Only include moods and indicators directly supported by chat, git, or terminal evidence.
-    - If no mood can be inferred, return empty strings.
+    - Do NOT infer, assume, or speculate about emotional states without supporting evidence
+    - Always indicate confidence level based on evidence strength
+    - Be explicit about whether emotions are stated directly or inferred from patterns
+    - Never assume emotions based solely on work difficulty, success, failure, or technical complexity
+    - If there is no evidence of tone or mood, return empty strings and omit this section entirely
 
     Output Format:
-    - mood: str (the inferred mood)
-    - indicators: str (evidence supporting the mood inference)
+    - mood: Concise emotional state or progression with confidence level in parentheses (omit if no evidence)
+    - indicators: Rich narrative context explaining the emotional experience with specific evidence and quotes (omit if no evidence)
+    - If mood has content but indicators doesn't: include only mood field
+    - If indicators has content but mood doesn't: include only indicators field  
+    - If both fields are empty: omit the entire Tone/Mood section
+    - Return empty strings for fields that should be omitted
+
+    CHECKLIST:
+    - [ ] Searched chat history for explicit emotional statements and subtle language patterns
+    - [ ] Analyzed commit messages for explicit emotional language
+    - [ ] Assessed confidence level based on evidence strength (explicit vs. inferred)
+    - [ ] Used timeline format with confidence level for progressions, single phrase with confidence level for stable moods
+    - [ ] Created rich narrative context explaining emotional experience and transitions
+    - [ ] Included specific quotes and evidence type (explicit vs. inferred) supporting each emotional state
+    - [ ] Explained causal connections between technical events and emotional responses
+    - [ ] Preserved authentic language while translating unkind statements toward others
+    - [ ] Preserved positive self-assessment and only translated negative identity language
+    - [ ] Indicated confidence level based on evidence quality
+    - [ ] Verified emotional content is grounded in actual evidence with appropriate confidence assessment
+    - [ ] Returned empty strings if no emotional evidence was found
     """
     return ToneMoodSection(mood="", indicators="")
-
 
 def generate_discussion_notes_section(journal_context: JournalContext) -> DiscussionNotesSection:
     """
