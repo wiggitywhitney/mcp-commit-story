@@ -1,11 +1,11 @@
 import pytest
 from mcp_commit_story import journal
-from mcp_commit_story.git_utils import collect_git_context
 import git
 import os
 from pathlib import Path
 from mcp_commit_story.context_types import ChatMessage, ChatHistory, TerminalCommand, TerminalContext
 from typing import get_type_hints
+from mcp_commit_story.context_collection import collect_chat_history, collect_ai_terminal_commands, collect_git_context
 
 # Assume these will be imported from the journal module
 # from mcp_commit_story.journal import collect_commit_metadata, extract_code_diff, gather_discussion_notes, capture_file_changes, collect_chat_history, collect_ai_terminal_commands
@@ -72,7 +72,7 @@ def test_collect_ai_terminal_commands_thoroughness_and_boundary():
     pass
 
 def test_collect_chat_history_structure():
-    result = journal.collect_chat_history()
+    result = collect_chat_history()
     # Should be a dict with 'messages' key
     assert isinstance(result, dict)
     assert set(result.keys()) == set(ChatHistory.__annotations__.keys())
@@ -80,19 +80,19 @@ def test_collect_chat_history_structure():
         assert set(msg.keys()) == set(ChatMessage.__annotations__.keys())
 
 def test_collect_chat_history_type_hint():
-    hints = get_type_hints(journal.collect_chat_history)
+    hints = get_type_hints(collect_chat_history)
     assert 'return' in hints
     assert hints['return'].__name__ == 'ChatHistory'
 
 def test_collect_ai_terminal_commands_structure():
-    result = journal.collect_ai_terminal_commands()
+    result = collect_ai_terminal_commands()
     assert isinstance(result, dict)
     assert set(result.keys()) == set(TerminalContext.__annotations__.keys())
     for cmd in result['commands']:
         assert set(cmd.keys()) == set(TerminalCommand.__annotations__.keys())
 
 def test_collect_ai_terminal_commands_type_hint():
-    hints = get_type_hints(journal.collect_ai_terminal_commands)
+    hints = get_type_hints(collect_ai_terminal_commands)
     assert 'return' in hints
     assert hints['return'].__name__ == 'TerminalContext'
 

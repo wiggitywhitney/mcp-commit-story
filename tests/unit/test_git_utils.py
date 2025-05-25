@@ -17,6 +17,7 @@ import stat
 from unittest.mock import call
 import shutil
 import tempfile
+from mcp_commit_story.context_collection import collect_git_context
 
 # TDD: Test that GitPython is installed and can instantiate a Repo object
 # This test should fail if GitPython is missing or misconfigured
@@ -486,7 +487,6 @@ def test_get_commits_since_last_entry_empty_repo_returns_empty_list(git_repo, tm
 # TDD: Tests for collect_git_context (not yet implemented)
 def test_collect_git_context_structure_and_fields(git_repo):
     """Test that collect_git_context returns a dict with required fields for a given commit hash."""
-    from mcp_commit_story.git_utils import collect_git_context
     # Create and commit a file
     file_path = os.path.join(git_repo.working_tree_dir, 'main.py')
     with open(file_path, 'w') as f:
@@ -508,7 +508,6 @@ def test_collect_git_context_structure_and_fields(git_repo):
 
 def test_collect_git_context_file_classification(git_repo):
     """Test that collect_git_context classifies changed files by type (source, config, docs, tests)."""
-    from mcp_commit_story.git_utils import collect_git_context
     # Add files of different types
     src = os.path.join(git_repo.working_tree_dir, 'src.py')
     cfg = os.path.join(git_repo.working_tree_dir, 'config.yaml')
@@ -528,7 +527,6 @@ def test_collect_git_context_file_classification(git_repo):
 
 def test_collect_git_context_commit_size_classification(git_repo):
     """Test that collect_git_context classifies commit size as small/medium/large based on lines changed."""
-    from mcp_commit_story.git_utils import collect_git_context
     # Add a small change
     file_path = os.path.join(git_repo.working_tree_dir, 'tiny.py')
     with open(file_path, 'w') as f:
@@ -541,7 +539,6 @@ def test_collect_git_context_commit_size_classification(git_repo):
 
 def test_collect_git_context_merge_status(git_repo):
     """Test that collect_git_context includes merge status in commit_context."""
-    from mcp_commit_story.git_utils import collect_git_context
     # Just check the field exists for a normal commit
     file_path = os.path.join(git_repo.working_tree_dir, 'foo.py')
     with open(file_path, 'w') as f:
@@ -554,7 +551,6 @@ def test_collect_git_context_merge_status(git_repo):
 
 def test_collect_git_context_filters_journal_files(git_repo, tmp_path):
     """Test that collect_git_context filters out journal files when journal_path is provided."""
-    from mcp_commit_story.git_utils import collect_git_context
     # Setup: create a repo with a journal file and a code file inside the repo's working tree
     repo = git_repo
     repo_dir = repo.working_tree_dir
