@@ -857,29 +857,81 @@ def generate_discussion_notes_section(journal_context: JournalContext) -> Discus
     """
     return DiscussionNotesSection(discussion_notes=[])
 
-
+# Section Generator: Terminal Commands
+# Generates the Terminal Commands section for a journal entry using AI.
+# Assumptions: Only includes commands with explicit evidence in terminal context; does not paraphrase or invent content.
+# Limitations: Returns a placeholder until the AI agent executes the docstring prompt.
 def generate_terminal_commands_section(journal_context: JournalContext) -> TerminalCommandsSection:
     """
     AI Prompt for Terminal Commands Section Generation
 
-    Purpose: Extract and list all relevant terminal commands executed during this commit, focusing on commands that demonstrate problem-solving, technical approach, or challenges.
+    Purpose
+    Extract and list all relevant terminal commands executed during this commit, focusing on commands that demonstrate problem-solving, technical approach, or challenges.
 
-    Instructions:
-    - Include only commands that are directly supported by the terminal transcript.
-    - Exclude routine git commands unless significant to the narrative.
-    - Exclude commands containing sensitive information.
-    - Do not speculate or invent commands.
+    Instructions
+    Extract terminal commands from terminal context to create a chronological list of meaningful commands executed during the work session. Focus on commands that provide insight into the technical process and decision-making approach.
 
-    ANTI-HALLUCINATION RULES:
-    - Do NOT invent, infer, or summarize commands not explicitly present in the terminal history.
-    - Only include commands directly supported by the terminal transcript.
-    - If no commands are found, return an empty list.
+    Priority for Content Sources
+    1. Terminal context from journal_context.terminal - the authoritative source for executed commands
+    2. No other sources - work exclusively with the provided terminal context
 
-    Output Format:
-    - List of strings, each a single terminal command.
+    Terminal Command Extraction
+    Look for commands that provide technical insight, such as:
+    - Commands that demonstrate problem-solving steps
+    - Commands that show the technical approach taken
+    - Failed commands that highlight challenges or errors
+    - Repetitive commands that might indicate frustrations or iteration
+    - Build, test, or deployment commands that show progress
+    - Debugging or investigation commands
+
+    Filtering Guidelines
+    Exclude commands that don't add narrative value:
+    - Routine git commands (add, status, commit) unless they are significant to the narrative
+    - Commands run specifically as part of journal entry creation or extraction
+    - Commands containing passwords, API keys, tokens, or other sensitive information
+    - Commands that reveal personal identifiable information (PII)
+    - Basic navigation commands (cd, ls, pwd) unless part of a meaningful sequence
+    - Obviously invalid commands: typos, malformed syntax, incomplete commands that add no technical insight
+
+    Include meaningful failures that demonstrate problem-solving:
+    - Commands that failed due to missing dependencies (shows environment setup process)
+    - Commands that failed due to configuration issues (shows troubleshooting approach)
+    - Commands that revealed errors leading to solutions (shows debugging process)
+    - Failed attempts that led to successful alternatives (shows iteration and learning)
+
+    Deduplication Rules
+    - Apply adjacent identical command deduplication: compress consecutive identical commands with count notation (e.g., "npm test x3")
+    - Preserve chronological order of distinct commands
+    - Do not deduplicate non-adjacent commands even if identical
+
+    ANTI-HALLUCINATION RULES
+    - Do NOT invent, infer, or summarize commands that are not explicitly present in the terminal context
+    - Only include commands that are directly supported by the terminal transcript
+    - If no terminal context is available, return an empty list and omit the section
+    - Never speculate about commands that might have been run
+    - If a command is not present in the context, do NOT fill in gaps or assume it happened
+
+    Output Format
+    - List of strings, each representing a single terminal command
+    - Return empty list if no relevant commands are found and omit the section
+    - Maintain chronological order as they appeared in the terminal context
+    - Apply deduplication formatting where appropriate (e.g., "command x3")
+
+    CHECKLIST
+    - [ ] Extracted commands exclusively from journal_context.terminal
+    - [ ] Focused on commands that demonstrate problem-solving, technical approach, or challenges
+    - [ ] Excluded routine git commands unless significant to the narrative
+    - [ ] Excluded journal entry creation commands
+    - [ ] Excluded commands containing sensitive information or PII
+    - [ ] Excluded obviously invalid commands (typos, malformed syntax) while preserving meaningful failures
+    - [ ] Included meaningful failures that demonstrate debugging and problem-solving process
+    - [ ] Applied adjacent identical command deduplication with count notation
+    - [ ] Preserved chronological order of distinct commands
+    - [ ] Did NOT invent, infer, or speculate about commands not present in context
+    - [ ] Returned empty list if no relevant commands found
+    - [ ] Verified all commands are grounded in actual terminal context evidence
     """
     return TerminalCommandsSection(terminal_commands=[])
-
 
 def generate_commit_metadata_section(journal_context: JournalContext) -> CommitMetadataSection:
     """

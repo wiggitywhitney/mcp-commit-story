@@ -565,4 +565,60 @@ def test_generate_discussion_notes_section_format():
     notes = result['discussion_notes']
     assert isinstance(notes, list)
     assert any(isinstance(n, dict) and n.get('speaker') == 'Human' for n in notes)
-    assert any(isinstance(n, dict) and n.get('speaker') == 'Agent' for n in notes) 
+    assert any(isinstance(n, dict) and n.get('speaker') == 'Agent' for n in notes)
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_terminal_commands_section_happy_path():
+    ctx = JournalContext(
+        chat=None,
+        terminal={
+            'commands': [
+                {'command': 'pytest', 'executed_by': 'ai'},
+                {'command': 'git status', 'executed_by': 'ai'},
+            ]
+        },
+        git={
+            'metadata': {'hash': 'abc', 'author': 'me', 'date': 'today', 'message': 'msg'},
+            'diff_summary': '', 'changed_files': [], 'file_stats': {}, 'commit_context': {}
+        }
+    )
+    result = journal.generate_terminal_commands_section(ctx)
+    assert isinstance(result, dict)
+    assert 'terminal_commands' in result
+    assert isinstance(result['terminal_commands'], list)
+    assert all(isinstance(cmd, str) for cmd in result['terminal_commands'])
+    assert 'pytest' in result['terminal_commands'][0]
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_terminal_commands_section_empty_context():
+    ctx = JournalContext(chat=None, terminal=None, git={
+        'metadata': {'hash': 'abc', 'author': 'me', 'date': 'today', 'message': 'msg'},
+        'diff_summary': '', 'changed_files': [], 'file_stats': {}, 'commit_context': {}
+    })
+    result = journal.generate_terminal_commands_section(ctx)
+    assert isinstance(result, dict)
+    assert 'terminal_commands' in result
+    assert result['terminal_commands'] == []
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_terminal_commands_section_malformed_terminal():
+    ctx = JournalContext(chat=None, terminal={'commands': [123, None]}, git={
+        'metadata': {'hash': 'abc', 'author': 'me', 'date': 'today', 'message': 'msg'},
+        'diff_summary': '', 'changed_files': [], 'file_stats': {}, 'commit_context': {}
+    })
+    result = journal.generate_terminal_commands_section(ctx)
+    assert isinstance(result, dict)
+    assert 'terminal_commands' in result
+    assert isinstance(result['terminal_commands'], list)
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_terminal_commands_section_type_safety():
+    ctx = None  # type: ignore
+    result = journal.generate_terminal_commands_section(ctx)
+    assert isinstance(result, dict)
+    assert 'terminal_commands' in result
+    assert isinstance(result['terminal_commands'], list) 
