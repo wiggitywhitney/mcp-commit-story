@@ -550,4 +550,33 @@ def test_collect_git_context_merge_status(git_repo):
     commit = git_repo.index.commit('foo')
     ctx = collect_git_context(commit.hexsha, repo=git_repo)
     assert "is_merge" in ctx["commit_context"], "Missing is_merge in commit_context"
-    assert isinstance(ctx["commit_context"]["is_merge"], bool) 
+    assert isinstance(ctx["commit_context"]["is_merge"], bool)
+
+def test_collect_git_context_filters_journal_files(git_repo, tmp_path):
+    """Test that collect_git_context filters out journal files when journal_path is provided."""
+    from mcp_commit_story.git_utils import collect_git_context
+    # Setup: create a repo with a journal file and a code file inside the repo's working tree
+    repo = git_repo
+    repo_dir = repo.working_tree_dir
+    journal_dir = os.path.join(repo_dir, "journal")
+    os.makedirs(journal_dir, exist_ok=True)
+    journal_file = os.path.join(journal_dir, "2025-05-24-journal.md")
+    code_file = os.path.join(repo_dir, "main.py")
+    with open(journal_file, "w") as jf:
+        jf.write("journal entry")
+    with open(code_file, "w") as cf:
+        cf.write("print('hello')\n")
+    repo.index.add([os.path.relpath(journal_file, repo_dir), os.path.relpath(code_file, repo_dir)])
+    repo.index.commit("Add journal and code file")
+    # No filtering: both files appear
+    ctx_no_filter = collect_git_context(repo=repo)
+    assert any("journal" in f for f in ctx_no_filter["changed_files"])
+    assert any("main.py" in f for f in ctx_no_filter["changed_files"])
+    # With filtering: journal file is excluded
+    ctx_filtered = collect_git_context(repo=repo, journal_path=journal_dir)
+    assert all("journal" not in f for f in ctx_filtered["changed_files"])
+    assert any("main.py" in f for f in ctx_filtered["changed_files"])
+    # File stats: only code file counted
+    assert ctx_filtered["file_stats"]["source"] == 1
+    # Diff summary notes filtering
+    assert "Journal files filtered" in ctx_filtered["diff_summary"] 

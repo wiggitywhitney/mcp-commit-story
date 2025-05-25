@@ -342,9 +342,14 @@ def classify_commit_size(insertions, deletions):
         return 'large'
 
 
-def collect_git_context(commit_hash=None, repo=None) -> GitContext:
+def collect_git_context(commit_hash=None, repo=None, journal_path=None) -> GitContext:
     """
     Collect structured git context for a given commit hash (or HEAD if None).
+
+    Args:
+        commit_hash (str, optional): Commit hash to analyze. Defaults to HEAD.
+        repo (git.Repo, optional): GitPython Repo object. Defaults to current repo.
+        journal_path (str, optional): Path to the journal file or directory to exclude from context (for recursion prevention).
 
     Returns:
         GitContext: Structured git context as defined in context_types.py
@@ -353,12 +358,7 @@ def collect_git_context(commit_hash=None, repo=None) -> GitContext:
     - The GitContext type is a TypedDict defined in context_types.py.
     - All context is ephemeral and only persisted as part of the generated journal entry.
     - This function enforces the in-memory-only rule for context data.
-
-    Raises:
-        git.InvalidGitRepositoryError: If repo is invalid
-        git.BadName: If commit_hash doesn't exist
-
-    ... (rest of docstring unchanged) ...
+    - If journal_path is provided, all journal files are filtered from changed_files, file_stats, and diff_summary to prevent recursion.
     """
     if repo is None:
         repo = get_repo()
@@ -399,6 +399,21 @@ def collect_git_context(commit_hash=None, repo=None) -> GitContext:
                 file_stats[ftype] += 1
             else:
                 file_stats['source'] += 1  # Default bucket
+    # --- Recursion prevention: filter out journal files ---
+    if journal_path:
+        journal_rel = os.path.relpath(journal_path, repo.working_tree_dir)
+        changed_files = [f for f in changed_files if not f.startswith(journal_rel)]
+        # Regenerate file_stats without journal files
+        file_stats = {'source': 0, 'config': 0, 'docs': 0, 'tests': 0}
+        for f in changed_files:
+            ftype = classify_file_type(f)
+            if ftype in file_stats:
+                file_stats[ftype] += 1
+            else:
+                file_stats['source'] += 1
+        # Regenerate diff_summary without journal files
+        # (Optional: for now, just note in diff_summary if journal files were filtered)
+        diff_summary += "\n[Journal files filtered for recursion prevention]"
     # Commit size
     stats = details.get('stats', {})
     insertions = stats.get('insertions', 0)
