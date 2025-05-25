@@ -104,9 +104,15 @@ class JournalEntry:
             lines += section("Frustrations or Roadblocks", frus_lines)
 
         # 5. Tone/Mood
-        if self.tone_mood and self.tone_mood.get("mood") and self.tone_mood.get("indicators"):
-            tm_lines = [f"> {self.tone_mood['mood']}", f"> {self.tone_mood['indicators']}"]
-            lines += section("Tone/Mood", tm_lines)
+        if self.tone_mood and self.tone_mood.get("mood", "").strip() or self.tone_mood.get("indicators", "").strip():
+            tm_lines = []
+            if self.tone_mood.get("mood", "").strip():
+                tm_lines.append(f"> {self.tone_mood['mood']}")
+            if self.tone_mood.get("indicators", "").strip():
+                tm_lines.append(f"> {self.tone_mood['indicators']}")
+            if tm_lines:
+                lines += section("Tone/Mood", tm_lines)
+        # If both mood and indicators are empty/blank, omit the section
 
         # 6. Discussion Notes (from chat)
         if self.discussion_notes:
@@ -179,8 +185,12 @@ class JournalParser:
             tm_section = extract_section("Tone/Mood")
             if tm_section:
                 tm_lines = [l.strip('> ').strip() for l in tm_section.splitlines() if l.strip().startswith('>')]
-                if len(tm_lines) >= 2:
-                    tone_mood = {"mood": tm_lines[0], "indicators": tm_lines[1]}
+                mood = tm_lines[0] if len(tm_lines) >= 1 else ''
+                indicators = tm_lines[1] if len(tm_lines) >= 2 else ''
+                if mood or indicators:
+                    tone_mood = {"mood": mood, "indicators": indicators}
+                else:
+                    tone_mood = None
             # Discussion Notes
             discussion_notes = []
             dn_section = extract_section("Discussion Notes (from chat)")

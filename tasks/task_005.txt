@@ -1,6 +1,6 @@
 # Task ID: 5
 # Title: Implement Journal Entry Generation
-# Status: in-progress
+# Status: done
 # Dependencies: 2, 3
 # Priority: high
 # Description: Create the core functionality for generating journal entries from Git commits, terminal history, and chat context.
@@ -817,7 +817,7 @@ Section-specific considerations:
 - Markdown formatting should be suitable for inclusion in the "Commit Metadata" section of a journal entry.
 </info added on 2025-05-25T20:48:26.820Z>
 
-## 20. Integration: Test all section generators as a complete system [pending]
+## 20. Integration: Test all section generators as a complete system [done]
 ### Dependencies: None
 ### Description: Design, test (write failing tests first), and implement an integration test that brings together all section generators and verifies their combined output as a complete journal entry. Collaborate with the user for design and approval.
 ### Details:
@@ -834,6 +834,45 @@ The integration test must use the JournalContext TypedDict model as the primary 
 4. No section generator modifies the TypedDict in ways that break other generators
 5. The final output reflects proper handling of the structured context data
 </info added on 2025-05-24T20:00:39.676Z>
+<info added on 2025-05-25T21:42:59.201Z>
+# Integration Test Implementation Plan
+
+## Goal
+Validate that all section generator functions work together to produce a complete, correctly formatted journal entry and ensure robust integration between context collection, section generation, and markdown serialization/parsing.
+
+## Implementation Steps
+
+### Step 1: Integration Test Design (TDD)
+- Create `tests/unit/test_journal_integration.py` with failing integration tests that:
+  - Use a realistic, fully populated JournalContext TypedDict
+  - Call each section generator and assemble results into a JournalEntry
+  - Serialize the JournalEntry to markdown and parse it back
+  - Assert round-trip integrity: parsed entry matches original data
+  - Test with partial/missing context, empty sections, and edge cases
+
+### Step 2: Implement Integration Logic and Fixes
+- Update section generators to properly accept and use the JournalContext parameter
+- Ensure section generators correctly extract required data from the TypedDict
+- Verify no section generator modifies the TypedDict in ways that break others
+- Implement proper handling of missing/empty sections in the output
+
+### Step 3: Rerun Tests and Refine
+- Confirm all integration tests pass
+- Verify the complete journal generation pipeline maintains context integrity
+- Refine code based on test results and feedback
+
+### Step 4: Document Integration Strategy
+- Add code comments explaining integration logic and test coverage
+- Document how the JournalContext flows through the system
+
+## Integration-Specific Considerations
+- Enforce anti-hallucination and formatting rules across all sections
+- Handle missing/empty sections gracefully in both generation and parsing
+- Ensure round-trip serialization/parsing is lossless for all supported fields
+- Test with both minimal and maximal context for robustness
+
+All integration logic and fixes will follow TDD principles, with failing tests written before implementation.
+</info added on 2025-05-25T21:42:59.201Z>
 
 ## 21. Implement collect_git_context and Integrate Real Git Data Collection (TDD) [done]
 ### Dependencies: None
