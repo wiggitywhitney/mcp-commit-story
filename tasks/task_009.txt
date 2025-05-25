@@ -1,7 +1,7 @@
 # Task ID: 9
 # Title: Implement Journal Entry Creation
 # Status: pending
-# Dependencies: 5, 6, 7
+# Dependencies: 5, 6
 # Priority: high
 # Description: Create the functionality to generate and save journal entries for Git commits, including context collection and formatting.
 # Details:
@@ -131,3 +131,17 @@ def new_entry(debug):
 5. Tests for journal-only commit detection
 6. Tests for context collection
 7. Integration tests for full entry creation flow
+
+# Subtasks:
+## 1. Install Simple Post-Commit Hook [pending]
+### Dependencies: None
+### Description: Install a basic post-commit hook that automatically triggers journal entry creation after each commit.
+### Details:
+Create a simple post-commit hook installation function that:
+1. Writes a basic shell script to .git/hooks/post-commit
+2. Makes the hook executable
+3. Hook content: calls 'mcp-commit-story new-entry' command
+4. No backup/restore logic (keep it simple for MVP)
+5. No auto-summarization triggers
+6. Basic error handling for missing .git directory
+

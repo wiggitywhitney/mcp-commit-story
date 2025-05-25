@@ -1,7 +1,7 @@
 # Task ID: 6
 # Title: Implement MCP Server Core
 # Status: pending
-# Dependencies: 1, 4
+# Dependencies: 1, 2, 5
 # Priority: high
 # Description: Create the MCP server implementation using the Anthropic MCP Python SDK, registering tools for journal operations.
 # Details:
