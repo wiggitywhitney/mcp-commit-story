@@ -106,4 +106,27 @@ def test_collect_git_context_bad_commit_hash(tmp_path):
     repo = git.Repo.init(tmp_path)
     # No commits yet, so any hash is bad
     with pytest.raises(git.BadName):
-        collect_git_context("deadbeef", repo=repo) 
+        collect_git_context("deadbeef", repo=repo)
+
+def test_collect_chat_history_structure_raises_on_none():
+    with pytest.raises(ValueError):
+        collect_chat_history()  # since_commit and max_messages_back default to None
+
+def test_collect_ai_terminal_commands_structure_raises_on_none():
+    with pytest.raises(ValueError):
+        collect_ai_terminal_commands()  # since_commit and max_messages_back default to None
+
+def test_collect_chat_history_structure_valid():
+    # Use dummy values for since_commit and max_messages_back
+    result = collect_chat_history(since_commit='dummy_commit', max_messages_back=10)
+    assert isinstance(result, dict)
+    assert set(result.keys()) == set(ChatHistory.__annotations__.keys())
+    for msg in result['messages']:
+        assert set(msg.keys()) == set(ChatMessage.__annotations__.keys())
+
+def test_collect_ai_terminal_commands_structure_valid():
+    result = collect_ai_terminal_commands(since_commit='dummy_commit', max_messages_back=10)
+    assert isinstance(result, dict)
+    assert set(result.keys()) == set(TerminalContext.__annotations__.keys())
+    for cmd in result['commands']:
+        assert set(cmd.keys()) == set(TerminalCommand.__annotations__.keys()) 
