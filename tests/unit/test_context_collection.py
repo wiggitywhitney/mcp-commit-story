@@ -1,10 +1,9 @@
 import pytest
-from mcp_commit_story import journal
 import git
 import os
 from pathlib import Path
-from mcp_commit_story.context_types import ChatMessage, ChatHistory, TerminalCommand, TerminalContext
 from typing import get_type_hints
+from mcp_commit_story.context_types import ChatMessage, ChatHistory, TerminalCommand, TerminalContext
 from mcp_commit_story.context_collection import collect_chat_history, collect_ai_terminal_commands, collect_git_context
 
 # Assume these will be imported from the journal module

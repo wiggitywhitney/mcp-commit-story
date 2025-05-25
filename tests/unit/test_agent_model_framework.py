@@ -1,8 +1,6 @@
 import pytest
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), './')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../tests/unit')))
 from test_agent_model_validation import (
     agent_model_parse,
     agent_model_generate_summary,

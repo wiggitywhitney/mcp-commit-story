@@ -2,6 +2,7 @@ import os
 import pytest
 from unittest import mock
 from pathlib import Path
+from mcp_commit_story import journal
 
 # Assume these will be imported from the journal module
 # from mcp_commit_story.journal import get_journal_file_path, append_to_journal_file, create_journal_directories
@@ -14,12 +15,10 @@ from pathlib import Path
     ("2025", "yearly_summary", "journal/summaries/yearly/2025-yearly.md"),
 ])
 def test_get_journal_file_path(date, entry_type, expected_path):
-    from mcp_commit_story import journal
     path = journal.get_journal_file_path(date=date, entry_type=entry_type)
     assert str(path) == expected_path
 
 def test_create_journal_directories_creates_all_needed_dirs(tmp_path):
-    from mcp_commit_story import journal
     base_dir = tmp_path / "journal"
     # Remove if exists
     if base_dir.exists():
@@ -38,7 +37,6 @@ def test_create_journal_directories_creates_all_needed_dirs(tmp_path):
     assert (base_dir / "summaries" / "yearly").exists()
 
 def test_append_to_journal_file_creates_and_appends(tmp_path):
-    from mcp_commit_story import journal
     file_path = tmp_path / "journal" / "daily" / "2025-05-14-journal.md"
     entry1 = "### 2025-05-14 09:00 — Commit abc123\n\nFirst entry."
     entry2 = "### 2025-05-14 10:00 — Commit def456\n\nSecond entry."
@@ -56,7 +54,6 @@ def test_append_to_journal_file_creates_and_appends(tmp_path):
     assert "\n---\n" in content
 
 def test_append_to_journal_file_handles_filesystem_errors(tmp_path):
-    from mcp_commit_story import journal
     file_path = tmp_path / "journal" / "daily" / "2025-05-14-journal.md"
     entry = "### 2025-05-14 09:00 — Commit abc123\n\nFirst entry."
     # Simulate permission error

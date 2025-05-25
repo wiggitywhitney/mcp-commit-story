@@ -1,7 +1,10 @@
 import pytest
 import os
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch, MagicMock, call
 from pathlib import Path
+import stat
+import shutil
+import tempfile
 from mcp_commit_story.git_utils import (
     is_git_repo, 
     get_repo, 
@@ -13,10 +16,6 @@ from mcp_commit_story.git_utils import (
     install_post_commit_hook,
     get_commits_since_last_entry
 )
-import stat
-from unittest.mock import call
-import shutil
-import tempfile
 from mcp_commit_story.context_collection import collect_git_context
 
 # TDD: Test that GitPython is installed and can instantiate a Repo object

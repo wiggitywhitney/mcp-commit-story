@@ -1,8 +1,8 @@
 import pytest
-from mcp_commit_story.context_types import ChatMessage, ChatHistory, TerminalCommand, TerminalContext, GitMetadata, GitContext, JournalContext, AccomplishmentsSection
-from mcp_commit_story import journal, git_utils
 from typing import get_type_hints
+from mcp_commit_story.context_types import ChatMessage, ChatHistory, TerminalCommand, TerminalContext, GitMetadata, GitContext, JournalContext, AccomplishmentsSection, FrustrationsSection, SummarySection, TechnicalSynopsisSection, ToneMoodSection, DiscussionNotesSection, TerminalCommandsSection, CommitMetadataSection
 from mcp_commit_story.context_collection import collect_chat_history, collect_ai_terminal_commands
+from mcp_commit_story import journal, git_utils
 
 def test_chat_history_type():
     # Mocked chat history
