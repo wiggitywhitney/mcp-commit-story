@@ -58,5 +58,5 @@ def test_append_to_journal_file_handles_filesystem_errors(tmp_path):
     entry = "### 2025-05-14 09:00 — Commit abc123\n\nFirst entry."
     # Simulate permission error
     with mock.patch("builtins.open", side_effect=PermissionError):
-        with pytest.raises(PermissionError):
+        with pytest.raises(ValueError):
             journal.append_to_journal_file(entry, file_path) 

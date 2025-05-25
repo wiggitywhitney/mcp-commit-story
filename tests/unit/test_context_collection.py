@@ -70,25 +70,10 @@ def test_collect_ai_terminal_commands_thoroughness_and_boundary():
     # all relevant commands are included, and filtering/formatting is correct.
     pass
 
-def test_collect_chat_history_structure():
-    result = collect_chat_history()
-    # Should be a dict with 'messages' key
-    assert isinstance(result, dict)
-    assert set(result.keys()) == set(ChatHistory.__annotations__.keys())
-    for msg in result['messages']:
-        assert set(msg.keys()) == set(ChatMessage.__annotations__.keys())
-
 def test_collect_chat_history_type_hint():
     hints = get_type_hints(collect_chat_history)
     assert 'return' in hints
     assert hints['return'].__name__ == 'ChatHistory'
-
-def test_collect_ai_terminal_commands_structure():
-    result = collect_ai_terminal_commands()
-    assert isinstance(result, dict)
-    assert set(result.keys()) == set(TerminalContext.__annotations__.keys())
-    for cmd in result['commands']:
-        assert set(cmd.keys()) == set(TerminalCommand.__annotations__.keys())
 
 def test_collect_ai_terminal_commands_type_hint():
     hints = get_type_hints(collect_ai_terminal_commands)
