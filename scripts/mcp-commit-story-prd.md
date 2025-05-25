@@ -872,3 +872,5 @@ class JournalContext(TypedDict):
 ```
 - All context is ephemeral and only persisted as part of the generated journal entry.
 - Tests enforce that all context collection functions return data matching these types.
+
+Requirement: Summary generation must prioritize journal entries that reflect substantial or complex work, and de-emphasize entries for small, routine, or trivial changes. This ensures that summaries highlight the most meaningful engineering efforts and avoid overemphasizing minor updates.

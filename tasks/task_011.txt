@@ -65,6 +65,20 @@ def generate_summary(files, period, config):
             # Extract entries and reflections
             # Implementation
     
+    # Analyze entries for significance/complexity
+    weighted_entries = []
+    for entry in entries:
+        # Determine entry significance based on factors like:
+        # - Length/detail of the entry
+        # - Presence of technical terms or complex concepts
+        # - Keywords indicating substantial work ("implemented", "designed", "solved")
+        # - Absence of trivial indicators ("minor fix", "typo", "small change")
+        significance_score = calculate_entry_significance(entry)
+        weighted_entries.append((entry, significance_score))
+    
+    # Sort entries by significance score to prioritize important work
+    weighted_entries.sort(key=lambda x: x[1], reverse=True)
+    
     # Generate summary sections
     summary = []
     
@@ -75,18 +89,56 @@ def generate_summary(files, period, config):
     
     # Add other sections
     summary.append("# Summary\n")
-    # Generate overall summary
+    # Generate overall summary with emphasis on significant entries
     
     summary.append("# Key Accomplishments\n")
-    # Extract accomplishments
+    # Extract accomplishments, prioritizing substantial work
     
     summary.append("# Challenges\n")
-    # Extract challenges
+    # Extract challenges, focusing on complex problems
     
     summary.append("# Technical Decisions\n")
-    # Extract decisions
+    # Extract decisions, highlighting important architectural choices
     
     return "\n\n".join(summary)
+
+def calculate_entry_significance(entry):
+    """Calculate significance score for an entry to prioritize substantial work"""
+    score = 0
+    
+    # Base score from length (longer entries often indicate more substantial work)
+    score += min(len(entry) / 100, 5)  # Cap at 5 points for length
+    
+    # Keywords indicating substantial work
+    substantial_indicators = [
+        "implement", "design", "architecture", "refactor", "optimize", 
+        "solve", "complex", "challenge", "significant", "major"
+    ]
+    
+    # Keywords indicating trivial work
+    trivial_indicators = [
+        "typo", "minor fix", "small change", "tweak", "trivial", 
+        "cosmetic", "rename", "formatting"
+    ]
+    
+    # Add points for substantial work indicators
+    for word in substantial_indicators:
+        if word in entry.lower():
+            score += 2
+    
+    # Subtract points for trivial work indicators
+    for word in trivial_indicators:
+        if word in entry.lower():
+            score -= 1.5
+    
+    # Analyze for technical complexity
+    # (This could be enhanced with more sophisticated NLP in the future)
+    technical_terms = ["algorithm", "database", "architecture", "performance", "security"]
+    for term in technical_terms:
+        if term in entry.lower():
+            score += 1
+    
+    return max(score, 0)  # Ensure score doesn't go negative
 ```
 
 4. Summary file saving:
@@ -222,3 +274,33 @@ def summarize(week, month, date, range, debug):
 7. Tests for handling different periods (day, week, month, year)
 8. Tests for handling date ranges
 9. Integration tests for full summary generation flow
+10. Tests for entry significance calculation
+11. Tests to verify that substantial work is properly prioritized in summaries
+12. Tests to verify that trivial entries are de-emphasized in summaries
+13. Tests with mixed entry types to ensure proper weighting in the final summary
+
+# Subtasks:
+## 11.1. Implement entry significance calculation [pending]
+### Dependencies: None
+### Description: Create the algorithm to analyze journal entries and assign significance scores based on content analysis.
+### Details:
+
+
+## 11.2. Modify summary generation to prioritize significant entries [pending]
+### Dependencies: None
+### Description: Update the summary generation logic to give more narrative weight to entries with higher significance scores.
+### Details:
+
+
+## 11.3. Create test cases for entry significance calculation [pending]
+### Dependencies: None
+### Description: Develop test cases with various types of entries (substantial, trivial, mixed) to verify proper significance scoring.
+### Details:
+
+
+## 11.4. Test summary prioritization with real-world examples [pending]
+### Dependencies: None
+### Description: Test the summary generation with a set of real-world journal entries to ensure meaningful work is properly highlighted.
+### Details:
+
+

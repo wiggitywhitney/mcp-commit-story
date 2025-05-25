@@ -377,6 +377,8 @@ Each operation will be instrumented with appropriate traces to monitor performan
 - Support arbitrary ranges (e.g., `--range "2025-01-01:2025-01-31"`)
 - Prioritize manually added reflections in summaries
 
+Note: When generating summaries, the algorithm should prioritize and give more narrative weight to journal entries that reflect substantial or complex work, while de-emphasizing entries for small, routine, or trivial changes. This ensures that the most meaningful engineering efforts are highlighted in daily, weekly, and monthly summaries.
+
 #### journal/init
 - Create initial journal directory structure
 - Generate default configuration file
