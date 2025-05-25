@@ -507,7 +507,79 @@
       "priority": "high",
       "details": "Implement the MCP server in `src/mcp_journal/server.py` with the following features:\n\n1. Server initialization:\n```python\nfrom mcp import MCPServer\n\ndef create_mcp_server():\n    \"\"\"Create and configure the MCP server\"\"\"\n    server = MCPServer()\n    \n    # Register tools\n    server.register_tool(\"journal/new-entry\", handle_new_entry)\n    server.register_tool(\"journal/summarize\", handle_summarize)\n    server.register_tool(\"journal/blogify\", handle_blogify)\n    server.register_tool(\"journal/backfill\", handle_backfill)\n    server.register_tool(\"journal/install-hook\", handle_install_hook)\n    server.register_tool(\"journal/add-reflection\", handle_add_reflection)\n    server.register_tool(\"journal/init\", handle_init)\n    \n    return server\n```\n\n2. Tool handlers:\n```python\n@trace_operation(\"journal_new_entry\")\nasync def handle_new_entry(request):\n    \"\"\"Handle journal/new-entry operation\"\"\"\n    # Implementation\n    return {\"status\": \"success\", \"file_path\": file_path}\n\n@trace_operation(\"journal_summarize\")\nasync def handle_summarize(request):\n    \"\"\"Handle journal/summarize operation\"\"\"\n    # Implementation\n    return {\"status\": \"success\", \"file_path\": file_path, \"content\": content}\n\n# Additional handlers for other operations\n```\n\n3. Server startup:\n```python\ndef start_server():\n    \"\"\"Start the MCP server\"\"\"\n    server = create_mcp_server()\n    # Configure server settings\n    server.start()\n    return server\n```\n\n4. Error handling:\n```python\nclass MCPError(Exception):\n    \"\"\"Base class for MCP server errors\"\"\"\n    def __init__(self, message, status=\"error\"):\n        self.message = message\n        self.status = status\n        super().__init__(message)\n\ndef handle_mcp_error(func):\n    \"\"\"Decorator for handling MCP errors\"\"\"\n    @functools.wraps(func)\n    async def wrapper(*args, **kwargs):\n        try:\n            return await func(*args, **kwargs)\n        except MCPError as e:\n            return {\"status\": e.status, \"error\": e.message}\n        except Exception as e:\n            return {\"status\": \"error\", \"error\": str(e)}\n    return wrapper\n```",
       "testStrategy": "1. Unit tests for server initialization\n2. Tests for each tool handler\n3. Tests for error handling\n4. Mock MCP server for testing\n5. Tests for server startup and configuration\n6. Integration tests for server operations",
-      "subtasks": []
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "MCP Server Initialization & Setup",
+          "description": "Scaffold the MCP server using the Anthropic MCP Python SDK. Integrate the SDK, set up the server class, and define the server entrypoint. Follow strict TDD: (1) Define required types/interfaces for server and tool registration, (2) Write failing tests for server instantiation and tool registration, (3) Ask user for specific server config requirements, (4) Write tests for config pattern compliance, (5) Implement server scaffold and registration logic, (6) Run full test suite and document. All code must use async/await and proper type hints. This subtask is a dependency for all other Task 6 subtasks.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 6
+        },
+        {
+          "id": 2,
+          "title": "Core Error Handling System",
+          "description": "Implement the MCPError base class and error handling decorators for the MCP server. TDD steps: (1) Define error/response types, (2) Write failing tests for error handling and decorator, (3) Ask user for error handling requirements, (4) Write tests for error pattern compliance, (5) Implement error classes and decorator, (6) Run full test suite and document. Depends on MCP Server Initialization & Setup.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [
+            "6.1"
+          ],
+          "parentTaskId": 6
+        },
+        {
+          "id": 3,
+          "title": "journal/new-entry Operation Handler",
+          "description": "Implement the core MCP operation for journal entry generation. TDD steps: (1) Define request/response types, (2) Write failing tests for handler, (3) Ask user for operation-specific requirements, (4) Write tests for compliance, (5) Implement async handler using Task 5 journal generation logic, (6) Run full test suite and document. Must use proper error handling and type hints. Depends on MCP Server Initialization & Setup and Core Error Handling System.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [
+            "6.1",
+            "6.2"
+          ],
+          "parentTaskId": 6
+        },
+        {
+          "id": 4,
+          "title": "journal/add-reflection Operation Handler",
+          "description": "Implement the MCP operation for manual reflection addition. TDD steps: (1) Define request/response types, (2) Write failing tests for handler, (3) Ask user for operation-specific requirements, (4) Write tests for compliance, (5) Implement async handler, (6) Run full test suite and document. Must use proper error handling and type hints. Depends on MCP Server Initialization & Setup and Core Error Handling System.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [
+            "6.1",
+            "6.2"
+          ],
+          "parentTaskId": 6
+        },
+        {
+          "id": 5,
+          "title": "Server Startup & Configuration",
+          "description": "Implement server startup, shutdown, and configuration logic. TDD steps: (1) Define config types/interfaces, (2) Write failing tests for lifecycle management, (3) Ask user for startup/config requirements, (4) Write tests for compliance, (5) Implement startup/config logic, (6) Run full test suite and document. Must use async/await and integrate with previous subtasks. Depends on MCP Server Initialization & Setup and Core Error Handling System.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [
+            "6.1",
+            "6.2"
+          ],
+          "parentTaskId": 6
+        },
+        {
+          "id": 6,
+          "title": "MCP Server Integration Test",
+          "description": "Write an end-to-end integration test for the MCP server, covering all registered operations (journal/new-entry, journal/add-reflection, etc.). TDD steps: (1) Define integration test scenarios and expected results, (2) Write failing integration tests, (3) Ask user for additional integration requirements, (4) Write tests for compliance, (5) Implement integration logic, (6) Run full test suite and document. Must cover error handling, async/await, and integration with Task 5 journal generation. Depends on all previous Task 6 subtasks.",
+          "details": "",
+          "status": "pending",
+          "dependencies": [
+            "6.1",
+            "6.2",
+            "6.3",
+            "6.4",
+            "6.5"
+          ],
+          "parentTaskId": 6
+        }
+      ]
     },
     {
       "id": 7,

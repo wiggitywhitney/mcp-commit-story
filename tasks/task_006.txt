@@ -83,3 +83,41 @@ def handle_mcp_error(func):
 4. Mock MCP server for testing
 5. Tests for server startup and configuration
 6. Integration tests for server operations
+
+# Subtasks:
+## 1. MCP Server Initialization & Setup [pending]
+### Dependencies: None
+### Description: Scaffold the MCP server using the Anthropic MCP Python SDK. Integrate the SDK, set up the server class, and define the server entrypoint. Follow strict TDD: (1) Define required types/interfaces for server and tool registration, (2) Write failing tests for server instantiation and tool registration, (3) Ask user for specific server config requirements, (4) Write tests for config pattern compliance, (5) Implement server scaffold and registration logic, (6) Run full test suite and document. All code must use async/await and proper type hints. This subtask is a dependency for all other Task 6 subtasks.
+### Details:
+
+
+## 2. Core Error Handling System [pending]
+### Dependencies: 6.1
+### Description: Implement the MCPError base class and error handling decorators for the MCP server. TDD steps: (1) Define error/response types, (2) Write failing tests for error handling and decorator, (3) Ask user for error handling requirements, (4) Write tests for error pattern compliance, (5) Implement error classes and decorator, (6) Run full test suite and document. Depends on MCP Server Initialization & Setup.
+### Details:
+
+
+## 3. journal/new-entry Operation Handler [pending]
+### Dependencies: 6.1, 6.2
+### Description: Implement the core MCP operation for journal entry generation. TDD steps: (1) Define request/response types, (2) Write failing tests for handler, (3) Ask user for operation-specific requirements, (4) Write tests for compliance, (5) Implement async handler using Task 5 journal generation logic, (6) Run full test suite and document. Must use proper error handling and type hints. Depends on MCP Server Initialization & Setup and Core Error Handling System.
+### Details:
+
+
+## 4. journal/add-reflection Operation Handler [pending]
+### Dependencies: 6.1, 6.2
+### Description: Implement the MCP operation for manual reflection addition. TDD steps: (1) Define request/response types, (2) Write failing tests for handler, (3) Ask user for operation-specific requirements, (4) Write tests for compliance, (5) Implement async handler, (6) Run full test suite and document. Must use proper error handling and type hints. Depends on MCP Server Initialization & Setup and Core Error Handling System.
+### Details:
+
+
+## 5. Server Startup & Configuration [pending]
+### Dependencies: 6.1, 6.2
+### Description: Implement server startup, shutdown, and configuration logic. TDD steps: (1) Define config types/interfaces, (2) Write failing tests for lifecycle management, (3) Ask user for startup/config requirements, (4) Write tests for compliance, (5) Implement startup/config logic, (6) Run full test suite and document. Must use async/await and integrate with previous subtasks. Depends on MCP Server Initialization & Setup and Core Error Handling System.
+### Details:
+
+
+## 6. MCP Server Integration Test [pending]
+### Dependencies: 6.1, 6.2, 6.3, 6.4, 6.5
+### Description: Write an end-to-end integration test for the MCP server, covering all registered operations (journal/new-entry, journal/add-reflection, etc.). TDD steps: (1) Define integration test scenarios and expected results, (2) Write failing integration tests, (3) Ask user for additional integration requirements, (4) Write tests for compliance, (5) Implement integration logic, (6) Run full test suite and document. Must cover error handling, async/await, and integration with Task 5 journal generation. Depends on all previous Task 6 subtasks.
+### Details:
+
+
