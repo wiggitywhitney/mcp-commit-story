@@ -1,6 +1,14 @@
 import pytest
-from mcp_commit_story.journal import JournalEntry, generate_summary_section, generate_technical_synopsis_section
-from mcp_commit_story.context_types import SummarySection, TechnicalSynopsisSection, JournalContext
+from mcp_commit_story.journal import (
+    JournalEntry, generate_summary_section, generate_technical_synopsis_section,
+    generate_frustrations_section, generate_tone_mood_section, generate_discussion_notes_section,
+    generate_terminal_commands_section, generate_commit_metadata_section
+)
+from mcp_commit_story.context_types import (
+    SummarySection, TechnicalSynopsisSection, JournalContext,
+    FrustrationsSection, ToneMoodSection, DiscussionNotesSection,
+    TerminalCommandsSection, CommitMetadataSection
+)
 from fixtures.summary_test_data import (
     mock_context_with_explicit_purpose,
     mock_context_evolution_thinking,
@@ -434,7 +442,7 @@ def test_generate_technical_synopsis_section_contains_technical_details():
     }
     result = generate_technical_synopsis_section(ctx)
     assert "Refactored authentication logic" in result["technical_synopsis"]
-    assert "auth.py" in result["technical_synopsis"] 
+    assert "auth.py" in result["technical_synopsis"]
 
 @pytest.mark.xfail(reason="TDD: Not implemented yet")
 def test_generate_technical_synopsis_section_returns_typed_dict():
@@ -456,4 +464,75 @@ def test_generate_technical_synopsis_section_accepts_journal_context():
 def test_generate_technical_synopsis_section_handles_none():
     result = generate_technical_synopsis_section(None)  # type: ignore
     assert isinstance(result, dict)
-    assert result["technical_synopsis"] == "" 
+    assert result["technical_synopsis"] == ""
+
+# --- Frustrations Section Generator ---
+def test_generate_frustrations_section_returns_placeholder():
+    ctx = mock_context_with_explicit_purpose()
+    result = generate_frustrations_section(ctx)
+    assert isinstance(result, dict)
+    assert 'frustrations' in result
+    assert isinstance(result['frustrations'], list)
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_frustrations_section_ai_content():
+    ctx = mock_context_evolution_thinking()
+    result = generate_frustrations_section(ctx)
+    assert any('timeout' in f.lower() or 'connection' in f.lower() for f in result['frustrations'])
+
+# --- Tone/Mood Section Generator ---
+def test_generate_tone_mood_section_returns_placeholder():
+    ctx = mock_context_with_explicit_purpose()
+    result = generate_tone_mood_section(ctx)
+    assert isinstance(result, dict)
+    assert 'mood' in result and 'indicators' in result
+    assert isinstance(result['mood'], str)
+    assert isinstance(result['indicators'], str)
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_tone_mood_section_ai_content():
+    ctx = mock_context_unkind_language()
+    result = generate_tone_mood_section(ctx)
+    assert 'frustration' in result['mood'].lower() or 'evidence' in result['indicators'].lower()
+
+# --- Discussion Notes Section Generator ---
+def test_generate_discussion_notes_section_returns_placeholder():
+    ctx = mock_context_with_explicit_purpose()
+    result = generate_discussion_notes_section(ctx)
+    assert isinstance(result, dict)
+    assert 'discussion_notes' in result
+    assert isinstance(result['discussion_notes'], list)
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_discussion_notes_section_ai_content():
+    ctx = mock_context_with_explicit_purpose()
+    result = generate_discussion_notes_section(ctx)
+    assert any('auth' in str(note).lower() for note in result['discussion_notes'])
+
+# --- Terminal Commands Section Generator ---
+def test_generate_terminal_commands_section_returns_placeholder():
+    ctx = mock_context_with_explicit_purpose()
+    result = generate_terminal_commands_section(ctx)
+    assert isinstance(result, dict)
+    assert 'terminal_commands' in result
+    assert isinstance(result['terminal_commands'], list)
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_terminal_commands_section_ai_content():
+    ctx = mock_context_no_chat()
+    result = generate_terminal_commands_section(ctx)
+    assert isinstance(result['terminal_commands'], list)
+
+# --- Commit Metadata Section Generator ---
+def test_generate_commit_metadata_section_returns_placeholder():
+    ctx = mock_context_with_explicit_purpose()
+    result = generate_commit_metadata_section(ctx)
+    assert isinstance(result, dict)
+    assert 'commit_metadata' in result
+    assert isinstance(result['commit_metadata'], dict)
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_commit_metadata_section_ai_content():
+    ctx = mock_context_with_explicit_purpose()
+    result = generate_commit_metadata_section(ctx)
+    assert 'hash' in result['commit_metadata'] or 'author' in result['commit_metadata'] 
