@@ -306,64 +306,6 @@ Update requirements and test strategy to incorporate TypedDict-based context mod
 8. Create recovery mechanisms when possible for non-critical type errors
 </info added on 2025-05-24T19:56:59.565Z>
 
-## 8. Create CLI command for manual journal generation [pending]
-### Dependencies: 5.6, 5.7
-### Description: Implement a command-line interface for manually generating journal entries, with explicit user collaboration at each step
-### Details:
-Create a CLI command in `src/mcp_journal/cli.py` that allows users to manually generate journal entries for specific commits or time periods. Connect this to the journal generation functionality.
-
-Collaboration steps:
-1. Present proposed CLI design to user
-2. Ask specific questions about user preferences:
-   - What command syntax is most intuitive?
-   - What options and flags should be available?
-   - How should output be displayed in the terminal?
-   - What confirmation steps should be included?
-3. Create test cases based on user feedback and present for approval
-4. Document all user decisions in code comments and docstrings
-5. Implement CLI based on approved design
-6. Present implementation for final review before marking complete
-<info added on 2025-05-24T19:55:04.163Z>
-Add support for the TypedDict-based JournalContext model:
-
-1. Update CLI command to accept a JournalContext parameter for manual journal generation
-2. Implement validation for the JournalContext structure when provided via CLI
-3. Add type hints and documentation for the JournalContext parameter
-4. Create test cases specifically for validating different JournalContext scenarios:
-   - Valid complete context
-   - Partial context with required fields
-   - Invalid context with missing required fields
-   - Invalid context with incorrect field types
-5. Document the JournalContext structure in CLI help text and docstrings
-6. Ensure error messages provide clear guidance when context validation fails
-</info added on 2025-05-24T19:55:04.163Z>
-<info added on 2025-05-24T19:57:20.961Z>
-Requirements for CLI implementation:
-
-1. CLI command must accept a JournalContext parameter for manual journal generation
-   - Support JSON input format for complex context objects
-   - Allow for file-based input of JournalContext data
-   - Provide clear examples in help documentation
-
-2. Implement robust validation for JournalContext:
-   - Validate all required fields are present
-   - Check type correctness for all fields
-   - Provide specific error messages identifying validation issues
-
-3. Test strategy:
-   - Create unit tests covering all JournalContext validation scenarios
-   - Test with valid complete context objects
-   - Test with partial context containing only required fields
-   - Test with invalid contexts (missing required fields, incorrect types)
-   - Test CLI argument parsing with various input methods
-   - Verify error handling produces user-friendly messages
-
-4. Documentation:
-   - Document JournalContext structure in CLI help text
-   - Add comprehensive docstrings explaining parameter requirements
-   - Include usage examples showing different context configurations
-</info added on 2025-05-24T19:57:20.961Z>
-
 ## 9. Journal Entry Format Improvements [done]
 ### Dependencies: None
 ### Description: Improve the formatting and readability of generated journal entries. This includes adding visual separators between entries, adjusting header hierarchy, improving speaker change clarity in discussion notes, and making additional whitespace and formatting improvements for code blocks, lists, and blockquotes. [Updated: 5/20/2025]
@@ -839,7 +781,7 @@ The function should accept JournalContext or relevant subtypes as input paramete
 Section-specific considerations: This section is for discussion context, so tests should include scenarios with missing or malformed chat data, and output should attribute speakers correctly when possible.
 </info added on 2025-05-25T13:07:28.731Z>
 
-## 19. Implement generate_commit_metadata_section(commit) [pending]
+## 19. Implement generate_commit_metadata_section(commit) [done]
 ### Dependencies: None
 ### Description: Design, test (write failing tests first), and implement the commit metadata section generator using all available commit data. Collaborate with the user for design and approval.
 ### Details:
@@ -854,6 +796,24 @@ The generate_commit_metadata_section function must accept JournalContext (or rel
 3. Error cases when incorrect context types are provided
 4. Compatibility with the broader journal generation pipeline
 </info added on 2025-05-24T20:00:33.940Z>
+<info added on 2025-05-25T20:48:26.820Z>
+Implementation Plan for generate_commit_metadata_section Section Generator:
+
+Step 0: Mark subtask as in progress and document this plan.
+Step 1: Locate and import the CommitMetadataSection TypedDict and JournalContext from src/mcp_commit_story/context_types.py. Verify structure matches requirements for commit metadata output.
+Step 2: Write failing tests for the section generator: function structure, return type, output format, mock JournalContext (happy path, edge cases, section-specific scenarios). Run tests to confirm they fail.
+Step 3: Ask user for the specific AI prompt content for this section. Verify anti-hallucination rules and output format specs are included.
+Step 4: Write tests for AI pattern compliance: correct TypedDict, parameter acceptance, empty/None handling. Run tests to confirm they fail.
+Step 5: Implement generate_commit_metadata_section in journal.py with approved AI prompt in docstring, placeholder return, and canonical function pattern. Run tests to confirm they pass.
+Step 6: Run full test suite, add code comments, and note assumptions/limitations.
+
+Section-specific considerations:
+- This section must output a dict of commit metadata fields and values, formatted for journal entry inclusion.
+- Tests should cover scenarios with missing or partial git context, and verify correct handling of edge cases.
+- Output format must match canonical CommitMetadataSection structure.
+- Anti-hallucination rules must be strictly enforced (no invented metadata).
+- Markdown formatting should be suitable for inclusion in the "Commit Metadata" section of a journal entry.
+</info added on 2025-05-25T20:48:26.820Z>
 
 ## 20. Integration: Test all section generators as a complete system [pending]
 ### Dependencies: None

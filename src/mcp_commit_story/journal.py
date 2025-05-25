@@ -42,7 +42,7 @@ class JournalEntry:
         terminal_commands: Optional[List[str]] = None,
         discussion_notes: Optional[List[Union[str, Dict[str, str]]]] = None,
         tone_mood: Optional[Dict[str, str]] = None,  # {'mood': str, 'indicators': str}
-        behind_the_commit: Optional[Dict[str, str]] = None,
+        commit_metadata: Optional[Dict[str, str]] = None,
     ):
         self.timestamp = timestamp
         self.commit_hash = commit_hash
@@ -53,7 +53,7 @@ class JournalEntry:
         self.terminal_commands = terminal_commands or []
         self.discussion_notes = discussion_notes or []
         self.tone_mood = tone_mood
-        self.behind_the_commit = behind_the_commit or {}
+        self.commit_metadata = commit_metadata or {}
 
     def to_markdown(self) -> str:
         """
@@ -138,9 +138,9 @@ class JournalEntry:
             tc_lines.append("```")
             lines += section("Terminal Commands (AI Session)", tc_lines)
 
-        # 8. Commit Metadata (was 'Behind the Commit')
-        if self.behind_the_commit:
-            btc_lines = [f"- **{k}:** {v}" for k, v in self.behind_the_commit.items()]
+        # 8. Commit Metadata
+        if self.commit_metadata:
+            btc_lines = [f"- **{k}:** {v}" for k, v in self.commit_metadata.items()]
             lines += section("Commit Metadata", btc_lines)
 
         # Remove trailing blank lines
@@ -153,34 +153,82 @@ class JournalParser:
     def parse(md):
         if not md or not md.strip():
             raise JournalParseError('Empty entry')
-        # Try to parse daily note entry
-        m = re.search(r'###\s+(\d{1,2}:\d{2} [AP]M) — Commit ([a-zA-Z0-9]+)', md)
-        if m:
-            timestamp = m.group(1)
-            commit_hash = m.group(2)
-            # Summary
-            summary = ''
-            m2 = re.search(r'## Summary\n(.+?)(\n##|$)', md, re.DOTALL)
-            if m2:
-                summary = m2.group(1).strip()
+        # Parse H4 (####) headers for all sections
+        def extract_section(header):
+            pattern = rf"#### {header}\n(.+?)(?=\n#### |\Z)"
+            m = re.search(pattern, md, re.DOTALL)
+            return m.group(1).strip() if m else ''
+        timestamp_commit = re.search(r"###\s+(.*?) — Commit ([a-zA-Z0-9]+)", md)
+        if timestamp_commit:
+            timestamp = timestamp_commit.group(1)
+            commit_hash = timestamp_commit.group(2)
+            summary = extract_section("Summary")
+            technical_synopsis = extract_section("Technical Synopsis")
             # Accomplishments
             accomplishments = []
-            m2 = re.search(r'## Accomplishments\n((?:- .+\n)+)', md)
-            if m2:
-                accomplishments = [line[2:].strip() for line in m2.group(1).splitlines() if line.startswith('- ')]
+            acc_section = extract_section("Accomplishments")
+            if acc_section:
+                accomplishments = [line[2:].strip() for line in acc_section.splitlines() if line.startswith('- ')]
             # Frustrations
             frustrations = []
-            m2 = re.search(r'## Frustrations or Roadblocks\n((?:- .+\n)+)', md)
-            if m2:
-                frustrations = [line[2:].strip() for line in m2.group(1).splitlines() if line.startswith('- ')]
+            frus_section = extract_section("Frustrations or Roadblocks")
+            if frus_section:
+                frustrations = [line[2:].strip() for line in frus_section.splitlines() if line.startswith('- ')]
+            # Tone/Mood
+            tone_mood = None
+            tm_section = extract_section("Tone/Mood")
+            if tm_section:
+                tm_lines = [l.strip('> ').strip() for l in tm_section.splitlines() if l.strip().startswith('>')]
+                if len(tm_lines) >= 2:
+                    tone_mood = {"mood": tm_lines[0], "indicators": tm_lines[1]}
+            # Discussion Notes
+            discussion_notes = []
+            dn_section = extract_section("Discussion Notes (from chat)")
+            if dn_section:
+                for l in dn_section.splitlines():
+                    l = l.strip()
+                    if l.startswith('> **'):
+                        # Speaker-attributed
+                        m = re.match(r'> \*\*(.+?):\*\* (.+)', l)
+                        if m:
+                            discussion_notes.append({"speaker": m.group(1), "text": m.group(2)})
+                    elif l.startswith('> '):
+                        discussion_notes.append(l[2:])
+            # Terminal Commands
+            terminal_commands = []
+            tc_section = extract_section("Terminal Commands (AI Session)")
+            if tc_section:
+                in_block = False
+                for l in tc_section.splitlines():
+                    if l.strip() == '```bash':
+                        in_block = True
+                        continue
+                    if l.strip() == '```':
+                        in_block = False
+                        continue
+                    if in_block:
+                        terminal_commands.append(l)
+            # Commit Metadata
+            commit_metadata = {}
+            cm_section = extract_section("Commit Metadata")
+            if cm_section:
+                for l in cm_section.splitlines():
+                    l = l.strip()
+                    if l.startswith('- **') and ':** ' in l:
+                        k, v = l[4:].split(':** ', 1)
+                        commit_metadata[k.strip()] = v.strip()
             return JournalEntry(
                 timestamp=timestamp,
                 commit_hash=commit_hash,
+                summary=summary,
+                technical_synopsis=technical_synopsis,
                 accomplishments=accomplishments,
                 frustrations=frustrations,
-                summary=summary,
+                tone_mood=tone_mood,
+                discussion_notes=discussion_notes,
+                terminal_commands=terminal_commands,
+                commit_metadata=commit_metadata,
             )
-        # Reflection entries are not supported in the canonical JournalEntry structure
         raise JournalParseError('Unrecognized journal entry format')
 
 def get_journal_file_path(date, entry_type):
@@ -229,6 +277,9 @@ def append_to_journal_file(entry, file_path):
     except Exception as e:
         raise
 
+# Section Generator: Summary
+# Purpose: Generates the Summary section for a journal entry using AI.
+# This function creates a narrative summary of what changed and why, using explicit developer statements and technical context from chat and git. It returns a placeholder; the AI agent is expected to execute the docstring prompt and fill in the content.
 def generate_summary_section(journal_context) -> SummarySection:
     """
     AI Prompt for Summary Section Generation
@@ -297,6 +348,10 @@ def generate_summary_section(journal_context) -> SummarySection:
     """
     return SummarySection(summary="")
 
+# Section Generator: Technical Synopsis
+# TechnicalSynopsisSection: Represents the technical synopsis section of a journal entry.
+# This section provides a code-focused analysis of what changed, generated by an AI-driven function pattern.
+# The function returns a placeholder; the AI agent is expected to execute the docstring prompt and fill in the content.
 def generate_technical_synopsis_section(journal_context: JournalContext) -> TechnicalSynopsisSection:
     """
     AI Prompt for Technical Synopsis Section Generation
@@ -366,7 +421,7 @@ def generate_technical_synopsis_section(journal_context: JournalContext) -> Tech
     # Returns a placeholder. The AI agent is expected to execute the docstring prompt and fill in the content.
     return TechnicalSynopsisSection(technical_synopsis="")
 
-# Accomplishments Section Generator
+# Section Generator: Accomplishments
 # Purpose: Extracts and summarizes what was successfully completed or achieved in the commit, focusing on developer satisfaction and explicit evidence from chat and git context.
 # Assumptions: Only includes accomplishments with clear evidence; does not infer or speculate. Returns an empty list if nothing is found.
 # Limitations: Requires AI agent to fulfill the docstring prompt; placeholder implementation returns empty list.
@@ -449,6 +504,10 @@ def generate_accomplishments_section(journal_context: JournalContext) -> Accompl
     """
     return AccomplishmentsSection(accomplishments=[])
 
+# Section Generator: Frustrations
+# Purpose: Extracts and summarizes challenges, setbacks, and frustrations encountered in the commit, using only explicit evidence from chat, terminal, and git context.
+# Assumptions: Only includes frustrations with clear evidence; does not infer or speculate. Returns an empty list if nothing is found.
+# Limitations: Requires AI agent to fulfill the docstring prompt; placeholder implementation returns empty list.
 def generate_frustrations_section(journal_context: JournalContext) -> FrustrationsSection:
     """
     AI Prompt for Frustrations or Roadblocks Section Generation
@@ -537,10 +596,8 @@ def generate_frustrations_section(journal_context: JournalContext) -> Frustratio
     return FrustrationsSection(frustrations=[])
 
 # Section Generator: Tone/Mood
-# This function generates the Tone/Mood section for a journal entry using AI.
-# It analyzes chat, commit, and terminal context to infer the developer's emotional state and supporting evidence.
-# Assumptions: Only includes moods with explicit or strongly inferred evidence; does not speculate.
-# Limitations: Returns a placeholder until the AI agent executes the docstring prompt.
+# Purpose: Generates the Tone/Mood section for a journal entry using AI.
+# This function analyzes chat, commit, and terminal context to infer the developer's emotional state and supporting evidence. Only includes moods with explicit or strongly inferred evidence; does not speculate. Returns a placeholder until the AI agent executes the docstring prompt.
 def generate_tone_mood_section(journal_context: JournalContext) -> ToneMoodSection:
     """
     AI Prompt for Tone/Mood Section Generation
@@ -633,9 +690,8 @@ def generate_tone_mood_section(journal_context: JournalContext) -> ToneMoodSecti
     return ToneMoodSection(mood="", indicators="")
 
 # Section Generator: Discussion Notes
-# Generates the Discussion Notes section for a journal entry using AI.
-# Assumptions: Only includes discussion points with explicit evidence in chat; does not paraphrase or invent content.
-# Limitations: Returns a placeholder until the AI agent executes the docstring prompt.
+# Purpose: Generates the Discussion Notes section for a journal entry using AI.
+# This function extracts and summarizes all relevant discussion points from chat history, focusing on technical decisions, emotions, problem-solving, and other valuable conversation that shaped the work in this commit. Only includes discussion points with explicit evidence in chat; does not paraphrase or invent content. Returns a placeholder until the AI agent executes the docstring prompt.
 def generate_discussion_notes_section(journal_context: JournalContext) -> DiscussionNotesSection:
     """
     AI Prompt for Discussion Notes Section Generation
@@ -714,9 +770,8 @@ def generate_discussion_notes_section(journal_context: JournalContext) -> Discus
     return DiscussionNotesSection(discussion_notes=[])
 
 # Section Generator: Terminal Commands
-# Generates the Terminal Commands section for a journal entry using AI.
-# Assumptions: Only includes commands with explicit evidence in terminal context; does not paraphrase or invent content.
-# Limitations: Returns a placeholder until the AI agent executes the docstring prompt.
+# Purpose: Generates the Terminal Commands section for a journal entry using AI.
+# This function extracts and lists all relevant terminal commands executed during the commit, focusing on commands that demonstrate problem-solving, technical approach, or challenges. Only includes commands with explicit evidence in terminal context; does not paraphrase or invent content. Returns a placeholder until the AI agent executes the docstring prompt.
 def generate_terminal_commands_section(journal_context: JournalContext) -> TerminalCommandsSection:
     """
     AI Prompt for Terminal Commands Section Generation
@@ -789,23 +844,58 @@ def generate_terminal_commands_section(journal_context: JournalContext) -> Termi
     """
     return TerminalCommandsSection(terminal_commands=[])
 
+# Section Generator: Commit Metadata
+# Purpose: Generates the Commit Metadata section for a journal entry using AI.
+# This function extracts and formats relevant commit metadata from git context, providing key statistics and classifications that support the journal entry narrative. Only includes metadata fields directly supported by the git context data; does not invent or speculate. Returns a placeholder until the AI agent executes the docstring prompt.
 def generate_commit_metadata_section(journal_context: JournalContext) -> CommitMetadataSection:
     """
     AI Prompt for Commit Metadata Section Generation
 
-    Purpose: Extract and summarize all relevant commit metadata for this entry, including commit hash, author, date, files changed, insertions, deletions, and any other key statistics.
+    Purpose: Extract and format relevant commit metadata from git context, providing key statistics and classifications that support the journal entry narrative.
 
-    Instructions:
-    - Include only metadata that is directly supported by the git context.
-    - Present as key-value pairs (e.g., 'files_changed': '7').
-    - Do not speculate or invent metadata fields.
+    Instructions: Extract commit metadata from git context to create a clean, scannable summary of commit statistics and characteristics. Focus on metadata that provides useful context for understanding the scope and nature of the changes.
+
+    Priority for Content Sources:
+    1. Git context from journal_context.git - the authoritative source for all commit metadata
+    2. No other sources - work exclusively with the provided git context
+
+    Metadata Extraction:
+    Extract and format the following metadata fields when available and meaningful:
+    - **files_changed**: Total number of files modified in the commit
+    - **insertions**: Total lines added
+    - **deletions**: Total lines removed  
+    - **size_classification**: Pre-classified commit size (small/medium/large)
+    - **is_merge**: Whether this was a merge commit
+    - **source_files**: Count of source code files changed
+    - **config_files**: Count of configuration files changed
+    - **docs_files**: Count of documentation files changed
+    - **tests_files**: Count of test files changed
+
+    Filtering Guidelines:
+    Include only metadata that adds narrative value:
+    - Include basic statistics (files_changed, insertions, deletions) when non-zero
+    - Include size_classification and merge status when meaningful
+    - Include file type counts only when non-zero and show meaningful distribution
+    - Exclude metadata fields that are empty, zero, or not meaningful for this commit
 
     ANTI-HALLUCINATION RULES:
-    - Do NOT invent, infer, or summarize metadata not explicitly present in the git context.
-    - Only include fields directly supported by the git context.
-    - If no metadata is found, return an empty dict.
+    - Do NOT invent, infer, or calculate metadata not explicitly present in the git context
+    - Only include metadata fields directly supported by the git context data
+    - If no git context is available, return an empty dict and omit the section
+    - Never speculate about commit characteristics not present in the data
 
     Output Format:
-    - Dict[str, str] of commit metadata fields and values.
+    - Dict[str, str] with specified field names as keys and formatted values as strings
+    - Return empty dict if no relevant metadata is found and omit the section
+    - All values should be formatted as strings suitable for display
+
+    CHECKLIST:
+    - [ ] Extracted metadata exclusively from journal_context.git
+    - [ ] Used specified field names for consistency
+    - [ ] Included only meaningful/non-zero metadata fields
+    - [ ] Formatted all values as display-ready strings
+    - [ ] Did NOT invent, calculate, or speculate about metadata not present in git context
+    - [ ] Returned empty dict if no relevant metadata found
+    - [ ] Verified all metadata is grounded in actual git context data
     """
     return CommitMetadataSection(commit_metadata={})

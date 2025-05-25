@@ -134,7 +134,7 @@ def test_very_long_entry_formatting():
         terminal_commands=[f"cmd_{i}" for i in range(50)],
         discussion_notes=[{"speaker": "Human", "text": f"Note {i}"} for i in range(50)],
         tone_mood={"mood": "Relieved", "indicators": "All tests passed."},
-        behind_the_commit={"files_changed": "10", "insertions": "100", "deletions": "5"}
+        commit_metadata={"files_changed": "10", "insertions": "100", "deletions": "5"}
     )
     md = entry.to_markdown()
     assert "A" * 1000 in md
@@ -184,7 +184,6 @@ def test_omit_empty_sections():
     assert "Terminal Commands" not in md
     assert "Discussion Notes" not in md
     assert "Tone/Mood" not in md
-    assert "Behind the Commit" not in md
     assert "Technical Synopsis" not in md
 
 
@@ -312,7 +311,7 @@ def test_integration_multiple_formatting_rules():
         terminal_commands=["ls", "pwd"],
         discussion_notes=notes,
         tone_mood={"mood": "Happy", "indicators": "All good."},
-        behind_the_commit={"files_changed": "2", "insertions": "10", "deletions": "1"}
+        commit_metadata={"files_changed": "2", "insertions": "10", "deletions": "1"}
     )
     md = entry.to_markdown()
     # Check for all formatting features

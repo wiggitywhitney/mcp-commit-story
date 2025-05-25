@@ -9,33 +9,32 @@ from mcp_commit_story.context_collection import collect_chat_history, collect_ai
 DAILY_NOTE_MD = '''
 ### 2:17 PM — Commit def456
 
-## Summary
+#### Summary
 A friendly, succinct summary that captures what was accomplished.
 
-## Accomplishments
+#### Accomplishments
 - Implemented feature X
 - Fixed bug Y
 
-## Frustrations or Roadblocks
+#### Frustrations or Roadblocks
 - Spent hours debugging config
 
-## Terminal Commands (AI Session)
-- `git status`
-- `pytest`
+#### Terminal Commands (AI Session)
+```bash
+git status
+pytest
+```
 
-## Discussion Notes (from chat)
-> "Should we use PostgreSQL or MongoDB? I'm leaning toward PostgreSQL because we need ACID compliance for financial data..."
+#### Discussion Notes (from chat)
+> Should we use PostgreSQL or MongoDB? I'm leaning toward PostgreSQL because we need ACID compliance for financial data...
 
-## Tone + Mood (inferred)
-> Mood: Focused and energized
+#### Tone/Mood
+> Focused and energized
 
-## Behind the Commit
+#### Commit Metadata
 - Commit hash: def456
 - Message: "feat: add feature X"
 - Files touched: src/feature_x.py
-
-## Reflections
-- This was a tough one!
 '''
 
 # Sample markdown for a manual reflection entry
