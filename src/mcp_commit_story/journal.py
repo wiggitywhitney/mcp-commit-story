@@ -104,15 +104,17 @@ class JournalEntry:
             lines += section("Frustrations or Roadblocks", frus_lines)
 
         # 5. Tone/Mood
-        if self.tone_mood and self.tone_mood.get("mood", "").strip() or self.tone_mood.get("indicators", "").strip():
-            tm_lines = []
-            if self.tone_mood.get("mood", "").strip():
-                tm_lines.append(f"> {self.tone_mood['mood']}")
-            if self.tone_mood.get("indicators", "").strip():
-                tm_lines.append(f"> {self.tone_mood['indicators']}")
-            if tm_lines:
-                lines += section("Tone/Mood", tm_lines)
-        # If both mood and indicators are empty/blank, omit the section
+        if isinstance(self.tone_mood, dict):
+            mood = self.tone_mood.get("mood", "").strip()
+            indicators = self.tone_mood.get("indicators", "").strip()
+            if mood or indicators:
+                tm_lines = []
+                if mood:
+                    tm_lines.append(f"> {mood}")
+                if indicators:
+                    tm_lines.append(f"> {indicators}")
+                if tm_lines:
+                    lines += section("Tone/Mood", tm_lines)
 
         # 6. Discussion Notes (from chat)
         if self.discussion_notes:
