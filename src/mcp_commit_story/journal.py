@@ -264,6 +264,7 @@ def append_to_journal_file(entry, file_path):
     Append a journal entry to the file at file_path. If the file does not exist, create it.
     If the file exists and is not empty, prepend a horizontal rule (---) before the new entry.
     Automatically create parent directories as needed.
+    Raises ValueError if the file path is invalid or cannot be written to.
     """
     file_path = Path(file_path)
     file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -274,8 +275,10 @@ def append_to_journal_file(entry, file_path):
         else:
             with open(file_path, "a", encoding="utf-8") as f:
                 f.write(entry)
+    except OSError as e:
+        raise ValueError(f"append_to_journal_file: Could not write to file {file_path}: {e}")
     except Exception as e:
-        raise
+        raise ValueError(f"append_to_journal_file: Unexpected error for file {file_path}: {e}")
 
 # Section Generator: Summary
 # Purpose: Generates the Summary section for a journal entry using AI.

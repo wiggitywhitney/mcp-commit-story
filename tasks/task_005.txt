@@ -200,7 +200,7 @@ Implementation Plan for Context Collection Functions:
    - Implement approved design in collect_terminal_history(), collect_chat_history(), and collect_ai_terminal_commands()
 </info added on 2025-05-21T21:51:00.769Z>
 
-## 7. Implement edge case handling and error recovery [pending]
+## 7. Implement edge case handling and error recovery [done]
 ### Dependencies: 5.1, 5.2, 5.3
 ### Description: Add robust error handling and edge case management to all journal functions, with explicit user collaboration at each step
 ### Details:
@@ -254,6 +254,59 @@ Update requirements and test strategy to incorporate TypedDict-based context mod
 7. Document type validation strategy in both code and user-facing documentation
 8. Create recovery mechanisms when possible for non-critical type errors
 </info added on 2025-05-24T19:56:59.565Z>
+<info added on 2025-05-25T21:27:09.689Z>
+# Implementation Plan for 5.7: Edge Case Handling and Error Recovery (TDD)
+
+## Scope:
+- Cover all context collection functions in src/mcp_commit_story/context_collection.py (collect_chat_history, collect_ai_terminal_commands, collect_git_context)
+- Cover all journal entry and section generator functions in src/mcp_commit_story/journal.py (including file operations, section generators, and markdown serialization)
+
+## Step 0: Log Implementation Plan (this step)
+- Mark subtask as in progress and document this plan in Taskmaster
+- Note section-specific and function-specific considerations
+
+## Step 1: Identify Edge Cases and Error Types
+- For each function, enumerate possible edge cases:
+  - Missing or malformed input/context (e.g., None, empty dict, missing fields)
+  - Invalid data types in TypedDicts (wrong types, partial data)
+  - API or file system failures (file not found, permission denied, git errors)
+  - Boundary conditions (empty lists, large data, unusual commit structures)
+- Define custom error types if needed (e.g., ContextTypeError, ContextValueError)
+
+## Step 2: Write Failing Tests (TDD)
+- In tests/test_error_handling.py, write tests for:
+  - Each context collection function: test handling of missing, partial, and invalid context
+  - Each section generator: test handling of missing/invalid context, empty/None input, and type errors
+  - File operations: test file not found, permission errors, and invalid paths
+  - JournalEntry and JournalParser: test malformed markdown, missing sections, and invalid field types
+  - Ensure all tests fail before implementation
+
+## Step 3: Implement Error Handling and Logging
+- Update each function to handle edge cases gracefully:
+  - Validate TypedDict structure and types at runtime where feasible
+  - Add try/except blocks for file and git operations
+  - Log or raise clear, actionable errors for invalid input or failures
+  - Provide fallback/default behavior where appropriate (e.g., return empty section, skip invalid data)
+  - Ensure error messages are clear and actionable
+
+## Step 4: Rerun Tests and Refine
+- Rerun the test suite to confirm all error handling is covered and tests now pass
+- Refine error handling and logging based on test results and user feedback
+
+## Step 5: Document Error Handling Strategy
+- Add code comments and docstrings explaining error handling logic and edge case coverage
+- Update developer documentation as needed
+
+## Section-Specific Considerations:
+- Context collection functions must enforce the in-memory-only rule and never persist sensitive or invalid data
+- Section generators must never raise on missing/empty context; always return a valid (possibly empty) section
+- File operations must not overwrite or corrupt existing journal data on error
+- All error handling must be anti-hallucination compliant: never invent or infer data not present in context
+
+## TDD:
+- All error handling must be test-driven: write failing tests first, then implement fixes
+- Tests must cover both expected and unexpected edge cases for all functions in context_collection.py and journal.py
+</info added on 2025-05-25T21:27:09.689Z>
 
 ## 9. Journal Entry Format Improvements [done]
 ### Dependencies: None

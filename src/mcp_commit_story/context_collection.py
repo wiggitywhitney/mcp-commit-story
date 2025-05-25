@@ -81,6 +81,8 @@ def collect_chat_history(since_commit=None, max_messages_back=150) -> ChatHistor
     - Do not use timestamps or time-based calculations for chat history collection.
     - All time boundaries in this function are deprecated in favor of message count.
     """
+    if since_commit is None or max_messages_back is None:
+        raise ValueError("collect_chat_history: since_commit and max_messages_back must not be None")
     return ChatHistory(messages=[])
 
 
@@ -152,6 +154,8 @@ def collect_ai_terminal_commands(since_commit=None, max_messages_back=150) -> Te
     - Do not use timestamps or time-based calculations for terminal command collection.
     - All time boundaries in this function are deprecated in favor of message count.
     """
+    if since_commit is None or max_messages_back is None:
+        raise ValueError("collect_ai_terminal_commands: since_commit and max_messages_back must not be None")
     return TerminalContext(commands=[])
 
 
