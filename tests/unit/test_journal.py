@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 
 import pytest
 from mcp_commit_story import journal
-from mcp_commit_story.context_types import JournalContext, AccomplishmentsSection
+from mcp_commit_story.context_types import JournalContext, AccomplishmentsSection, FrustrationsSection
 
 # Sample markdown for a daily note entry
 DAILY_NOTE_MD = '''
@@ -348,4 +348,79 @@ def test_generate_accomplishments_section_achievement_and_criticism():
     )
     result = journal.generate_accomplishments_section(ctx)
     assert any('tests' in a.lower() for a in result['accomplishments'])
-    assert any('mess' in a.lower() or 'criticism' in a.lower() or 'concern' in a.lower() for a in result['accomplishments']) 
+    assert any('mess' in a.lower() or 'criticism' in a.lower() or 'concern' in a.lower() for a in result['accomplishments'])
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_frustrations_section_happy_path():
+    ctx = JournalContext(
+        chat={'messages': [
+            {'speaker': 'Human', 'text': 'Spent hours debugging config, so frustrating!'},
+            {'speaker': 'Agent', 'text': 'That bug was a pain.'},
+        ]},
+        terminal=None,
+        git={
+            'metadata': {'hash': 'abc123', 'author': 'Alice <alice@example.com>', 'date': '2025-05-24 12:00:00', 'message': 'Fix config bug'},
+            'diff_summary': 'config.py: fixed bug',
+            'changed_files': ['config.py'],
+            'file_stats': {},
+            'commit_context': {},
+        },
+    )
+    result = journal.generate_frustrations_section(ctx)
+    assert isinstance(result, dict)
+    assert 'frustrations' in result
+    assert any('frustrat' in f.lower() or 'pain' in f.lower() for f in result['frustrations'])
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_frustrations_section_empty_context():
+    ctx = JournalContext(chat=None, terminal=None, git=None)  # type: ignore
+    result = journal.generate_frustrations_section(ctx)
+    assert isinstance(result, dict)
+    assert 'frustrations' in result
+    assert result['frustrations'] == []
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_frustrations_section_conflicting_signals():
+    ctx = JournalContext(
+        chat={'messages': [
+            {'speaker': 'Human', 'text': 'This was easy.'},
+            {'speaker': 'Human', 'text': 'Actually, the config bug was a nightmare.'},
+        ]},
+        terminal=None,
+        git={
+            'metadata': {'hash': 'abc123', 'author': 'Alice <alice@example.com>', 'date': '2025-05-24 12:00:00', 'message': 'Fix config bug'},
+            'diff_summary': 'config.py: fixed bug',
+            'changed_files': ['config.py'],
+            'file_stats': {},
+            'commit_context': {},
+        },
+    )
+    result = journal.generate_frustrations_section(ctx)
+    assert isinstance(result, dict)
+    assert 'frustrations' in result
+    assert any('nightmare' in f.lower() or 'easy' not in f.lower() for f in result['frustrations'])
+
+
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_generate_frustrations_section_multiple_indicators():
+    ctx = JournalContext(
+        chat={'messages': [
+            {'speaker': 'Human', 'text': 'Debugging was tedious.'},
+            {'speaker': 'Human', 'text': 'Tests kept failing.'},
+        ]},
+        terminal=None,
+        git={
+            'metadata': {'hash': 'abc123', 'author': 'Alice <alice@example.com>', 'date': '2025-05-24 12:00:00', 'message': 'Fix test bug'},
+            'diff_summary': 'test.py: fixed bug',
+            'changed_files': ['test.py'],
+            'file_stats': {},
+            'commit_context': {},
+        },
+    )
+    result = journal.generate_frustrations_section(ctx)
+    assert isinstance(result, dict)
+    assert 'frustrations' in result
+    assert len(result['frustrations']) >= 2 

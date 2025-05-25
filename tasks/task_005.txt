@@ -570,7 +570,7 @@ Section-Specific Test Scenarios for Accomplishments:
 - Test output format: bullet points, blockquotes as appropriate
 </info added on 2025-05-24T23:32:48.358Z>
 
-## 15. Implement generate_frustrations_section(commit, terminal_context, chat_context) [pending]
+## 15. Implement generate_frustrations_section(commit, terminal_context, chat_context) [done]
 ### Dependencies: None
 ### Description: Design, test (write failing tests first), and implement the frustrations section generator using all available data sources. Collaborate with the user for design and approval.
 ### Details:
@@ -581,6 +581,60 @@ Section-Specific Test Scenarios for Accomplishments:
 <info added on 2025-05-24T19:58:44.946Z>
 The generate_frustrations_section function must accept JournalContext (or relevant subtypes) as input parameters instead of individual context objects. Implementation should use the new TypedDict structures for all context data (commit, terminal, and chat). Tests should verify the function correctly handles the TypedDict structures and properly extracts frustration signals from the structured context data.
 </info added on 2025-05-24T19:58:44.946Z>
+<info added on 2025-05-25T00:35:25.672Z>
+# Implementation Plan for generate_frustrations_section
+
+## Step 0 - Log Implementation Plan with Taskmaster
+- Document this implementation plan in the appropriate Taskmaster subtask
+- Note any section-specific considerations or requirements
+
+## Step 1 - Locate Required TypedDict
+- Find the FrustrationsSection TypedDict in src/mcp_commit_story/context_types.py
+- Import FrustrationsSection and JournalContext in journal.py
+- Verify the TypedDict structure matches what this section needs to return
+
+## Step 2 - Write Failing Tests for the Section Generator
+- Test basic function structure and return type
+- Test output format (string formatting, markdown structure, etc.)
+- Test with mock JournalContext data:
+  - Happy path: normal context with expected content
+  - Edge cases: empty context, missing data sources
+  - Section-specific scenarios (conflicting signals, insufficient evidence, multiple indicators)
+- Run tests to confirm they fail (no implementation yet)
+
+## Step 3 - Design Section-Specific AI Prompt
+- Ask user for the specific AI prompt content for this section
+- Verify anti-hallucination rules and output format specifications are included
+
+## Step 4 - Write Tests for AI Pattern Compliance
+- Test that function returns correct TypedDict structure
+- Test that function accepts JournalContext parameter correctly
+- Test that function handles empty/None inputs gracefully
+- Run tests to confirm they fail (no implementation yet)
+
+## Step 5 - Implement generate_frustrations_section Function
+- Add the function with approved AI prompt in the docstring
+- Return placeholder value using the correct TypedDict: FrustrationsSection(frustrations=[])
+- Ensure proper type hints: def generate_frustrations_section(journal_context: JournalContext) -> FrustrationsSection:
+- Follow the canonical AI-driven function pattern from engineering spec
+- Run tests to confirm they now pass
+
+## Step 6 - Final Test Run & Documentation
+- Run full test suite to confirm everything passes
+- Add brief code comments explaining the section's purpose
+- Note any assumptions or limitations in the implementation
+
+## Section-Specific Test Scenarios
+- Conflicting signals, insufficient evidence, multiple indicators
+- Output format: bullet points, blockquotes as appropriate
+
+## Section-specific considerations
+- This section must infer and extract frustration/roadblock signals from all available context (chat, terminal, git, etc.)
+- Must use the new TypedDict structures for all context data
+- Tests should verify correct handling of TypedDicts and extraction logic
+- Output must be anti-hallucination compliant and only reflect evidence present in the context
+- If no frustrations are found, return an empty list
+</info added on 2025-05-25T00:35:25.672Z>
 
 ## 16. Implement generate_tone_section(commit, terminal_context, chat_context) [pending]
 ### Dependencies: None

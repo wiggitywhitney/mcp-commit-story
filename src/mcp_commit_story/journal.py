@@ -586,27 +586,87 @@ def generate_accomplishments_section(journal_context: JournalContext) -> Accompl
 
 def generate_frustrations_section(journal_context: JournalContext) -> FrustrationsSection:
     """
-    AI Prompt for Frustrations Section Generation
+    AI Prompt for Frustrations or Roadblocks Section Generation
 
-    Purpose: Extract and summarize all frustrations, roadblocks, or challenges encountered during this commit. Focus on explicit statements of difficulty, blockers, or negative experiences from chat, git, or terminal context.
+    Purpose: Generate a list of challenges, setbacks, and frustrations encountered during this commit, capturing the developer's authentic experience of difficulties and obstacles faced during the work.
 
-    Instructions:
-    - Include only frustrations or roadblocks that are directly supported by the context (do not infer or speculate).
-    - Each frustration should be a clear, standalone bullet point.
-    - If multiple sources indicate the same frustration, deduplicate and choose the clearest phrasing.
-    - If evidence is conflicting or insufficient, include only what is certain and note ambiguity if needed.
-    - Do not include accomplishments, plans, or positive statements—focus only on negative experiences or blockers.
+    Instructions: Extract evidence of frustrations, problems, and roadblocks from chat history and git changes to create a list of meaningful challenges. Focus on what the developer found difficult, what caused problems, and what created obstacles during the work.
+
+    Priority for Content Sources:
+    1. Explicit frustration expressions from chat - developer's own expressions of difficulty and challenge
+    2. Problem/challenge statements - clear indicators of issues encountered
+    3. Failed attempts or setbacks - evidence of approaches that didn't work
+    4. Git/terminal evidence - multiple attempts, rollbacks, or repeated changes indicating difficulty
+
+    Frustration Evidence Extraction:
+    Look for explicit indicators of difficulty and challenges, such as:
+    - Frustration expressions: "this is driving me crazy", "can't figure this out", "hitting a wall here"
+    - Problem statements: "this isn't working", "running into issues with X", "stuck on this bug"
+    - Failed attempts: "tried X but it didn't work", "had to rollback", "that approach failed"
+    - Challenge acknowledgments: "this is harder than expected", "complex problem", "tricky issue"
+    - Persistence indicators: "still struggling with", "keep hitting", "multiple attempts"
+
+    Include Everything:
+    Capture the full developer experience including:
+    - Pure roadblocks that remained unresolved
+    - Frustrations that were eventually resolved
+    - Partial progress and ongoing challenges
+    - Multiple attempts and iterative problem-solving
+    - Failed approaches and what was learned
+
+    Energy Level Matching:
+    Match the developer's frustration intensity level:
+    - High frustration → convey that intensity: "Encountered persistent, challenging issues with..."
+    - Mild annoyance → stay proportional: "Ran into some complications with..."
+    - Matter-of-fact problems → neutral tone: "Addressed technical challenges in..."
+
+    Resolution Status:
+    Include whether issues were resolved or remain ongoing:
+    - Resolved: "Encountered authentication timeout issues - eventually resolved through connection pooling"
+    - Ongoing: "Hit persistent database performance problems - still investigating solutions"
+    - Partial: "Struggled with complex merge conflicts - partially resolved but some edge cases remain"
+
+    Adaptive Grouping:
+    - Related frustrations: Group together if they feel like one big frustrating problem
+    - Distinct roadblocks: List separately to give each proper recognition
+    - Adaptive detail: Match detail level to significance and available context
+
+    Language Translation Guidelines:
+    When using developer's frustration language from chat, translate respectfully:
+    - Keep honest self-reflection about technical approaches ("took a bad debugging approach here")
+    - Keep authentic frustration with technology ("this API is completely broken")
+    - Translate identity-based criticism ("I'm such an idiot" → "encountered challenging complexity")
+    - Translate harsh personal judgments about others' work into professional descriptions of technical challenges
+    - Remove profanity while preserving frustration intensity and technical meaning
+    - Preserve "what I did" language, translate "who I am" language
 
     ANTI-HALLUCINATION RULES:
-    - Do NOT invent, infer, or summarize frustrations not explicitly present in the context.
-    - Only include items directly supported by chat, git, or terminal evidence.
-    - If no frustrations are found, return an empty list.
+    - Do NOT invent, infer, or assume frustrations not explicitly indicated by evidence
+    - Only include frustrations supported by developer expressions or clear evidence of difficulty
+    - Never infer that something was "frustrating" just because it took multiple commits or iterations
+    - If developer didn't express frustration about something, don't assume it was problematic
+    - If no explicit frustration language exists, work only with clear evidence of failed attempts or setbacks
 
     Output Format:
-    - List of strings, each a single frustration or roadblock bullet point.
-    """
-    return FrustrationsSection(frustrations=[])
+    Complete sentences in bullet point format with blank lines between items. Include however many frustrations feel meaningful for this commit - could be one major roadblock or several smaller challenges.
 
+    CHECKLIST:
+    - [ ] Searched chat history for explicit frustration, challenge, and problem language
+    - [ ] Included all aspects of developer frustration experience - unresolved, resolved, and ongoing
+    - [ ] Matched intensity level of developer's expressed frustration with each challenge
+    - [ ] Grouped related frustrations when they feel cohesive, separated when distinct
+    - [ ] Included resolution status for each frustration (resolved, ongoing, partial)
+    - [ ] Used complete sentences for clarity and professional reusability
+    - [ ] Translated harsh personal language while preserving authentic frustration intensity and technical meaning
+    - [ ] Did NOT infer frustrations not supported by explicit evidence
+    - [ ] Verified all frustrations are grounded in actual developer expressions or clear evidence of difficulty
+    - [ ] Adapted detail level based on significance and available context
+    """
+    # Frustrations Section Generator
+    # Purpose: Extracts and summarizes challenges, setbacks, and frustrations encountered in the commit, using only explicit evidence from chat, terminal, and git context.
+    # Assumptions: Only includes frustrations with clear evidence; does not infer or speculate. Returns an empty list if nothing is found.
+    # Limitations: Requires AI agent to fulfill the docstring prompt; placeholder implementation returns empty list.
+    return FrustrationsSection(frustrations=[])
 
 def generate_tone_mood_section(journal_context: JournalContext) -> ToneMoodSection:
     """
