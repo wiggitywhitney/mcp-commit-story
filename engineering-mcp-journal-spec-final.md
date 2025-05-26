@@ -831,3 +831,11 @@ class JournalContext(TypedDict):
 - All tool registration is handled via the `register_tools()` stub, to be filled in by future subtasks.
 - Strict TDD was followed: failing tests were written for config, version, and telemetry logic before implementation, and all tests pass after implementation.
 - See `docs/server_setup.md` for user-facing setup instructions.
+
+### Core Error Handling System (2024-06 Update)
+
+- The MCP server uses a custom `MCPError` exception class for structured error responses in tool handlers.
+- The `handle_mcp_error` decorator wraps async tool handlers to catch `MCPError` and generic exceptions, returning a dict with status and error message.
+- Strict TDD was followed: failing tests for error handling were written first, then the implementation, then tests were confirmed to pass.
+- This pattern ensures all tool responses are robust and client-friendly, and can be extended for custom error types.
+- No FastMCP-specific error hooks are used; all error handling is at the handler/decorator level.

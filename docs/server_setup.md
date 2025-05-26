@@ -48,4 +48,12 @@ The server uses **stdio transport** by default for maximum compatibility with AI
 ## More Information
 - See `docs/ai_function_pattern.md` for function design guidelines.
 - See the engineering spec and PRD for full requirements.
-- For testing standards, see `docs/testing_standards.md`. 
+- For testing standards, see `docs/testing_standards.md`.
+
+## Error Handling
+
+All MCP tool handlers in this project use a standard error handling decorator for robust, structured error responses.
+
+- The `MCPError` class allows tool authors to raise errors with a specific status and message.
+- The `handle_mcp_error` decorator ensures that both custom and generic exceptions are caught and returned as a status+message dict, never as a raw exception.
+- This makes the server safer and more predictable for all clients. 

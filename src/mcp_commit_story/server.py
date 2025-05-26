@@ -23,6 +23,48 @@ ToolHandler = Callable[..., Awaitable[Any]]
 # MCP server instance (to be initialized in main)
 mcp: FastMCP | None = None
 
+class MCPError(Exception):
+    """
+    Base class for MCP server errors.
+
+    Usage:
+        Raise MCPError in a tool handler to return a structured error response to the client.
+        Example:
+            raise MCPError("Invalid input", status="bad-request")
+    The error will be caught by the handle_mcp_error decorator and returned as a dict:
+        {"status": "bad-request", "error": "Invalid input"}
+    """
+    def __init__(self, message: str, status: str = "error"):
+        self.message = message
+        self.status = status
+        super().__init__(message)
+
+def handle_mcp_error(func):
+    """
+    Decorator for handling MCP errors in async tool handlers.
+
+    Usage:
+        @handle_mcp_error
+        async def my_tool(...):
+            ...
+            raise MCPError("Something went wrong")
+
+    - Catches MCPError and returns a structured error response
+    - Catches generic exceptions and returns a generic error response
+    - Preserves async/await compatibility
+    - Ensures all errors are returned as dicts, not raw exceptions
+    """
+    import functools
+    @functools.wraps(func)
+    async def wrapper(*args, **kwargs):
+        try:
+            return await func(*args, **kwargs)
+        except MCPError as e:
+            return {"status": e.status, "error": e.message}
+        except Exception as e:
+            return {"status": "error", "error": str(e)}
+    return wrapper
+
 def get_version_from_pyproject(pyproject_path: str = "pyproject.toml") -> str:
     """
     Read the project version from pyproject.toml.

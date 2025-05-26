@@ -1,9 +1,10 @@
 import pytest
 from unittest import mock
-from src.mcp_commit_story.server import create_mcp_server, get_version_from_pyproject, register_tools
+from src.mcp_commit_story.server import create_mcp_server, get_version_from_pyproject, register_tools, MCPError, handle_mcp_error
 from mcp.server.fastmcp import FastMCP
 from mcp_commit_story.config import Config
 import logging
+import asyncio
 
 @pytest.mark.asyncio
 def test_create_mcp_server_sets_name_and_calls_register_tools(tmp_path):
@@ -49,4 +50,22 @@ def test_create_mcp_server_loads_config_and_telemetry(monkeypatch):
             assert server.name == "mcp-commit-story"
             reg_tools.assert_called_once_with(server)
             if telemetry_called is not None:
-                assert telemetry_called["called"] 
+                assert telemetry_called["called"]
+
+@pytest.mark.asyncio
+def test_mcp_error_response():
+    @handle_mcp_error
+    async def failing_tool(request):
+        raise MCPError("fail message", status="fail-status")
+    response = asyncio.run(failing_tool({}))
+    assert response["status"] == "fail-status"
+    assert response["error"] == "fail message"
+
+@pytest.mark.asyncio
+def test_handle_mcp_error_catches_generic_exception():
+    @handle_mcp_error
+    async def generic_error_tool(request):
+        raise ValueError("unexpected!")
+    response = asyncio.run(generic_error_tool({}))
+    assert response["status"] == "error"
+    assert "unexpected!" in response["error"] 

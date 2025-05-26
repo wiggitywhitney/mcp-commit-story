@@ -884,3 +884,10 @@ Requirement: Summary generation must prioritize journal entries that reflect sub
 - All tool registration is handled via the `register_tools()` stub, to be filled in by future subtasks.
 - Strict TDD was followed: failing tests were written for config, version, and telemetry logic before implementation, and all tests pass after implementation.
 - See `docs/server_setup.md` for user-facing setup instructions.
+
+### Error Handling System (2024-06 Update)
+
+- All MCP tool handlers must use the `handle_mcp_error` decorator to ensure robust, structured error responses.
+- The `MCPError` class is used for raising errors with a specific status and message.
+- This pattern ensures that errors are always returned as status+message dicts, not raw exceptions.
+- Strict TDD was followed for error handling: failing tests, then implementation, then passing tests.
