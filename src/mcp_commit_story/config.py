@@ -42,13 +42,18 @@ class Config:
     Handles loading, validation, and access to configuration settings with
     sensible defaults focused on essential functionality.
     Now supports dict-like access for compatibility with tests and legacy code.
+
+    New in 6.5:
+    - Hot config reload: call reload_config() to reload from disk and re-validate.
+    - Stricter config validation: all required fields must be present and valid, or ConfigError is raised immediately.
     """
-    def __init__(self, config_data: Optional[Dict[str, Any]] = None):
+    def __init__(self, config_data: Optional[Dict[str, Any]] = None, config_path: Optional[str] = None):
+        self._config_path = config_path
         config_data = config_data or {}
-        # Always start with a deep copy of defaults
+        # Strict validation: validate raw config_data before merging with defaults
+        validate_config(config_data)
         import copy
         base = copy.deepcopy(DEFAULT_CONFIG)
-        # Merge input config_data into defaults
         merged = merge_configs(base, config_data)
         # Type checks and population for journal
         journal = merged.get('journal', {})
@@ -129,6 +134,25 @@ class Config:
     # For deep access in get_config_value
     def get(self, key, default=None):
         return self._config_dict.get(key, default)
+
+    def reload_config(self):
+        """
+        Reload configuration from disk and re-validate. Raises ConfigError on any missing/invalid field.
+        """
+        if not self._config_path:
+            raise ConfigError("No config_path set for reload.")
+        import yaml
+        try:
+            with open(self._config_path, 'r') as f:
+                config_data = yaml.safe_load(f) or {}
+        except yaml.YAMLError as e:
+            raise ConfigError(f"Malformed YAML in config file {self._config_path}: {e}")
+        except Exception as e:
+            raise ConfigError(f"Error loading config from {self._config_path}: {e}")
+        # Strict validation before merging with defaults
+        validate_config(config_data)
+        # Re-init with new data
+        self.__init__(config_data, config_path=self._config_path)
 
 def get_config_value(config: Any, key_path: str, default: Any = None) -> Any:
     """

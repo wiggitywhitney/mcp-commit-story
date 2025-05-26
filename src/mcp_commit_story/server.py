@@ -3,7 +3,7 @@ MCP Server Initialization for mcp-commit-story
 
 This module provides the entrypoint and core setup logic for the MCP server, including:
 - Dynamic version loading from pyproject.toml
-- Configuration loading and validation
+- Configuration loading and validation (now with hot reload support)
 - Telemetry integration (if available)
 - Tool registration stub (to be filled in by other modules)
 
@@ -108,10 +108,10 @@ def register_tools(server: FastMCP) -> None:
     # async def journal_new_entry(...): ...
     pass
 
-def create_mcp_server() -> FastMCP:
+def create_mcp_server(config_path: str = None) -> FastMCP:
     """
     Create and configure the MCP server instance for mcp-commit-story.
-    - Loads configuration from .mcp-commit-storyrc.yaml
+    - Loads configuration from .mcp-commit-storyrc.yaml (or given path)
     - Integrates telemetry if enabled and available
     - Registers all journal tools (stub)
     - Returns a FastMCP server instance ready to run
@@ -121,7 +121,7 @@ def create_mcp_server() -> FastMCP:
     version = get_version_from_pyproject()
     # Load config and setup telemetry before server instantiation
     try:
-        config = load_config()
+        config = load_config(config_path)
         # Only call telemetry.setup_telemetry if it exists
         setup_telemetry = getattr(telemetry, "setup_telemetry", None)
         if callable(setup_telemetry) and config.telemetry_enabled:
@@ -135,6 +135,12 @@ def create_mcp_server() -> FastMCP:
         raise
     server = FastMCP(app_name, version=version)
     register_tools(server)
+    # Attach config and hot reload method to server for runtime use
+    server.config = config
+    def reload_config():
+        config.reload_config()
+        logging.info("Config hot reloaded successfully.")
+    server.reload_config = reload_config
     return server
 
 async def generate_journal_entry(request: JournalNewEntryRequest) -> JournalNewEntryResponse:

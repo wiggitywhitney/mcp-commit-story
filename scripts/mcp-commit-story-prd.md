@@ -147,6 +147,21 @@ journal:
     yearly: true
 ```
 
+### Hot Config Reload & Strict Validation (Engineering Spec)
+- The MCP server supports hot configuration reload at runtime via `reload_config()` on the config object.
+- **Strict validation:** All required config fields (such as `journal.path`, `git.exclude_patterns`, `telemetry.enabled`) must be present and valid in the config file. If any required field is missing or invalid, the server will fail fast on startup or reload, raising a `ConfigError`.
+- Defaults are only applied for optional fields. Required fields must be explicitly set in the config file.
+- If you edit `.mcp-commit-storyrc.yaml` while the server is running, call `server.reload_config()` to apply changes. If the new config is invalid, the reload will fail and the previous config will remain active.
+- **Example:**
+  ```python
+  server = create_mcp_server()
+  # ... later, after editing config file ...
+  server.reload_config()  # Will raise ConfigError if config is invalid
+  ```
+- **Troubleshooting:**
+  - If you see a `ConfigError` on startup or reload, check that all required fields are present and valid in your config file.
+  - See this spec and the user docs for a full list of required fields and their types.
+
 ---
 
 # Engineering Journal MCP Server — Complete Developer Specification
@@ -278,10 +293,12 @@ Configurable via a `.mcp-commit-storyrc.yaml` file at repo root. Global defaults
 2. Global config (`~/.mcp-commit-storyrc.yaml`)
 3. Built-in defaults
 
-#### Configuration Validation
-- Missing/invalid fields use defaults and continue with warnings
-- Malformed YAML logs error but continues with defaults
-- Invalid sections are ignored with warnings
+#### Configuration Validation (2024-06 Update)
+- **Strict validation:** All required config fields (e.g., `journal.path`, `git.exclude_patterns`, `telemetry.enabled`) must be present and valid in the config file. If any required field is missing or invalid, the server will fail fast on startup or reload, raising a `ConfigError`.
+- Defaults are only applied for optional fields. Required fields must be explicitly set in the config file.
+- If you edit `.mcp-commit-storyrc.yaml` while the server is running, call `server.reload_config()` to apply changes. If the new config is invalid, the reload will fail and the previous config will remain active.
+- **Hot config reload:** The server supports hot configuration reload at runtime via `reload_config()`, which re-reads the config file and re-validates all required fields.
+- If you see a `ConfigError` on startup or reload, check that all required fields are present and valid in your config file.
 
 #### Example Configuration:
 ```yaml

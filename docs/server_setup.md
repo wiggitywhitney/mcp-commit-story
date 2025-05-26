@@ -37,6 +37,26 @@ The server uses **stdio transport** by default for maximum compatibility with AI
 - Configuration options include journal paths, auto-generation, telemetry, and more. See the example config in the main README or engineering spec.
 - The server version is read dynamically from `pyproject.toml` to ensure consistency.
 
+## Hot Config Reload & Strict Validation
+
+The MCP server supports **hot configuration reload** and strict validation:
+
+- Call `reload_config()` on the server's config object to reload configuration from disk at runtime. This will re-validate all required fields and apply any changes immediately.
+- **Strict validation**: All required config fields (such as `journal.path`, `git.exclude_patterns`, and `telemetry.enabled`) must be present and valid in the config file. If any required field is missing or invalid, the server will fail fast on startup or reload, raising a clear error.
+- Defaults are only applied for optional fields. Required fields must be explicitly set in the config file.
+- If you edit `.mcp-commit-storyrc.yaml` while the server is running, call `server.reload_config()` to apply changes. If the new config is invalid, the reload will fail and the previous config will remain active.
+
+**Example:**
+```python
+server = create_mcp_server()
+# ... later, after editing config file ...
+server.reload_config()  # Will raise ConfigError if config is invalid
+```
+
+**Troubleshooting:**
+- If you see a `ConfigError` on startup or reload, check that all required fields are present and valid in your config file.
+- See the engineering spec and PRD for a full list of required fields and their types.
+
 ## Telemetry
 - The server integrates with OpenTelemetry if enabled in your config file.
 - Telemetry is optional and can be disabled by setting `telemetry.enabled: false` in your config.
