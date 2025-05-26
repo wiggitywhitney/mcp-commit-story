@@ -150,7 +150,7 @@ Added comprehensive unit tests in `tests/unit/test_git_hook_installation.py`:
 All tests pass successfully, and the implementation adheres to the approved design specifications.
 </info added on 2025-05-26T20:49:55.982Z>
 
-## 2. Hook Backup Functionality [in-progress]
+## 2. Hook Backup Functionality [done]
 ### Dependencies: None
 ### Description: Implement functionality to safely backup existing git hooks.
 
@@ -173,7 +173,49 @@ TDD Steps:
   - Double check all subtask requirements are met
   - MARK COMPLETE
 ### Details:
+<info added on 2025-05-26T21:02:52.229Z>
+# Hook Backup Functionality
 
+## Goal
+Implement robust backup logic for existing post-commit hooks before installing a new one, following TDD principles.
+
+## Relevant Files
+- src/mcp_commit_story/git_utils.py (where install_post_commit_hook and backup_existing_hook are defined)
+- tests/unit/test_git_utils.py (existing tests for hook installation and backup)
+- tests/unit/test_git_hook_installation.py (may need new/updated tests for backup logic)
+
+## Implementation Plan
+1. **Review current backup_existing_hook implementation:**
+   - Confirm it creates a timestamped backup of the existing post-commit hook
+   - Check for edge cases: multiple backups, backup file naming, error handling
+   - Ensure it doesn't overwrite previous backups and handles collisions
+
+2. **Test Coverage:**
+   - Write/expand tests for:
+     - Backup creation when a hook exists
+     - Multiple backups (unique names)
+     - Failure cases (unwritable directory, etc.)
+     - Backup file content verification
+   - Confirm tests fail if logic is missing or incorrect
+
+3. **Implementation:**
+   - Refactor backup_existing_hook to:
+     - Use clear timestamped naming (post-commit.bak.YYYYMMDD-HHMMSS)
+     - Limit number of backups if required
+     - Handle errors gracefully with appropriate logging
+   - Integrate backup logic into install_post_commit_hook
+
+4. **Documentation:**
+   - Update relevant documentation with backup logic details
+
+## Potential Challenges
+- Handling permission errors or IO failures robustly
+- Ensuring backup logic is idempotent and prevents data loss
+- Maintaining consistent and discoverable backup naming
+
+## Next Steps
+Write failing tests for backup logic, then implement and verify the functionality.
+</info added on 2025-05-26T21:02:52.229Z>
 
 ## 3. Hook Installation Core Logic [pending]
 ### Dependencies: None

@@ -321,6 +321,31 @@ def test_backup_existing_hook_readonly_filesystem(tmp_path):
         with pytest.raises(PermissionError):
             backup_existing_hook(str(hook_path))
 
+def test_backup_existing_hook_multiple_backups_unique_names(tmp_path):
+    hook_path = tmp_path / 'pre-commit'
+    hook_path.write_text('echo hi\n')
+    # Patch time to return different timestamps for each backup
+    with patch('time.strftime', side_effect=['20240520-123456', '20240520-123457']):
+        backup1 = backup_existing_hook(str(hook_path))
+        backup2 = backup_existing_hook(str(hook_path))
+    backup_file1 = tmp_path / 'pre-commit.backup.20240520-123456'
+    backup_file2 = tmp_path / 'pre-commit.backup.20240520-123457'
+    assert backup1 == str(backup_file1)
+    assert backup2 == str(backup_file2)
+    assert backup_file1.exists()
+    assert backup_file2.exists()
+    assert backup_file1.read_text() == 'echo hi\n'
+    assert backup_file2.read_text() == 'echo hi\n'
+    assert backup_file1 != backup_file2
+
+def test_backup_existing_hook_ioerror(tmp_path):
+    hook_path = tmp_path / 'pre-commit'
+    hook_path.write_text('echo hi\n')
+    # Simulate IOError (e.g., disk full) during copy
+    with patch('shutil.copy2', side_effect=IOError):
+        with pytest.raises(IOError):
+            backup_existing_hook(str(hook_path))
+
 POST_COMMIT_CONTENT = """#!/bin/sh\necho 'Post-commit hook triggered'\n"""
 
 def test_install_post_commit_hook_creates_hook_with_content(git_repo):

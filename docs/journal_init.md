@@ -162,6 +162,13 @@ The MCP Journal system integrates with Git by installing a post-commit hook that
 mcp-commit-story new-entry >/dev/null 2>&1 || true
 ```
 
+## Hook Backup Logic
+- Before installing a new post-commit hook, the system calls `backup_existing_hook(hook_path)`.
+- This function creates a backup of the existing hook file with a timestamped name: `post-commit.backup.YYYYMMDD-HHMMSS` in the same directory.
+- Multiple backups are supported; each backup is unique due to the timestamp.
+- If the filesystem is read-only or an IO error occurs, a `PermissionError` or `IOError` is raised and must be handled by the caller.
+- All backup logic is covered by unit tests in `tests/unit/test_git_utils.py` (see tests for multiple backups, permission errors, and IO errors).
+
 ## Hook Installation Logic
 - The function `install_post_commit_hook(repo_path: str = None)` installs or replaces the post-commit hook in the target repository's `.git/hooks` directory.
 - If a hook already exists, it is backed up with a timestamped suffix before being replaced.
