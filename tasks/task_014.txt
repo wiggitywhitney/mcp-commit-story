@@ -1,6 +1,6 @@
 # Task ID: 14
 # Title: Implement Git Hook Installation
-# Status: pending
+# Status: in-progress
 # Dependencies: 3, 6, 7
 # Priority: medium
 # Description: Create the functionality to install a Git post-commit hook for automatic journal entry generation.
@@ -108,3 +108,150 @@ def install_hook():
 5. Tests for handling existing hooks
 6. Tests for hook permissions
 7. Integration tests for full hook installation flow
+
+# Subtasks:
+## 1. Hook Content Generation [pending]
+### Dependencies: None
+### Description: Create functionality to generate the post-commit hook script content.
+
+TDD Steps:
+1. WRITE TESTS FIRST
+  - Create tests/unit/test_git_hook_installation.py
+  - Test generate_hook_content() function
+  - Test cases: basic hook content, custom commands, proper shebang, executable format
+  - RUN TESTS - VERIFY THEY FAIL
+2. GET APPROVAL FOR DESIGN CHOICES
+  - PAUSE FOR MANUAL APPROVAL: Hook script content and commands to include
+  - PAUSE FOR MANUAL APPROVAL: Shebang line (#!/bin/sh vs #!/bin/bash)
+  - PAUSE FOR MANUAL APPROVAL: Error handling within the hook script
+3. IMPLEMENT FUNCTIONALITY
+  - Implement generate_hook_content() in src/mcp_commit_story/git_hook_installation.py
+  - Generate proper shell script with appropriate commands
+  - RUN TESTS - VERIFY THEY PASS
+4. DOCUMENT AND COMPLETE
+  - Add documentation IF NEEDED in three places
+  - Double check all subtask requirements are met
+  - MARK COMPLETE
+### Details:
+
+
+## 2. Hook Backup Functionality [pending]
+### Dependencies: None
+### Description: Implement functionality to safely backup existing git hooks.
+
+TDD Steps:
+1. WRITE TESTS FIRST
+  - Add tests to tests/unit/test_git_hook_installation.py
+  - Test backup_existing_hook() function (already exists in git_utils.py - may need enhancement)
+  - Test cases: no existing hook, existing hook backup, multiple backups, permission errors
+  - RUN TESTS - VERIFY THEY FAIL
+2. GET APPROVAL FOR DESIGN CHOICES
+  - PAUSE FOR MANUAL APPROVAL: Backup file naming convention (timestamp format)
+  - PAUSE FOR MANUAL APPROVAL: Backup location (same directory vs separate backup folder)
+  - PAUSE FOR MANUAL APPROVAL: Maximum number of backups to keep
+3. IMPLEMENT FUNCTIONALITY
+  - Enhance existing backup_existing_hook() in git_utils.py if needed
+  - Handle all error cases identified in tests
+  - RUN TESTS - VERIFY THEY PASS
+4. DOCUMENT AND COMPLETE
+  - Add documentation IF NEEDED in three places
+  - Double check all subtask requirements are met
+  - MARK COMPLETE
+### Details:
+
+
+## 3. Hook Installation Core Logic [pending]
+### Dependencies: None
+### Description: Implement the main hook installation function with proper error handling.
+
+TDD Steps:
+1. WRITE TESTS FIRST
+  - Add tests to tests/unit/test_git_hook_installation.py
+  - Test install_post_commit_hook() function (enhance existing from git_utils.py)
+  - Test cases: fresh install, replace existing, permission errors, invalid repo path
+  - RUN TESTS - VERIFY THEY FAIL
+2. GET APPROVAL FOR DESIGN CHOICES
+  - PAUSE FOR MANUAL APPROVAL: User confirmation strategy for overwriting existing hooks
+  - PAUSE FOR MANUAL APPROVAL: Hook file permissions (executable bits)
+  - PAUSE FOR MANUAL APPROVAL: Integration with existing git_utils vs new module
+3. IMPLEMENT FUNCTIONALITY
+  - Enhance install_post_commit_hook() in git_utils.py to use proper hook content
+  - Integrate with backup functionality from subtask 14.2
+  - Use hook content generation from subtask 14.1
+  - RUN TESTS - VERIFY THEY PASS
+4. DOCUMENT AND COMPLETE
+  - Add documentation IF NEEDED in three places
+  - Double check all subtask requirements are met
+  - MARK COMPLETE
+### Details:
+
+
+## 4. CLI Command Implementation [pending]
+### Dependencies: None
+### Description: Create CLI command for git hook installation.
+
+TDD Steps:
+1. WRITE TESTS FIRST
+  - Create tests/unit/test_cli_install_hook.py
+  - Test CLI install-hook command
+  - Test cases: successful install, already exists prompts, error handling, JSON output format
+  - RUN TESTS - VERIFY THEY FAIL
+2. GET APPROVAL FOR DESIGN CHOICES
+  - PAUSE FOR MANUAL APPROVAL: CLI command name (install-hook vs hook-install)
+  - PAUSE FOR MANUAL APPROVAL: Interactive confirmation vs force flags
+  - PAUSE FOR MANUAL APPROVAL: Output format (JSON like init command vs plain text)
+3. IMPLEMENT FUNCTIONALITY
+  - Add install hook command to src/mcp_commit_story/cli.py
+  - Integrate with core installation logic from subtask 14.3
+  - RUN TESTS - VERIFY THEY PASS
+4. DOCUMENT AND COMPLETE
+  - Add documentation IF NEEDED in three places
+  - Double check all subtask requirements are met
+  - MARK COMPLETE
+### Details:
+
+
+## 5. Integration Testing [pending]
+### Dependencies: None
+### Description: End-to-end testing of git hook installation workflow.
+
+TDD Steps:
+1. WRITE TESTS FIRST
+  - Create tests/integration/test_git_hook_integration.py
+  - Test full hook installation workflow in temporary git repositories
+  - Test cases: clean install, overwrite existing, hook execution, cleanup scenarios
+  - RUN TESTS - VERIFY THEY FAIL
+2. NO APPROVAL NEEDED (integration testing)
+3. IMPLEMENT FUNCTIONALITY
+  - Fix any integration issues discovered
+  - Ensure all components work together
+  - RUN TESTS - VERIFY THEY PASS
+4. DOCUMENT AND COMPLETE
+  - Add documentation IF NEEDED in three places
+  - Double check all subtask requirements are met
+  - MARK COMPLETE
+### Details:
+
+
+## 6. Hook Execution Testing [pending]
+### Dependencies: None
+### Description: Verify that installed hooks actually execute correctly when commits are made.
+
+TDD Steps:
+1. WRITE TESTS FIRST
+  - Add tests to tests/integration/test_git_hook_integration.py
+  - Test actual hook execution after installation
+  - Test cases: hook triggers on commit, hook calls correct command, error handling in hook
+  - RUN TESTS - VERIFY THEY FAIL
+2. NO APPROVAL NEEDED (testing existing functionality)
+3. IMPLEMENT FUNCTIONALITY
+  - Ensure hook content calls the correct mcp-commit-story command
+  - Fix any execution issues discovered
+  - RUN TESTS - VERIFY THEY PASS
+4. DOCUMENT AND COMPLETE
+  - Add documentation IF NEEDED in three places
+  - Double check all subtask requirements are met
+  - MARK COMPLETE
+### Details:
+
+

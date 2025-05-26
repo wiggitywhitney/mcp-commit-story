@@ -624,7 +624,7 @@
       "id": 8,
       "title": "Implement Journal Initialization",
       "description": "Create the functionality to initialize a journal in a Git repository, including directory structure and configuration.\n\nMVP dependency: This task is now critical for the initial user journey.",
-      "status": "in-progress",
+      "status": "done",
       "dependencies": [
         2,
         3,
@@ -815,8 +815,63 @@
         6,
         7
       ],
-      "status": "pending",
-      "subtasks": []
+      "status": "in-progress",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Hook Content Generation",
+          "description": "Create functionality to generate the post-commit hook script content.\n\nTDD Steps:\n1. WRITE TESTS FIRST\n  - Create tests/unit/test_git_hook_installation.py\n  - Test generate_hook_content() function\n  - Test cases: basic hook content, custom commands, proper shebang, executable format\n  - RUN TESTS - VERIFY THEY FAIL\n2. GET APPROVAL FOR DESIGN CHOICES\n  - PAUSE FOR MANUAL APPROVAL: Hook script content and commands to include\n  - PAUSE FOR MANUAL APPROVAL: Shebang line (#!/bin/sh vs #!/bin/bash)\n  - PAUSE FOR MANUAL APPROVAL: Error handling within the hook script\n3. IMPLEMENT FUNCTIONALITY\n  - Implement generate_hook_content() in src/mcp_commit_story/git_hook_installation.py\n  - Generate proper shell script with appropriate commands\n  - RUN TESTS - VERIFY THEY PASS\n4. DOCUMENT AND COMPLETE\n  - Add documentation IF NEEDED in three places\n  - Double check all subtask requirements are met\n  - MARK COMPLETE",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 14
+        },
+        {
+          "id": 2,
+          "title": "Hook Backup Functionality",
+          "description": "Implement functionality to safely backup existing git hooks.\n\nTDD Steps:\n1. WRITE TESTS FIRST\n  - Add tests to tests/unit/test_git_hook_installation.py\n  - Test backup_existing_hook() function (already exists in git_utils.py - may need enhancement)\n  - Test cases: no existing hook, existing hook backup, multiple backups, permission errors\n  - RUN TESTS - VERIFY THEY FAIL\n2. GET APPROVAL FOR DESIGN CHOICES\n  - PAUSE FOR MANUAL APPROVAL: Backup file naming convention (timestamp format)\n  - PAUSE FOR MANUAL APPROVAL: Backup location (same directory vs separate backup folder)\n  - PAUSE FOR MANUAL APPROVAL: Maximum number of backups to keep\n3. IMPLEMENT FUNCTIONALITY\n  - Enhance existing backup_existing_hook() in git_utils.py if needed\n  - Handle all error cases identified in tests\n  - RUN TESTS - VERIFY THEY PASS\n4. DOCUMENT AND COMPLETE\n  - Add documentation IF NEEDED in three places\n  - Double check all subtask requirements are met\n  - MARK COMPLETE",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 14
+        },
+        {
+          "id": 3,
+          "title": "Hook Installation Core Logic",
+          "description": "Implement the main hook installation function with proper error handling.\n\nTDD Steps:\n1. WRITE TESTS FIRST\n  - Add tests to tests/unit/test_git_hook_installation.py\n  - Test install_post_commit_hook() function (enhance existing from git_utils.py)\n  - Test cases: fresh install, replace existing, permission errors, invalid repo path\n  - RUN TESTS - VERIFY THEY FAIL\n2. GET APPROVAL FOR DESIGN CHOICES\n  - PAUSE FOR MANUAL APPROVAL: User confirmation strategy for overwriting existing hooks\n  - PAUSE FOR MANUAL APPROVAL: Hook file permissions (executable bits)\n  - PAUSE FOR MANUAL APPROVAL: Integration with existing git_utils vs new module\n3. IMPLEMENT FUNCTIONALITY\n  - Enhance install_post_commit_hook() in git_utils.py to use proper hook content\n  - Integrate with backup functionality from subtask 14.2\n  - Use hook content generation from subtask 14.1\n  - RUN TESTS - VERIFY THEY PASS\n4. DOCUMENT AND COMPLETE\n  - Add documentation IF NEEDED in three places\n  - Double check all subtask requirements are met\n  - MARK COMPLETE",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 14
+        },
+        {
+          "id": 4,
+          "title": "CLI Command Implementation",
+          "description": "Create CLI command for git hook installation.\n\nTDD Steps:\n1. WRITE TESTS FIRST\n  - Create tests/unit/test_cli_install_hook.py\n  - Test CLI install-hook command\n  - Test cases: successful install, already exists prompts, error handling, JSON output format\n  - RUN TESTS - VERIFY THEY FAIL\n2. GET APPROVAL FOR DESIGN CHOICES\n  - PAUSE FOR MANUAL APPROVAL: CLI command name (install-hook vs hook-install)\n  - PAUSE FOR MANUAL APPROVAL: Interactive confirmation vs force flags\n  - PAUSE FOR MANUAL APPROVAL: Output format (JSON like init command vs plain text)\n3. IMPLEMENT FUNCTIONALITY\n  - Add install hook command to src/mcp_commit_story/cli.py\n  - Integrate with core installation logic from subtask 14.3\n  - RUN TESTS - VERIFY THEY PASS\n4. DOCUMENT AND COMPLETE\n  - Add documentation IF NEEDED in three places\n  - Double check all subtask requirements are met\n  - MARK COMPLETE",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 14
+        },
+        {
+          "id": 5,
+          "title": "Integration Testing",
+          "description": "End-to-end testing of git hook installation workflow.\n\nTDD Steps:\n1. WRITE TESTS FIRST\n  - Create tests/integration/test_git_hook_integration.py\n  - Test full hook installation workflow in temporary git repositories\n  - Test cases: clean install, overwrite existing, hook execution, cleanup scenarios\n  - RUN TESTS - VERIFY THEY FAIL\n2. NO APPROVAL NEEDED (integration testing)\n3. IMPLEMENT FUNCTIONALITY\n  - Fix any integration issues discovered\n  - Ensure all components work together\n  - RUN TESTS - VERIFY THEY PASS\n4. DOCUMENT AND COMPLETE\n  - Add documentation IF NEEDED in three places\n  - Double check all subtask requirements are met\n  - MARK COMPLETE",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 14
+        },
+        {
+          "id": 6,
+          "title": "Hook Execution Testing",
+          "description": "Verify that installed hooks actually execute correctly when commits are made.\n\nTDD Steps:\n1. WRITE TESTS FIRST\n  - Add tests to tests/integration/test_git_hook_integration.py\n  - Test actual hook execution after installation\n  - Test cases: hook triggers on commit, hook calls correct command, error handling in hook\n  - RUN TESTS - VERIFY THEY FAIL\n2. NO APPROVAL NEEDED (testing existing functionality)\n3. IMPLEMENT FUNCTIONALITY\n  - Ensure hook content calls the correct mcp-commit-story command\n  - Fix any execution issues discovered\n  - RUN TESTS - VERIFY THEY PASS\n4. DOCUMENT AND COMPLETE\n  - Add documentation IF NEEDED in three places\n  - Double check all subtask requirements are met\n  - MARK COMPLETE",
+          "details": "",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 14
+        }
+      ]
     },
     {
       "id": 15,
