@@ -45,6 +45,31 @@ The server uses **stdio transport** by default for maximum compatibility with AI
 - To add new journal operations, implement async tool functions and register them in `register_tools()` in `src/mcp_commit_story/server.py`.
 - Follow the AI function pattern and engineering spec for consistency.
 
+## Journal Operations: Request/Response Types
+
+The MCP server exposes journal operations such as `journal/new-entry` via async handler functions. Each handler expects a specific request dict and returns a structured response dict.
+
+**Example: journal/new-entry**
+
+- **Request:**
+  ```python
+  {
+      "git": { ... },           # Required git context (see engineering spec)
+      "chat": { ... },          # Optional chat context
+      "terminal": { ... }       # Optional terminal context
+  }
+  ```
+- **Response:**
+  ```python
+  {
+      "status": "success",    # or "error"
+      "file_path": "journal/daily/2025-05-26-journal.md",
+      "error": None            # Error message if status == "error"
+  }
+  ```
+
+All errors are returned as a dict with `status: "error"` and an `error` message, never as a raw exception. See the engineering spec for full type details.
+
 ## More Information
 - See `docs/ai_function_pattern.md` for function design guidelines.
 - See the engineering spec and PRD for full requirements.

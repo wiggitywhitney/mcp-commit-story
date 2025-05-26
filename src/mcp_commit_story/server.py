@@ -11,7 +11,7 @@ Intended for use as the main server entrypoint for the mcp-commit-story project.
 """
 import os
 import logging
-from typing import Callable, Awaitable, Any
+from typing import Callable, Awaitable, Any, TypedDict, Optional, Dict
 from mcp.server.fastmcp import FastMCP, Context
 from mcp_commit_story.config import load_config, Config, ConfigError
 from mcp_commit_story import telemetry
@@ -22,6 +22,17 @@ ToolHandler = Callable[..., Awaitable[Any]]
 
 # MCP server instance (to be initialized in main)
 mcp: FastMCP | None = None
+
+# Request/response types for journal/new-entry
+class JournalNewEntryRequest(TypedDict):
+    git: Dict[str, Any]  # Should match GitContext from context_types
+    chat: Optional[Any]  # Optional chat context
+    terminal: Optional[Any]  # Optional terminal context
+
+class JournalNewEntryResponse(TypedDict):
+    status: str
+    file_path: str
+    error: Optional[str]
 
 class MCPError(Exception):
     """
@@ -115,3 +126,20 @@ def create_mcp_server() -> FastMCP:
     server = FastMCP(app_name, version=version)
     register_tools(server)
     return server
+
+async def generate_journal_entry(request: JournalNewEntryRequest) -> JournalNewEntryResponse:
+    """
+    Stub for journal entry generation logic. Returns a dummy success response.
+    """
+    return {"status": "success", "file_path": "journal/daily/2025-05-26-journal.md", "error": None}
+
+@handle_mcp_error
+async def handle_journal_new_entry(request: JournalNewEntryRequest) -> JournalNewEntryResponse:
+    """
+    Handle the MCP operation 'journal/new-entry'.
+    Expects a request with git context (and optionally chat/terminal context).
+    Returns a response with status and file_path, or error if failed.
+    """
+    if "git" not in request:
+        raise MCPError("Missing required field: git")
+    return await generate_journal_entry(request)

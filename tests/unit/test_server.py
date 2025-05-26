@@ -68,4 +68,43 @@ def test_handle_mcp_error_catches_generic_exception():
         raise ValueError("unexpected!")
     response = asyncio.run(generic_error_tool({}))
     assert response["status"] == "error"
-    assert "unexpected!" in response["error"] 
+    assert "unexpected!" in response["error"]
+
+@pytest.mark.asyncio
+def test_journal_new_entry_handler_success(monkeypatch):
+    # Import (or define placeholder) for handler
+    try:
+        from src.mcp_commit_story.server import handle_journal_new_entry
+    except ImportError:
+        pytest.skip("handle_journal_new_entry not implemented yet")
+    # Mock journal generation logic
+    async def fake_generate_journal_entry(request):
+        return {"status": "success", "file_path": "journal/daily/2025-05-26-journal.md"}
+    monkeypatch.setattr("src.mcp_commit_story.server.generate_journal_entry", fake_generate_journal_entry)
+    request = {"git": {"metadata": {"hash": "abc123"}}}  # minimal valid
+    response = asyncio.run(handle_journal_new_entry(request))
+    assert response["status"] == "success"
+    assert "file_path" in response
+
+@pytest.mark.asyncio
+def test_journal_new_entry_handler_missing_fields():
+    from src.mcp_commit_story.server import handle_journal_new_entry
+    # Missing 'git' field
+    request = {}
+    response = asyncio.run(handle_journal_new_entry(request))
+    assert response["status"] == "error"
+    assert "Missing required field: git" in response["error"]
+
+@pytest.mark.asyncio
+def test_journal_new_entry_handler_error_decorator():
+    try:
+        from src.mcp_commit_story.server import handle_journal_new_entry, handle_mcp_error
+    except ImportError:
+        pytest.skip("handle_journal_new_entry or handle_mcp_error not implemented yet")
+    # Should return error dict, not raise
+    @handle_mcp_error
+    async def bad_handler(request):
+        raise ValueError("fail")
+    response = asyncio.run(bad_handler({}))
+    assert response["status"] == "error"
+    assert "fail" in response["error"] 

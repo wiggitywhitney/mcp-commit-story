@@ -471,6 +471,25 @@ The Summary section should focus on these unique aspects rather than restating r
 - Generate entry for current commit
 - Return path to updated file
 
+**Request/Response Types:**
+- **Request:**
+  ```python
+  {
+      "git": { ... },           # Required git context
+      "chat": { ... },          # Optional chat context
+      "terminal": { ... }       # Optional terminal context
+  }
+  ```
+- **Response:**
+  ```python
+  {
+      "status": "success",    # or "error"
+      "file_path": "journal/daily/2025-05-26-journal.md",
+      "error": None            # Error message if status == "error"
+  }
+  ```
+- All errors are returned as a dict with `status: "error"` and an `error` message, never as a raw exception.
+
 #### journal/summarize
 - Options: `--week`, `--month`, `--range`
 - Default to most recent period if no date specified

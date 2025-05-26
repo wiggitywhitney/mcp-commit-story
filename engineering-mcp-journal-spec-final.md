@@ -839,3 +839,26 @@ class JournalContext(TypedDict):
 - Strict TDD was followed: failing tests for error handling were written first, then the implementation, then tests were confirmed to pass.
 - This pattern ensures all tool responses are robust and client-friendly, and can be extended for custom error types.
 - No FastMCP-specific error hooks are used; all error handling is at the handler/decorator level.
+
+#### journal/new-entry Operation Handler (2024-06 Update)
+- The handler expects a request dict with at least a `git` field (context), and optional `chat` and `terminal` fields.
+- Returns a response dict with `status`, `file_path`, and `error` (if any).
+- All errors are returned as a dict with `status: "error"` and an `error` message, never as a raw exception.
+
+**Example:**
+- **Request:**
+  ```python
+  {
+      "git": { ... },           # Required git context
+      "chat": { ... },          # Optional chat context
+      "terminal": { ... }       # Optional terminal context
+  }
+  ```
+- **Response:**
+  ```python
+  {
+      "status": "success",    # or "error"
+      "file_path": "journal/daily/2025-05-26-journal.md",
+      "error": None            # Error message if status == "error"
+  }
+  ```
