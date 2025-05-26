@@ -874,3 +874,13 @@ class JournalContext(TypedDict):
 - Tests enforce that all context collection functions return data matching these types.
 
 Requirement: Summary generation must prioritize journal entries that reflect substantial or complex work, and de-emphasize entries for small, routine, or trivial changes. This ensures that summaries highlight the most meaningful engineering efforts and avoid overemphasizing minor updates.
+
+### MCP Server Initialization & Configuration (2024-06 Update)
+
+- The MCP server is initialized via `create_mcp_server()` in `src/mcp_commit_story/server.py`.
+- **Configuration and telemetry setup** are performed before the server instance is created, not via startup/shutdown hooks (FastMCP does not support these hooks).
+- The server version is dynamically loaded from `pyproject.toml` to ensure consistency with packaging.
+- Telemetry integration is stub-aware: `telemetry.setup_telemetry` is called only if it exists and telemetry is enabled in config.
+- All tool registration is handled via the `register_tools()` stub, to be filled in by future subtasks.
+- Strict TDD was followed: failing tests were written for config, version, and telemetry logic before implementation, and all tests pass after implementation.
+- See `docs/server_setup.md` for user-facing setup instructions.

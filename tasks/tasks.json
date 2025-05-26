@@ -513,7 +513,7 @@
           "title": "MCP Server Initialization & Setup",
           "description": "Scaffold the MCP server using the Anthropic MCP Python SDK. Integrate the SDK, set up the server class, and define the server entrypoint. Follow strict TDD: (1) Define required types/interfaces for server and tool registration, (2) Write failing tests for server instantiation and tool registration, (3) Ask user for specific server config requirements, (4) Write tests for config pattern compliance, (5) Implement server scaffold and registration logic, (6) Run full test suite and document. All code must use async/await and proper type hints. This subtask is a dependency for all other Task 6 subtasks.",
           "details": "",
-          "status": "pending",
+          "status": "done",
           "dependencies": [],
           "parentTaskId": 6
         },
