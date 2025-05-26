@@ -5,6 +5,7 @@ import time
 import shutil
 from .config import DEFAULT_CONFIG
 import copy
+from .git_utils import is_git_repo, get_repo
 
 def create_journal_directories(base_path: Path):
     """
@@ -44,4 +45,26 @@ def generate_default_config(config_path, journal_path):
     except PermissionError:
         raise
     except Exception as e:
-        raise OSError(f"Failed to generate default config: {e}") 
+        raise OSError(f"Failed to generate default config: {e}")
+
+def validate_git_repository(path):
+    """
+    Validate that the given path is a valid (non-bare) git repository with proper permissions.
+    Logic:
+    - If path doesn't exist → FileNotFoundError
+    - If path exists but isn't readable → PermissionError
+    - If path is readable but not a git repo → FileNotFoundError
+    - If path is a bare repo → ValueError
+    - Otherwise → success
+    """
+    path = str(path)
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Path does not exist: {path}")
+    if not os.access(path, os.R_OK):
+        raise PermissionError(f"Cannot access git repository: {path}")
+    # Only proceed if readable
+    if not is_git_repo(path):
+        raise FileNotFoundError(f"Not a git repository: {path}")
+    repo = get_repo(path)
+    if repo.bare:
+        raise ValueError(f"Cannot initialize journal in bare repository: {path}") 

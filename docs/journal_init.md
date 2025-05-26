@@ -41,6 +41,20 @@ The function `generate_default_config(config_path, journal_path)` creates a new 
 
 See [src/mcp_commit_story/config.py](../src/mcp_commit_story/config.py) for the config schema and [scripts/mcp-commit-story-prd.md](../scripts/mcp-commit-story-prd.md) for full requirements.
 
+## Git Repository Validation
+
+Before initializing the journal, the system validates that the target directory is a valid (non-bare) git repository with proper permissions using `validate_git_repository(path)`.
+
+- If the path does not exist, a `FileNotFoundError` is raised.
+- If the path exists but is not readable, a `PermissionError` is raised.
+- If the path is readable but not a git repo, a `FileNotFoundError` is raised.
+- If the path is a bare repo, a `ValueError` is raised.
+- Only non-bare, accessible git repositories are valid for journal initialization.
+
+This logic ensures that journals are only initialized in appropriate development repositories and provides clear, actionable error messages for users.
+
+See [src/mcp_commit_story/git_utils.py](../src/mcp_commit_story/git_utils.py) for git detection logic and [scripts/mcp-commit-story-prd.md](../scripts/mcp-commit-story-prd.md) for requirements.
+
 ## Error Handling
 - All errors are surfaced as Python exceptions and should be handled by the caller.
 - See `src/mcp_commit_story/journal_init.py` for implementation details.

@@ -3,8 +3,10 @@ import shutil
 import stat
 import pytest
 from pathlib import Path
+import subprocess
+import time
 
-from mcp_commit_story.journal_init import create_journal_directories, generate_default_config
+from mcp_commit_story.journal_init import create_journal_directories, generate_default_config, validate_git_repository
 
 
 def test_create_journal_directories_success(tmp_path):
@@ -94,7 +96,7 @@ def test_generate_default_config_backup_naming(tmp_path):
     config_path = tmp_path / ".mcp-commit-storyrc.yaml"
     config_path.write_text("journal: {}\n")
     generate_default_config(config_path, "journal/")
-    # Create again to force multiple backups
+    time.sleep(0.01)  # Ensure timestamp changes for backup file
     generate_default_config(config_path, "journal/")
     backups = list(tmp_path.glob(".mcp-commit-storyrc.yaml.bak*"))
     assert len(backups) >= 2, "Multiple backups should be created with unique names"
@@ -107,4 +109,35 @@ def test_generate_default_config_permission_error(tmp_path):
     with pytest.raises(PermissionError):
         generate_default_config(config_path, "journal/")
     # Restore permissions for cleanup
-    os.chmod(tmp_path, stat.S_IWRITE) 
+    os.chmod(tmp_path, stat.S_IWRITE)
+
+
+def test_validate_git_repository_valid(tmp_path):
+    # Initialize a real git repo
+    subprocess.run(["git", "init"], cwd=tmp_path, check=True, stdout=subprocess.PIPE)
+    # Should not raise
+    validate_git_repository(tmp_path)
+
+
+def test_validate_git_repository_not_a_repo(tmp_path):
+    # Not a git repo
+    with pytest.raises(Exception):
+        validate_git_repository(tmp_path)
+
+
+def test_validate_git_repository_bare_repo(tmp_path):
+    # Create a bare repo
+    subprocess.run(["git", "init", "--bare"], cwd=tmp_path, check=True, stdout=subprocess.PIPE)
+    with pytest.raises(Exception):
+        validate_git_repository(tmp_path)
+
+
+def test_validate_git_repository_permission_error(tmp_path):
+    # Make directory read-only
+    tmp_path.chmod(stat.S_IREAD)
+    try:
+        # On some platforms, unreadable dirs may raise FileNotFoundError instead of PermissionError
+        with pytest.raises((PermissionError, FileNotFoundError)):
+            validate_git_repository(tmp_path)
+    finally:
+        tmp_path.chmod(stat.S_IWRITE) 

@@ -179,6 +179,20 @@ See [docs/journal_init.md](../docs/journal_init.md) for full details and rationa
 - The generated config is always consistent with the schema in `config.py`.
 - See [docs/journal_init.md](../docs/journal_init.md) for details and rationale.
 
+### Git Repository Validation (Engineering Spec)
+
+Before initializing the journal, the system validates that the target directory is a valid (non-bare) git repository with proper permissions using `validate_git_repository(path)`:
+
+- If the path does not exist, a `FileNotFoundError` is raised.
+- If the path exists but is not readable, a `PermissionError` is raised.
+- If the path is readable but not a git repo, a `FileNotFoundError` is raised.
+- If the path is a bare repo, a `ValueError` is raised.
+- Only non-bare, accessible git repositories are valid for journal initialization.
+
+This ensures journals are only initialized in appropriate development repositories and provides clear, actionable error messages for users.
+
+See [docs/journal_init.md](../docs/journal_init.md) and [src/mcp_commit_story/git_utils.py](../src/mcp_commit_story/git_utils.py) for details.
+
 ---
 
 # Engineering Journal MCP Server — Complete Developer Specification

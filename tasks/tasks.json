@@ -658,7 +658,7 @@
           "title": "Git Repository Validation",
           "description": "Validate git repository before initialization. TDD: Write tests for validate_git_repository(), covering valid repo, not a repo, bare repo, permission issues. Pause for manual approval on validation criteria, error format, integration. Implement and document. Mark complete when all requirements met.",
           "details": "TDD Steps:\n1. WRITE TESTS FIRST\n   - Add tests to tests/unit/test_journal_init.py\n   - Test validate_git_repository()\n   - Test cases: valid repo, not a repo, bare repo, permission issues\n   - RUN TESTS - VERIFY THEY FAIL\n2. GET APPROVAL FOR DESIGN CHOICES\n   - PAUSE FOR MANUAL APPROVAL: Validation criteria (bare repos OK?)\n   - PAUSE FOR MANUAL APPROVAL: Error message format\n   - PAUSE FOR MANUAL APPROVAL: Integration with existing git utils\n3. IMPLEMENT FUNCTIONALITY\n   - Implement validate_git_repository()\n   - Use existing git_utils where possible\n   - RUN TESTS - VERIFY THEY PASS\n4. DOCUMENT AND COMPLETE\n   - Add documentation IF NEEDED in three places\n   - Double check all subtask requirements are met\n   - MARK COMPLETE",
-          "status": "pending",
+          "status": "done",
           "dependencies": [],
           "parentTaskId": 8
         },
