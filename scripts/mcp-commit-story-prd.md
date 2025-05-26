@@ -162,6 +162,16 @@ journal:
   - If you see a `ConfigError` on startup or reload, check that all required fields are present and valid in your config file.
   - See this spec and the user docs for a full list of required fields and their types.
 
+### Journal Directory Structure (Engineering Spec)
+
+- The journal directory structure is initialized by `create_journal_directories(base_path)`.
+- Structure includes: `daily/`, `summaries/daily/`, `summaries/weekly/`, `summaries/monthly/`, `summaries/yearly/` under the configured `journal.path`.
+- If any directory already exists, it is left unchanged.
+- If `base_path` exists and is not a directory, a `NotADirectoryError` is raised.
+- Permission errors or invalid paths raise appropriate exceptions.
+
+See [docs/journal_init.md](../docs/journal_init.md) for full details and rationale.
+
 ---
 
 # Engineering Journal MCP Server — Complete Developer Specification
@@ -956,3 +966,24 @@ Requirement: Summary generation must prioritize journal entries that reflect sub
   - `error`: Error message if status is "error"
 - All errors are handled via the `handle_mcp_error` decorator, ensuring structured error responses (never raw exceptions).
 - Strict TDD is enforced: failing tests for required fields and error handling precede implementation.
+
+## Journal Directory Structure Initialization
+
+The MCP Journal system initializes the following directory structure (relative to the configured `journal.path`) as part of `journal/init` or the first journal operation:
+
+```
+journal/
+├── daily/
+├── summaries/
+│   ├── daily/
+│   ├── weekly/
+│   ├── monthly/
+│   └── yearly/
+```
+
+- Created by the `create_journal_directories(base_path)` function.
+- If any directory already exists, it is left unchanged.
+- If `base_path` exists and is not a directory, a `NotADirectoryError` is raised.
+- Permission errors or invalid paths raise appropriate exceptions.
+
+See [docs/journal_init.md](../docs/journal_init.md) for details and rationale.
