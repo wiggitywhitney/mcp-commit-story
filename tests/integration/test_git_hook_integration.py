@@ -10,11 +10,14 @@ def temp_git_repo(tmp_path):
     repo_dir = tmp_path / "repo"
     repo_dir.mkdir()
     subprocess.run(["git", "init"], cwd=repo_dir, check=True)
+    # Set user name and email for test commits
+    subprocess.run(["git", "config", "user.name", "Test User"], cwd=repo_dir, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo_dir, check=True)
     # Create an initial commit
     (repo_dir / "README.md").write_text("# Test Repo\n")
     subprocess.run(["git", "add", "README.md"], cwd=repo_dir, check=True)
     subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=repo_dir, check=True)
-    return repo_dir
+    yield repo_dir
 
 def test_clean_hook_install(temp_git_repo):
     """Test installing the post-commit hook in a clean repo."""
