@@ -3,6 +3,27 @@ description: Guidelines for creating and maintaining Cursor rules to ensure cons
 globs: .cursor/rules/*.mdc
 alwaysApply: true
 ---
+# Cursor Rules for Task Execution
+
+## Rule 1: Subtask Execution Flow
+When working on subtasks:
+- **Complete each subtask fully without pausing for approval** unless the subtask explicitly contains the phrase "PAUSE FOR MANUAL APPROVAL" or similar explicit instructions to stop and ask for approval
+- Follow the TDD cycle exactly: write tests → run/verify fail → implement → run/verify pass → document → mark complete
+- **Pause only between subtasks** to confirm the next one to work on
+- When you see phrases like "GET APPROVAL FOR DESIGN CHOICES", "PAUSE FOR MANUAL APPROVAL", or similar explicit instructions to stop, pause and ask for approval on those specific items only
+- Never ask for approval on implementation details that aren't marked for approval
+
+## Rule 2: Automatic Documentation and Completion
+At the end of each subtask automatically:
+- Add documentation IF NEEDED in three places:
+  1. To docs directory (create new file or add to existing - use your judgment)
+  2. PRD (update relevant sections)
+  3. Engineering Spec (update relevant sections)
+- Do not remove existing information unless it's incorrect
+- Do not ask for approval on documentation changes
+- Double check all subtask requirements are met
+- If all requirements are met, mark the subtask complete
+- Only ask for help if you can't determine whether requirements are met
 
 - **Required Rule Structure:**
   ```markdown
@@ -50,4 +71,20 @@ alwaysApply: true
   - Keep descriptions concise
   - Include both DO and DON'T examples
   - Reference actual code over theoretical examples
-  - Use consistent formatting across rules 
+  - Use consistent formatting across rules
+  - **Present options as numbered lists**
+    - When offering the user a set of choices, always use numbers (1., 2., 3., etc.) so the user can quickly respond with a number.
+    - Example:
+      1. Show the logged plan for the subtask
+      2. Start with the first code step (define types/interfaces and write failing tests)
+    - This improves response speed and clarity for the user.
+
+- **Always use strict TDD for new features and refactors**
+  - Write failing tests first, run them to confirm they fail for the right reasons, then implement the logic, and finally run the tests to confirm they pass.
+  - Only skip this process if the user explicitly requests otherwise.
+  - Example:
+    1. Write a test for a new config loader (should fail)
+    2. Run the test (confirm failure)
+    3. Implement the config loader
+    4. Run the test (confirm it passes)
+  
