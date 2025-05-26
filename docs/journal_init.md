@@ -144,6 +144,17 @@ Integration tests for journal initialization ensure that the full workflow opera
 
 See `tests/integration/test_journal_init_integration.py` for implementation details. These tests use temporary directories and subprocesses to simulate actual usage, providing confidence that all components work together as expected.
 
+## Integration Testing: Git Hook Installation
+
+Integration tests for git hook installation ensure that the post-commit hook can be installed, replaced, and executed correctly in real-world git repositories. These tests cover:
+
+- Clean installation of the post-commit hook in a new repository
+- Overwriting and backing up an existing hook
+- Verifying that the hook executes after a commit (side effect test)
+- Cleanup and removal of hooks and backups
+
+See `tests/integration/test_git_hook_integration.py` for implementation details. These tests use temporary git repositories and subprocesses to simulate actual usage, providing confidence that the hook installation and execution logic is robust and reliable.
+
 # Post-Commit Hook Content Generation & Installation
 
 ## Purpose

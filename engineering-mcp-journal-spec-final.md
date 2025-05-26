@@ -948,3 +948,14 @@ All arguments are optional and default to the current directory and standard loc
 **Rationale:**
 - The CLI always outputs JSON for both success and error cases, making it easy to use in scripts and CI/CD pipelines.
 - All logic is covered by unit tests in `tests/unit/test_cli_install_hook.py`.
+
+## Integration Testing: Git Hook Installation
+
+Integration tests for git hook installation ensure that the post-commit hook can be installed, replaced, and executed correctly in real-world git repositories. These tests cover:
+
+- Clean installation of the post-commit hook in a new repository
+- Overwriting and backing up an existing hook
+- Verifying that the hook executes after a commit (side effect test)
+- Cleanup and removal of hooks and backups
+
+See `tests/integration/test_git_hook_integration.py` for implementation details. These tests use temporary git repositories and subprocesses to simulate actual usage, providing confidence that the hook installation and execution logic is robust and reliable.

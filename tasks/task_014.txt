@@ -308,7 +308,7 @@ TDD Steps:
 ### Details:
 
 
-## 5. Integration Testing [pending]
+## 5. Integration Testing [done]
 ### Dependencies: None
 ### Description: End-to-end testing of git hook installation workflow.
 
@@ -330,7 +330,7 @@ TDD Steps:
 ### Details:
 
 
-## 6. Hook Execution Testing [pending]
+## 6. Hook Execution Testing [in-progress]
 ### Dependencies: None
 ### Description: Verify that installed hooks actually execute correctly when commits are made.
 

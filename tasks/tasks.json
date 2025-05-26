@@ -858,7 +858,7 @@
           "title": "Integration Testing",
           "description": "End-to-end testing of git hook installation workflow.\n\nTDD Steps:\n1. WRITE TESTS FIRST\n  - Create tests/integration/test_git_hook_integration.py\n  - Test full hook installation workflow in temporary git repositories\n  - Test cases: clean install, overwrite existing, hook execution, cleanup scenarios\n  - RUN TESTS - VERIFY THEY FAIL\n2. NO APPROVAL NEEDED (integration testing)\n3. IMPLEMENT FUNCTIONALITY\n  - Fix any integration issues discovered\n  - Ensure all components work together\n  - RUN TESTS - VERIFY THEY PASS\n4. DOCUMENT AND COMPLETE\n  - Add documentation IF NEEDED in three places\n  - Double check all subtask requirements are met\n  - MARK COMPLETE",
           "details": "",
-          "status": "pending",
+          "status": "done",
           "dependencies": [],
           "parentTaskId": 14
         },
@@ -867,7 +867,7 @@
           "title": "Hook Execution Testing",
           "description": "Verify that installed hooks actually execute correctly when commits are made.\n\nTDD Steps:\n1. WRITE TESTS FIRST\n  - Add tests to tests/integration/test_git_hook_integration.py\n  - Test actual hook execution after installation\n  - Test cases: hook triggers on commit, hook calls correct command, error handling in hook\n  - RUN TESTS - VERIFY THEY FAIL\n2. NO APPROVAL NEEDED (testing existing functionality)\n3. IMPLEMENT FUNCTIONALITY\n  - Ensure hook content calls the correct mcp-commit-story command\n  - Fix any execution issues discovered\n  - RUN TESTS - VERIFY THEY PASS\n4. DOCUMENT AND COMPLETE\n  - Add documentation IF NEEDED in three places\n  - Double check all subtask requirements are met\n  - MARK COMPLETE",
           "details": "",
-          "status": "pending",
+          "status": "in-progress",
           "dependencies": [],
           "parentTaskId": 14
         }

@@ -1090,3 +1090,14 @@ See [docs/journal_init.md](../docs/journal_init.md) for details and rationale.
 - The installed hook is set to be executable by user, group, and other (0o755), ensuring compatibility with all Git workflows.
 - The process is fully automated and suitable for CI/CD pipelines and scripting.
 - All logic is covered by unit tests in `tests/unit/test_git_utils.py` and `tests/unit/test_git_hook_installation.py`.
+
+## Git Integration (Post-Commit Hook)
+
+Integration tests for git hook installation ensure that the post-commit hook can be installed, replaced, and executed correctly in real-world git repositories. These tests cover:
+
+- Clean installation of the post-commit hook in a new repository
+- Overwriting and backing up an existing hook
+- Verifying that the hook executes after a commit (side effect test)
+- Cleanup and removal of hooks and backups
+
+See `tests/integration/test_git_hook_integration.py` for implementation details.
