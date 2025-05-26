@@ -821,8 +821,8 @@
           "id": 1,
           "title": "Hook Content Generation",
           "description": "Create functionality to generate the post-commit hook script content.\n\nTDD Steps:\n1. WRITE TESTS FIRST\n  - Create tests/unit/test_git_hook_installation.py\n  - Test generate_hook_content() function\n  - Test cases: basic hook content, custom commands, proper shebang, executable format\n  - RUN TESTS - VERIFY THEY FAIL\n2. GET APPROVAL FOR DESIGN CHOICES\n  - PAUSE FOR MANUAL APPROVAL: Hook script content and commands to include\n  - PAUSE FOR MANUAL APPROVAL: Shebang line (#!/bin/sh vs #!/bin/bash)\n  - PAUSE FOR MANUAL APPROVAL: Error handling within the hook script\n3. IMPLEMENT FUNCTIONALITY\n  - Implement generate_hook_content() in src/mcp_commit_story/git_hook_installation.py\n  - Generate proper shell script with appropriate commands\n  - RUN TESTS - VERIFY THEY PASS\n4. DOCUMENT AND COMPLETE\n  - Add documentation IF NEEDED in three places\n  - Double check all subtask requirements are met\n  - MARK COMPLETE",
-          "details": "",
-          "status": "pending",
+          "details": "<info added on 2025-05-26T20:49:55.982Z>\nImplemented the `generate_hook_content` function in `src/mcp_commit_story/git_utils.py` with the following features:\n\n- Uses '#!/bin/sh' shebang for maximum portability across Unix-like systems\n- Configurable to run either the default command 'mcp-commit-story new-entry' or a custom command\n- Redirects all output to /dev/null and includes '|| true' to ensure the hook never blocks commits\n- Ensures lightweight, non-intrusive operation with Unix (LF) line endings\n\nAdded comprehensive unit tests in `tests/unit/test_git_hook_installation.py`:\n1. `test_basic_hook_content`: Validates default command, shebang, output suppression, and error handling\n2. `test_custom_command`: Confirms proper handling of custom commands\n3. `test_proper_shebang`: Verifies correct shebang line implementation\n4. `test_executable_format`: Ensures proper Unix line endings (no CRLF)\n\nAll tests pass successfully, and the implementation adheres to the approved design specifications.\n</info added on 2025-05-26T20:49:55.982Z>",
+          "status": "done",
           "dependencies": [],
           "parentTaskId": 14
         },
@@ -831,7 +831,7 @@
           "title": "Hook Backup Functionality",
           "description": "Implement functionality to safely backup existing git hooks.\n\nTDD Steps:\n1. WRITE TESTS FIRST\n  - Add tests to tests/unit/test_git_hook_installation.py\n  - Test backup_existing_hook() function (already exists in git_utils.py - may need enhancement)\n  - Test cases: no existing hook, existing hook backup, multiple backups, permission errors\n  - RUN TESTS - VERIFY THEY FAIL\n2. GET APPROVAL FOR DESIGN CHOICES\n  - PAUSE FOR MANUAL APPROVAL: Backup file naming convention (timestamp format)\n  - PAUSE FOR MANUAL APPROVAL: Backup location (same directory vs separate backup folder)\n  - PAUSE FOR MANUAL APPROVAL: Maximum number of backups to keep\n3. IMPLEMENT FUNCTIONALITY\n  - Enhance existing backup_existing_hook() in git_utils.py if needed\n  - Handle all error cases identified in tests\n  - RUN TESTS - VERIFY THEY PASS\n4. DOCUMENT AND COMPLETE\n  - Add documentation IF NEEDED in three places\n  - Double check all subtask requirements are met\n  - MARK COMPLETE",
           "details": "",
-          "status": "pending",
+          "status": "in-progress",
           "dependencies": [],
           "parentTaskId": 14
         },

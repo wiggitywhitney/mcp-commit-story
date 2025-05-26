@@ -227,6 +227,25 @@ def get_commit_diff_summary(commit) -> str:
     return "\n".join(summary_lines)
 
 
+def generate_hook_content(command: str = "mcp-commit-story new-entry") -> str:
+    """
+    Generate the content for a portable Git post-commit hook script.
+
+    Args:
+        command (str): The command to run in the hook. Defaults to 'mcp-commit-story new-entry'.
+
+    Returns:
+        str: The complete hook script content as a string.
+
+    Design:
+        - Uses '#!/bin/sh' for maximum portability.
+        - Runs the specified command, redirecting all output to /dev/null.
+        - Appends '|| true' to ensure the hook never blocks a commit, even on error.
+        - Keeps the script lightweight and non-intrusive, as recommended for Git hooks.
+    """
+    return f"#!/bin/sh\n{command} >/dev/null 2>&1 || true\n"
+
+
 def backup_existing_hook(hook_path: str) -> Optional[str]:
     """
     Backup an existing Git hook file by copying it to a timestamped backup file.
@@ -270,7 +289,7 @@ def install_post_commit_hook(repo_path: str = None) -> None:
     hook_path = os.path.join(hooks_dir, 'post-commit')
     if os.path.exists(hook_path):
         backup_existing_hook(hook_path)
-    hook_content = "#!/bin/sh\necho 'Post-commit hook triggered'\n"
+    hook_content = generate_hook_content()
     with open(hook_path, 'w') as f:
         f.write(hook_content)
     st = os.stat(hook_path)

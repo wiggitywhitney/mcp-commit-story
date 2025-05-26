@@ -667,6 +667,24 @@ These errors are skipped with optional notes in output:
   ```
 - Backs up existing hooks before modification
 
+### Post-Commit Hook Content Generation (Engineering Spec)
+- The post-commit hook is generated using the `generate_hook_content(command: str = "mcp-commit-story new-entry")` function in [src/mcp_commit_story/git_utils.py](../src/mcp_commit_story/git_utils.py).
+- The hook script uses `#!/bin/sh` for portability and runs the command `mcp-commit-story new-entry` by default (customizable if needed).
+- All output is redirected to `/dev/null` and the command is followed by `|| true` to ensure the hook never blocks a commit, even if journal entry creation fails.
+- The script is intentionally lightweight and non-intrusive, designed to never interfere with normal Git operations.
+- The installation logic (see `install_post_commit_hook`) backs up any existing hook before replacing it and sets the new hook as executable.
+- This approach guarantees:
+  - **Portability** (works on all Unix-like systems)
+  - **Non-blocking** (never prevents a commit)
+  - **Simplicity** (easy to audit and modify)
+- All logic is covered by strict TDD and unit tests in `tests/unit/test_git_hook_installation.py` and `tests/unit/test_git_utils.py`.
+
+**Example generated hook content:**
+```sh
+#!/bin/sh
+mcp-commit-story new-entry >/dev/null 2>&1 || true
+```
+
 ### Backfill Mechanism
 - Detection: Check commits since last journal entry in any file
 - Order: Add missed entries in chronological order

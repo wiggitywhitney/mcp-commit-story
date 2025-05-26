@@ -110,7 +110,7 @@ def install_hook():
 7. Integration tests for full hook installation flow
 
 # Subtasks:
-## 1. Hook Content Generation [pending]
+## 1. Hook Content Generation [done]
 ### Dependencies: None
 ### Description: Create functionality to generate the post-commit hook script content.
 
@@ -133,9 +133,24 @@ TDD Steps:
   - Double check all subtask requirements are met
   - MARK COMPLETE
 ### Details:
+<info added on 2025-05-26T20:49:55.982Z>
+Implemented the `generate_hook_content` function in `src/mcp_commit_story/git_utils.py` with the following features:
 
+- Uses '#!/bin/sh' shebang for maximum portability across Unix-like systems
+- Configurable to run either the default command 'mcp-commit-story new-entry' or a custom command
+- Redirects all output to /dev/null and includes '|| true' to ensure the hook never blocks commits
+- Ensures lightweight, non-intrusive operation with Unix (LF) line endings
 
-## 2. Hook Backup Functionality [pending]
+Added comprehensive unit tests in `tests/unit/test_git_hook_installation.py`:
+1. `test_basic_hook_content`: Validates default command, shebang, output suppression, and error handling
+2. `test_custom_command`: Confirms proper handling of custom commands
+3. `test_proper_shebang`: Verifies correct shebang line implementation
+4. `test_executable_format`: Ensures proper Unix line endings (no CRLF)
+
+All tests pass successfully, and the implementation adheres to the approved design specifications.
+</info added on 2025-05-26T20:49:55.982Z>
+
+## 2. Hook Backup Functionality [in-progress]
 ### Dependencies: None
 ### Description: Implement functionality to safely backup existing git hooks.
 

@@ -333,7 +333,10 @@ def test_install_post_commit_hook_creates_hook_with_content(git_repo):
     assert os.path.exists(hook_path)
     with open(hook_path) as f:
         content = f.read()
-    assert 'echo' in content and 'Post-commit' in content
+    assert content.startswith("#!/bin/sh\n"), "Shebang should be #!/bin/sh"
+    assert "mcp-commit-story new-entry" in content, "Should contain the journal entry command"
+    assert ">/dev/null 2>&1" in content, "Should suppress output"
+    assert content.strip().endswith("|| true"), "Should not block commit on error"
 
 def test_install_post_commit_hook_backs_up_existing_hook(git_repo):
     hooks_dir = os.path.join(git_repo.working_tree_dir, '.git', 'hooks')
@@ -350,7 +353,10 @@ def test_install_post_commit_hook_backs_up_existing_hook(git_repo):
     assert os.path.exists(hook_path)
     with open(hook_path) as f:
         content = f.read()
-    assert 'Post-commit' in content
+    assert content.startswith("#!/bin/sh\n"), "Shebang should be #!/bin/sh"
+    assert "mcp-commit-story new-entry" in content, "Should contain the journal entry command"
+    assert ">/dev/null 2>&1" in content, "Should suppress output"
+    assert content.strip().endswith("|| true"), "Should not block commit on error"
 
 def test_install_post_commit_hook_sets_executable(git_repo):
     hooks_dir = os.path.join(git_repo.working_tree_dir, '.git', 'hooks')
