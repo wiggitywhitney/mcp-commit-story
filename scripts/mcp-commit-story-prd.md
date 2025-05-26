@@ -172,6 +172,13 @@ journal:
 
 See [docs/journal_init.md](../docs/journal_init.md) for full details and rationale.
 
+### Config File Creation & Backup (Engineering Spec)
+
+- The function `generate_default_config(config_path, journal_path)` creates a new config file using the latest schema and default values from the config system.
+- If a config file already exists (even if malformed), it is backed up with a unique `.bak` timestamped suffix before writing the new config.
+- The generated config is always consistent with the schema in `config.py`.
+- See [docs/journal_init.md](../docs/journal_init.md) for details and rationale.
+
 ---
 
 # Engineering Journal MCP Server — Complete Developer Specification

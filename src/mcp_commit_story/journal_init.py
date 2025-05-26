@@ -1,5 +1,10 @@
 from pathlib import Path
 import os
+import yaml
+import time
+import shutil
+from .config import DEFAULT_CONFIG
+import copy
 
 def create_journal_directories(base_path: Path):
     """
@@ -19,4 +24,24 @@ def create_journal_directories(base_path: Path):
     except PermissionError as e:
         raise PermissionError(f"Permission denied while creating journal directories: {e}")
     except Exception as e:
-        raise OSError(f"Failed to create journal directories: {e}") 
+        raise OSError(f"Failed to create journal directories: {e}")
+
+def generate_default_config(config_path, journal_path):
+    """
+    Generate a default configuration file at the given path, customizing the journal path.
+    If a config file exists, back it up before writing a new one.
+    """
+    config_path = Path(config_path)
+    config = copy.deepcopy(DEFAULT_CONFIG)
+    config['journal']['path'] = str(journal_path)
+    backup_suffix = f".bak{int(time.time() * 1000)}"
+    try:
+        if config_path.exists():
+            backup_path = config_path.parent / (config_path.name + backup_suffix)
+            shutil.copy2(config_path, backup_path)
+        with open(config_path, 'w') as f:
+            yaml.dump(config, f, default_flow_style=False)
+    except PermissionError:
+        raise
+    except Exception as e:
+        raise OSError(f"Failed to generate default config: {e}") 

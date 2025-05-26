@@ -30,6 +30,17 @@ journal/
 - If `base_path` exists and is not a directory, a `NotADirectoryError` is raised.
 - Permission errors or invalid paths raise appropriate exceptions.
 
+## Configuration File Generation
+
+The function `generate_default_config(config_path, journal_path)` creates a new configuration file for the MCP Journal system at the specified path, customizing the journal directory location. If a config file already exists (even if malformed), it is backed up with a unique `.bak` timestamped suffix before writing the new config.
+
+- The generated config uses all default fields from the main config system (`DEFAULT_CONFIG` in `config.py`).
+- The `journal.path` field is set to the provided `journal_path` argument.
+- The config is written in YAML format, consistent with the rest of the system.
+- This function ensures that the config is always consistent with the latest schema and prevents accidental loss of previous config files.
+
+See [src/mcp_commit_story/config.py](../src/mcp_commit_story/config.py) for the config schema and [scripts/mcp-commit-story-prd.md](../scripts/mcp-commit-story-prd.md) for full requirements.
+
 ## Error Handling
 - All errors are surfaced as Python exceptions and should be handled by the caller.
 - See `src/mcp_commit_story/journal_init.py` for implementation details.
