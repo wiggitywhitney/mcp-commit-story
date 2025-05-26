@@ -19,7 +19,12 @@ import inspect
 
 def test_config_defaults():
     """Test config object has correct defaults"""
-    config = Config()
+    config_data = {
+        'journal': {'path': 'journal/'},
+        'git': {'exclude_patterns': ['*.log', 'journal/']},
+        'telemetry': {'enabled': True}
+    }
+    config = Config(config_data)
     assert isinstance(config.journal_path, str)
     assert len(config.journal_path) > 0
     assert isinstance(config.git_exclude_patterns, list)
@@ -42,7 +47,12 @@ def test_config_custom_values():
 
 def test_config_as_dict():
     """Test config can be converted to dictionary"""
-    config = Config()
+    config_data = {
+        'journal': {'path': 'journal/'},
+        'git': {'exclude_patterns': ['*.log', 'journal/']},
+        'telemetry': {'enabled': True}
+    }
+    config = Config(config_data)
     config_dict = config.as_dict()
     
     assert isinstance(config_dict, dict)
@@ -82,20 +92,18 @@ def test_load_config_missing_file():
 def test_save_config(tmp_path):
     """Test saving config to file"""
     config_path = tmp_path / '.mcp-commit-storyrc.yaml'
-    config = Config()
-    config.journal_path = 'saved_journal/'
-    config.git_exclude_patterns = ['saved/*.log']
-    config.telemetry_enabled = False
-    
+    config_data = {
+        'journal': {'path': 'saved_journal/'},
+        'git': {'exclude_patterns': ['saved/*.log']},
+        'telemetry': {'enabled': False}
+    }
+    config = Config(config_data)
     save_config(config, config_path)
-    
     # Verify file was created
     assert config_path.exists()
-    
     # Verify content
     with open(config_path, 'r') as f:
         loaded_yaml = yaml.safe_load(f)
-    
     assert loaded_yaml['journal']['path'] == 'saved_journal/'
     assert 'saved/*.log' in loaded_yaml['git']['exclude_patterns']
     assert loaded_yaml['telemetry']['enabled'] is False
@@ -385,3 +393,42 @@ def test_docstrings_and_usage_examples():
     for name, obj in inspect.getmembers(config_mod):
         if inspect.isfunction(obj) and not name.startswith("_"):
             assert obj.__doc__ is not None and len(obj.__doc__) > 0 
+
+def test_config_hot_reload(tmp_path):
+    """Test config hot reload functionality."""
+    config_path = tmp_path / ".mcp-commit-storyrc.yaml"
+    config_path.write_text("""
+journal:
+  path: original/
+git:
+  exclude_patterns:
+    - '*.log'
+telemetry:
+  enabled: true
+""")
+    config = load_config(str(config_path))
+    assert config.journal_path == "original/"
+    # Modify file
+    config_path.write_text("""
+journal:
+  path: updated/
+git:
+  exclude_patterns:
+    - '*.log'
+telemetry:
+  enabled: true
+""")
+    config.reload_config()
+    assert config.journal_path == "updated/"
+
+def test_config_dict_like_access():
+    """Test that Config supports dict-like access."""
+    config_data = {
+        'journal': {'path': 'test/'},
+        'git': {'exclude_patterns': ['*.log']},
+        'telemetry': {'enabled': True}
+    }
+    config = Config(config_data)
+    assert config['journal']['path'] == 'test/'
+    assert 'journal' in config
+    assert 'nonexistent' not in config 

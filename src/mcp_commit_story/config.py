@@ -263,22 +263,26 @@ def load_config(config_path: Optional[str] = None) -> Config:
         except Exception as e:
             print(f"Error loading config from {path}: {e}")
             return {}
+    config_file_used = None
     if config_path is None:
         local_path, global_path = find_config_files()
         local_data = _load_yaml(local_path) if local_path else {}
         global_data = _load_yaml(global_path) if global_path else {}
         if global_data:
             config_data = merge_configs(config_data, global_data)
+            config_file_used = global_path
         if local_data:
             config_data = merge_configs(config_data, local_data)
+            config_file_used = local_path
     elif config_path and os.path.exists(config_path):
         file_data = _load_yaml(config_path)
         config_data = merge_configs(config_data, file_data)
+        config_file_used = config_path
     # If config_data is empty (e.g., empty file), use defaults
     if not config_data:
         config_data = copy.deepcopy(DEFAULT_CONFIG)
     # Validate config, apply defaults for missing fields (handled in Config)
-    return Config(config_data)
+    return Config(config_data, config_path=config_file_used)
 
 def save_config(config: Config, config_path: Optional[str] = None) -> bool:
     """
