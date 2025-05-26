@@ -4,6 +4,8 @@
 # Dependencies: 3, 6, 7
 # Priority: medium
 # Description: Create the functionality to install a Git post-commit hook for automatic journal entry generation.
+
+MVP dependency: This task is now critical for the initial user journey.
 # Details:
 Implement Git hook installation in both the MCP server and CLI with the following features:
 

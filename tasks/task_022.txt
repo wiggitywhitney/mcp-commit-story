@@ -1,0 +1,37 @@
+# Task ID: 22
+# Title: Implement Remaining MCP Server Handlers
+# Status: pending
+# Dependencies: 11, 12, 13
+# Priority: medium
+# Description: Add the remaining non-MVP MCP tool handlers to complete the full feature set after their backend dependencies are implemented.
+# Details:
+Implement the remaining MCP server tool handlers in `src/mcp_commit_story/server.py` to complete the full feature set:
+
+1. **journal/summarize** handler:
+   - Depends on Task 11 (Summary Generation)
+   - Handle daily, weekly, monthly, yearly summary requests
+   - Return summary content and file paths
+
+2. **journal/blogify** handler:
+   - Depends on Task 12 (Blog Post Generation)
+   - Convert journal entries to blog post format
+   - Accept multiple file inputs
+
+3. **journal/backfill** handler:
+   - Depends on Task 13 (Backfill Functionality)
+   - Detect and create entries for missed commits
+   - Return list of created entries
+
+All handlers should:
+- Use existing `@handle_mcp_error` decorator
+- Follow TypedDict patterns established in Tasks 6.3-6.4
+- Include proper async/await support
+- Integrate with existing backend logic from their dependency tasks
+- Include comprehensive error handling and validation
+
+# Test Strategy:
+1. Unit tests for each new handler
+2. Integration tests with backend logic
+3. Error handling validation
+4. End-to-end workflow testing
+5. Backward compatibility with existing handlers

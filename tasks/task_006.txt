@@ -3,7 +3,7 @@
 # Status: pending
 # Dependencies: 1, 2, 5
 # Priority: high
-# Description: Create the MCP server implementation using the Anthropic MCP Python SDK, registering tools for journal operations.
+# Description: Create the MCP server implementation using the Anthropic MCP Python SDK, registering MVP-critical tools for journal operations (new-entry, add-reflection, init, install-hook).
 # Details:
 Implement the MCP server in `src/mcp_journal/server.py` with the following features:
 
@@ -116,8 +116,20 @@ def handle_mcp_error(func):
 
 
 ## 6. MCP Server Integration Test [pending]
-### Dependencies: 6.1, 6.2, 6.3, 6.4, 6.5
+### Dependencies: 6.1, 6.2, 6.3, 6.4, 6.5, 6.7, 6.8
 ### Description: Write an end-to-end integration test for the MCP server, covering all registered operations (journal/new-entry, journal/add-reflection, etc.). TDD steps: (1) Define integration test scenarios and expected results, (2) Write failing integration tests, (3) Ask user for additional integration requirements, (4) Write tests for compliance, (5) Implement integration logic, (6) Run full test suite and document. Must cover error handling, async/await, and integration with Task 5 journal generation. Depends on all previous Task 6 subtasks.
+### Details:
+
+
+## 7. journal/init Operation Handler [pending]
+### Dependencies: 6.1, 6.2
+### Description: Implement the MCP operation for journal initialization. TDD steps: (1) Define request/response types, (2) Write failing tests for handler, (3) Ask user for operation-specific requirements, (4) Write tests for compliance, (5) Implement async handler using Task 8 journal initialization logic, (6) Run full test suite and document. Must use proper error handling and type hints. Depends on MCP Server Initialization & Setup and Core Error Handling System.
+### Details:
+
+
+## 8. journal/install-hook Operation Handler [pending]
+### Dependencies: 6.1, 6.2
+### Description: Implement the MCP operation for git hook installation. TDD steps: (1) Define request/response types, (2) Write failing tests for handler, (3) Ask user for operation-specific requirements, (4) Write tests for compliance, (5) Implement async handler using Task 14 git hook installation logic, (6) Run full test suite and document. Must use proper error handling and type hints. Depends on MCP Server Initialization & Setup and Core Error Handling System.
 ### Details:
 
 

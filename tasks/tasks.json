@@ -497,7 +497,7 @@
     {
       "id": 6,
       "title": "Implement MCP Server Core",
-      "description": "Create the MCP server implementation using the Anthropic MCP Python SDK, registering tools for journal operations.",
+      "description": "Create the MCP server implementation using the Anthropic MCP Python SDK, registering MVP-critical tools for journal operations (new-entry, add-reflection, init, install-hook).",
       "status": "pending",
       "dependencies": [
         1,
@@ -575,9 +575,27 @@
             "6.2",
             "6.3",
             "6.4",
-            "6.5"
+            "6.5",
+            "6.7",
+            "6.8"
           ],
           "parentTaskId": 6
+        },
+        {
+          "id": 7,
+          "title": "journal/init Operation Handler",
+          "description": "Implement the MCP operation for journal initialization. TDD steps: (1) Define request/response types, (2) Write failing tests for handler, (3) Ask user for operation-specific requirements, (4) Write tests for compliance, (5) Implement async handler using Task 8 journal initialization logic, (6) Run full test suite and document. Must use proper error handling and type hints. Depends on MCP Server Initialization & Setup and Core Error Handling System.",
+          "status": "pending",
+          "dependencies": ["6.1", "6.2"],
+          "details": ""
+        },
+        {
+          "id": 8,
+          "title": "journal/install-hook Operation Handler",
+          "description": "Implement the MCP operation for git hook installation. TDD steps: (1) Define request/response types, (2) Write failing tests for handler, (3) Ask user for operation-specific requirements, (4) Write tests for compliance, (5) Implement async handler using Task 14 git hook installation logic, (6) Run full test suite and document. Must use proper error handling and type hints. Depends on MCP Server Initialization & Setup and Core Error Handling System.",
+          "status": "pending",
+          "dependencies": ["6.1", "6.2"],
+          "details": ""
         }
       ]
     },
@@ -599,15 +617,10 @@
     {
       "id": 8,
       "title": "Implement Journal Initialization",
-      "description": "Create the functionality to initialize a journal in a Git repository, including directory structure and configuration.",
+      "description": "Create the functionality to initialize a journal in a Git repository, including directory structure and configuration.\n\nMVP dependency: This task is now critical for the initial user journey.",
       "status": "pending",
-      "dependencies": [
-        2,
-        3,
-        6,
-        7
-      ],
-      "priority": "high",
+      "dependencies": [2,3,6,7],
+      "priority": "critical",
       "details": "Implement journal initialization in both the MCP server and CLI with the following features:\n\n1. Directory structure creation:\n```python\ndef create_journal_structure(base_path):\n    \"\"\"Create journal directory structure\"\"\"\n    # Create directories\n    (base_path / \"daily\").mkdir(parents=True, exist_ok=True)\n    (base_path / \"summaries\" / \"daily\").mkdir(parents=True, exist_ok=True)\n    (base_path / \"summaries\" / \"weekly\").mkdir(parents=True, exist_ok=True)\n    (base_path / \"summaries\" / \"monthly\").mkdir(parents=True, exist_ok=True)\n    (base_path / \"summaries\" / \"yearly\").mkdir(parents=True, exist_ok=True)\n    return True\n```\n\n2. Simplified configuration file generation:\n```python\ndef generate_default_config(config_path, journal_path):\n    \"\"\"Generate minimal default configuration file\"\"\"\n    default_config = {\n        \"journal\": {\n            \"path\": str(journal_path)\n        },\n        \"git\": {\n            \"exclude_patterns\": [\"journal/**\"]\n        },\n        \"telemetry\": {\n            \"enabled\": True\n        }\n    }\n    with open(config_path, \"w\") as f:\n        yaml.dump(default_config, f, default_flow_style=False)\n    return True\n```\n\n3. Configuration handling:\n```python\ndef setup_configuration(repo_path):\n    \"\"\"Set up configuration file\"\"\"\n    config_path = Path(repo_path) / \".mcp-journalrc.yaml\"\n    example_path = Path(repo_path) / \".mcp-journalrc.yaml.example\"\n    journal_path = Path(repo_path) / \"journal\"\n    \n    # Check if config already exists\n    if config_path.exists():\n        return False, \"Journal already initialized\"\n    \n    # Check for example config and copy if exists\n    if example_path.exists():\n        shutil.copy(example_path, config_path)\n    else:\n        # Generate minimal default config\n        generate_default_config(config_path, journal_path)\n    \n    return True, config_path\n```\n\n4. MCP handler implementation:\n```python\n@trace_operation(\"journal_init\")\nasync def handle_init(request):\n    \"\"\"Handle journal/init operation\"\"\"\n    repo_path = request.get(\"repo_path\", os.getcwd())\n    \n    # Setup configuration\n    success, result = setup_configuration(repo_path)\n    if not success:\n        return {\"status\": \"error\", \"error\": result}\n    \n    # Create structure\n    journal_path = Path(repo_path) / \"journal\"\n    create_journal_structure(journal_path)\n    \n    # Install git hook (no longer optional)\n    install_post_commit_hook(repo_path)\n    \n    # Return success\n    return {\n        \"status\": \"success\",\n        \"message\": \"Journal initialized successfully\",\n        \"paths\": {\n            \"config\": str(result),\n            \"journal\": str(journal_path)\n        }\n    }\n```\n\n5. CLI command implementation:\n```python\n@cli.command()\n@click.option(\"--debug\", is_flag=True, help=\"Show debug information\")\ndef init(debug):\n    \"\"\"Initialize journal in current repository\"\"\"\n    try:\n        # Setup configuration\n        success, result = setup_configuration(Path.cwd())\n        if not success:\n            click.echo(result)\n            return\n        \n        # Create structure\n        journal_path = Path.cwd() / \"journal\"\n        create_journal_structure(journal_path)\n        \n        # Install git hook (no longer optional)\n        install_post_commit_hook(Path.cwd())\n        click.echo(\"Git post-commit hook installed\")\n        \n        click.echo(f\"Journal initialized at {journal_path}\")\n    except Exception as e:\n        if debug:\n            click.echo(f\"Error: {e}\")\n            traceback.print_exc()\n        else:\n            click.echo(f\"Error: {e}\")\n```",
       "testStrategy": "1. Unit tests for directory structure creation\n2. Tests for simplified configuration file generation\n3. Tests for configuration handling (existing config, example config, default generation)\n4. Tests for MCP handler implementation\n5. Tests for CLI command implementation\n6. Tests for handling existing journal\n7. Integration tests for full initialization flow\n8. Tests to verify git hook installation is always performed\n9. Tests to verify the minimal configuration contains only the essential settings",
       "subtasks": []
@@ -727,7 +740,8 @@
     {
       "id": 14,
       "title": "Implement Git Hook Installation",
-      "description": "Create the functionality to install a Git post-commit hook for automatic journal entry generation.",
+      "description": "Create the functionality to install a Git post-commit hook for automatic journal entry generation.\n\nMVP dependency: This task is now critical for the initial user journey.",
+      "priority": "critical",
       "details": "Implement Git hook installation in both the MCP server and CLI with the following features:\n\n1. Hook installation:\n```python\ndef install_post_commit_hook(repo_path=None):\n    \"\"\"Install the post-commit hook\"\"\"\n    if repo_path is None:\n        repo_path = os.getcwd()\n    \n    # Get hook path\n    hook_path = Path(repo_path) / \".git\" / \"hooks\" / \"post-commit\"\n    \n    # Check if hook already exists\n    if hook_path.exists():\n        # Backup existing hook\n        backup_path = backup_existing_hook(hook_path)\n    \n    # Create hook\n    with open(hook_path, \"w\") as f:\n        f.write(\"#!/bin/sh\\n\")\n        f.write(\"mcp-journal new-entry\\n\")\n    \n    # Make executable\n    os.chmod(hook_path, 0o755)\n    \n    return hook_path\n```\n\n2. Hook backup:\n```python\ndef backup_existing_hook(hook_path):\n    \"\"\"Backup existing hook if present\"\"\"\n    backup_path = hook_path.with_suffix(\".bak\")\n    \n    # If backup already exists, use numbered backup\n    if backup_path.exists():\n        i = 1\n        while backup_path.with_suffix(f\".bak{i}\").exists():\n            i += 1\n        backup_path = backup_path.with_suffix(f\".bak{i}\")\n    \n    # Copy hook to backup\n    shutil.copy2(hook_path, backup_path)\n    \n    return backup_path\n```\n\n3. MCP handler implementation:\n```python\n@trace_operation(\"journal_install_hook\")\nasync def handle_install_hook(request):\n    \"\"\"Handle journal/install-hook operation\"\"\"\n    repo_path = request.get(\"repo_path\", os.getcwd())\n    \n    # Check if repo exists\n    if not is_git_repo(repo_path):\n        return {\"status\": \"error\", \"error\": \"Not a Git repository\"}\n    \n    # Install hook\n    hook_path = install_post_commit_hook(repo_path)\n    \n    return {\n        \"status\": \"success\",\n        \"hook_path\": str(hook_path)\n    }\n```\n\n4. CLI command implementation:\n```python\n@cli.command()\ndef install_hook():\n    \"\"\"Install git post-commit hook\"\"\"\n    try:\n        # Check if repo exists\n        if not is_git_repo():\n            click.echo(\"Not a Git repository\")\n            return\n        \n        # Check if hook already exists\n        hook_path = Path.cwd() / \".git\" / \"hooks\" / \"post-commit\"\n        if hook_path.exists():\n            if not click.confirm(\"Hook already exists. Overwrite?\", default=False):\n                click.echo(\"Hook installation cancelled\")\n                return\n        \n        # Install hook\n        hook_path = install_post_commit_hook()\n        \n        click.echo(f\"Git post-commit hook installed at {hook_path}\")\n    except Exception as e:\n        click.echo(f\"Error: {e}\")\n```",
       "testStrategy": "1. Unit tests for hook installation\n2. Tests for hook backup\n3. Tests for MCP handler implementation\n4. Tests for CLI command implementation\n5. Tests for handling existing hooks\n6. Tests for hook permissions\n7. Integration tests for full hook installation flow",
       "priority": "medium",
@@ -1126,6 +1140,17 @@
       "status": "pending",
       "dependencies": [],
       "priority": "medium",
+      "subtasks": []
+    },
+    {
+      "id": 22,
+      "title": "Implement Remaining MCP Server Handlers",
+      "description": "Add the remaining non-MVP MCP tool handlers to complete the full feature set after their backend dependencies are implemented.",
+      "status": "pending",
+      "dependencies": [11, 12, 13],
+      "priority": "medium",
+      "details": "Implement the remaining MCP server tool handlers in `src/mcp_commit_story/server.py` to complete the full feature set:\n\n1. **journal/summarize** handler:\n   - Depends on Task 11 (Summary Generation)\n   - Handle daily, weekly, monthly, yearly summary requests\n   - Return summary content and file paths\n\n2. **journal/blogify** handler:\n   - Depends on Task 12 (Blog Post Generation)\n   - Convert journal entries to blog post format\n   - Accept multiple file inputs\n\n3. **journal/backfill** handler:\n   - Depends on Task 13 (Backfill Functionality)\n   - Detect and create entries for missed commits\n   - Return list of created entries\n\nAll handlers should:\n- Use existing `@handle_mcp_error` decorator\n- Follow TypedDict patterns established in Tasks 6.3-6.4\n- Include proper async/await support\n- Integrate with existing backend logic from their dependency tasks\n- Include comprehensive error handling and validation",
+      "testStrategy": "1. Unit tests for each new handler\n2. Integration tests with backend logic\n3. Error handling validation\n4. End-to-end workflow testing\n5. Backward compatibility with existing handlers",
       "subtasks": []
     }
   ]

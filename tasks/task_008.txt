@@ -2,8 +2,10 @@
 # Title: Implement Journal Initialization
 # Status: pending
 # Dependencies: 2, 3, 6, 7
-# Priority: high
+# Priority: critical
 # Description: Create the functionality to initialize a journal in a Git repository, including directory structure and configuration.
+
+MVP dependency: This task is now critical for the initial user journey.
 # Details:
 Implement journal initialization in both the MCP server and CLI with the following features:
 
