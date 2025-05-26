@@ -80,6 +80,51 @@ The function `initialize_journal(repo_path=None, config_path=None, journal_path=
 
 See also: [src/mcp_commit_story/journal_init.py](../src/mcp_commit_story/journal_init.py) for implementation details.
 
+## CLI Command for Journal Initialization
+
+You can initialize the MCP Journal system from the command line using the `journal-init` CLI command. This command is implemented in [src/mcp_commit_story/cli.py](../src/mcp_commit_story/cli.py) and provides a standardized JSON output for both success and error cases.
+
+**Usage:**
+```bash
+python -m mcp_commit_story.cli --repo-path <repo> --config-path <config> --journal-path <journal>
+```
+All arguments are optional and default to the current directory and standard locations.
+
+**Options:**
+- `--repo-path`: Path to git repository (default: current directory)
+- `--config-path`: Path for config file (default: .mcp-commit-storyrc.yaml in repo root)
+- `--journal-path`: Path for journal directory (default: journal/ in repo root)
+
+**Output Format:**
+- On success:
+```json
+{
+  "status": "success",
+  "result": {
+    "paths": { "config": "/path/to/.mcp-commit-storyrc.yaml", "journal": "/path/to/journal" },
+    "message": "Journal initialized successfully."
+  }
+}
+```
+- On error:
+```json
+{
+  "status": "error",
+  "message": "User-friendly error description",
+  "code": 1,
+  "details": "Technical error details (optional)"
+}
+```
+
+**Error Codes:**
+- 0: Success
+- 1: General error (not a git repo, permission denied, etc.)
+- 2: Already initialized
+- 3: Invalid arguments/usage
+- 4: File system errors (can't create directories, etc.)
+
+This contract ensures both human and programmatic consumers can reliably interpret CLI output.
+
 ## Related Operations
 - Initialization is typically performed as part of `journal/init` or the first journal operation.
 - The structure is required for all journal entry and summary generation features.

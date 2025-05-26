@@ -1012,3 +1012,5 @@ journal/
 - Permission errors or invalid paths raise appropriate exceptions.
 
 See [docs/journal_init.md](../docs/journal_init.md) for details and rationale.
+
+- The CLI command `journal-init` (see [src/mcp_commit_story/cli.py](../src/mcp_commit_story/cli.py)) allows initializing the journal system from the command line. It accepts optional arguments for repo, config, and journal paths, and outputs standardized JSON for both success and error cases. See [docs/journal_init.md](../docs/journal_init.md) for usage, output format, and error codes.

@@ -876,3 +876,7 @@ Integration tests for journal initialization (see `tests/integration/test_journa
 - Failure recovery, ensuring successful parts are left in place and errors are reported
 
 These tests provide end-to-end validation that all components work together as expected.
+
+## CLI Command for Journal Initialization
+
+The CLI command `journal-init` (see [src/mcp_commit_story/cli.py](src/mcp_commit_story/cli.py)) allows initializing the journal system from the command line. It accepts optional arguments for repo, config, and journal paths, and outputs standardized JSON for both success and error cases. See [docs/journal_init.md](docs/journal_init.md) for usage, output format, and error codes.
