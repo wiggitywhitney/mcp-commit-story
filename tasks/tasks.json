@@ -867,7 +867,7 @@
           "title": "Hook Execution Testing",
           "description": "Verify that installed hooks actually execute correctly when commits are made.\n\nTDD Steps:\n1. WRITE TESTS FIRST\n  - Add tests to tests/integration/test_git_hook_integration.py\n  - Test actual hook execution after installation\n  - Test cases: hook triggers on commit, hook calls correct command, error handling in hook\n  - RUN TESTS - VERIFY THEY FAIL\n2. NO APPROVAL NEEDED (testing existing functionality)\n3. IMPLEMENT FUNCTIONALITY\n  - Ensure hook content calls the correct mcp-commit-story command\n  - Fix any execution issues discovered\n  - RUN TESTS - VERIFY THEY PASS\n4. DOCUMENT AND COMPLETE\n  - Add documentation IF NEEDED in three places\n  - Double check all subtask requirements are met\n  - MARK COMPLETE",
           "details": "",
-          "status": "in-progress",
+          "status": "done",
           "dependencies": [],
           "parentTaskId": 14
         }

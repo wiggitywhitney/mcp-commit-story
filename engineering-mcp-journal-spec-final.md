@@ -606,6 +606,10 @@ def mock_telemetry_exporter():
     pass
 ```
 
+### Hook Execution Testing (Subtask 14.6)
+
+Integration tests for hook execution now directly write a debug post-commit hook to `.git/hooks/post-commit` and verify that it is executed after a commit, when run directly, and with `sh post-commit`. This ensures the hook is actually executed in all scenarios, not just installed. See `tests/integration/test_git_hook_integration.py` for details.
+
 ---
 
 ### Implementation Guidelines
