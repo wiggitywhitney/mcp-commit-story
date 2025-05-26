@@ -1,6 +1,6 @@
 # Task ID: 8
 # Title: Implement Journal Initialization
-# Status: pending
+# Status: in-progress
 # Dependencies: 2, 3, 6, 7
 # Priority: critical
 # Description: Create the functionality to initialize a journal in a Git repository, including directory structure and configuration.
@@ -134,3 +134,138 @@ def init(debug):
 7. Integration tests for full initialization flow
 8. Tests to verify git hook installation is always performed
 9. Tests to verify the minimal configuration contains only the essential settings
+
+# Subtasks:
+## 1. Directory Structure Creation [in-progress]
+### Dependencies: None
+### Description: Create journal directory structure functionality. TDD: Write tests for create_journal_directories(base_path), covering success, exists, permission errors, invalid paths. Pause for manual approval on layout, error handling, path validation. Implement in journal_init.py. Document in docs, PRD, spec. Mark complete when all requirements met.
+### Details:
+TDD Steps:
+1. WRITE TESTS FIRST
+   - Create tests/unit/test_journal_init.py
+   - Test create_journal_directories(base_path)
+   - Test cases: success, directory exists, permission errors, invalid paths
+   - RUN TESTS - VERIFY THEY FAIL
+2. GET APPROVAL FOR DESIGN CHOICES
+   - PAUSE FOR MANUAL APPROVAL: Directory structure layout
+   - PAUSE FOR MANUAL APPROVAL: Error handling approach
+   - PAUSE FOR MANUAL APPROVAL: Path validation strategy
+3. IMPLEMENT FUNCTIONALITY
+   - Implement create_journal_directories() in src/mcp_commit_story/journal_init.py
+   - Handle all error cases identified in tests
+   - RUN TESTS - VERIFY THEY PASS
+4. DOCUMENT AND COMPLETE
+   - Add documentation IF NEEDED in three places
+   - Double check all subtask requirements are met
+   - MARK COMPLETE
+
+## 2. Configuration File Generation [pending]
+### Dependencies: None
+### Description: Generate default configuration files. TDD: Write tests for generate_default_config(), covering new config, existing config, malformed files, backup scenarios. Pause for manual approval on naming, backup, defaults. Implement and document. Mark complete when all requirements met.
+### Details:
+TDD Steps:
+1. WRITE TESTS FIRST
+   - Add tests to tests/unit/test_journal_init.py
+   - Test generate_default_config()
+   - Test cases: new config, existing config, malformed files, backup scenarios
+   - RUN TESTS - VERIFY THEY FAIL
+2. GET APPROVAL FOR DESIGN CHOICES
+   - PAUSE FOR MANUAL APPROVAL: Config file naming convention
+   - PAUSE FOR MANUAL APPROVAL: Backup strategy for existing configs
+   - PAUSE FOR MANUAL APPROVAL: Default values to include
+3. IMPLEMENT FUNCTIONALITY
+   - Implement generate_default_config()
+   - Integrate with existing config system
+   - RUN TESTS - VERIFY THEY PASS
+4. DOCUMENT AND COMPLETE
+   - Add documentation IF NEEDED in three places
+   - Double check all subtask requirements are met
+   - MARK COMPLETE
+
+## 3. Git Repository Validation [pending]
+### Dependencies: None
+### Description: Validate git repository before initialization. TDD: Write tests for validate_git_repository(), covering valid repo, not a repo, bare repo, permission issues. Pause for manual approval on validation criteria, error format, integration. Implement and document. Mark complete when all requirements met.
+### Details:
+TDD Steps:
+1. WRITE TESTS FIRST
+   - Add tests to tests/unit/test_journal_init.py
+   - Test validate_git_repository()
+   - Test cases: valid repo, not a repo, bare repo, permission issues
+   - RUN TESTS - VERIFY THEY FAIL
+2. GET APPROVAL FOR DESIGN CHOICES
+   - PAUSE FOR MANUAL APPROVAL: Validation criteria (bare repos OK?)
+   - PAUSE FOR MANUAL APPROVAL: Error message format
+   - PAUSE FOR MANUAL APPROVAL: Integration with existing git utils
+3. IMPLEMENT FUNCTIONALITY
+   - Implement validate_git_repository()
+   - Use existing git_utils where possible
+   - RUN TESTS - VERIFY THEY PASS
+4. DOCUMENT AND COMPLETE
+   - Add documentation IF NEEDED in three places
+   - Double check all subtask requirements are met
+   - MARK COMPLETE
+
+## 4. Main Initialization Function [pending]
+### Dependencies: None
+### Description: Create main journal initialization entry point. TDD: Write tests for initialize_journal(), orchestrating all previous functions, covering full success, partial failures, already initialized, rollback. Pause for manual approval on signature, rollback, detection logic. Implement and document. Mark complete when all requirements met.
+### Details:
+TDD Steps:
+1. WRITE TESTS FIRST
+   - Add tests to tests/unit/test_journal_init.py
+   - Test initialize_journal() (orchestrates all previous functions)
+   - Test cases: full success, partial failures, already initialized, rollback scenarios
+   - RUN TESTS - VERIFY THEY FAIL
+2. GET APPROVAL FOR DESIGN CHOICES
+   - PAUSE FOR MANUAL APPROVAL: Function signature and parameters
+   - PAUSE FOR MANUAL APPROVAL: Rollback strategy on failure
+   - PAUSE FOR MANUAL APPROVAL: "Already initialized" detection logic
+3. IMPLEMENT FUNCTIONALITY
+   - Implement initialize_journal() main function
+   - Orchestrate all previous subtask functions
+   - RUN TESTS - VERIFY THEY PASS
+4. DOCUMENT AND COMPLETE
+   - Add documentation IF NEEDED in three places
+   - Double check all subtask requirements are met
+   - MARK COMPLETE
+
+## 5. Integration Testing [pending]
+### Dependencies: None
+### Description: End-to-end testing of journal initialization. TDD: Write integration tests for full workflow in temp dirs, covering clean init, re-init, existing files, failure recovery. No approval needed. Implement and document. Mark complete when all requirements met.
+### Details:
+TDD Steps:
+1. WRITE TESTS FIRST
+   - Create tests/integration/test_journal_init_integration.py
+   - Test full initialization workflow in temporary directories
+   - Test cases: clean init, re-init, init with existing files, failure recovery
+   - RUN TESTS - VERIFY THEY FAIL
+2. NO APPROVAL NEEDED (integration testing)
+3. IMPLEMENT FUNCTIONALITY
+   - Fix any integration issues discovered
+   - Ensure all components work together
+   - RUN TESTS - VERIFY THEY PASS
+4. DOCUMENT AND COMPLETE
+   - Add documentation IF NEEDED in three places
+   - Double check all subtask requirements are met
+   - MARK COMPLETE
+
+## 6. CLI Integration Preparation [pending]
+### Dependencies: None
+### Description: Prepare for CLI command integration (Task 7). TDD: Write tests for CLI-friendly error handling and return value formats. Pause for manual approval on return format and error codes. Implement and document. Mark complete when all requirements met.
+### Details:
+TDD Steps:
+1. WRITE TESTS FIRST
+   - Add tests for CLI-friendly error handling
+   - Test return value formats for CLI consumption
+   - RUN TESTS - VERIFY THEY FAIL
+2. GET APPROVAL FOR DESIGN CHOICES
+   - PAUSE FOR MANUAL APPROVAL: Return value format for CLI
+   - PAUSE FOR MANUAL APPROVAL: Error codes/messages for CLI
+3. IMPLEMENT FUNCTIONALITY
+   - Adjust functions for CLI compatibility
+   - Ensure proper return values and error handling
+   - RUN TESTS - VERIFY THEY PASS
+4. DOCUMENT AND COMPLETE
+   - Add documentation IF NEEDED in three places
+   - Double check all subtask requirements are met
+   - MARK COMPLETE
+

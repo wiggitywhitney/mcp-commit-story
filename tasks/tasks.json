@@ -624,7 +624,7 @@
       "id": 8,
       "title": "Implement Journal Initialization",
       "description": "Create the functionality to initialize a journal in a Git repository, including directory structure and configuration.\n\nMVP dependency: This task is now critical for the initial user journey.",
-      "status": "pending",
+      "status": "in-progress",
       "dependencies": [
         2,
         3,
@@ -634,7 +634,62 @@
       "priority": "critical",
       "details": "Implement journal initialization in both the MCP server and CLI with the following features:\n\n1. Directory structure creation:\n```python\ndef create_journal_structure(base_path):\n    \"\"\"Create journal directory structure\"\"\"\n    # Create directories\n    (base_path / \"daily\").mkdir(parents=True, exist_ok=True)\n    (base_path / \"summaries\" / \"daily\").mkdir(parents=True, exist_ok=True)\n    (base_path / \"summaries\" / \"weekly\").mkdir(parents=True, exist_ok=True)\n    (base_path / \"summaries\" / \"monthly\").mkdir(parents=True, exist_ok=True)\n    (base_path / \"summaries\" / \"yearly\").mkdir(parents=True, exist_ok=True)\n    return True\n```\n\n2. Simplified configuration file generation:\n```python\ndef generate_default_config(config_path, journal_path):\n    \"\"\"Generate minimal default configuration file\"\"\"\n    default_config = {\n        \"journal\": {\n            \"path\": str(journal_path)\n        },\n        \"git\": {\n            \"exclude_patterns\": [\"journal/**\"]\n        },\n        \"telemetry\": {\n            \"enabled\": True\n        }\n    }\n    with open(config_path, \"w\") as f:\n        yaml.dump(default_config, f, default_flow_style=False)\n    return True\n```\n\n3. Configuration handling:\n```python\ndef setup_configuration(repo_path):\n    \"\"\"Set up configuration file\"\"\"\n    config_path = Path(repo_path) / \".mcp-journalrc.yaml\"\n    example_path = Path(repo_path) / \".mcp-journalrc.yaml.example\"\n    journal_path = Path(repo_path) / \"journal\"\n    \n    # Check if config already exists\n    if config_path.exists():\n        return False, \"Journal already initialized\"\n    \n    # Check for example config and copy if exists\n    if example_path.exists():\n        shutil.copy(example_path, config_path)\n    else:\n        # Generate minimal default config\n        generate_default_config(config_path, journal_path)\n    \n    return True, config_path\n```\n\n4. MCP handler implementation:\n```python\n@trace_operation(\"journal_init\")\nasync def handle_init(request):\n    \"\"\"Handle journal/init operation\"\"\"\n    repo_path = request.get(\"repo_path\", os.getcwd())\n    \n    # Setup configuration\n    success, result = setup_configuration(repo_path)\n    if not success:\n        return {\"status\": \"error\", \"error\": result}\n    \n    # Create structure\n    journal_path = Path(repo_path) / \"journal\"\n    create_journal_structure(journal_path)\n    \n    # Install git hook (no longer optional)\n    install_post_commit_hook(repo_path)\n    \n    # Return success\n    return {\n        \"status\": \"success\",\n        \"message\": \"Journal initialized successfully\",\n        \"paths\": {\n            \"config\": str(result),\n            \"journal\": str(journal_path)\n        }\n    }\n```\n\n5. CLI command implementation:\n```python\n@cli.command()\n@click.option(\"--debug\", is_flag=True, help=\"Show debug information\")\ndef init(debug):\n    \"\"\"Initialize journal in current repository\"\"\"\n    try:\n        # Setup configuration\n        success, result = setup_configuration(Path.cwd())\n        if not success:\n            click.echo(result)\n            return\n        \n        # Create structure\n        journal_path = Path.cwd() / \"journal\"\n        create_journal_structure(journal_path)\n        \n        # Install git hook (no longer optional)\n        install_post_commit_hook(Path.cwd())\n        click.echo(\"Git post-commit hook installed\")\n        \n        click.echo(f\"Journal initialized at {journal_path}\")\n    except Exception as e:\n        if debug:\n            click.echo(f\"Error: {e}\")\n            traceback.print_exc()\n        else:\n            click.echo(f\"Error: {e}\")\n```",
       "testStrategy": "1. Unit tests for directory structure creation\n2. Tests for simplified configuration file generation\n3. Tests for configuration handling (existing config, example config, default generation)\n4. Tests for MCP handler implementation\n5. Tests for CLI command implementation\n6. Tests for handling existing journal\n7. Integration tests for full initialization flow\n8. Tests to verify git hook installation is always performed\n9. Tests to verify the minimal configuration contains only the essential settings",
-      "subtasks": []
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Directory Structure Creation",
+          "description": "Create journal directory structure functionality. TDD: Write tests for create_journal_directories(base_path), covering success, exists, permission errors, invalid paths. Pause for manual approval on layout, error handling, path validation. Implement in journal_init.py. Document in docs, PRD, spec. Mark complete when all requirements met.",
+          "details": "TDD Steps:\n1. WRITE TESTS FIRST\n   - Create tests/unit/test_journal_init.py\n   - Test create_journal_directories(base_path)\n   - Test cases: success, directory exists, permission errors, invalid paths\n   - RUN TESTS - VERIFY THEY FAIL\n2. GET APPROVAL FOR DESIGN CHOICES\n   - PAUSE FOR MANUAL APPROVAL: Directory structure layout\n   - PAUSE FOR MANUAL APPROVAL: Error handling approach\n   - PAUSE FOR MANUAL APPROVAL: Path validation strategy\n3. IMPLEMENT FUNCTIONALITY\n   - Implement create_journal_directories() in src/mcp_commit_story/journal_init.py\n   - Handle all error cases identified in tests\n   - RUN TESTS - VERIFY THEY PASS\n4. DOCUMENT AND COMPLETE\n   - Add documentation IF NEEDED in three places\n   - Double check all subtask requirements are met\n   - MARK COMPLETE",
+          "status": "in-progress",
+          "dependencies": [],
+          "parentTaskId": 8
+        },
+        {
+          "id": 2,
+          "title": "Configuration File Generation",
+          "description": "Generate default configuration files. TDD: Write tests for generate_default_config(), covering new config, existing config, malformed files, backup scenarios. Pause for manual approval on naming, backup, defaults. Implement and document. Mark complete when all requirements met.",
+          "details": "TDD Steps:\n1. WRITE TESTS FIRST\n   - Add tests to tests/unit/test_journal_init.py\n   - Test generate_default_config()\n   - Test cases: new config, existing config, malformed files, backup scenarios\n   - RUN TESTS - VERIFY THEY FAIL\n2. GET APPROVAL FOR DESIGN CHOICES\n   - PAUSE FOR MANUAL APPROVAL: Config file naming convention\n   - PAUSE FOR MANUAL APPROVAL: Backup strategy for existing configs\n   - PAUSE FOR MANUAL APPROVAL: Default values to include\n3. IMPLEMENT FUNCTIONALITY\n   - Implement generate_default_config()\n   - Integrate with existing config system\n   - RUN TESTS - VERIFY THEY PASS\n4. DOCUMENT AND COMPLETE\n   - Add documentation IF NEEDED in three places\n   - Double check all subtask requirements are met\n   - MARK COMPLETE",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 8
+        },
+        {
+          "id": 3,
+          "title": "Git Repository Validation",
+          "description": "Validate git repository before initialization. TDD: Write tests for validate_git_repository(), covering valid repo, not a repo, bare repo, permission issues. Pause for manual approval on validation criteria, error format, integration. Implement and document. Mark complete when all requirements met.",
+          "details": "TDD Steps:\n1. WRITE TESTS FIRST\n   - Add tests to tests/unit/test_journal_init.py\n   - Test validate_git_repository()\n   - Test cases: valid repo, not a repo, bare repo, permission issues\n   - RUN TESTS - VERIFY THEY FAIL\n2. GET APPROVAL FOR DESIGN CHOICES\n   - PAUSE FOR MANUAL APPROVAL: Validation criteria (bare repos OK?)\n   - PAUSE FOR MANUAL APPROVAL: Error message format\n   - PAUSE FOR MANUAL APPROVAL: Integration with existing git utils\n3. IMPLEMENT FUNCTIONALITY\n   - Implement validate_git_repository()\n   - Use existing git_utils where possible\n   - RUN TESTS - VERIFY THEY PASS\n4. DOCUMENT AND COMPLETE\n   - Add documentation IF NEEDED in three places\n   - Double check all subtask requirements are met\n   - MARK COMPLETE",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 8
+        },
+        {
+          "id": 4,
+          "title": "Main Initialization Function",
+          "description": "Create main journal initialization entry point. TDD: Write tests for initialize_journal(), orchestrating all previous functions, covering full success, partial failures, already initialized, rollback. Pause for manual approval on signature, rollback, detection logic. Implement and document. Mark complete when all requirements met.",
+          "details": "TDD Steps:\n1. WRITE TESTS FIRST\n   - Add tests to tests/unit/test_journal_init.py\n   - Test initialize_journal() (orchestrates all previous functions)\n   - Test cases: full success, partial failures, already initialized, rollback scenarios\n   - RUN TESTS - VERIFY THEY FAIL\n2. GET APPROVAL FOR DESIGN CHOICES\n   - PAUSE FOR MANUAL APPROVAL: Function signature and parameters\n   - PAUSE FOR MANUAL APPROVAL: Rollback strategy on failure\n   - PAUSE FOR MANUAL APPROVAL: \"Already initialized\" detection logic\n3. IMPLEMENT FUNCTIONALITY\n   - Implement initialize_journal() main function\n   - Orchestrate all previous subtask functions\n   - RUN TESTS - VERIFY THEY PASS\n4. DOCUMENT AND COMPLETE\n   - Add documentation IF NEEDED in three places\n   - Double check all subtask requirements are met\n   - MARK COMPLETE",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 8
+        },
+        {
+          "id": 5,
+          "title": "Integration Testing",
+          "description": "End-to-end testing of journal initialization. TDD: Write integration tests for full workflow in temp dirs, covering clean init, re-init, existing files, failure recovery. No approval needed. Implement and document. Mark complete when all requirements met.",
+          "details": "TDD Steps:\n1. WRITE TESTS FIRST\n   - Create tests/integration/test_journal_init_integration.py\n   - Test full initialization workflow in temporary directories\n   - Test cases: clean init, re-init, init with existing files, failure recovery\n   - RUN TESTS - VERIFY THEY FAIL\n2. NO APPROVAL NEEDED (integration testing)\n3. IMPLEMENT FUNCTIONALITY\n   - Fix any integration issues discovered\n   - Ensure all components work together\n   - RUN TESTS - VERIFY THEY PASS\n4. DOCUMENT AND COMPLETE\n   - Add documentation IF NEEDED in three places\n   - Double check all subtask requirements are met\n   - MARK COMPLETE",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 8
+        },
+        {
+          "id": 6,
+          "title": "CLI Integration Preparation",
+          "description": "Prepare for CLI command integration (Task 7). TDD: Write tests for CLI-friendly error handling and return value formats. Pause for manual approval on return format and error codes. Implement and document. Mark complete when all requirements met.",
+          "details": "TDD Steps:\n1. WRITE TESTS FIRST\n   - Add tests for CLI-friendly error handling\n   - Test return value formats for CLI consumption\n   - RUN TESTS - VERIFY THEY FAIL\n2. GET APPROVAL FOR DESIGN CHOICES\n   - PAUSE FOR MANUAL APPROVAL: Return value format for CLI\n   - PAUSE FOR MANUAL APPROVAL: Error codes/messages for CLI\n3. IMPLEMENT FUNCTIONALITY\n   - Adjust functions for CLI compatibility\n   - Ensure proper return values and error handling\n   - RUN TESTS - VERIFY THEY PASS\n4. DOCUMENT AND COMPLETE\n   - Add documentation IF NEEDED in three places\n   - Double check all subtask requirements are met\n   - MARK COMPLETE",
+          "status": "pending",
+          "dependencies": [],
+          "parentTaskId": 8
+        }
+      ]
     },
     {
       "id": 9,
