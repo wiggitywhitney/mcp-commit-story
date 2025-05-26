@@ -866,3 +866,13 @@ class JournalContext(TypedDict):
 ## Main Journal Initialization Function
 
 The `initialize_journal(repo_path=None, config_path=None, journal_path=None)` function is the main entry point for setting up the MCP Journal system in a repository. It validates the git repo, checks for existing config and journal directory, creates missing pieces, and reports status. No automatic rollback is performed; any created files/directories are left in place if an error occurs, and the user is informed of what succeeded. See [docs/journal_init.md](docs/journal_init.md) for full details.
+
+## Integration Testing for Journal Initialization
+
+Integration tests for journal initialization (see `tests/integration/test_journal_init_integration.py`) ensure the full workflow is robust and reliable. These tests cover:
+- Clean initialization in a new git repository
+- Re-initialization detection (already initialized)
+- Partial recovery when only config or journal directory exists
+- Failure recovery, ensuring successful parts are left in place and errors are reported
+
+These tests provide end-to-end validation that all components work together as expected.

@@ -195,6 +195,8 @@ See [docs/journal_init.md](../docs/journal_init.md) and [src/mcp_commit_story/gi
 
 - The main entry point for setup is the `initialize_journal(repo_path=None, config_path=None, journal_path=None)` function, which orchestrates validation, config creation, and directory setup. It supports partial recovery, fails fast on errors, and does not attempt automatic rollback (see docs/journal_init.md for details).
 
+- Integration tests for journal initialization (see `tests/integration/test_journal_init_integration.py`) cover clean initialization, re-initialization detection, partial recovery, and failure recovery. These tests ensure the full workflow is robust and reliable in real-world scenarios.
+
 ---
 
 # Engineering Journal MCP Server — Complete Developer Specification

@@ -86,4 +86,15 @@ See also: [src/mcp_commit_story/journal_init.py](../src/mcp_commit_story/journal
 
 ## See Also
 - [server_setup.md](server_setup.md)
-- [mcp-commit-story-prd.md](../scripts/mcp-commit-story-prd.md) 
+- [mcp-commit-story-prd.md](../scripts/mcp-commit-story-prd.md)
+
+## Integration Testing
+
+Integration tests for journal initialization ensure that the full workflow operates correctly in real-world scenarios. These tests cover:
+
+- Clean initialization in a new git repository
+- Re-initialization detection (already initialized)
+- Partial recovery when only config or journal directory exists
+- Failure recovery, ensuring successful parts are left in place and errors are reported
+
+See `tests/integration/test_journal_init_integration.py` for implementation details. These tests use temporary directories and subprocesses to simulate actual usage, providing confidence that all components work together as expected. 

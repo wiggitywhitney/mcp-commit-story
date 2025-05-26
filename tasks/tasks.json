@@ -676,7 +676,7 @@
           "title": "Integration Testing",
           "description": "End-to-end testing of journal initialization. TDD: Write integration tests for full workflow in temp dirs, covering clean init, re-init, existing files, failure recovery. No approval needed. Implement and document. Mark complete when all requirements met.",
           "details": "TDD Steps:\n1. WRITE TESTS FIRST\n   - Create tests/integration/test_journal_init_integration.py\n   - Test full initialization workflow in temporary directories\n   - Test cases: clean init, re-init, init with existing files, failure recovery\n   - RUN TESTS - VERIFY THEY FAIL\n2. NO APPROVAL NEEDED (integration testing)\n3. IMPLEMENT FUNCTIONALITY\n   - Fix any integration issues discovered\n   - Ensure all components work together\n   - RUN TESTS - VERIFY THEY PASS\n4. DOCUMENT AND COMPLETE\n   - Add documentation IF NEEDED in three places\n   - Double check all subtask requirements are met\n   - MARK COMPLETE",
-          "status": "pending",
+          "status": "done",
           "dependencies": [],
           "parentTaskId": 8
         },

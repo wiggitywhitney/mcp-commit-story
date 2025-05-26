@@ -254,7 +254,7 @@ TDD Steps:
    - Double check all subtask requirements are met
    - MARK COMPLETE
 
-## 5. Integration Testing [pending]
+## 5. Integration Testing [done]
 ### Dependencies: None
 ### Description: End-to-end testing of journal initialization. TDD: Write integration tests for full workflow in temp dirs, covering clean init, re-init, existing files, failure recovery. No approval needed. Implement and document. Mark complete when all requirements met.
 ### Details:
