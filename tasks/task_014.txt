@@ -1,6 +1,6 @@
 # Task ID: 14
 # Title: Implement Git Hook Installation
-# Status: in-progress
+# Status: done
 # Dependencies: 3, 6, 7
 # Priority: medium
 # Description: Create the functionality to install a Git post-commit hook for automatic journal entry generation.
