@@ -3,6 +3,7 @@ import json
 import click
 from pathlib import Path
 from mcp_commit_story.journal_init import initialize_journal
+from mcp_commit_story.git_utils import install_post_commit_hook
 
 ERROR_CODES = {
     "success": 0,
@@ -45,7 +46,12 @@ def cli_output(result):
         print(json.dumps(output, indent=2))
         sys.exit(code)
 
-@click.command()
+@click.group()
+def cli():
+    """MCP Commit Story CLI"""
+    pass
+
+@cli.command('journal-init')
 @click.option('--repo-path', type=click.Path(), default=None, help='Path to git repository (default: current directory)')
 @click.option('--config-path', type=click.Path(), default=None, help='Path for config file (default: .mcp-commit-storyrc.yaml in repo root)')
 @click.option('--journal-path', type=click.Path(), default=None, help='Path for journal directory (default: journal/ in repo root)')
@@ -67,5 +73,56 @@ def journal_init(repo_path, config_path, journal_path):
         print(json.dumps(output, indent=2))
         sys.exit(ERROR_CODES["general"])
 
+@cli.command('install-hook')
+@click.option('--repo-path', type=click.Path(), default=None, help='Path to git repository (default: current directory)')
+def install_hook(repo_path):
+    """
+    Install or replace the git post-commit hook for MCP Journal system.
+    Returns JSON output matching the approved CLI contract.
+    """
+    try:
+        backup_path = install_post_commit_hook(repo_path)
+    except FileNotFoundError as e:
+        output = {
+            "status": "error",
+            "message": str(e),
+            "code": ERROR_CODES["filesystem"],
+        }
+        print(json.dumps(output, indent=2))
+        return ERROR_CODES["filesystem"]
+    except PermissionError as e:
+        output = {
+            "status": "error",
+            "message": str(e),
+            "code": ERROR_CODES["general"],
+        }
+        print(json.dumps(output, indent=2))
+        return ERROR_CODES["general"]
+    except FileExistsError as e:
+        output = {
+            "status": "error",
+            "message": str(e),
+            "code": ERROR_CODES["already_initialized"],
+        }
+        print(json.dumps(output, indent=2))
+        return ERROR_CODES["already_initialized"]
+    except Exception as e:
+        output = {
+            "status": "error",
+            "message": str(e),
+            "code": ERROR_CODES["general"],
+        }
+        print(json.dumps(output, indent=2))
+        return ERROR_CODES["general"]
+    result = {
+        "status": "success",
+        "result": {
+            "message": "Post-commit hook installed successfully.",
+            "backup_path": backup_path
+        }
+    }
+    print(json.dumps(result, indent=2))
+    return 0
+
 if __name__ == "__main__":
-    journal_init()
+    cli()

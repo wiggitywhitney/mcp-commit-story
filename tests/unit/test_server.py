@@ -1,6 +1,6 @@
 import pytest
 from unittest import mock
-from src.mcp_commit_story.server import create_mcp_server, get_version_from_pyproject, register_tools, MCPError, handle_mcp_error
+from mcp_commit_story.server import create_mcp_server, get_version_from_pyproject, register_tools, MCPError, handle_mcp_error
 from mcp.server.fastmcp import FastMCP
 from mcp_commit_story.config import Config
 import logging
@@ -23,13 +23,13 @@ version = "9.9.9"
         "git": {"exclude_patterns": ["journal/**"]},
         "telemetry": {"enabled": False}
     }
-    with mock.patch("src.mcp_commit_story.server.get_version_from_pyproject", wraps=get_version_from_pyproject) as get_ver:
+    with mock.patch("mcp_commit_story.server.get_version_from_pyproject", wraps=get_version_from_pyproject) as get_ver:
         version = get_version_from_pyproject(str(pyproject))
         assert version == "9.9.9"
         # Patch get_version_from_pyproject to use our temp file
-        with mock.patch("src.mcp_commit_story.server.get_version_from_pyproject", return_value="9.9.9") as ver_patch:
-            with mock.patch("src.mcp_commit_story.server.load_config", return_value=Config(minimal_config)):
-                with mock.patch("src.mcp_commit_story.server.register_tools") as reg_tools:
+        with mock.patch("mcp_commit_story.server.get_version_from_pyproject", return_value="9.9.9") as ver_patch:
+            with mock.patch("mcp_commit_story.server.load_config", return_value=Config(minimal_config)):
+                with mock.patch("mcp_commit_story.server.register_tools") as reg_tools:
                     server = create_mcp_server()
                     assert server.name == "mcp-commit-story"
                     reg_tools.assert_called_once_with(server)
@@ -44,10 +44,10 @@ def test_create_mcp_server_loads_config_and_telemetry(monkeypatch):
         "telemetry": {"enabled": True}
     }
     config = Config(minimal_config)
-    monkeypatch.setattr("src.mcp_commit_story.server.load_config", lambda *a, **k: config)
+    monkeypatch.setattr("mcp_commit_story.server.load_config", lambda *a, **k: config)
     # If setup_telemetry exists, patch it; otherwise, just run
     try:
-        import src.mcp_commit_story.server as server_mod
+        import mcp_commit_story.server as server_mod
         if hasattr(server_mod.telemetry, "setup_telemetry"):
             telemetry_called = {}
             def fake_setup_telemetry(cfg):
@@ -57,8 +57,8 @@ def test_create_mcp_server_loads_config_and_telemetry(monkeypatch):
             telemetry_called = None
     except ImportError:
         telemetry_called = None
-    with mock.patch("src.mcp_commit_story.server.get_version_from_pyproject", return_value="1.2.3"):
-        with mock.patch("src.mcp_commit_story.server.register_tools") as reg_tools:
+    with mock.patch("mcp_commit_story.server.get_version_from_pyproject", return_value="1.2.3"):
+        with mock.patch("mcp_commit_story.server.register_tools") as reg_tools:
             server = create_mcp_server()
             assert server.name == "mcp-commit-story"
             reg_tools.assert_called_once_with(server)
@@ -87,13 +87,13 @@ def test_handle_mcp_error_catches_generic_exception():
 def test_journal_new_entry_handler_success(monkeypatch):
     # Import (or define placeholder) for handler
     try:
-        from src.mcp_commit_story.server import handle_journal_new_entry
+        from mcp_commit_story.server import handle_journal_new_entry
     except ImportError:
         pytest.skip("handle_journal_new_entry not implemented yet")
     # Mock journal generation logic
     async def fake_generate_journal_entry(request):
         return {"status": "success", "file_path": "journal/daily/2025-05-26-journal.md"}
-    monkeypatch.setattr("src.mcp_commit_story.server.generate_journal_entry", fake_generate_journal_entry)
+    monkeypatch.setattr("mcp_commit_story.server.generate_journal_entry", fake_generate_journal_entry)
     request = {"git": {"metadata": {"hash": "abc123"}}}  # minimal valid
     response = asyncio.run(handle_journal_new_entry(request))
     assert response["status"] == "success"
@@ -101,7 +101,7 @@ def test_journal_new_entry_handler_success(monkeypatch):
 
 @pytest.mark.asyncio
 def test_journal_new_entry_handler_missing_fields():
-    from src.mcp_commit_story.server import handle_journal_new_entry
+    from mcp_commit_story.server import handle_journal_new_entry
     # Missing 'git' field
     request = {}
     response = asyncio.run(handle_journal_new_entry(request))
@@ -111,7 +111,7 @@ def test_journal_new_entry_handler_missing_fields():
 @pytest.mark.asyncio
 def test_journal_new_entry_handler_error_decorator():
     try:
-        from src.mcp_commit_story.server import handle_journal_new_entry, handle_mcp_error
+        from mcp_commit_story.server import handle_journal_new_entry, handle_mcp_error
     except ImportError:
         pytest.skip("handle_journal_new_entry or handle_mcp_error not implemented yet")
     # Should return error dict, not raise
@@ -125,12 +125,12 @@ def test_journal_new_entry_handler_error_decorator():
 @pytest.mark.asyncio
 def test_journal_add_reflection_handler_success(monkeypatch):
     try:
-        from src.mcp_commit_story.server import handle_journal_add_reflection
+        from mcp_commit_story.server import handle_journal_add_reflection
     except ImportError:
         pytest.skip("handle_journal_add_reflection not implemented yet")
     async def fake_add_reflection(request):
         return {"status": "success", "file_path": "journal/daily/2025-05-26-journal.md"}
-    monkeypatch.setattr("src.mcp_commit_story.server.add_reflection_to_journal", fake_add_reflection)
+    monkeypatch.setattr("mcp_commit_story.server.add_reflection_to_journal", fake_add_reflection)
     request = {"reflection": "Today I learned...", "date": "2025-05-26"}
     response = asyncio.run(handle_journal_add_reflection(request))
     assert response["status"] == "success"
@@ -139,7 +139,7 @@ def test_journal_add_reflection_handler_success(monkeypatch):
 @pytest.mark.asyncio
 def test_journal_add_reflection_handler_missing_fields():
     try:
-        from src.mcp_commit_story.server import handle_journal_add_reflection
+        from mcp_commit_story.server import handle_journal_add_reflection
     except ImportError:
         pytest.skip("handle_journal_add_reflection not implemented yet")
     # Missing 'reflection' field
@@ -156,7 +156,7 @@ def test_journal_add_reflection_handler_missing_fields():
 @pytest.mark.asyncio
 def test_journal_add_reflection_handler_error_decorator():
     try:
-        from src.mcp_commit_story.server import handle_journal_add_reflection, handle_mcp_error
+        from mcp_commit_story.server import handle_journal_add_reflection, handle_mcp_error
     except ImportError:
         pytest.skip("handle_journal_add_reflection or handle_mcp_error not implemented yet")
     @handle_mcp_error
@@ -171,7 +171,7 @@ def test_create_mcp_server_fails_with_malformed_yaml(tmp_path, monkeypatch):
     bad_yaml = ": this is not valid: ["
     config_path = tmp_path / ".mcp-commit-storyrc.yaml"
     config_path.write_text(bad_yaml)
-    monkeypatch.setattr("src.mcp_commit_story.server.load_config", lambda *a, **k: (_ for _ in ()).throw(Exception("Malformed YAML")))
+    monkeypatch.setattr("mcp_commit_story.server.load_config", lambda *a, **k: (_ for _ in ()).throw(Exception("Malformed YAML")))
     with pytest.raises(Exception) as excinfo:
         create_mcp_server()
     assert "Malformed YAML" in str(excinfo.value)
@@ -179,7 +179,7 @@ def test_create_mcp_server_fails_with_malformed_yaml(tmp_path, monkeypatch):
 def test_create_mcp_server_fails_with_missing_required_fields(monkeypatch):
     # Config missing required 'journal.path'
     from mcp_commit_story.config import ConfigError
-    monkeypatch.setattr("src.mcp_commit_story.server.load_config", lambda *a, **k: (_ for _ in ()).throw(ConfigError("Missing required config: journal.path")))
+    monkeypatch.setattr("mcp_commit_story.server.load_config", lambda *a, **k: (_ for _ in ()).throw(ConfigError("Missing required config: journal.path")))
     with pytest.raises(ConfigError) as excinfo:
         create_mcp_server()
     assert "Missing required config: journal.path" in str(excinfo.value)
@@ -200,7 +200,7 @@ def test_server_shutdown_logic_called(monkeypatch):
     assert server.shutdown_called
 
 def test_config_reload_updates_values(tmp_path):
-    from src.mcp_commit_story.config import Config
+    from mcp_commit_story.config import Config
     import yaml
     # Write initial config
     config_path = tmp_path / ".mcp-commit-storyrc.yaml"
@@ -216,7 +216,7 @@ def test_config_reload_updates_values(tmp_path):
     assert config.journal_path == "new-journal/"
 
 def test_config_reload_raises_on_invalid(tmp_path):
-    from src.mcp_commit_story.config import Config, ConfigError
+    from mcp_commit_story.config import Config, ConfigError
     import yaml
     config_path = tmp_path / ".mcp-commit-storyrc.yaml"
     config_data = {"journal": {"path": "journal/"}, "git": {"exclude_patterns": ["journal/**"]}, "telemetry": {"enabled": False}}
@@ -233,7 +233,7 @@ def test_config_reload_raises_on_invalid(tmp_path):
         config.reload_config()
 
 def test_config_reload_raises_on_malformed_yaml(tmp_path):
-    from src.mcp_commit_story.config import Config, ConfigError
+    from mcp_commit_story.config import Config, ConfigError
     config_path = tmp_path / ".mcp-commit-storyrc.yaml"
     config_data = {"journal": {"path": "journal/"}, "git": {"exclude_patterns": ["journal/**"]}, "telemetry": {"enabled": False}}
     with open(config_path, "w") as f:

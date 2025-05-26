@@ -849,7 +849,7 @@
           "title": "CLI Command Implementation",
           "description": "Create CLI command for git hook installation.\n\nTDD Steps:\n1. WRITE TESTS FIRST\n  - Create tests/unit/test_cli_install_hook.py\n  - Test CLI install-hook command\n  - Test cases: successful install, already exists prompts, error handling, JSON output format\n  - RUN TESTS - VERIFY THEY FAIL\n2. GET APPROVAL FOR DESIGN CHOICES\n  - PAUSE FOR MANUAL APPROVAL: CLI command name (install-hook vs hook-install)\n  - PAUSE FOR MANUAL APPROVAL: Interactive confirmation vs force flags\n  - PAUSE FOR MANUAL APPROVAL: Output format (JSON like init command vs plain text)\n3. IMPLEMENT FUNCTIONALITY\n  - Add install hook command to src/mcp_commit_story/cli.py\n  - Integrate with core installation logic from subtask 14.3\n  - RUN TESTS - VERIFY THEY PASS\n4. DOCUMENT AND COMPLETE\n  - Add documentation IF NEEDED in three places\n  - Double check all subtask requirements are met\n  - MARK COMPLETE",
           "details": "",
-          "status": "pending",
+          "status": "done",
           "dependencies": [],
           "parentTaskId": 14
         },

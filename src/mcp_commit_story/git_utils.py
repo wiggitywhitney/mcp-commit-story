@@ -267,12 +267,15 @@ def backup_existing_hook(hook_path: str) -> Optional[str]:
     return backup_path
 
 
-def install_post_commit_hook(repo_path: str = None) -> None:
+def install_post_commit_hook(repo_path: str = None) -> Optional[str]:
     """
     Install or replace the post-commit hook in the given repo's .git/hooks directory.
 
     Args:
         repo_path (str, optional): Path to the repo. Defaults to current directory.
+
+    Returns:
+        str or None: Path to the backup file if a backup was made, otherwise None.
 
     Raises:
         FileNotFoundError: If the hooks directory does not exist.
@@ -287,13 +290,15 @@ def install_post_commit_hook(repo_path: str = None) -> None:
     if not os.access(hooks_dir, os.W_OK):
         raise PermissionError(f"Hooks directory is not writable: {hooks_dir}")
     hook_path = os.path.join(hooks_dir, 'post-commit')
+    backup_path = None
     if os.path.exists(hook_path):
-        backup_existing_hook(hook_path)
+        backup_path = backup_existing_hook(hook_path)
     hook_content = generate_hook_content()
     with open(hook_path, 'w') as f:
         f.write(hook_content)
     st = os.stat(hook_path)
     os.chmod(hook_path, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    return backup_path
 
 
 def get_commits_since_last_entry(repo, journal_path: str) -> list:

@@ -702,6 +702,49 @@ mcp-commit-story new-entry >/dev/null 2>&1 || true
 - Skip commits that only modify journal files
 - For mixed commits (code + journal files), exclude journal files from analysis
 
+### CLI Command: install-hook
+
+The MCP Journal system provides a CLI command to install or replace the git post-commit hook in your repository. This command is implemented in [src/mcp_commit_story/cli.py](../src/mcp_commit_story/cli.py) and uses the tested logic from `install_post_commit_hook`.
+
+**Usage:**
+```bash
+python -m mcp_commit_story.cli install-hook --repo-path <repo>
+```
+All arguments are optional and default to the current directory and standard locations.
+
+**Options:**
+- `--repo-path`: Path to git repository (default: current directory)
+
+**Output Format:**
+- On success:
+```json
+{
+  "status": "success",
+  "result": {
+    "message": "Post-commit hook installed successfully.",
+    "backup_path": "/path/to/backup"  // or null if no backup was needed
+  }
+}
+```
+- On error:
+```json
+{
+  "status": "error",
+  "message": "User-friendly error description",
+  "code": 1
+}
+```
+
+**Error Codes:**
+- 0: Success
+- 1: General error (not a git repo, permission denied, etc.)
+- 2: Already installed
+- 4: File system errors (can't create hooks, etc.)
+
+**Rationale:**
+- The CLI always outputs JSON for both success and error cases, making it easy to use in scripts and CI/CD pipelines.
+- All logic is covered by unit tests in `tests/unit/test_cli_install_hook.py`.
+
 ---
 
 ## Testing Plan

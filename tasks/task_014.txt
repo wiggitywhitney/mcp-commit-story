@@ -283,7 +283,7 @@ Implement the main hook installation function (`install_post_commit_hook`) with 
 Write/expand failing tests in tests/unit/test_git_hook_installation.py for all scenarios above, then run tests to confirm failures before implementation.
 </info added on 2025-05-26T21:17:58.052Z>
 
-## 4. CLI Command Implementation [pending]
+## 4. CLI Command Implementation [done]
 ### Dependencies: None
 ### Description: Create CLI command for git hook installation.
 
