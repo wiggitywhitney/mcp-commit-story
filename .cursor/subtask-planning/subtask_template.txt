@@ -1,0 +1,79 @@
+# Task [NUMBER]: [TASK_NAME] - Detailed Subtask Plan
+
+## Subtask [NUMBER.1]: [SUBTASK_NAME]
+**Objective**: [Clear one-sentence description of what this subtask accomplishes]
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/[unit|integration]/test_[module_name].py`
+   - Test `[function_name]()` function
+   - Test cases: [list specific test scenarios - success, failures, edge cases]
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES** *(Include this section only if design decisions are needed)*
+   - **PAUSE FOR MANUAL APPROVAL**: [Specific design choice 1]
+   - **PAUSE FOR MANUAL APPROVAL**: [Specific design choice 2]
+   - **PAUSE FOR MANUAL APPROVAL**: [Specific design choice 3]
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Implement `[function_name]()` in `src/[module_path]/[file_name].py`
+   - Handle all error cases identified in tests
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places:
+     1. To docs directory (new file or existing - use judgment)
+     2. PRD 
+     3. Engineering Spec
+   - Double check all subtask requirements are met
+   - **MARK COMPLETE**
+
+---
+
+## Subtask [NUMBER.2]: [NEXT_SUBTASK_NAME]
+**Objective**: [Description]
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - [Test details]
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES** *(Optional section)*
+   - **PAUSE FOR MANUAL APPROVAL**: [Design choice if needed]
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - [Implementation details]
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places
+   - Double check all subtask requirements are met
+   - **MARK COMPLETE**
+
+---
+
+## Template Usage Notes
+
+### When to Include "GET APPROVAL FOR DESIGN CHOICES"
+- Include this section when the subtask involves significant architectural decisions
+- Include when multiple valid approaches exist and choice affects future work
+- Include when integration points with existing systems need clarification
+- **Omit** this section for straightforward implementation tasks
+
+### Test Categories to Consider
+- **Success cases**: Normal operation with valid inputs
+- **Error cases**: Invalid inputs, missing dependencies, permission issues
+- **Edge cases**: Boundary conditions, empty inputs, large datasets
+- **Integration cases**: How it works with existing components
+
+### Implementation Tips
+- Start with the simplest possible implementation that passes tests
+- Add complexity only as needed
+- Follow existing project patterns and conventions
+- Ensure proper error handling and logging
+
+### Documentation Guidelines
+- **Docs directory**: Add new files for major features, update existing for enhancements
+- **PRD**: Update user-facing feature descriptions and requirements
+- **Engineering Spec**: Update technical implementation details and architecture notes
+- Don't remove existing info unless it's incorrect
