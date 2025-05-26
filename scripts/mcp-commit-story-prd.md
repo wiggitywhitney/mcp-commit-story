@@ -193,6 +193,8 @@ This ensures journals are only initialized in appropriate development repositori
 
 See [docs/journal_init.md](../docs/journal_init.md) and [src/mcp_commit_story/git_utils.py](../src/mcp_commit_story/git_utils.py) for details.
 
+- The main entry point for setup is the `initialize_journal(repo_path=None, config_path=None, journal_path=None)` function, which orchestrates validation, config creation, and directory setup. It supports partial recovery, fails fast on errors, and does not attempt automatic rollback (see docs/journal_init.md for details).
+
 ---
 
 # Engineering Journal MCP Server — Complete Developer Specification

@@ -862,3 +862,7 @@ class JournalContext(TypedDict):
       "error": None            # Error message if status == "error"
   }
   ```
+
+## Main Journal Initialization Function
+
+The `initialize_journal(repo_path=None, config_path=None, journal_path=None)` function is the main entry point for setting up the MCP Journal system in a repository. It validates the git repo, checks for existing config and journal directory, creates missing pieces, and reports status. No automatic rollback is performed; any created files/directories are left in place if an error occurs, and the user is informed of what succeeded. See [docs/journal_init.md](docs/journal_init.md) for full details.

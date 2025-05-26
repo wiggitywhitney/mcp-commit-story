@@ -55,9 +55,30 @@ This logic ensures that journals are only initialized in appropriate development
 
 See [src/mcp_commit_story/git_utils.py](../src/mcp_commit_story/git_utils.py) for git detection logic and [scripts/mcp-commit-story-prd.md](../scripts/mcp-commit-story-prd.md) for requirements.
 
-## Error Handling
-- All errors are surfaced as Python exceptions and should be handled by the caller.
-- See `src/mcp_commit_story/journal_init.py` for implementation details.
+## Main Journal Initialization Function
+
+The function `initialize_journal(repo_path=None, config_path=None, journal_path=None)` is the main entry point for setting up the MCP Journal system in a repository.
+
+- **Parameters:**
+  - `repo_path`: Path to the git repository (defaults to current directory)
+  - `config_path`: Path for the config file (defaults to `.mcp-commit-storyrc.yaml` in repo root)
+  - `journal_path`: Path for the journal directory (defaults to `journal/` in repo root)
+- **Returns:** Dictionary with `{"status": "success/error", "paths": {...}, "message": "..."}`
+
+### Initialization & Rollback Strategy
+- Validates the target directory is a non-bare, accessible git repository using `validate_git_repository()`.
+- Checks for existing config and journal directory:
+  - If both exist, returns an error (already initialized).
+  - If only one exists, proceeds to create the missing piece (partial recovery supported).
+- Calls `generate_default_config()` and `create_journal_directories()` as needed.
+- **No automatic rollback:** Any successfully created files/directories are left in place if an error occurs. The function logs what was created so the user can manually clean up if needed. This is safer than trying to undo filesystem changes.
+- Fails fast on the first error and reports what succeeded before failure.
+
+### Error Handling
+- All errors are surfaced as Python exceptions or as error status in the return value.
+- The function is designed for use by both CLI and MCP server entry points.
+
+See also: [src/mcp_commit_story/journal_init.py](../src/mcp_commit_story/journal_init.py) for implementation details.
 
 ## Related Operations
 - Initialization is typically performed as part of `journal/init` or the first journal operation.

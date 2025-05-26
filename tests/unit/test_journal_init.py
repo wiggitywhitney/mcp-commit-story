@@ -6,7 +6,7 @@ from pathlib import Path
 import subprocess
 import time
 
-from mcp_commit_story.journal_init import create_journal_directories, generate_default_config, validate_git_repository
+from mcp_commit_story.journal_init import create_journal_directories, generate_default_config, validate_git_repository, initialize_journal
 
 
 def test_create_journal_directories_success(tmp_path):
@@ -140,4 +140,73 @@ def test_validate_git_repository_permission_error(tmp_path):
         with pytest.raises((PermissionError, FileNotFoundError)):
             validate_git_repository(tmp_path)
     finally:
-        tmp_path.chmod(stat.S_IWRITE) 
+        tmp_path.chmod(stat.S_IWRITE)
+
+
+def test_initialize_journal_success(tmp_path):
+    # Initialize a real git repo
+    subprocess.run(["git", "init"], cwd=tmp_path, check=True, stdout=subprocess.PIPE)
+    config_path = tmp_path / ".mcp-commit-storyrc.yaml"
+    journal_path = tmp_path / "journal"
+    result = initialize_journal(repo_path=tmp_path, config_path=config_path, journal_path=journal_path)
+    assert result["status"] == "success"
+    assert config_path.exists()
+    assert journal_path.exists() and journal_path.is_dir()
+    assert "config" in result["paths"]
+    assert "journal" in result["paths"]
+    assert "successfully" in result["message"]
+
+
+def test_initialize_journal_already_initialized(tmp_path):
+    subprocess.run(["git", "init"], cwd=tmp_path, check=True, stdout=subprocess.PIPE)
+    config_path = tmp_path / ".mcp-commit-storyrc.yaml"
+    journal_path = tmp_path / "journal"
+    config_path.write_text("journal: {}\n")
+    journal_path.mkdir()
+    result = initialize_journal(repo_path=tmp_path, config_path=config_path, journal_path=journal_path)
+    assert result["status"] == "error"
+    assert "already initialized" in result["message"]
+    assert result["paths"]["config"] == str(config_path)
+    assert result["paths"]["journal"] == str(journal_path)
+
+
+def test_initialize_journal_partial_failure_and_rollback(tmp_path, monkeypatch):
+    subprocess.run(["git", "init"], cwd=tmp_path, check=True, stdout=subprocess.PIPE)
+    config_path = tmp_path / ".mcp-commit-storyrc.yaml"
+    journal_path = tmp_path / "journal"
+    # Simulate failure in create_journal_directories
+    def fail_create_journal_directories(path):
+        raise OSError("Simulated failure")
+    monkeypatch.setattr("mcp_commit_story.journal_init.create_journal_directories", fail_create_journal_directories)
+    result = initialize_journal(repo_path=tmp_path, config_path=config_path, journal_path=journal_path)
+    # Config should be created, journal should not
+    assert result["status"] == "error"
+    assert "Failed to create journal directory" in result["message"]
+    assert config_path.exists()
+    assert not journal_path.exists()
+    assert result["paths"].get("config") == str(config_path)
+
+
+def test_initialize_journal_not_a_git_repo(tmp_path):
+    config_path = tmp_path / ".mcp-commit-storyrc.yaml"
+    journal_path = tmp_path / "journal"
+    result = initialize_journal(repo_path=tmp_path, config_path=config_path, journal_path=journal_path)
+    assert result["status"] == "error"
+    assert "git repository" in result["message"].lower()
+    assert not config_path.exists()
+    assert not journal_path.exists()
+
+
+def test_initialize_journal_handles_exceptions(tmp_path, monkeypatch):
+    subprocess.run(["git", "init"], cwd=tmp_path, check=True, stdout=subprocess.PIPE)
+    config_path = tmp_path / ".mcp-commit-storyrc.yaml"
+    journal_path = tmp_path / "journal"
+    # Simulate unexpected exception in validate_git_repository
+    def fail_validate_git_repository(path):
+        raise RuntimeError("Unexpected error")
+    monkeypatch.setattr("mcp_commit_story.journal_init.validate_git_repository", fail_validate_git_repository)
+    result = initialize_journal(repo_path=tmp_path, config_path=config_path, journal_path=journal_path)
+    assert result["status"] == "error"
+    assert "unexpected error" in result["message"].lower()
+    assert not config_path.exists()
+    assert not journal_path.exists() 
