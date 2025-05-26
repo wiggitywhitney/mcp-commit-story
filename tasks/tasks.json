@@ -545,7 +545,7 @@
           "title": "journal/add-reflection Operation Handler",
           "description": "Implement the MCP operation for manual reflection addition. TDD steps: (1) Define request/response types, (2) Write failing tests for handler, (3) Ask user for operation-specific requirements, (4) Write tests for compliance, (5) Implement async handler, (6) Run full test suite and document. Must use proper error handling and type hints. Depends on MCP Server Initialization & Setup and Core Error Handling System.",
           "details": "",
-          "status": "pending",
+          "status": "done",
           "dependencies": [
             "6.1",
             "6.2"

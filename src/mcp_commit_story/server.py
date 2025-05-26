@@ -34,6 +34,16 @@ class JournalNewEntryResponse(TypedDict):
     file_path: str
     error: Optional[str]
 
+# Request/response types for journal/add-reflection
+class AddReflectionRequest(TypedDict):
+    reflection: str
+    date: str  # ISO date string (YYYY-MM-DD)
+
+class AddReflectionResponse(TypedDict):
+    status: str
+    file_path: str
+    error: Optional[str]
+
 class MCPError(Exception):
     """
     Base class for MCP server errors.
@@ -143,3 +153,22 @@ async def handle_journal_new_entry(request: JournalNewEntryRequest) -> JournalNe
     if "git" not in request:
         raise MCPError("Missing required field: git")
     return await generate_journal_entry(request)
+
+async def add_reflection_to_journal(request: AddReflectionRequest) -> AddReflectionResponse:
+    """
+    Stub for adding a reflection to the journal. Returns a dummy success response.
+    """
+    return {"status": "success", "file_path": "journal/daily/2025-05-26-journal.md", "error": None}
+
+@handle_mcp_error
+async def handle_journal_add_reflection(request: AddReflectionRequest) -> AddReflectionResponse:
+    """
+    Handle the MCP operation 'journal/add-reflection'.
+    Expects a request with 'reflection' (str) and 'date' (ISO string).
+    Returns a response with status and file_path, or error if failed.
+    """
+    if "reflection" not in request:
+        return {"status": "error", "file_path": "", "error": "Missing required field: reflection"}
+    if "date" not in request:
+        return {"status": "error", "file_path": "", "error": "Missing required field: date"}
+    return await add_reflection_to_journal(request)

@@ -70,6 +70,28 @@ The MCP server exposes journal operations such as `journal/new-entry` via async 
 
 All errors are returned as a dict with `status: "error"` and an `error` message, never as a raw exception. See the engineering spec for full type details.
 
+## Journal Operations: journal/add-reflection
+
+The MCP server exposes the `journal/add-reflection` operation for adding a manual reflection to a specific day's journal file.
+
+- **Request:**
+  ```python
+  {
+      "reflection": "Today I learned...",   # Required reflection text (string)
+      "date": "2025-05-26"                  # Required ISO date string (YYYY-MM-DD)
+  }
+  ```
+- **Response:**
+  ```python
+  {
+      "status": "success",    # or "error"
+      "file_path": "journal/daily/2025-05-26-journal.md",
+      "error": None            # Error message if status == "error"
+  }
+  ```
+
+All errors are returned as a dict with `status: "error"` and an `error` message, never as a raw exception. See the engineering spec for full type details.
+
 ## More Information
 - See `docs/ai_function_pattern.md` for function design guidelines.
 - See the engineering spec and PRD for full requirements.

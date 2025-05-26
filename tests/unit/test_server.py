@@ -107,4 +107,48 @@ def test_journal_new_entry_handler_error_decorator():
         raise ValueError("fail")
     response = asyncio.run(bad_handler({}))
     assert response["status"] == "error"
+    assert "fail" in response["error"]
+
+@pytest.mark.asyncio
+def test_journal_add_reflection_handler_success(monkeypatch):
+    try:
+        from src.mcp_commit_story.server import handle_journal_add_reflection
+    except ImportError:
+        pytest.skip("handle_journal_add_reflection not implemented yet")
+    async def fake_add_reflection(request):
+        return {"status": "success", "file_path": "journal/daily/2025-05-26-journal.md"}
+    monkeypatch.setattr("src.mcp_commit_story.server.add_reflection_to_journal", fake_add_reflection)
+    request = {"reflection": "Today I learned...", "date": "2025-05-26"}
+    response = asyncio.run(handle_journal_add_reflection(request))
+    assert response["status"] == "success"
+    assert "file_path" in response
+
+@pytest.mark.asyncio
+def test_journal_add_reflection_handler_missing_fields():
+    try:
+        from src.mcp_commit_story.server import handle_journal_add_reflection
+    except ImportError:
+        pytest.skip("handle_journal_add_reflection not implemented yet")
+    # Missing 'reflection' field
+    request = {"date": "2025-05-26"}
+    response = asyncio.run(handle_journal_add_reflection(request))
+    assert response["status"] == "error"
+    assert "Missing required field: reflection" in response["error"]
+    # Missing 'date' field
+    request = {"reflection": "Today I learned..."}
+    response = asyncio.run(handle_journal_add_reflection(request))
+    assert response["status"] == "error"
+    assert "Missing required field: date" in response["error"]
+
+@pytest.mark.asyncio
+def test_journal_add_reflection_handler_error_decorator():
+    try:
+        from src.mcp_commit_story.server import handle_journal_add_reflection, handle_mcp_error
+    except ImportError:
+        pytest.skip("handle_journal_add_reflection or handle_mcp_error not implemented yet")
+    @handle_mcp_error
+    async def bad_handler(request):
+        raise ValueError("fail")
+    response = asyncio.run(bad_handler({}))
+    assert response["status"] == "error"
     assert "fail" in response["error"] 

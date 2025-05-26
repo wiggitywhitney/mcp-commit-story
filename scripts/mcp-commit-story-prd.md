@@ -508,6 +508,24 @@ The Summary section should focus on these unique aspects rather than restating r
 - Support markdown formatting in reflection
 - Return path to updated file
 
+**Request/Response Types:**
+- **Request:**
+  ```python
+  {
+      "reflection": "Today I learned...",   # Required reflection text (string)
+      "date": "2025-05-26"                  # Required ISO date string (YYYY-MM-DD)
+  }
+  ```
+- **Response:**
+  ```python
+  {
+      "status": "success",    # or "error"
+      "file_path": "journal/daily/2025-05-26-journal.md",
+      "error": None            # Error message if status == "error"
+  }
+  ```
+- All errors are returned as a dict with `status: "error"` and an `error` message, never as a raw exception.
+
 ### Data Formats
 - All operations return pre-formatted markdown strings
 - Success operations return file path + status
@@ -910,3 +928,14 @@ Requirement: Summary generation must prioritize journal entries that reflect sub
 - The `MCPError` class is used for raising errors with a specific status and message.
 - This pattern ensures that errors are always returned as status+message dicts, not raw exceptions.
 - Strict TDD was followed for error handling: failing tests, then implementation, then passing tests.
+
+### journal/add-reflection Handler Contract (Engineering Spec)
+- The handler expects a request dict with two required fields:
+  - `reflection` (str): The reflection text to add.
+  - `date` (str): The ISO date string (YYYY-MM-DD) for the journal file.
+- The response is a dict with:
+  - `status`: "success" or "error"
+  - `file_path`: Path to the updated journal file (if successful)
+  - `error`: Error message if status is "error"
+- All errors are handled via the `handle_mcp_error` decorator, ensuring structured error responses (never raw exceptions).
+- Strict TDD is enforced: failing tests for required fields and error handling precede implementation.
