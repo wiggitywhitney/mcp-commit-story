@@ -547,12 +547,13 @@ Generated journal entry successfully (some sections omitted)
 mcp-commit-story new-entry >/dev/null 2>&1 || true
 ```
 
-#### Post-Commit Hook Backup Logic
-- Before installing a new post-commit hook, the system calls `backup_existing_hook(hook_path)`.
-- This function creates a backup of the existing hook file with a timestamped name: `post-commit.backup.YYYYMMDD-HHMMSS` in the same directory.
-- Multiple backups are supported; each backup is unique due to the timestamp.
-- If the filesystem is read-only or an IO error occurs, a `PermissionError` or `IOError` is raised and must be handled by the caller.
-- All backup logic is covered by unit tests in `tests/unit/test_git_utils.py` (see tests for multiple backups, permission errors, and IO errors).
+#### Post-Commit Hook Installation Core Logic
+- The function `install_post_commit_hook(repo_path)` in [src/mcp_commit_story/git_utils.py](src/mcp_commit_story/git_utils.py) installs or replaces the post-commit hook in `.git/hooks`.
+- Existing hooks are always backed up with a timestamped filename before being replaced, with no user prompt or confirmation required.
+- The new hook is written using the content from `generate_hook_content()`.
+- The installed hook is set to be executable by user, group, and other (0o755), ensuring compatibility with all Git workflows.
+- The process is fully automated and suitable for CI/CD pipelines and scripting.
+- All logic is covered by unit tests in `tests/unit/test_git_utils.py` and `tests/unit/test_git_hook_installation.py`.
 
 ---
 

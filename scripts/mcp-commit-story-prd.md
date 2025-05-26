@@ -1039,3 +1039,11 @@ journal/
 See [docs/journal_init.md](../docs/journal_init.md) for details and rationale.
 
 - The CLI command `journal-init` (see [src/mcp_commit_story/cli.py](../src/mcp_commit_story/cli.py)) allows initializing the journal system from the command line. It accepts optional arguments for repo, config, and journal paths, and outputs standardized JSON for both success and error cases. See [docs/journal_init.md](../docs/journal_init.md) for usage, output format, and error codes.
+
+#### Post-Commit Hook Installation Core Logic
+- The function `install_post_commit_hook(repo_path)` in [src/mcp_commit_story/git_utils.py](../src/mcp_commit_story/git_utils.py) installs or replaces the post-commit hook in `.git/hooks`.
+- Existing hooks are always backed up with a timestamped filename before being replaced, with no user prompt or confirmation required.
+- The new hook is written using the content from `generate_hook_content()`.
+- The installed hook is set to be executable by user, group, and other (0o755), ensuring compatibility with all Git workflows.
+- The process is fully automated and suitable for CI/CD pipelines and scripting.
+- All logic is covered by unit tests in `tests/unit/test_git_utils.py` and `tests/unit/test_git_hook_installation.py`.

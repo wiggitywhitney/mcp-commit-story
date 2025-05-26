@@ -217,7 +217,7 @@ Implement robust backup logic for existing post-commit hooks before installing a
 Write failing tests for backup logic, then implement and verify the functionality.
 </info added on 2025-05-26T21:02:52.229Z>
 
-## 3. Hook Installation Core Logic [pending]
+## 3. Hook Installation Core Logic [done]
 ### Dependencies: None
 ### Description: Implement the main hook installation function with proper error handling.
 
@@ -241,7 +241,47 @@ TDD Steps:
   - Double check all subtask requirements are met
   - MARK COMPLETE
 ### Details:
+<info added on 2025-05-26T21:17:58.052Z>
+# Hook Installation Core Logic
 
+## Goal
+Implement the main hook installation function (`install_post_commit_hook`) with robust error handling, integrating the previously completed hook content generation (14.1) and backup logic (14.2).
+
+## Relevant Files
+- src/mcp_commit_story/git_utils.py (main implementation)
+- tests/unit/test_git_hook_installation.py (unit tests for install_post_commit_hook)
+- tests/unit/test_git_utils.py (additional tests for edge cases)
+
+## Plan
+1. **Review and expand test coverage:**
+   - Add/expand tests for:
+     - Fresh install (no existing hook)
+     - Replacement (existing hook present, backup created)
+     - Permission errors (hooks dir not writable, file not writable)
+     - Invalid repo path (not a git repo, missing .git/hooks)
+     - Executable bit set on installed hook
+   - Ensure tests cover integration with backup_existing_hook and generate_hook_content.
+
+2. **Design approval points:**
+   - Will pause for manual approval on:
+     - Overwrite/backup strategy (already approved: always backup, never overwrite in place)
+     - Hook file permissions (set executable for user/group/other)
+     - Integration location (continue using git_utils.py)
+
+3. **Implementation:**
+   - Enhance install_post_commit_hook to:
+     - Use generate_hook_content for script content
+     - Call backup_existing_hook if hook exists
+     - Set executable permissions
+     - Handle and raise errors for missing hooks dir, permissions, etc.
+   - Run tests to confirm all pass.
+
+4. **Documentation:**
+   - Update docs, PRD, and engineering spec as needed.
+
+## Next step
+Write/expand failing tests in tests/unit/test_git_hook_installation.py for all scenarios above, then run tests to confirm failures before implementation.
+</info added on 2025-05-26T21:17:58.052Z>
 
 ## 4. CLI Command Implementation [pending]
 ### Dependencies: None
