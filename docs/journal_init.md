@@ -265,4 +265,34 @@ All arguments are optional and default to the current directory and standard loc
 
 ## See Also
 - [src/mcp_commit_story/git_utils.py](../src/mcp_commit_story/git_utils.py)
-- [scripts/mcp-commit-story-prd.md](../scripts/mcp-commit-story-prd.md) 
+- [scripts/mcp-commit-story-prd.md](../scripts/mcp-commit-story-prd.md)
+
+## CLI Commands: new-entry and add-reflection
+
+The MCP Commit Story CLI provides commands to create new journal entries and add manual reflections:
+
+### `new-entry`
+
+Create a new journal entry for today:
+
+```bash
+mcp-commit-story new-entry --repo-path <path> --summary "Entry summary text"
+```
+- `--repo-path`: Path to the git repository (default: current directory)
+- `--summary`: Required. The summary text for the new journal entry.
+
+This command creates or appends to the daily journal file in `journal/daily/YYYY-MM-DD-journal.md`.
+
+### `add-reflection`
+
+Add a manual reflection to today's journal entry:
+
+```bash
+mcp-commit-story add-reflection --repo-path <path> --reflection "Reflection text"
+```
+- `--repo-path`: Path to the git repository (default: current directory)
+- `--reflection`: Required. The reflection text to add.
+
+This command appends a new 'Reflection' section to today's journal file. The file must already exist (created by `new-entry`).
+
+These commands are fully integrated with the MCP workflow and are covered by integration tests. 

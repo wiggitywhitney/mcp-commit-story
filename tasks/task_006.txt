@@ -1,6 +1,6 @@
 # Task ID: 6
 # Title: Implement MCP Server Core
-# Status: pending
+# Status: done
 # Dependencies: 1, 2, 5
 # Priority: high
 # Description: Create the MCP server implementation using the Anthropic MCP Python SDK, registering MVP-critical tools for journal operations (new-entry, add-reflection, init, install-hook).
@@ -115,7 +115,7 @@ def handle_mcp_error(func):
 ### Details:
 
 
-## 6. MCP Server Integration Test [pending]
+## 6. MCP Server Integration Test [done]
 ### Dependencies: 6.1, 6.2, 6.3, 6.4, 6.5, 6.7, 6.8
 ### Description: Write an end-to-end integration test for the MCP server, covering all registered operations (journal/new-entry, journal/add-reflection, etc.). TDD steps: (1) Define integration test scenarios and expected results, (2) Write failing integration tests, (3) Ask user for additional integration requirements, (4) Write tests for compliance, (5) Implement integration logic, (6) Run full test suite and document. Must cover error handling, async/await, and integration with Task 5 journal generation. Depends on all previous Task 6 subtasks.
 ### Details:

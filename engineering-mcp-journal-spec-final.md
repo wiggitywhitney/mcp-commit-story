@@ -966,3 +966,23 @@ Integration tests for git hook installation ensure that the post-commit hook can
 - Cleanup and removal of hooks and backups
 
 See `tests/integration/test_git_hook_integration.py` for implementation details. These tests use temporary git repositories and subprocesses to simulate actual usage, providing confidence that the hook installation and execution logic is robust and reliable.
+
+### CLI Commands: new-entry and add-reflection (2024-06 Update)
+
+The CLI now supports the following commands for direct journal management:
+
+#### `new-entry`
+- Usage: `mcp-commit-story new-entry --repo-path <path> --summary "Entry summary text"`
+- Options:
+  - `--repo-path`: Path to the git repository (default: current directory)
+  - `--summary`: Required. The summary text for the new journal entry.
+- Behavior: Creates or appends to the daily journal file in `journal/daily/YYYY-MM-DD-journal.md`.
+
+#### `add-reflection`
+- Usage: `mcp-commit-story add-reflection --repo-path <path> --reflection "Reflection text"`
+- Options:
+  - `--repo-path`: Path to the git repository (default: current directory)
+  - `--reflection`: Required. The reflection text to add.
+- Behavior: Appends a new 'Reflection' section to today's journal file. The file must already exist (created by `new-entry`).
+
+These commands are fully integrated with the MCP workflow and are covered by integration tests. See also the integration test plan for end-to-end coverage.

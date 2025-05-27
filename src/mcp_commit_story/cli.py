@@ -124,5 +124,93 @@ def install_hook(repo_path):
     print(json.dumps(result, indent=2))
     return 0
 
+@cli.command('new-entry')
+@click.option('--repo-path', type=click.Path(), default=None, help='Path to git repository (default: current directory)')
+@click.option('--summary', type=str, required=True, help='Summary for the new journal entry')
+def new_entry(repo_path, summary):
+    """
+    Create a new journal entry in the MCP Journal system.
+    Returns JSON output matching the approved CLI contract.
+    """
+    import datetime
+    import getpass
+    from mcp_commit_story.journal import JournalEntry, append_to_journal_file
+
+    try:
+        # Determine repo path
+        repo_path = Path(repo_path) if repo_path else Path.cwd()
+        journal_dir = repo_path / "journal" / "daily"
+        journal_dir.mkdir(parents=True, exist_ok=True)
+        # Journal file for today
+        today = datetime.date.today().strftime("%Y-%m-%d")
+        journal_file = journal_dir / f"{today}-journal.md"
+        # Create journal entry
+        now = datetime.datetime.now().isoformat(timespec="seconds")
+        commit_hash = "manual"  # Could be improved to get HEAD commit
+        author = getpass.getuser()
+        entry = JournalEntry(
+            timestamp=now,
+            commit_hash=commit_hash,
+            summary=summary,
+            technical_synopsis=None,
+            accomplishments=None,
+            frustrations=None,
+            terminal_commands=None,
+            discussion_notes=None,
+            tone_mood=None,
+            commit_metadata={"author": author, "date": now}
+        )
+        append_to_journal_file(entry.to_markdown(), journal_file)
+        result = {
+            "status": "success",
+            "paths": {"journal_file": str(journal_file)},
+            "message": f"Journal entry added to {journal_file}"
+        }
+        cli_output(result)
+    except Exception as e:
+        output = {
+            "status": "error",
+            "message": str(e),
+            "code": ERROR_CODES["general"],
+            "details": "Exception in new-entry CLI: {}".format(repr(e))
+        }
+        print(json.dumps(output, indent=2))
+        sys.exit(ERROR_CODES["general"])
+
+@cli.command('add-reflection')
+@click.option('--repo-path', type=click.Path(), default=None, help='Path to git repository (default: current directory)')
+@click.option('--reflection', type=str, required=True, help='Reflection text to add to today\'s journal entry')
+def add_reflection(repo_path, reflection):
+    """
+    Add a reflection to today's journal entry in the MCP Journal system.
+    Returns JSON output matching the approved CLI contract.
+    """
+    import datetime
+    try:
+        repo_path = Path(repo_path) if repo_path else Path.cwd()
+        journal_dir = repo_path / "journal" / "daily"
+        today = datetime.date.today().strftime("%Y-%m-%d")
+        journal_file = journal_dir / f"{today}-journal.md"
+        if not journal_file.exists():
+            raise FileNotFoundError(f"Journal file {journal_file} does not exist. Please create an entry first.")
+        # Append the reflection as a new section
+        with open(journal_file, "a", encoding="utf-8") as f:
+            f.write("\n#### Reflection\n\n" + reflection + "\n")
+        result = {
+            "status": "success",
+            "paths": {"journal_file": str(journal_file)},
+            "message": f"Reflection added to {journal_file}"
+        }
+        cli_output(result)
+    except Exception as e:
+        output = {
+            "status": "error",
+            "message": str(e),
+            "code": ERROR_CODES["general"],
+            "details": "Exception in add-reflection CLI: {}".format(repr(e))
+        }
+        print(json.dumps(output, indent=2))
+        sys.exit(ERROR_CODES["general"])
+
 if __name__ == "__main__":
     cli()
