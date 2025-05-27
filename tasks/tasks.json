@@ -585,7 +585,7 @@
           "id": 7,
           "title": "journal/init Operation Handler",
           "description": "Implement the MCP operation for journal initialization. TDD steps: (1) Define request/response types, (2) Write failing tests for handler, (3) Ask user for operation-specific requirements, (4) Write tests for compliance, (5) Implement async handler using Task 8 journal initialization logic, (6) Run full test suite and document. Must use proper error handling and type hints. Depends on MCP Server Initialization & Setup and Core Error Handling System.",
-          "status": "pending",
+          "status": "done",
           "dependencies": [
             "6.1",
             "6.2"
@@ -596,7 +596,7 @@
           "id": 8,
           "title": "journal/install-hook Operation Handler",
           "description": "Implement the MCP operation for git hook installation. TDD steps: (1) Define request/response types, (2) Write failing tests for handler, (3) Ask user for operation-specific requirements, (4) Write tests for compliance, (5) Implement async handler using Task 14 git hook installation logic, (6) Run full test suite and document. Must use proper error handling and type hints. Depends on MCP Server Initialization & Setup and Core Error Handling System.",
-          "status": "pending",
+          "status": "done",
           "dependencies": [
             "6.1",
             "6.2"

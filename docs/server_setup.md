@@ -141,6 +141,30 @@ The MCP server exposes the `journal/init` operation for initializing the journal
 - The handler supports both sync and async initialization logic and uses the `handle_mcp_error` decorator for robust error handling.
 - See [src/mcp_commit_story/server.py](../src/mcp_commit_story/server.py) for implementation details.
 
+## Journal Operations: journal/install-hook
+
+The MCP server exposes the `journal/install-hook` operation for installing or replacing the Git post-commit hook in a repository. This operation automates hook installation, backup, and error handling for robust integration with Git workflows.
+
+- **Request:**
+  ```python
+  {
+      "repo_path": "/path/to/repo"  # Optional, defaults to current directory
+  }
+  ```
+- **Response:**
+  ```python
+  {
+      "status": "success",    # or "error"
+      "message": "Post-commit hook installed successfully.",
+      "backup_path": "/path/to/backup"  # Path to backup if existing hook was replaced, or None
+      "hook_path": "/path/to/.git/hooks/post-commit"  # (if available)
+      "error": None            # Error message if status == "error"
+  }
+  ```
+- All errors are returned as a dict with `status: "error"` and an `error` message, never as a raw exception.
+- The handler supports both sync and async monkeypatching for testability and uses the `handle_mcp_error` decorator for robust error handling.
+- See [src/mcp_commit_story/server.py](../src/mcp_commit_story/server.py) for implementation details.
+
 ## More Information
 - See `docs/ai_function_pattern.md` for function design guidelines.
 - See the engineering spec and PRD for full requirements.

@@ -307,4 +307,67 @@ def test_handle_journal_init_already_initialized(monkeypatch):
     request = {"repo_path": "/tmp/repo"}
     response = asyncio.run(server_mod.handle_journal_init(request))
     assert response["status"] == "error"
-    assert "already initialized" in response["error"].lower() 
+    assert "already initialized" in response["error"].lower()
+
+@pytest.mark.asyncio
+def test_handle_journal_install_hook_success(monkeypatch):
+    try:
+        from mcp_commit_story import server as server_mod
+    except ImportError:
+        pytest.skip("handle_journal_install_hook not implemented yet")
+    # Mock install_post_commit_hook to simulate success
+    async def fake_install_post_commit_hook(repo_path=None):
+        return {"status": "success", "hook_path": "/repo/.git/hooks/post-commit", "backup_path": None, "message": "Hook installed"}
+    monkeypatch.setattr("mcp_commit_story.server.install_post_commit_hook", fake_install_post_commit_hook)
+    request = {"repo_path": "/tmp/repo"}
+    response = asyncio.run(server_mod.handle_journal_install_hook(request))
+    assert response["status"] == "success"
+    assert "hook_path" in response
+    assert "message" in response
+
+@pytest.mark.asyncio
+def test_handle_journal_install_hook_defaults_to_cwd(monkeypatch):
+    from mcp_commit_story import server as server_mod
+    async def fake_install_post_commit_hook(repo_path=None):
+        assert repo_path is None or repo_path == ""
+        return {"status": "success", "hook_path": "/repo/.git/hooks/post-commit", "backup_path": None, "message": "Hook installed"}
+    monkeypatch.setattr("mcp_commit_story.server.install_post_commit_hook", fake_install_post_commit_hook)
+    request = {}
+    response = asyncio.run(server_mod.handle_journal_install_hook(request))
+    assert response["status"] == "success"
+    assert "hook_path" in response
+
+@pytest.mark.asyncio
+def test_handle_journal_install_hook_not_a_git_repo(monkeypatch):
+    from mcp_commit_story import server as server_mod
+    async def fake_install_post_commit_hook(repo_path=None):
+        raise server_mod.MCPError("Not a git repository", status="error")
+    monkeypatch.setattr("mcp_commit_story.server.install_post_commit_hook", fake_install_post_commit_hook)
+    request = {"repo_path": "/not/a/git/repo"}
+    response = asyncio.run(server_mod.handle_journal_install_hook(request))
+    assert response["status"] == "error"
+    assert "Not a git repository" in response["error"]
+
+@pytest.mark.asyncio
+def test_handle_journal_install_hook_permission_error(monkeypatch):
+    from mcp_commit_story import server as server_mod
+    async def fake_install_post_commit_hook(repo_path=None):
+        raise server_mod.MCPError("Permission denied", status="error")
+    monkeypatch.setattr("mcp_commit_story.server.install_post_commit_hook", fake_install_post_commit_hook)
+    request = {"repo_path": "/protected/repo"}
+    response = asyncio.run(server_mod.handle_journal_install_hook(request))
+    assert response["status"] == "error"
+    assert "Permission denied" in response["error"]
+
+@pytest.mark.asyncio
+def test_handle_journal_install_hook_existing_hook_backup(monkeypatch):
+    from mcp_commit_story import server as server_mod
+    async def fake_install_post_commit_hook(repo_path=None):
+        return {"status": "success", "hook_path": "/repo/.git/hooks/post-commit", "backup_path": "/repo/.git/hooks/post-commit.backup.20250527-170000", "message": "Hook installed, backup created"}
+    monkeypatch.setattr("mcp_commit_story.server.install_post_commit_hook", fake_install_post_commit_hook)
+    request = {"repo_path": "/tmp/repo"}
+    response = asyncio.run(server_mod.handle_journal_install_hook(request))
+    assert response["status"] == "success"
+    assert "backup_path" in response
+    assert response["backup_path"] is not None
+    assert "backup created" in response["message"] 

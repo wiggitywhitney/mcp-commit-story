@@ -18,6 +18,7 @@ from mcp_commit_story import telemetry
 import toml
 from mcp_commit_story.journal_init import initialize_journal
 import inspect
+from mcp_commit_story.git_utils import install_post_commit_hook
 
 # Type alias for an async tool handler
 ToolHandler = Callable[..., Awaitable[Any]]
@@ -210,3 +211,39 @@ async def handle_journal_init(request: dict) -> dict:
         "paths": result.get("paths", {}),
         "message": result.get("message", "Journal initialized successfully")
     }
+
+@handle_mcp_error
+async def handle_journal_install_hook(request: dict) -> dict:
+    """
+    Handle the MCP operation 'journal/install-hook'.
+    Expects a request with optional 'repo_path'.
+    Calls install_post_commit_hook() and returns a structured response.
+    Response format:
+        {
+            "status": "success" | "error",
+            "message": str,
+            "backup_path": str or None,
+            "hook_path": str or None (if available),
+            "error": str (if error)
+        }
+    """
+    repo_path = request.get("repo_path")
+    if inspect.iscoroutinefunction(install_post_commit_hook):
+        result = await install_post_commit_hook(repo_path=repo_path)
+    else:
+        result = install_post_commit_hook(repo_path=repo_path)
+    if isinstance(result, dict):
+        response = {
+            "status": result.get("status", "success"),
+            "message": result.get("message", "Post-commit hook installed successfully."),
+            "backup_path": result.get("backup_path"),
+        }
+        if "hook_path" in result:
+            response["hook_path"] = result["hook_path"]
+        return response
+    else:
+        return {
+            "status": "success",
+            "message": "Post-commit hook installed successfully.",
+            "backup_path": result
+        }

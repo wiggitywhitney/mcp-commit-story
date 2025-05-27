@@ -598,6 +598,28 @@ The Summary section should focus on these unique aspects rather than restating r
   ```
 - All errors are returned as a dict with `status: "error"` and an `error` message, never as a raw exception.
 
+#### journal/install-hook
+- Installs or replaces the Git post-commit hook in the repository, backing up any existing hook and ensuring robust error handling.
+- **Request:**
+  ```python
+  {
+      "repo_path": "/path/to/repo"  # Optional, defaults to current directory
+  }
+  ```
+- **Response:**
+  ```python
+  {
+      "status": "success",    # or "error"
+      "message": "Post-commit hook installed successfully.",
+      "backup_path": "/path/to/backup"  # Path to backup if existing hook was replaced, or None
+      "hook_path": "/path/to/.git/hooks/post-commit"  # (if available)
+      "error": None            # Error message if status == "error"
+  }
+  ```
+- All errors are returned as a dict with `status: "error"` and an `error` message, never as a raw exception.
+- The handler supports both sync and async monkeypatching for testability and uses the `handle_mcp_error` decorator for robust error handling.
+- See [src/mcp_commit_story/server.py](../src/mcp_commit_story/server.py) and [src/mcp_commit_story/git_utils.py](../src/mcp_commit_story/git_utils.py) for implementation details.
+
 ### Data Formats
 - All operations return pre-formatted markdown strings
 - Success operations return file path + status
