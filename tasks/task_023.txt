@@ -1,0 +1,165 @@
+# Task ID: 23
+# Title: Refactor Journal Directory Creation to On-Demand Pattern
+# Status: pending
+# Dependencies: 8
+# Priority: medium
+# Description: Currently the journal initialization creates all subdirectories upfront (daily/, summaries/weekly/, etc.), resulting in empty folders that may never be used. Refactor to create directories only when first needed, providing a cleaner user experience and more natural growth pattern.
+
+Scope:
+1. Initialization Changes:
+   - Modify `initialize_journal()` to create only base `journal/` directory
+   - Update or remove `create_journal_directories()` function
+   - Update tests in `test_journal_init.py` and integration tests
+2. Existing Operations Updates:
+   - Ensure `append_to_journal_file()` creates needed directories
+   - Update `get_journal_file_path()` and related functions
+   - Update any current file operations that assume directories exist
+3. Test Updates:
+   - Unit tests for new initialization behavior
+   - Integration tests for on-demand directory creation
+   - Error handling tests for permission issues during creation
+4. Documentation Updates:
+   - Update `docs/journal_init.md`
+   - Update PRD and engineering spec
+   - Update function docstrings
+
+Acceptance Criteria:
+- Journal initialization creates only base `journal/` directory
+- Existing journal operations create needed subdirectories automatically
+- No functionality regression in current features
+- All tests pass
+- Documentation reflects new behavior
+
+Implementation Notes:
+- Use existing pattern: `file_path.parent.mkdir(parents=True, exist_ok=True)`
+- Maintain same error handling standards
+- Follow strict TDD approach
+- Create helper function: Consider adding a reusable `ensure_journal_directory(file_path)` utility function
+- Update acceptance criteria for dependent tasks: Tasks 5, 10, 11 should include "creates needed directories automatically" in their acceptance criteria when implemented
+
+Future Task Updates Needed:
+- Task 5 (Journal Entry Generation): Add directory creation requirement
+- Task 10 (Manual Reflection Addition): Add directory creation requirement  
+- Task 11 (Summary Generation): Add directory creation requirement for all summary types
+- Any other tasks that write to journal files
+
+Follow the existing TDD patterns in the codebase and maintain the same error handling and documentation standards.
+# Details:
+
+
+# Test Strategy:
+
+
+# Subtasks:
+## 1. Create Helper Function for On-Demand Directory Creation [pending]
+### Dependencies: None
+### Description: Create reusable utility function for ensuring journal directories exist when needed
+
+TDD Steps:
+1. WRITE TESTS FIRST
+   - Create `tests/unit/test_journal_utils.py`
+   - Test `ensure_journal_directory(file_path)` function
+   - Test cases: creates missing directories, handles existing directories, permission errors, nested paths
+   - RUN TESTS - VERIFY THEY FAIL
+2. IMPLEMENT FUNCTIONALITY
+   - Implement `ensure_journal_directory()` in `src/mcp_commit_story/journal.py`
+   - Use pattern: `file_path.parent.mkdir(parents=True, exist_ok=True)`
+   - Handle all error cases identified in tests
+   - RUN TESTS - VERIFY THEY PASS
+3. DOCUMENT AND COMPLETE
+   - Add documentation to function docstring
+   - Update engineering spec with new utility function
+   - MARK COMPLETE
+### Details:
+
+
+## 2. Update File Operations for On-Demand Directory Creation [pending]
+### Dependencies: 23.2
+### Description: Ensure all existing file operations create needed directories automatically
+
+TDD Steps:
+1. WRITE TESTS FIRST
+   - Update `tests/unit/test_journal.py`
+   - Test `append_to_journal_file()` creates directories as needed
+   - Test `get_journal_file_path()` works with on-demand creation
+   - Test cases: new directory creation, deeply nested paths, permission handling
+   - RUN TESTS - VERIFY THEY FAIL
+2. IMPLEMENT FUNCTIONALITY
+   - Update `append_to_journal_file()` to use `ensure_journal_directory()`
+   - Update any other file operations that assume directories exist
+   - Ensure consistent error handling across all functions
+   - RUN TESTS - VERIFY THEY PASS
+3. DOCUMENT AND COMPLETE
+   - Update function docstrings to reflect new behavior
+   - Update engineering spec with file operation changes
+   - MARK COMPLETE
+### Details:
+
+
+## 3. Update Integration Tests [pending]
+### Dependencies: 23.2, 23.3
+### Description: Ensure integration tests reflect and validate new on-demand directory behavior
+
+TDD Steps:
+1. WRITE TESTS FIRST
+   - Update `tests/integration/test_journal_init_integration.py`
+   - Test end-to-end initialization creates only base directory
+   - Test file operations trigger directory creation as needed
+   - Test cases: clean init workflow, file creation workflow, mixed scenarios
+   - RUN TESTS - VERIFY THEY FAIL
+2. IMPLEMENT FUNCTIONALITY
+   - Fix any integration issues discovered by tests
+   - Ensure all components work together with new directory pattern
+   - RUN TESTS - VERIFY THEY PASS
+3. DOCUMENT AND COMPLETE
+   - Update integration test documentation
+   - Note new behavior in test comments
+   - MARK COMPLETE
+### Details:
+
+
+## 4. Update CLI and Error Handling [pending]
+### Dependencies: 23.2, 23.3, 23.4
+### Description: Ensure CLI commands and error handling work correctly with on-demand directory creation
+
+TDD Steps:
+1. WRITE TESTS FIRST
+   - Update `tests/unit/test_cli.py`
+   - Test CLI commands work with new directory behavior
+   - Test error scenarios: permission issues during on-demand creation
+   - Test cases: journal-init command, file operations via CLI, error reporting
+   - RUN TESTS - VERIFY THEY FAIL
+2. IMPLEMENT FUNCTIONALITY
+   - Update CLI commands to handle new directory behavior
+   - Ensure error messages are clear for on-demand creation failures
+   - Maintain existing error code contracts
+   - RUN TESTS - VERIFY THEY PASS
+3. DOCUMENT AND COMPLETE
+   - Update CLI documentation in `docs/journal_init.md`
+   - Update PRD with new CLI behavior
+   - MARK COMPLETE
+### Details:
+
+
+## 5. Final Documentation and Future Task Updates [pending]
+### Dependencies: 23.2, 23.3, 23.4, 23.5
+### Description: Complete all documentation updates and prepare guidance for future tasks
+
+TDD Steps:
+1. WRITE TESTS FIRST
+   - Create tests to verify documentation completeness
+   - Test that all functions have updated docstrings
+   - RUN TESTS - VERIFY THEY FAIL
+2. IMPLEMENT FUNCTIONALITY
+   - Complete all remaining documentation updates
+   - Create guidance document for future tasks (Tasks 5, 10, 11)
+   - Update engineering spec with complete on-demand pattern
+   - RUN TESTS - VERIFY THEY PASS
+3. DOCUMENT AND COMPLETE
+   - Final review of all documentation
+   - Create checklist for future task updates
+   - Update Taskmaster with guidance for dependent tasks
+   - MARK COMPLETE
+### Details:
+
+

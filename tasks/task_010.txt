@@ -15,15 +15,19 @@ def format_reflection(text):
     return f"## {timestamp} — Manual Reflection\n\n{text}\n"
 ```
 
-2. File appending:
+2. File appending (using ensure_journal_directory utility):
 ```python
 def add_reflection_to_journal(text, config):
     """Add a reflection to today's journal"""
     date = datetime.now().strftime("%Y-%m-%d")
-    file_path = Path(config["journal"]["path"]) / "daily" / f"{date}.md"
+    journal_path = Path(config["journal"]["path"])
     
-    # Create directory and file if needed
-    file_path.parent.mkdir(parents=True, exist_ok=True)
+    # Use ensure_journal_directory utility to create directories if needed
+    ensure_journal_directory(journal_path)
+    
+    file_path = journal_path / "daily" / f"{date}.md"
+    
+    # Create file if needed
     if not file_path.exists():
         with open(file_path, "w") as f:
             f.write(f"# Journal for {date}\n")
@@ -76,6 +80,15 @@ def add_reflection(text):
         click.echo(f"Error: {e}")
 ```
 
+5. Ensure journal directory utility:
+```python
+def ensure_journal_directory(journal_path):
+    """Ensure journal directories exist, creating them on-demand if needed"""
+    daily_path = journal_path / "daily"
+    daily_path.mkdir(parents=True, exist_ok=True)
+    return daily_path
+```
+
 # Test Strategy:
 1. Unit tests for reflection formatting
 2. Tests for file appending
@@ -84,3 +97,32 @@ def add_reflection(text):
 5. Tests for creating new journal file if needed
 6. Tests for appending to existing journal file
 7. Integration tests for full reflection addition flow
+8. Tests for ensure_journal_directory utility
+9. Tests for on-demand directory creation when directories don't exist
+10. Tests to verify proper directory structure is created
+
+# Subtasks:
+## 10.1. Create ensure_journal_directory utility function [pending]
+### Dependencies: None
+### Description: Implement the ensure_journal_directory utility function that creates journal directories on-demand following the new pattern.
+### Details:
+
+
+## 10.2. Update add_reflection_to_journal to use ensure_journal_directory [pending]
+### Dependencies: None
+### Description: Modify the add_reflection_to_journal function to use the ensure_journal_directory utility instead of directly creating directories.
+### Details:
+
+
+## 10.3. Add tests for ensure_journal_directory utility [pending]
+### Dependencies: None
+### Description: Create unit tests to verify the ensure_journal_directory utility correctly creates directories when they don't exist and handles existing directories properly.
+### Details:
+
+
+## 10.4. Update existing tests for on-demand directory creation [pending]
+### Dependencies: None
+### Description: Modify existing tests to verify that the reflection addition process correctly creates directories on-demand when needed.
+### Details:
+
+

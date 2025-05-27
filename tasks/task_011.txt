@@ -162,8 +162,8 @@ def save_summary(content, period, date, config):
     else:
         raise ValueError(f"Unknown period: {period}")
     
-    # Create directory if needed
-    dir_path.mkdir(parents=True, exist_ok=True)
+    # Create directory if needed using the ensure_journal_directory utility
+    ensure_journal_directory(dir_path)
     
     # Save file
     file_path = dir_path / file_name
@@ -264,6 +264,16 @@ def summarize(week, month, date, range, debug):
             click.echo(f"Error: {e}")
 ```
 
+7. Directory creation utility:
+```python
+def ensure_journal_directory(dir_path):
+    """Ensure the journal directory exists, creating it if necessary"""
+    if not dir_path.exists():
+        dir_path.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Created directory: {dir_path}")
+    return dir_path
+```
+
 # Test Strategy:
 1. Unit tests for date range utilities
 2. Tests for journal file collection
@@ -278,6 +288,11 @@ def summarize(week, month, date, range, debug):
 11. Tests to verify that substantial work is properly prioritized in summaries
 12. Tests to verify that trivial entries are de-emphasized in summaries
 13. Tests with mixed entry types to ensure proper weighting in the final summary
+14. Tests for directory creation:
+    - Test that summary directories are created automatically when they don't exist
+    - Test that ensure_journal_directory() is called for all summary types (daily, weekly, monthly, yearly)
+    - Test that directory creation works with nested paths
+    - Test that no errors occur when directories already exist
 
 # Subtasks:
 ## 11.1. Implement entry significance calculation [pending]
@@ -301,6 +316,24 @@ def summarize(week, month, date, range, debug):
 ## 11.4. Test summary prioritization with real-world examples [pending]
 ### Dependencies: None
 ### Description: Test the summary generation with a set of real-world journal entries to ensure meaningful work is properly highlighted.
+### Details:
+
+
+## 11.5. Implement ensure_journal_directory utility [pending]
+### Dependencies: None
+### Description: Create the utility function to ensure journal directories exist, creating them on-demand if necessary.
+### Details:
+
+
+## 11.6. Update save_summary to use ensure_journal_directory [pending]
+### Dependencies: None
+### Description: Modify the save_summary function to use the ensure_journal_directory utility for all summary types.
+### Details:
+
+
+## 11.7. Add tests for directory creation functionality [pending]
+### Dependencies: None
+### Description: Create tests to verify that summary directories are created automatically when they don't exist and that the ensure_journal_directory utility works correctly.
 ### Details:
 
 
