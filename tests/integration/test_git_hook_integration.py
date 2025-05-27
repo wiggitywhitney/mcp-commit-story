@@ -4,6 +4,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 import pytest
+import sys
 
 @pytest.fixture
 def temp_git_repo(tmp_path):
@@ -23,7 +24,7 @@ def test_clean_hook_install(temp_git_repo):
     """Test installing the post-commit hook in a clean repo."""
     # Call CLI to install hook
     result = subprocess.run([
-        "python", "-m", "mcp_commit_story.cli", "install-hook", "--repo-path", str(temp_git_repo)
+        sys.executable, "-m", "mcp_commit_story.cli", "install-hook", "--repo-path", str(temp_git_repo)
     ], cwd=temp_git_repo, capture_output=True, text=True, env={**os.environ, "PYTHONPATH": "src"})
     assert result.returncode == 0, f"CLI failed: {result.stderr}"
     # Assert hook file exists and is executable
@@ -41,7 +42,7 @@ def test_overwrite_existing_hook(temp_git_repo):
     os.chmod(hook_path, 0o755)
     # Call CLI to install hook
     result = subprocess.run([
-        "python", "-m", "mcp_commit_story.cli", "install-hook", "--repo-path", str(temp_git_repo)
+        sys.executable, "-m", "mcp_commit_story.cli", "install-hook", "--repo-path", str(temp_git_repo)
     ], cwd=temp_git_repo, capture_output=True, text=True, env={**os.environ, "PYTHONPATH": "src"})
     assert result.returncode == 0, f"CLI failed: {result.stderr}"
     # Assert backup exists
@@ -168,7 +169,7 @@ def test_hook_error_handling_does_not_block_commit(temp_git_repo, monkeypatch):
     monkeypatch.setattr(git_utils, "generate_hook_content", error_hook_content)
     # Install the hook via CLI
     result = subprocess.run([
-        "python", "-m", "mcp_commit_story.cli", "install-hook", "--repo-path", str(temp_git_repo)
+        sys.executable, "-m", "mcp_commit_story.cli", "install-hook", "--repo-path", str(temp_git_repo)
     ], cwd=temp_git_repo, capture_output=True, text=True, env={**os.environ, "PYTHONPATH": "src"})
     assert result.returncode == 0, f"CLI failed: {result.stderr}"
     # Make a new commit (should not be blocked by hook failure)

@@ -16,6 +16,8 @@ from mcp.server.fastmcp import FastMCP, Context
 from mcp_commit_story.config import load_config, Config, ConfigError
 from mcp_commit_story import telemetry
 import toml
+from mcp_commit_story.journal_init import initialize_journal
+import inspect
 
 # Type alias for an async tool handler
 ToolHandler = Callable[..., Awaitable[Any]]
@@ -178,3 +180,33 @@ async def handle_journal_add_reflection(request: AddReflectionRequest) -> AddRef
     if "date" not in request:
         return {"status": "error", "file_path": "", "error": "Missing required field: date"}
     return await add_reflection_to_journal(request)
+
+@handle_mcp_error
+async def handle_journal_init(request: dict) -> dict:
+    """
+    Handle the MCP operation 'journal/init'.
+    Expects a request with optional 'repo_path', 'config_path', and 'journal_path'.
+    Calls initialize_journal() and returns a structured response.
+    Response format:
+        {
+            "status": "success" | "error",
+            "paths": dict (if success),
+            "message": str (if success),
+            "error": str (if error)
+        }
+    """
+    repo_path = request.get("repo_path")
+    config_path = request.get("config_path")
+    journal_path = request.get("journal_path")
+    # Support both sync and async initialize_journal
+    if inspect.iscoroutinefunction(initialize_journal):
+        result = await initialize_journal(repo_path=repo_path, config_path=config_path, journal_path=journal_path)
+    else:
+        result = initialize_journal(repo_path=repo_path, config_path=config_path, journal_path=journal_path)
+    if result.get("status") != "success":
+        raise MCPError(result.get("message", "Journal initialization failed"))
+    return {
+        "status": "success",
+        "paths": result.get("paths", {}),
+        "message": result.get("message", "Journal initialized successfully")
+    }

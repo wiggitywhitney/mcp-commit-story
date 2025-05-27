@@ -119,17 +119,85 @@ def handle_mcp_error(func):
 ### Dependencies: 6.1, 6.2, 6.3, 6.4, 6.5, 6.7, 6.8
 ### Description: Write an end-to-end integration test for the MCP server, covering all registered operations (journal/new-entry, journal/add-reflection, etc.). TDD steps: (1) Define integration test scenarios and expected results, (2) Write failing integration tests, (3) Ask user for additional integration requirements, (4) Write tests for compliance, (5) Implement integration logic, (6) Run full test suite and document. Must cover error handling, async/await, and integration with Task 5 journal generation. Depends on all previous Task 6 subtasks.
 ### Details:
+<info added on 2025-05-27T21:46:47.164Z>
+Objective: Create end-to-end integration test covering all MCP operations working together
 
+TDD Steps:
+
+WRITE TESTS FIRST
+- Create tests/integration/test_mcp_server_integration.py
+- Test complete workflow: init → install-hook → new-entry → add-reflection
+- Test cases: full workflow success, partial failures, error recovery, concurrent operations
+- RUN TESTS - VERIFY THEY FAIL
+
+IMPLEMENT FUNCTIONALITY
+- Fix any integration issues discovered by tests
+- Ensure all MCP operations work together seamlessly
+- Verify error handling consistency across operations
+- RUN TESTS - VERIFY THEY PASS
+
+DOCUMENT AND COMPLETE
+- Update docs/server_setup.md with integration test coverage
+- Update engineering spec with end-to-end workflow documentation
+- Add integration test to CI pipeline documentation
+- MARK COMPLETE
+</info added on 2025-05-27T21:46:47.164Z>
 
 ## 7. journal/init Operation Handler [pending]
 ### Dependencies: 6.1, 6.2
 ### Description: Implement the MCP operation for journal initialization. TDD steps: (1) Define request/response types, (2) Write failing tests for handler, (3) Ask user for operation-specific requirements, (4) Write tests for compliance, (5) Implement async handler using Task 8 journal initialization logic, (6) Run full test suite and document. Must use proper error handling and type hints. Depends on MCP Server Initialization & Setup and Core Error Handling System.
 ### Details:
+<info added on 2025-05-27T21:46:37.996Z>
+Objective: Implement the MCP operation for journal initialization using existing initialization logic
 
+TDD Steps:
+
+WRITE TESTS FIRST
+- Add tests to tests/unit/test_server.py
+- Test handle_journal_init() function
+- Test cases: success with valid repo path, missing repo path defaults to current dir, invalid repo path error, permission errors, already initialized scenario
+- RUN TESTS - VERIFY THEY FAIL
+
+IMPLEMENT FUNCTIONALITY
+- Add handle_journal_init() to src/mcp_commit_story/server.py
+- Use @handle_mcp_error decorator for consistent error handling
+- Call existing initialize_journal() from journal_init.py
+- Return structured response with status, paths, and message
+- RUN TESTS - VERIFY THEY PASS
+
+DOCUMENT AND COMPLETE
+- Update docs/server_setup.md with journal/init operation details
+- Update PRD and engineering spec
+- Add docstring with request/response format
+- MARK COMPLETE
+</info added on 2025-05-27T21:46:37.996Z>
 
 ## 8. journal/install-hook Operation Handler [pending]
 ### Dependencies: 6.1, 6.2
 ### Description: Implement the MCP operation for git hook installation. TDD steps: (1) Define request/response types, (2) Write failing tests for handler, (3) Ask user for operation-specific requirements, (4) Write tests for compliance, (5) Implement async handler using Task 14 git hook installation logic, (6) Run full test suite and document. Must use proper error handling and type hints. Depends on MCP Server Initialization & Setup and Core Error Handling System.
 ### Details:
+<info added on 2025-05-27T21:46:42.258Z>
+Objective: Implement the MCP operation for git hook installation using existing hook logic
 
+TDD Steps:
+
+WRITE TESTS FIRST
+- Add tests to tests/unit/test_server.py
+- Test handle_journal_install_hook() function
+- Test cases: success with valid repo, missing repo defaults to current dir, not a git repo error, permission errors, existing hook backup
+- RUN TESTS - VERIFY THEY FAIL
+
+IMPLEMENT FUNCTIONALITY
+- Add handle_journal_install_hook() to src/mcp_commit_story/server.py
+- Use @handle_mcp_error decorator for consistent error handling
+- Call existing install_post_commit_hook() from git_utils.py
+- Return structured response with status, hook path, and backup path
+- RUN TESTS - VERIFY THEY PASS
+
+DOCUMENT AND COMPLETE
+- Update docs/server_setup.md with journal/install-hook operation details
+- Update PRD and engineering spec
+- Add docstring with request/response format
+- MARK COMPLETE
+</info added on 2025-05-27T21:46:42.258Z>
 

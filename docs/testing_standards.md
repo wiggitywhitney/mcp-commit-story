@@ -47,6 +47,8 @@ To run tests, use the provided scripts:
 
 Unit tests should test individual components in isolation:
 
+- All MCP operation handlers (such as `handle_journal_init`) must be fully covered by TDD-first unit tests, including all success and error paths. See `tests/unit/test_server.py` for examples.
+
 ```python
 # Example unit test
 def test_config_defaults():

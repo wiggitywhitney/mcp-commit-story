@@ -568,7 +568,7 @@
           "id": 6,
           "title": "MCP Server Integration Test",
           "description": "Write an end-to-end integration test for the MCP server, covering all registered operations (journal/new-entry, journal/add-reflection, etc.). TDD steps: (1) Define integration test scenarios and expected results, (2) Write failing integration tests, (3) Ask user for additional integration requirements, (4) Write tests for compliance, (5) Implement integration logic, (6) Run full test suite and document. Must cover error handling, async/await, and integration with Task 5 journal generation. Depends on all previous Task 6 subtasks.",
-          "details": "",
+          "details": "<info added on 2025-05-27T21:46:47.164Z>\nObjective: Create end-to-end integration test covering all MCP operations working together\n\nTDD Steps:\n\nWRITE TESTS FIRST\n- Create tests/integration/test_mcp_server_integration.py\n- Test complete workflow: init → install-hook → new-entry → add-reflection\n- Test cases: full workflow success, partial failures, error recovery, concurrent operations\n- RUN TESTS - VERIFY THEY FAIL\n\nIMPLEMENT FUNCTIONALITY\n- Fix any integration issues discovered by tests\n- Ensure all MCP operations work together seamlessly\n- Verify error handling consistency across operations\n- RUN TESTS - VERIFY THEY PASS\n\nDOCUMENT AND COMPLETE\n- Update docs/server_setup.md with integration test coverage\n- Update engineering spec with end-to-end workflow documentation\n- Add integration test to CI pipeline documentation\n- MARK COMPLETE\n</info added on 2025-05-27T21:46:47.164Z>",
           "status": "pending",
           "dependencies": [
             "6.1",
@@ -590,7 +590,7 @@
             "6.1",
             "6.2"
           ],
-          "details": ""
+          "details": "<info added on 2025-05-27T21:46:37.996Z>\nObjective: Implement the MCP operation for journal initialization using existing initialization logic\n\nTDD Steps:\n\nWRITE TESTS FIRST\n- Add tests to tests/unit/test_server.py\n- Test handle_journal_init() function\n- Test cases: success with valid repo path, missing repo path defaults to current dir, invalid repo path error, permission errors, already initialized scenario\n- RUN TESTS - VERIFY THEY FAIL\n\nIMPLEMENT FUNCTIONALITY\n- Add handle_journal_init() to src/mcp_commit_story/server.py\n- Use @handle_mcp_error decorator for consistent error handling\n- Call existing initialize_journal() from journal_init.py\n- Return structured response with status, paths, and message\n- RUN TESTS - VERIFY THEY PASS\n\nDOCUMENT AND COMPLETE\n- Update docs/server_setup.md with journal/init operation details\n- Update PRD and engineering spec\n- Add docstring with request/response format\n- MARK COMPLETE\n</info added on 2025-05-27T21:46:37.996Z>"
         },
         {
           "id": 8,
@@ -601,7 +601,7 @@
             "6.1",
             "6.2"
           ],
-          "details": ""
+          "details": "<info added on 2025-05-27T21:46:42.258Z>\nObjective: Implement the MCP operation for git hook installation using existing hook logic\n\nTDD Steps:\n\nWRITE TESTS FIRST\n- Add tests to tests/unit/test_server.py\n- Test handle_journal_install_hook() function\n- Test cases: success with valid repo, missing repo defaults to current dir, not a git repo error, permission errors, existing hook backup\n- RUN TESTS - VERIFY THEY FAIL\n\nIMPLEMENT FUNCTIONALITY\n- Add handle_journal_install_hook() to src/mcp_commit_story/server.py\n- Use @handle_mcp_error decorator for consistent error handling\n- Call existing install_post_commit_hook() from git_utils.py\n- Return structured response with status, hook path, and backup path\n- RUN TESTS - VERIFY THEY PASS\n\nDOCUMENT AND COMPLETE\n- Update docs/server_setup.md with journal/install-hook operation details\n- Update PRD and engineering spec\n- Add docstring with request/response format\n- MARK COMPLETE\n</info added on 2025-05-27T21:46:42.258Z>"
         }
       ]
     },

@@ -8,6 +8,7 @@ import asyncio
 import io
 import tempfile
 import yaml
+import os
 
 @pytest.mark.asyncio
 def test_create_mcp_server_sets_name_and_calls_register_tools(tmp_path):
@@ -245,4 +246,65 @@ def test_config_reload_raises_on_malformed_yaml(tmp_path):
         f.write(": this is not valid: [")
     import pytest
     with pytest.raises(ConfigError):
-        config.reload_config() 
+        config.reload_config()
+
+@pytest.mark.asyncio
+def test_handle_journal_init_success(monkeypatch):
+    from mcp_commit_story import server as server_mod
+    # Mock initialize_journal to simulate success
+    async def fake_initialize_journal(repo_path=None, config_path=None, journal_path=None):
+        return {"status": "success", "paths": {"journal": "journal/"}, "message": "Initialized"}
+    monkeypatch.setattr("mcp_commit_story.server.initialize_journal", fake_initialize_journal)
+    request = {"repo_path": "/tmp/repo"}
+    response = asyncio.run(server_mod.handle_journal_init(request))
+    assert response["status"] == "success"
+    assert "paths" in response
+    assert "journal" in response["paths"]
+    assert "message" in response
+
+@pytest.mark.asyncio
+def test_handle_journal_init_defaults_to_cwd(monkeypatch):
+    from mcp_commit_story import server as server_mod
+    async def fake_initialize_journal(repo_path=None, config_path=None, journal_path=None):
+        assert repo_path is None or repo_path == os.getcwd()
+        return {"status": "success", "paths": {"journal": "journal/"}, "message": "Initialized in cwd"}
+    monkeypatch.setattr("mcp_commit_story.server.initialize_journal", fake_initialize_journal)
+    request = {}  # No repo_path
+    response = asyncio.run(server_mod.handle_journal_init(request))
+    assert response["status"] == "success"
+    assert "paths" in response
+    assert "journal" in response["paths"]
+    assert "message" in response
+
+@pytest.mark.asyncio
+def test_handle_journal_init_invalid_repo(monkeypatch):
+    from mcp_commit_story import server as server_mod
+    async def fake_initialize_journal(repo_path=None, config_path=None, journal_path=None):
+        raise Exception("Invalid repo path")
+    monkeypatch.setattr("mcp_commit_story.server.initialize_journal", fake_initialize_journal)
+    request = {"repo_path": "/invalid/path"}
+    response = asyncio.run(server_mod.handle_journal_init(request))
+    assert response["status"] == "error"
+    assert "Invalid repo path" in response["error"]
+
+@pytest.mark.asyncio
+def test_handle_journal_init_permission_error(monkeypatch):
+    from mcp_commit_story import server as server_mod
+    async def fake_initialize_journal(repo_path=None, config_path=None, journal_path=None):
+        raise PermissionError("Permission denied")
+    monkeypatch.setattr("mcp_commit_story.server.initialize_journal", fake_initialize_journal)
+    request = {"repo_path": "/protected/path"}
+    response = asyncio.run(server_mod.handle_journal_init(request))
+    assert response["status"] == "error"
+    assert "Permission denied" in response["error"]
+
+@pytest.mark.asyncio
+def test_handle_journal_init_already_initialized(monkeypatch):
+    from mcp_commit_story import server as server_mod
+    async def fake_initialize_journal(repo_path=None, config_path=None, journal_path=None):
+        raise Exception("Journal already initialized")
+    monkeypatch.setattr("mcp_commit_story.server.initialize_journal", fake_initialize_journal)
+    request = {"repo_path": "/tmp/repo"}
+    response = asyncio.run(server_mod.handle_journal_init(request))
+    assert response["status"] == "error"
+    assert "already initialized" in response["error"].lower() 

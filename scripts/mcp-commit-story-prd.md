@@ -549,10 +549,30 @@ The Summary section should focus on these unique aspects rather than restating r
 - Support arbitrary ranges (e.g., `--range "2025-01-01:2025-01-31"`)
 
 #### journal/init
-- Create initial journal directory structure
-- Generate default configuration file
-- Install git post-commit hook (with user confirmation)
-- Return initialization status and created paths
+- The `journal/init` MCP operation initializes the journal system in the repository, creating the required directory structure, generating a default config, and validating the repository state.
+- **Request:**
+  ```python
+  {
+      "repo_path": "/path/to/repo",      # Optional, defaults to current directory
+      "config_path": "/path/to/config",   # Optional, defaults to .mcp-commit-storyrc.yaml in repo root
+      "journal_path": "/path/to/journal"  # Optional, defaults to journal/ in repo root
+  }
+  ```
+- **Response:**
+  ```python
+  {
+      "status": "success",    # or "error"
+      "paths": {                # Dict of created/validated paths
+          "journal": "/path/to/journal",
+          "config": "/path/to/.mcp-commit-storyrc.yaml"
+      },
+      "message": "Journal initialized successfully",  # or error message
+      "error": None            # Error message if status == "error"
+  }
+  ```
+- All errors are returned as a dict with `status: "error"` and an `error` message, never as a raw exception.
+- The handler supports both sync and async initialization logic and uses the `handle_mcp_error` decorator for robust error handling.
+- See [src/mcp_commit_story/server.py](../src/mcp_commit_story/server.py) for implementation details.
 
 #### journal/add-reflection
 - Accept reflection text as parameter

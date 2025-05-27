@@ -112,6 +112,35 @@ The MCP server exposes the `journal/add-reflection` operation for adding a manua
 
 All errors are returned as a dict with `status: "error"` and an `error` message, never as a raw exception. See the engineering spec for full type details.
 
+## Journal Operations: journal/init
+
+The MCP server exposes the `journal/init` operation for initializing the journal system in a repository. This operation sets up the required directory structure, generates a default configuration file, and validates the repository state.
+
+- **Request:**
+  ```python
+  {
+      "repo_path": "/path/to/repo",      # Optional, defaults to current directory
+      "config_path": "/path/to/config",   # Optional, defaults to .mcp-commit-storyrc.yaml in repo root
+      "journal_path": "/path/to/journal"  # Optional, defaults to journal/ in repo root
+  }
+  ```
+- **Response:**
+  ```python
+  {
+      "status": "success",    # or "error"
+      "paths": {                # Dict of created/validated paths
+          "journal": "/path/to/journal",
+          "config": "/path/to/.mcp-commit-storyrc.yaml"
+      },
+      "message": "Journal initialized successfully",  # or error message
+      "error": None            # Error message if status == "error"
+  }
+  ```
+
+- All errors are returned as a dict with `status: "error"` and an `error` message, never as a raw exception.
+- The handler supports both sync and async initialization logic and uses the `handle_mcp_error` decorator for robust error handling.
+- See [src/mcp_commit_story/server.py](../src/mcp_commit_story/server.py) for implementation details.
+
 ## More Information
 - See `docs/ai_function_pattern.md` for function design guidelines.
 - See the engineering spec and PRD for full requirements.
