@@ -1,0 +1,84 @@
+# Task ID: 24
+# Title: Update CLI Command Naming to journal-init and Refactor Tests
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Refactor the CLI command for journal initialization from 'init' to 'journal-init' for clarity and consistency with MCP tool naming conventions. Update all integration and unit tests, Taskmaster plan, PRD, and documentation to reflect this change. Add or update tests to ensure the new command is discoverable and works as expected. Follow strict TDD for each subtask.
+# Details:
+Implementation Steps:
+1. Update all integration and unit tests to use 'journal-init' instead of 'init'.
+2. Update the Taskmaster plan, PRD, and engineering spec to reference 'journal-init'.
+3. Add or update tests to verify 'journal-init' appears in CLI help and functions correctly.
+4. Document the rationale for the naming change in the engineering spec and/or docs.
+5. Mark the task complete when all tests pass and documentation is updated.
+
+Test Strategy:
+- All CLI and integration tests pass with the new command name.
+- CLI help output includes 'journal-init'.
+- Documentation and plan are consistent.
+
+# Test Strategy:
+
+
+# Subtasks:
+## 1. Update Integration and Unit Tests to Use 'journal-init' [pending]
+### Dependencies: None
+### Description: Update all integration and unit tests to use 'journal-init' instead of 'init'.
+
+TDD Steps:
+1. WRITE TESTS FIRST
+   - Identify all tests that reference the 'init' CLI command.
+   - Write or update tests to expect 'journal-init'.
+   - Test cases: CLI invocation, help output, error handling for unknown commands.
+   - RUN TESTS - VERIFY THEY FAIL
+2. IMPLEMENT FUNCTIONALITY
+   - Update test code to use 'journal-init'.
+   - Ensure all test scenarios are covered.
+   - RUN TESTS - VERIFY THEY PASS
+3. DOCUMENT AND COMPLETE
+   - Add documentation IF NEEDED in three places (docs, PRD, engineering spec).
+   - Double check all subtask requirements are met.
+   - MARK COMPLETE.
+### Details:
+
+
+## 2. Update Taskmaster Plan, PRD, and Engineering Spec to Reference 'journal-init' [pending]
+### Dependencies: None
+### Description: Update the Taskmaster plan, PRD, and engineering spec to reference 'journal-init' instead of 'init'.
+
+TDD Steps:
+1. WRITE TESTS FIRST
+   - Identify all documentation and plan references to the 'init' CLI command.
+   - Write or update tests (if applicable) to check for correct references.
+   - RUN TESTS - VERIFY THEY FAIL (if automated; otherwise, manual check).
+2. IMPLEMENT FUNCTIONALITY
+   - Update all documentation and plans to use 'journal-init'.
+   - Ensure consistency across all references.
+   - RUN TESTS - VERIFY THEY PASS (or manual verification).
+3. DOCUMENT AND COMPLETE
+   - Add documentation IF NEEDED in three places (docs, PRD, engineering spec).
+   - Double check all subtask requirements are met.
+   - MARK COMPLETE.
+### Details:
+
+
+## 3. Add or Update Tests to Verify 'journal-init' in CLI Help and Functionality [pending]
+### Dependencies: None
+### Description: Add or update tests to verify that 'journal-init' appears in CLI help output and functions as expected.
+
+TDD Steps:
+1. WRITE TESTS FIRST
+   - Write or update tests to check that 'journal-init' is listed in CLI help output.
+   - Test cases: help output, command invocation, error handling for unknown commands.
+   - RUN TESTS - VERIFY THEY FAIL
+2. IMPLEMENT FUNCTIONALITY
+   - Ensure CLI help and command registration are correct.
+   - Update code or tests as needed.
+   - RUN TESTS - VERIFY THEY PASS
+3. DOCUMENT AND COMPLETE
+   - Add documentation IF NEEDED in three places (docs, PRD, engineering spec).
+   - Double check all subtask requirements are met.
+   - MARK COMPLETE.
+### Details:
+
+
