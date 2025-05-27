@@ -1324,13 +1324,13 @@
       "id": 23,
       "title": "Refactor Journal Directory Creation to On-Demand Pattern",
       "description": "Currently the journal initialization creates all subdirectories upfront (daily/, summaries/weekly/, etc.), resulting in empty folders that may never be used. Refactor to create directories only when first needed, providing a cleaner user experience and more natural growth pattern.\n\nScope:\n1. Initialization Changes:\n   - Modify `initialize_journal()` to create only base `journal/` directory\n   - Update or remove `create_journal_directories()` function\n   - Update tests in `test_journal_init.py` and integration tests\n2. Existing Operations Updates:\n   - Ensure `append_to_journal_file()` creates needed directories\n   - Update `get_journal_file_path()` and related functions\n   - Update any current file operations that assume directories exist\n3. Test Updates:\n   - Unit tests for new initialization behavior\n   - Integration tests for on-demand directory creation\n   - Error handling tests for permission issues during creation\n4. Documentation Updates:\n   - Update `docs/journal_init.md`\n   - Update PRD and engineering spec\n   - Update function docstrings\n\nAcceptance Criteria:\n- Journal initialization creates only base `journal/` directory\n- Existing journal operations create needed subdirectories automatically\n- No functionality regression in current features\n- All tests pass\n- Documentation reflects new behavior\n\nImplementation Notes:\n- Use existing pattern: `file_path.parent.mkdir(parents=True, exist_ok=True)`\n- Maintain same error handling standards\n- Follow strict TDD approach\n- Create helper function: Consider adding a reusable `ensure_journal_directory(file_path)` utility function\n- Update acceptance criteria for dependent tasks: Tasks 5, 10, 11 should include \"creates needed directories automatically\" in their acceptance criteria when implemented\n\nFuture Task Updates Needed:\n- Task 5 (Journal Entry Generation): Add directory creation requirement\n- Task 10 (Manual Reflection Addition): Add directory creation requirement  \n- Task 11 (Summary Generation): Add directory creation requirement for all summary types\n- Any other tasks that write to journal files\n\nFollow the existing TDD patterns in the codebase and maintain the same error handling and documentation standards.",
-      "details": "",
-      "testStrategy": "",
       "status": "pending",
       "dependencies": [
         8
       ],
-      "priority": "medium",
+      "priority": "high",
+      "details": "",
+      "testStrategy": "",
       "subtasks": [
         {
           "id": 1,

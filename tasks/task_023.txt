@@ -2,7 +2,7 @@
 # Title: Refactor Journal Directory Creation to On-Demand Pattern
 # Status: pending
 # Dependencies: 8
-# Priority: medium
+# Priority: high
 # Description: Currently the journal initialization creates all subdirectories upfront (daily/, summaries/weekly/, etc.), resulting in empty folders that may never be used. Refactor to create directories only when first needed, providing a cleaner user experience and more natural growth pattern.
 
 Scope:
