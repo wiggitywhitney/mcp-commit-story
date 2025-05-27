@@ -1399,7 +1399,7 @@
       "description": "Refactor the CLI command for journal initialization from 'init' to 'journal-init' for clarity and consistency with MCP tool naming conventions. Update all integration and unit tests, Taskmaster plan, PRD, and documentation to reflect this change. Add or update tests to ensure the new command is discoverable and works as expected. Follow strict TDD for each subtask.",
       "details": "Implementation Steps:\n1. Update all integration and unit tests to use 'journal-init' instead of 'init'.\n2. Update the Taskmaster plan, PRD, and engineering spec to reference 'journal-init'.\n3. Add or update tests to verify 'journal-init' appears in CLI help and functions correctly.\n4. Document the rationale for the naming change in the engineering spec and/or docs.\n5. Mark the task complete when all tests pass and documentation is updated.\n\nTest Strategy:\n- All CLI and integration tests pass with the new command name.\n- CLI help output includes 'journal-init'.\n- Documentation and plan are consistent.",
       "testStrategy": "",
-      "status": "pending",
+      "status": "done",
       "dependencies": [],
       "priority": "high",
       "subtasks": [
@@ -1408,7 +1408,7 @@
           "title": "Update Integration and Unit Tests to Use 'journal-init'",
           "description": "Update all integration and unit tests to use 'journal-init' instead of 'init'.\n\nTDD Steps:\n1. WRITE TESTS FIRST\n   - Identify all tests that reference the 'init' CLI command.\n   - Write or update tests to expect 'journal-init'.\n   - Test cases: CLI invocation, help output, error handling for unknown commands.\n   - RUN TESTS - VERIFY THEY FAIL\n2. IMPLEMENT FUNCTIONALITY\n   - Update test code to use 'journal-init'.\n   - Ensure all test scenarios are covered.\n   - RUN TESTS - VERIFY THEY PASS\n3. DOCUMENT AND COMPLETE\n   - Add documentation IF NEEDED in three places (docs, PRD, engineering spec).\n   - Double check all subtask requirements are met.\n   - MARK COMPLETE.",
           "details": "",
-          "status": "pending",
+          "status": "done",
           "dependencies": [],
           "parentTaskId": 24
         },
@@ -1417,7 +1417,7 @@
           "title": "Update Taskmaster Plan, PRD, and Engineering Spec to Reference 'journal-init'",
           "description": "Update the Taskmaster plan, PRD, and engineering spec to reference 'journal-init' instead of 'init'.\n\nTDD Steps:\n1. WRITE TESTS FIRST\n   - Identify all documentation and plan references to the 'init' CLI command.\n   - Write or update tests (if applicable) to check for correct references.\n   - RUN TESTS - VERIFY THEY FAIL (if automated; otherwise, manual check).\n2. IMPLEMENT FUNCTIONALITY\n   - Update all documentation and plans to use 'journal-init'.\n   - Ensure consistency across all references.\n   - RUN TESTS - VERIFY THEY PASS (or manual verification).\n3. DOCUMENT AND COMPLETE\n   - Add documentation IF NEEDED in three places (docs, PRD, engineering spec).\n   - Double check all subtask requirements are met.\n   - MARK COMPLETE.",
           "details": "",
-          "status": "pending",
+          "status": "done",
           "dependencies": [],
           "parentTaskId": 24
         },
@@ -1426,7 +1426,7 @@
           "title": "Add or Update Tests to Verify 'journal-init' in CLI Help and Functionality",
           "description": "Add or update tests to verify that 'journal-init' appears in CLI help output and functions as expected.\n\nTDD Steps:\n1. WRITE TESTS FIRST\n   - Write or update tests to check that 'journal-init' is listed in CLI help output.\n   - Test cases: help output, command invocation, error handling for unknown commands.\n   - RUN TESTS - VERIFY THEY FAIL\n2. IMPLEMENT FUNCTIONALITY\n   - Ensure CLI help and command registration are correct.\n   - Update code or tests as needed.\n   - RUN TESTS - VERIFY THEY PASS\n3. DOCUMENT AND COMPLETE\n   - Add documentation IF NEEDED in three places (docs, PRD, engineering spec).\n   - Double check all subtask requirements are met.\n   - MARK COMPLETE.",
           "details": "",
-          "status": "pending",
+          "status": "done",
           "dependencies": [],
           "parentTaskId": 24
         }

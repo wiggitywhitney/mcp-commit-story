@@ -84,6 +84,9 @@ See also: [src/mcp_commit_story/journal_init.py](../src/mcp_commit_story/journal
 
 You can initialize the MCP Journal system from the command line using the `journal-init` CLI command. This command is implemented in [src/mcp_commit_story/cli.py](../src/mcp_commit_story/cli.py) and provides a standardized JSON output for both success and error cases.
 
+**Naming Convention Note:**
+The CLI command is named `journal-init` (not just `init`) to avoid ambiguity and to align with the namespaced pattern used for other MCP tool operations. This makes the CLI more discoverable and scalable as additional commands are added.
+
 **Usage:**
 ```bash
 python -m mcp_commit_story.cli --repo-path <repo> --config-path <config> --journal-path <journal>

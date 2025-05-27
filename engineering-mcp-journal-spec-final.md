@@ -413,7 +413,7 @@ mcp-commit-story [operation] [options]
 ```
 
 ### Supported Commands
-- `mcp-commit-story init` - Initialize journal in current repository
+- `mcp-commit-story journal-init` - Initialize journal in current repository
 - `mcp-commit-story new-entry [--debug]` - Create journal entry for current commit (with AI command collection)
 - `mcp-commit-story add-reflection "text"` - Add manual reflection to today's journal
 - `mcp-commit-story summarize --day [date]` - Generate summary for specific day or yesterday
@@ -796,7 +796,7 @@ This tool is designed to be **developer-friendly**, **minimally intrusive**, and
 14. Package for distribution
 
 ### Initialization Workflow
-1. User runs `mcp-commit-story init` in their repository
+1. User runs `mcp-commit-story journal-init` in their repository
 2. System checks if already initialized (look for `.mcp-commit-storyrc.yaml`)
 3. Creates journal directory structure
 4. Generates default configuration file
@@ -909,6 +909,9 @@ These tests provide end-to-end validation that all components work together as e
 ## CLI Command for Journal Initialization
 
 The CLI command `journal-init` (see [src/mcp_commit_story/cli.py](src/mcp_commit_story/cli.py)) allows initializing the journal system from the command line. It accepts optional arguments for repo, config, and journal paths, and outputs standardized JSON for both success and error cases. See [docs/journal_init.md](docs/journal_init.md) for usage, output format, and error codes.
+
+**Naming Convention Note:**
+The CLI command is named `journal-init` (not just `init`) to avoid ambiguity and to align with the namespaced pattern used for other MCP tool operations. This makes the CLI more discoverable and scalable as additional commands are added.
 
 ### CLI Command: install-hook
 

@@ -114,6 +114,8 @@ All errors are returned as a dict with `status: "error"` and an `error` message,
 
 ## Journal Operations: journal/init
 
+> **Note:** The MCP operation is named `journal/init`, while the CLI command is `journal-init` for clarity and consistency. The CLI command uses a hyphen to follow namespaced conventions and avoid ambiguity with other potential 'init' commands.
+
 The MCP server exposes the `journal/init` operation for initializing the journal system in a repository. This operation sets up the required directory structure, generates a default configuration file, and validates the repository state.
 
 - **Request:**

@@ -13,11 +13,13 @@ def test_full_workflow_success(tmp_path):
     """
     repo_path = tmp_path
     env = {**os.environ, "PYTHONPATH": "src"}
+    # Ensure the temp directory is a git repo
+    subprocess.run(["git", "init"], cwd=repo_path, check=True, stdout=subprocess.PIPE)
     # 1. Init
     result = subprocess.run([
-        sys.executable, "-m", "mcp_commit_story.cli", "init", "--repo-path", str(repo_path)
+        sys.executable, "-m", "mcp_commit_story.cli", "journal-init", "--repo-path", str(repo_path)
     ], cwd=repo_path, capture_output=True, text=True, env=env)
-    assert result.returncode == 0, f"Init failed: {result.stderr}"
+    assert result.returncode == 0, f"Journal-init failed: {result.stderr}"
     # 2. Install hook
     result = subprocess.run([
         sys.executable, "-m", "mcp_commit_story.cli", "install-hook", "--repo-path", str(repo_path)

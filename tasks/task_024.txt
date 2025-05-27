@@ -1,6 +1,6 @@
 # Task ID: 24
 # Title: Update CLI Command Naming to journal-init and Refactor Tests
-# Status: pending
+# Status: done
 # Dependencies: None
 # Priority: high
 # Description: Refactor the CLI command for journal initialization from 'init' to 'journal-init' for clarity and consistency with MCP tool naming conventions. Update all integration and unit tests, Taskmaster plan, PRD, and documentation to reflect this change. Add or update tests to ensure the new command is discoverable and works as expected. Follow strict TDD for each subtask.
@@ -21,7 +21,7 @@ Test Strategy:
 
 
 # Subtasks:
-## 1. Update Integration and Unit Tests to Use 'journal-init' [pending]
+## 1. Update Integration and Unit Tests to Use 'journal-init' [done]
 ### Dependencies: None
 ### Description: Update all integration and unit tests to use 'journal-init' instead of 'init'.
 
@@ -42,7 +42,7 @@ TDD Steps:
 ### Details:
 
 
-## 2. Update Taskmaster Plan, PRD, and Engineering Spec to Reference 'journal-init' [pending]
+## 2. Update Taskmaster Plan, PRD, and Engineering Spec to Reference 'journal-init' [done]
 ### Dependencies: None
 ### Description: Update the Taskmaster plan, PRD, and engineering spec to reference 'journal-init' instead of 'init'.
 
@@ -62,7 +62,7 @@ TDD Steps:
 ### Details:
 
 
-## 3. Add or Update Tests to Verify 'journal-init' in CLI Help and Functionality [pending]
+## 3. Add or Update Tests to Verify 'journal-init' in CLI Help and Functionality [done]
 ### Dependencies: None
 ### Description: Add or update tests to verify that 'journal-init' appears in CLI help output and functions as expected.
 
