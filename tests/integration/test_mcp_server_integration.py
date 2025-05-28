@@ -16,6 +16,10 @@ def test_full_workflow_success(tmp_path):
     # Ensure the temp directory is a git repo
     subprocess.run(["git", "init"], cwd=repo_path, check=True, stdout=subprocess.PIPE)
     
+    # Configure git for the test (required in CI environments)
+    subprocess.run(["git", "config", "user.name", "Test User"], cwd=repo_path, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo_path, check=True)
+    
     # 1. Init (CLI setup command)
     result = subprocess.run([
         sys.executable, "-m", "mcp_commit_story.cli", "journal-init", "--repo-path", str(repo_path)
