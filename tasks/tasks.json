@@ -1346,7 +1346,7 @@
           "title": "Update File Operations for On-Demand Directory Creation",
           "description": "Ensure all existing file operations create needed directories automatically\n\nTDD Steps:\n1. WRITE TESTS FIRST\n   - Update `tests/unit/test_journal.py`\n   - Test `append_to_journal_file()` creates directories as needed\n   - Test `get_journal_file_path()` works with on-demand creation\n   - Test cases: new directory creation, deeply nested paths, permission handling\n   - RUN TESTS - VERIFY THEY FAIL\n2. IMPLEMENT FUNCTIONALITY\n   - Update `append_to_journal_file()` to use `ensure_journal_directory()`\n   - Update any other file operations that assume directories exist\n   - Ensure consistent error handling across all functions\n   - RUN TESTS - VERIFY THEY PASS\n3. DOCUMENT AND COMPLETE\n   - Update function docstrings to reflect new behavior\n   - Update engineering spec with file operation changes\n   - MARK COMPLETE",
           "details": "",
-          "status": "pending",
+          "status": "done",
           "dependencies": [
             "23.2"
           ],

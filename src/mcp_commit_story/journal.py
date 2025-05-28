@@ -275,11 +275,11 @@ def append_to_journal_file(entry, file_path):
     """
     Append a journal entry to the file at file_path. If the file does not exist, create it.
     If the file exists and is not empty, prepend a horizontal rule (---) before the new entry.
-    Automatically create parent directories as needed.
+    Automatically create parent directories as needed using ensure_journal_directory().
     Raises ValueError if the file path is invalid or cannot be written to.
     """
     file_path = Path(file_path)
-    file_path.parent.mkdir(parents=True, exist_ok=True)
+    ensure_journal_directory(file_path)
     try:
         if file_path.exists() and file_path.stat().st_size > 0:
             with open(file_path, "a", encoding="utf-8") as f:
@@ -533,7 +533,7 @@ def generate_frustrations_section(journal_context: JournalContext) -> Frustratio
 
     Priority for Content Sources:
     1. Explicit frustration expressions from chat - developer's own expressions of difficulty and challenge
-    2. Problem/challenge statements - clear indicators of issues encountered
+    2. Problem statements - clear indicators of issues encountered
     3. Failed attempts or setbacks - evidence of approaches that didn't work
     4. Git/terminal evidence - multiple attempts, rollbacks, or repeated changes indicating difficulty
 
