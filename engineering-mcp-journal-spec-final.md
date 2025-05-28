@@ -1002,3 +1002,6 @@ The CLI now supports the following commands for direct journal management:
 - Behavior: Appends a new 'Reflection' section to today's journal file. The file must already exist (created by `new-entry`).
 
 These commands are fully integrated with the MCP workflow and are covered by integration tests. See also the integration test plan for end-to-end coverage.
+
+**Integration Testing for On-Demand Directory Creation:**
+Integration tests now ensure that only the base `journal/` directory is created during initialization, and subdirectories are created on-demand by file operations. See `tests/integration/test_journal_init_integration.py` for updated test cases covering clean init, file creation, and mixed scenarios.

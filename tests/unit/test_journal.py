@@ -619,4 +619,37 @@ def test_generate_terminal_commands_section_type_safety():
     result = journal.generate_terminal_commands_section(ctx)
     assert isinstance(result, dict)
     assert 'terminal_commands' in result
-    assert isinstance(result['terminal_commands'], list) 
+    assert isinstance(result['terminal_commands'], list)
+
+
+def test_append_to_journal_file_creates_directories(tmp_path):
+    from mcp_commit_story.journal import append_to_journal_file
+    file_path = tmp_path / "nested/dir/journal.md"
+    entry = "Test entry"
+    assert not file_path.parent.exists()
+    append_to_journal_file(entry, file_path)
+    assert file_path.exists()
+    assert file_path.read_text().startswith(entry)
+
+
+def test_append_to_journal_file_existing_directories(tmp_path):
+    from mcp_commit_story.journal import append_to_journal_file
+    file_path = tmp_path / "existing/dir/journal.md"
+    file_path.parent.mkdir(parents=True)
+    entry = "Another test entry"
+    append_to_journal_file(entry, file_path)
+    assert file_path.exists()
+    assert file_path.read_text().startswith(entry)
+
+
+def test_append_to_journal_file_permission_error(monkeypatch, tmp_path):
+    from mcp_commit_story.journal import append_to_journal_file
+    file_path = tmp_path / "protected/dir/journal.md"
+    entry = "Should fail"
+    # Patch ensure_journal_directory to raise PermissionError
+    import mcp_commit_story.journal as journal_mod
+    def raise_permission_error(fp):
+        raise PermissionError("No permission to create directory")
+    monkeypatch.setattr(journal_mod, "ensure_journal_directory", raise_permission_error)
+    with pytest.raises(PermissionError):
+        append_to_journal_file(entry, file_path) 

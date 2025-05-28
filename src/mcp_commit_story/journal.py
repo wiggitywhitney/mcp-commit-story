@@ -925,4 +925,9 @@ def ensure_journal_directory(file_path):
         file_path (Path or str): The file path whose parent directory should be ensured.
     """
     parent_dir = Path(file_path).parent
-    parent_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        parent_dir.mkdir(parents=True, exist_ok=True)
+    except PermissionError:
+        raise  # Re-raise PermissionError as documented
+    except Exception as e:
+        raise OSError(f"Failed to create directory {parent_dir}: {e}")

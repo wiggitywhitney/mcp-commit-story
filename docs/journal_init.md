@@ -159,7 +159,14 @@ Integration tests for journal initialization ensure that the full workflow opera
 - Partial recovery when only config or journal directory exists
 - Failure recovery, ensuring successful parts are left in place and errors are reported
 
-See `tests/integration/test_journal_init_integration.py` for implementation details. These tests use temporary directories and subprocesses to simulate actual usage, providing confidence that all components work together as expected.
+**On-Demand Directory Creation Integration Tests:**
+Integration tests now validate that only the base `journal/` directory is created during initialization. Subdirectories (e.g., `daily/`, `summaries/`) are created on-demand by file operations (such as writing a journal entry). See `tests/integration/test_journal_init_integration.py` for updated test cases covering:
+- Clean initialization (base directory only)
+- File operations that trigger subdirectory creation
+- Mixed scenarios (init, then write to nested summary file)
+- Error handling for permission issues
+
+These tests ensure the new pattern is robust and that the system behaves as expected in real-world workflows.
 
 ## Integration Testing: Git Hook Installation
 
