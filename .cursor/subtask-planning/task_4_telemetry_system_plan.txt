@@ -1,0 +1,353 @@
+# Task 4: Implement Telemetry System - Detailed Subtask Plan
+
+## Overview
+Breaking down Task 4 into focused subtasks for implementing OpenTelemetry-based observability for the MCP server. This plan removes CLI references (not part of MVP) and leverages OpenTelemetry auto-instrumentation capabilities where possible.
+
+---
+
+## Subtask 4.1: OpenTelemetry Foundation Setup
+**Objective**: Create basic OpenTelemetry initialization and configuration system
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_telemetry_setup.py`
+   - Test `setup_telemetry(config_dict)` function
+   - Test cases: telemetry enabled, telemetry disabled, invalid config, missing config
+   - Test `get_tracer(name)` function returns valid tracer
+   - Test `get_meter(name)` function returns valid meter
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: Module structure layout (`src/mcp_commit_story/telemetry/`)
+   - **PAUSE FOR MANUAL APPROVAL**: Configuration schema format (nested vs flat keys)
+   - **PAUSE FOR MANUAL APPROVAL**: Default telemetry state (enabled/disabled by default)
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Add OpenTelemetry dependencies to pyproject.toml
+   - Create `src/mcp_commit_story/telemetry/__init__.py`
+   - Create `src/mcp_commit_story/telemetry/setup.py` with setup_telemetry() function
+   - Implement resource configuration with service name
+   - Set up TracerProvider and MeterProvider
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places:
+     1. To docs directory (create telemetry.md guide)
+     2. PRD (update observability section) 
+     3. Engineering Spec (add telemetry architecture)
+   - Double check all subtask requirements are met
+   - **MARK COMPLETE**
+
+---
+
+## Subtask 4.2: MCP Operation Instrumentation Decorators
+**Objective**: Create tracing decorators specifically for MCP operations
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_telemetry_decorators.py`
+   - Test `@trace_mcp_operation(name)` decorator
+   - Test cases: successful operation, operation with exception, async operations, span attributes
+   - Test span context propagation
+   - Test error recording in spans
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: Semantic attribute naming convention (mcp.tool.name vs tool.name)
+   - **PAUSE FOR MANUAL APPROVAL**: Error handling strategy (record exception vs status only)
+   - **PAUSE FOR MANUAL APPROVAL**: Decorator API design (single decorator vs multiple specialized ones)
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Create `src/mcp_commit_story/telemetry/decorators.py`
+   - Implement MCPTracer class with trace_mcp_operation decorator
+   - Add semantic attributes for MCP operations
+   - Handle async function decoration
+   - Implement proper span status and exception recording
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places
+   - Double check all subtask requirements are met
+   - **MARK COMPLETE**
+
+---
+
+## Subtask 4.3: Auto-Instrumentation Integration
+**Objective**: Configure OpenTelemetry auto-instrumentation for common libraries
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_auto_instrumentation.py`
+   - Test `enable_auto_instrumentation(config)` function
+   - Test cases: enable all instrumentors, selective enabling, disabled instrumentation
+   - Test HTTP request tracing (mock requests)
+   - Test asyncio operation tracing
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: Which auto-instrumentors to include by default
+   - **PAUSE FOR MANUAL APPROVAL**: Configuration format for selective instrumentation
+   - **PAUSE FOR MANUAL APPROVAL**: Performance impact vs observability trade-offs
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Create `src/mcp_commit_story/telemetry/auto_instrument.py`
+   - Add auto-instrumentation dependencies to pyproject.toml
+   - Implement selective instrumentor enabling
+   - Integrate with configuration system
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places
+   - Double check all subtask requirements are met
+   - **MARK COMPLETE**
+
+---
+
+## Subtask 4.4: MCP-Specific Metrics Collection
+**Objective**: Define and implement metrics collection for MCP operations
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_telemetry_metrics.py`
+   - Test `MCPMetrics` class initialization
+   - Test `record_tool_call(tool_name, success)` method
+   - Test `record_operation_duration(operation, duration)` method  
+   - Test metric labels and values
+   - Test metric export format
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: Metric naming convention (mcp.tool.calls.total vs tool_calls_total)
+   - **PAUSE FOR MANUAL APPROVAL**: Which business metrics to track (journal entries, errors, etc.)
+   - **PAUSE FOR MANUAL APPROVAL**: Metric aggregation strategy (histograms vs counters for durations)
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Create `src/mcp_commit_story/telemetry/metrics.py`
+   - Implement MCPMetrics class with counters, histograms, and gauges
+   - Define semantic metric attributes
+   - Create metrics recording utilities
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places
+   - Double check all subtask requirements are met
+   - **MARK COMPLETE**
+
+---
+
+## Subtask 4.5: Multi-Exporter Configuration System
+**Objective**: Support multiple telemetry exporters (console, OTLP, Prometheus) for vendor-neutral observability
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_telemetry_exporters.py`
+   - Test `configure_exporters(config)` function
+   - Test cases: console exporter, OTLP exporter, Prometheus exporter, multiple exporters, invalid config
+   - Test exporter initialization and failure handling
+   - Test environment variable overrides (OTEL_EXPORTER_OTLP_ENDPOINT, etc.)
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: Configuration schema structure for exporters
+   - **PAUSE FOR MANUAL APPROVAL**: Fallback strategy when exporters fail
+   - **PAUSE FOR MANUAL APPROVAL**: Environment variable naming and precedence
+   - **PAUSE FOR MANUAL APPROVAL**: Prometheus metrics port and endpoint configuration
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Create `src/mcp_commit_story/telemetry/exporters.py`
+   - Implement console, OTLP, and Prometheus exporter configuration
+   - Add graceful fallback handling
+   - Support environment variable overrides for vendor-neutral deployment
+   - Implement Prometheus MetricReader for pull-based metrics
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places
+   - Double check all subtask requirements are met
+   - **MARK COMPLETE**
+
+---
+
+## Subtask 4.6: Structured Logging with Trace Correlation
+**Objective**: Integrate logging with OpenTelemetry trace context
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_telemetry_logging.py`
+   - Test `OTelFormatter` class
+   - Test trace ID injection in log records
+   - Test structured log format
+   - Test log-based metrics (optional)
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: Log format (JSON vs structured text)
+   - **PAUSE FOR MANUAL APPROVAL**: Which log levels to correlate with traces
+   - **PAUSE FOR MANUAL APPROVAL**: Log-based metrics implementation (yes/no)
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Create `src/mcp_commit_story/telemetry/logging.py`
+   - Implement OTelFormatter with trace correlation
+   - Set up structured logging configuration
+   - Optional: implement log-based metrics
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places
+   - Double check all subtask requirements are met
+   - **MARK COMPLETE**
+
+---
+
+## Subtask 4.7: MCP Server Integration and End-to-End Testing
+**Objective**: Integrate telemetry with MCP server and validate complete pipeline
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/integration/test_telemetry_integration.py`
+   - Test full MCP server startup with telemetry
+   - Test tool call tracing end-to-end
+   - Test configuration validation
+   - Test telemetry disable/enable scenarios
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: Integration points in MCP server lifecycle
+   - **PAUSE FOR MANUAL APPROVAL**: Configuration schema final structure
+   - **PAUSE FOR MANUAL APPROVAL**: Performance impact acceptance criteria
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Integrate telemetry setup into MCP server initialization
+   - Update configuration schema with telemetry section
+   - Apply tracing decorators to existing MCP operations
+   - Ensure graceful degradation when disabled
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places
+   - Double check all subtask requirements are met
+   - **MARK COMPLETE**
+
+---
+
+## Subtask 4.8: Instrument Journal Management Operations (Task 3)
+**Objective**: Add telemetry to existing journal creation and file operations for AI context flow observability
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_journal_telemetry.py`
+   - Test journal creation operations are traced
+   - Test file operation metrics (create, read, write times)
+   - Test journal entry count metrics
+   - Test error scenarios in journal operations
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: Which journal operations to instrument (all vs selective)
+   - **PAUSE FOR MANUAL APPROVAL**: Metrics vs traces for file operations
+   - **PAUSE FOR MANUAL APPROVAL**: Sensitive data handling in spans (commit messages, etc.)
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Add tracing decorators to journal.py functions
+   - Instrument file operations with duration metrics
+   - Add journal entry creation counters
+   - Implement AI context flow tracing (prompt → journal entry)
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places
+   - Double check all subtask requirements are met
+   - **MARK COMPLETE**
+
+---
+
+## Subtask 4.9: Instrument Context Collection Operations (Task 5)
+**Objective**: Add telemetry to existing Git operations and file scanning for MCP context flow visibility
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_context_collection_telemetry.py`
+   - Test Git operation tracing (git log, diff, status timing)
+   - Test file scanning metrics (files processed, scan duration)
+   - Test context collection success/failure rates
+   - Test memory usage during large repository scans
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: Git operation granularity (per-command vs aggregated)
+   - **PAUSE FOR MANUAL APPROVAL**: File content handling in traces (exclude sensitive data)
+   - **PAUSE FOR MANUAL APPROVAL**: Performance impact on large repositories
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Add tracing decorators to context_collection.py functions
+   - Instrument Git operations with command-level tracing
+   - Add file scanning performance metrics
+   - Trace context flow from Git → structured data
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places
+   - Double check all subtask requirements are met
+   - **MARK COMPLETE**
+
+---
+
+## Subtask 4.10: Instrument Configuration Management (Task 6)
+**Objective**: Add telemetry to existing config loading and validation for system initialization observability
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_config_telemetry.py`
+   - Test configuration loading time tracking
+   - Test validation success/failure metrics
+   - Test configuration change detection
+   - Test environment variable resolution tracing
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: Configuration value privacy (mask sensitive values in traces)
+   - **PAUSE FOR MANUAL APPROVAL**: Validation error detail level in spans
+   - **PAUSE FOR MANUAL APPROVAL**: Configuration reload event tracking
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Add tracing decorators to config.py functions
+   - Instrument config loading with duration metrics
+   - Add validation error tracking with context
+   - Trace configuration → MCP server startup flow
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places
+   - Double check all subtask requirements are met
+   - **MARK COMPLETE**
+
+---
+
+## Subtask 4.11: Instrument Integration Tests for Telemetry Validation (Task 8)
+**Objective**: Add telemetry awareness to existing integration tests for end-to-end observability validation
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/integration/test_telemetry_in_integration.py`
+   - Test integration tests generate expected spans
+   - Test trace continuity across MCP tool chains
+   - Test metrics collection during integration scenarios
+   - Test telemetry doesn't break existing integration tests
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: Integration test telemetry scope (full vs minimal)
+   - **PAUSE FOR MANUAL APPROVAL**: Test environment telemetry configuration
+   - **PAUSE FOR MANUAL APPROVAL**: Telemetry assertion patterns in tests
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Update existing integration tests to validate telemetry
+   - Add telemetry configuration for test environments
+   - Create telemetry assertion helpers for integration tests
+   - Ensure AI → MCP → tool chain observability works end-to-end
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places
+   - Double check all subtask requirements are met
+   - **MARK COMPLETE** 
