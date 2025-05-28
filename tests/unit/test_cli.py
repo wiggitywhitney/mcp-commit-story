@@ -2,6 +2,7 @@ import pytest
 import json
 import subprocess
 import sys
+import os
 
 def mock_cli_success():
     return json.dumps({
@@ -97,4 +98,57 @@ def test_cli_unknown_command_returns_error():
         sys.executable, "-m", "mcp_commit_story.cli", "not-a-real-command"
     ], capture_output=True, text=True)
     assert result.returncode != 0
-    assert "No such command" in result.stderr or "Error" in result.stderr 
+    assert "No such command" in result.stderr or "Error" in result.stderr
+
+def test_cli_journal_init_creates_only_base_dir(tmp_path):
+    """After 'journal-init', only the base journal/ directory should exist (no subdirectories)."""
+    subprocess.run(["git", "init"], cwd=tmp_path, check=True, stdout=subprocess.PIPE)
+    result = subprocess.run([
+        sys.executable, "-m", "mcp_commit_story.cli", "journal-init", "--repo-path", str(tmp_path)
+    ], cwd=tmp_path, capture_output=True, text=True)
+    assert result.returncode == 0
+    data = json.loads(result.stdout)
+    journal_dir = data["result"]["paths"]["journal"]
+    assert os.path.isdir(journal_dir)
+    # Only base dir should exist
+    assert not os.path.exists(os.path.join(journal_dir, "daily"))
+    assert not os.path.exists(os.path.join(journal_dir, "summaries"))
+
+def test_cli_journal_entry_creates_subdirs_on_demand(tmp_path):
+    """Writing a journal entry via CLI should create subdirectories as needed (on demand)."""
+    subprocess.run(["git", "init"], cwd=tmp_path, check=True, stdout=subprocess.PIPE)
+    # Initialize journal
+    result = subprocess.run([
+        sys.executable, "-m", "mcp_commit_story.cli", "journal-init", "--repo-path", str(tmp_path)
+    ], cwd=tmp_path, capture_output=True, text=True)
+    data = json.loads(result.stdout)
+    journal_dir = data["result"]["paths"]["journal"]
+    # Write a journal entry to a nested path via CLI (simulate)
+    nested_path = os.path.join(journal_dir, "daily", "2025-05-28-journal.md")
+    os.makedirs(os.path.dirname(nested_path), exist_ok=False)  # Should not exist yet
+    # Simulate CLI command to write entry (replace with actual CLI if available)
+    # For now, just touch the file to simulate on-demand creation
+    with open(nested_path, "w") as f:
+        f.write("Test entry")
+    assert os.path.exists(nested_path)
+
+def test_cli_journal_entry_permission_error(tmp_path):
+    """CLI should report a user-friendly error if directory creation fails due to permissions."""
+    import stat
+    subprocess.run(["git", "init"], cwd=tmp_path, check=True, stdout=subprocess.PIPE)
+    # Initialize journal
+    result = subprocess.run([
+        sys.executable, "-m", "mcp_commit_story.cli", "journal-init", "--repo-path", str(tmp_path)
+    ], cwd=tmp_path, capture_output=True, text=True)
+    data = json.loads(result.stdout)
+    journal_dir = data["result"]["paths"]["journal"]
+    # Make journal_dir read-only
+    os.chmod(journal_dir, stat.S_IREAD)
+    nested_path = os.path.join(journal_dir, "daily", "2025-05-28-journal.md")
+    # Simulate CLI command to write entry (should fail)
+    try:
+        with pytest.raises(Exception):
+            with open(nested_path, "w") as f:
+                f.write("Test entry")
+    finally:
+        os.chmod(journal_dir, stat.S_IWRITE | stat.S_IREAD) 

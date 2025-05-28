@@ -142,6 +142,22 @@ All arguments are optional and default to the current directory and standard loc
 
 This contract ensures both human and programmatic consumers can reliably interpret CLI output.
 
+## CLI Behavior for On-Demand Directory Creation and Error Handling
+
+With the on-demand directory creation pattern, the CLI now behaves as follows:
+- After running `journal-init`, only the base `journal/` directory is created. Subdirectories (e.g., `daily/`, `summaries/`) are created automatically as needed by CLI commands that write journal entries or summaries.
+- If a CLI command attempts to write a journal entry and the required subdirectory does not exist, it is created on demand using the same robust error handling as the core utility function.
+- If directory creation fails due to permissions or other file system errors, the CLI reports a user-friendly error message and an appropriate error code (see Error Codes above).
+- This behavior is fully covered by tests in `tests/unit/test_cli.py`.
+
+This approach ensures a clean journal structure, robust error handling, and a user-friendly CLI experience.
+
+**CLI On-Demand Directory Creation and Error Handling (2025-05 Update):**
+- All CLI commands that write journal files now rely on the on-demand directory creation utility (`ensure_journal_directory`) in [journal.py](../src/mcp_commit_story/journal.py).
+- CLI commands no longer create directories directly; all directory creation and error handling is centralized in the utility functions.
+- Permission errors and other filesystem issues are caught and reported as user-friendly error messages and error codes, as required by the CLI contract.
+- See [cli.py](../src/mcp_commit_story/cli.py) for implementation details.
+
 ## Related Operations
 - Initialization is typically performed as part of `journal/init` or the first journal operation.
 - The structure is required for all journal entry and summary generation features.

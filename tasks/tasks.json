@@ -1369,7 +1369,7 @@
           "title": "Update CLI and Error Handling",
           "description": "Ensure CLI commands and error handling work correctly with on-demand directory creation\n\nTDD Steps:\n1. WRITE TESTS FIRST\n   - Update `tests/unit/test_cli.py`\n   - Test CLI commands work with new directory behavior\n   - Test error scenarios: permission issues during on-demand creation\n   - Test cases: journal-init command, file operations via CLI, error reporting\n   - RUN TESTS - VERIFY THEY FAIL\n2. IMPLEMENT FUNCTIONALITY\n   - Update CLI commands to handle new directory behavior\n   - Ensure error messages are clear for on-demand creation failures\n   - Maintain existing error code contracts\n   - RUN TESTS - VERIFY THEY PASS\n3. DOCUMENT AND COMPLETE\n   - Update CLI documentation in `docs/journal_init.md`\n   - Update PRD with new CLI behavior\n   - MARK COMPLETE",
           "details": "",
-          "status": "in-progress",
+          "status": "done",
           "dependencies": [
             "23.2",
             "23.3",

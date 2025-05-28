@@ -1005,3 +1005,9 @@ These commands are fully integrated with the MCP workflow and are covered by int
 
 **Integration Testing for On-Demand Directory Creation:**
 Integration tests now ensure that only the base `journal/` directory is created during initialization, and subdirectories are created on-demand by file operations. See `tests/integration/test_journal_init_integration.py` for updated test cases covering clean init, file creation, and mixed scenarios.
+
+**CLI On-Demand Directory Creation and Error Handling (2025-05 Update):**
+- All CLI commands that write journal files now rely on the on-demand directory creation utility (`ensure_journal_directory`) in [journal.py](src/mcp_commit_story/journal.py).
+- CLI commands no longer create directories directly; all directory creation and error handling is centralized in the utility functions.
+- Permission errors and other filesystem issues are caught and reported as user-friendly error messages and error codes, as required by the CLI contract.
+- See [cli.py](src/mcp_commit_story/cli.py) for implementation details.

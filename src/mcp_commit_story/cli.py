@@ -2,6 +2,9 @@ import sys
 import json
 import click
 from pathlib import Path
+import datetime
+import getpass
+from mcp_commit_story.journal import JournalEntry, append_to_journal_file, ensure_journal_directory
 from mcp_commit_story.journal_init import initialize_journal
 from mcp_commit_story.git_utils import install_post_commit_hook
 
@@ -132,19 +135,12 @@ def new_entry(repo_path, summary):
     Create a new journal entry in the MCP Journal system.
     Returns JSON output matching the approved CLI contract.
     """
-    import datetime
-    import getpass
-    from mcp_commit_story.journal import JournalEntry, append_to_journal_file
-
     try:
-        # Determine repo path
         repo_path = Path(repo_path) if repo_path else Path.cwd()
+        # Remove direct directory creation; rely on append_to_journal_file for on-demand creation
         journal_dir = repo_path / "journal" / "daily"
-        journal_dir.mkdir(parents=True, exist_ok=True)
-        # Journal file for today
         today = datetime.date.today().strftime("%Y-%m-%d")
         journal_file = journal_dir / f"{today}-journal.md"
-        # Create journal entry
         now = datetime.datetime.now().isoformat(timespec="seconds")
         commit_hash = "manual"  # Could be improved to get HEAD commit
         author = getpass.getuser()
@@ -167,6 +163,24 @@ def new_entry(repo_path, summary):
             "message": f"Journal entry added to {journal_file}"
         }
         cli_output(result)
+    except PermissionError as e:
+        output = {
+            "status": "error",
+            "message": f"Permission denied while creating journal directory or file: {e}",
+            "code": ERROR_CODES["filesystem"],
+            "details": "PermissionError in new-entry CLI: {}".format(repr(e))
+        }
+        print(json.dumps(output, indent=2))
+        sys.exit(ERROR_CODES["filesystem"])
+    except OSError as e:
+        output = {
+            "status": "error",
+            "message": f"File system error while creating journal entry: {e}",
+            "code": ERROR_CODES["filesystem"],
+            "details": "OSError in new-entry CLI: {}".format(repr(e))
+        }
+        print(json.dumps(output, indent=2))
+        sys.exit(ERROR_CODES["filesystem"])
     except Exception as e:
         output = {
             "status": "error",
@@ -185,23 +199,42 @@ def add_reflection(repo_path, reflection):
     Add a reflection to today's journal entry in the MCP Journal system.
     Returns JSON output matching the approved CLI contract.
     """
-    import datetime
     try:
         repo_path = Path(repo_path) if repo_path else Path.cwd()
         journal_dir = repo_path / "journal" / "daily"
         today = datetime.date.today().strftime("%Y-%m-%d")
         journal_file = journal_dir / f"{today}-journal.md"
+        # Ensure parent directory exists using on-demand utility
+        ensure_journal_directory(journal_file)
         if not journal_file.exists():
             raise FileNotFoundError(f"Journal file {journal_file} does not exist. Please create an entry first.")
-        # Append the reflection as a new section
-        with open(journal_file, "a", encoding="utf-8") as f:
-            f.write("\n#### Reflection\n\n" + reflection + "\n")
+        # Use append_to_journal_file for consistency
+        reflection_entry = "\n#### Reflection\n\n" + reflection + "\n"
+        append_to_journal_file(reflection_entry, journal_file)
         result = {
             "status": "success",
             "paths": {"journal_file": str(journal_file)},
             "message": f"Reflection added to {journal_file}"
         }
         cli_output(result)
+    except PermissionError as e:
+        output = {
+            "status": "error",
+            "message": f"Permission denied while creating journal directory or file: {e}",
+            "code": ERROR_CODES["filesystem"],
+            "details": "PermissionError in add-reflection CLI: {}".format(repr(e))
+        }
+        print(json.dumps(output, indent=2))
+        sys.exit(ERROR_CODES["filesystem"])
+    except OSError as e:
+        output = {
+            "status": "error",
+            "message": f"File system error while adding reflection: {e}",
+            "code": ERROR_CODES["filesystem"],
+            "details": "OSError in add-reflection CLI: {}".format(repr(e))
+        }
+        print(json.dumps(output, indent=2))
+        sys.exit(ERROR_CODES["filesystem"])
     except Exception as e:
         output = {
             "status": "error",
