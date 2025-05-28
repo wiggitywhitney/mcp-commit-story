@@ -914,3 +914,15 @@ def generate_commit_metadata_section(journal_context: JournalContext) -> CommitM
     - [ ] Verified all metadata is grounded in actual git context data
     """
     return CommitMetadataSection(commit_metadata={})
+
+def ensure_journal_directory(file_path):
+    """
+    Ensure the parent directory for the given file_path exists.
+    Creates all missing parent directories as needed (on-demand pattern).
+    Raises PermissionError if directory creation fails due to permissions.
+    Does nothing if the directory already exists.
+    Args:
+        file_path (Path or str): The file path whose parent directory should be ensured.
+    """
+    parent_dir = Path(file_path).parent
+    parent_dir.mkdir(parents=True, exist_ok=True)

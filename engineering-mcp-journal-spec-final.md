@@ -220,6 +220,22 @@ journal:
 
 - The Technical Synopsis section provides a code-focused analysis of what changed in the commit. It should include architectural patterns, specific classes/functions modified, technical approach taken, and any other relevant technical details. This section is self-contained and generated from the JournalContext.
 
+### On-Demand Directory Creation Utility
+
+The MCP Journal system uses an on-demand directory creation pattern via the `ensure_journal_directory(file_path)` utility function (see [src/mcp_commit_story/journal.py](src/mcp_commit_story/journal.py)).
+
+- **Purpose:** Create parent directories for journal files only when needed, rather than all at once during initialization.
+- **Usage:** All file operations that write to the journal call this utility before writing, ensuring the required directory structure exists.
+- **Behavior:**
+  - Creates all missing parent directories for the given file path.
+  - Does nothing if the directory already exists.
+  - Raises `PermissionError` if directory creation fails due to permissions.
+- **Benefits:**
+  - Keeps the journal directory structure clean and avoids empty folders.
+  - Ensures robust error handling and is fully covered by unit tests.
+
+This approach replaces the previous pattern of up-front directory creation and is now the standard for all journal file operations.
+
 ---
 
 ## Journal Entry Behavior

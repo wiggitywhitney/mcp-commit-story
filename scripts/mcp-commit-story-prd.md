@@ -170,6 +170,9 @@ journal:
 - If `base_path` exists and is not a directory, a `NotADirectoryError` is raised.
 - Permission errors or invalid paths raise appropriate exceptions.
 
+**On-Demand Directory Creation:**
+With the introduction of the `ensure_journal_directory(file_path)` utility (see [src/mcp_commit_story/journal.py](../src/mcp_commit_story/journal.py)), all journal file operations now create parent directories on-demand, just before writing. This avoids creating empty directories up front and ensures the structure grows naturally as needed. All file operations that write to the journal call this utility to guarantee directories exist, maintaining robust error handling and test coverage.
+
 See [docs/journal_init.md](../docs/journal_init.md) for full details and rationale.
 
 ### Config File Creation & Backup (Engineering Spec)

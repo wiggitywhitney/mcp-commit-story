@@ -30,6 +30,20 @@ journal/
 - If `base_path` exists and is not a directory, a `NotADirectoryError` is raised.
 - Permission errors or invalid paths raise appropriate exceptions.
 
+## On-Demand Directory Creation Utility
+
+With the refactor to on-demand directory creation, the MCP Journal system now uses a utility function `ensure_journal_directory(file_path)` to create parent directories only when needed. This function is called by all file operations that write to the journal, ensuring that directories are created just-in-time rather than all at once during initialization.
+
+- **Function:** `ensure_journal_directory(file_path)`
+- **Location:** [src/mcp_commit_story/journal.py](../src/mcp_commit_story/journal.py)
+- **Behavior:**
+  - Creates all missing parent directories for the given file path.
+  - Does nothing if the directory already exists.
+  - Raises `PermissionError` if directory creation fails due to permissions.
+  - Used by all journal file write operations to ensure directories exist before writing.
+
+This approach keeps the journal directory structure clean and avoids creating empty folders that may never be used. It also maintains robust error handling and is fully covered by unit tests.
+
 ## Configuration File Generation
 
 The function `generate_default_config(config_path, journal_path)` creates a new configuration file for the MCP Journal system at the specified path, customizing the journal directory location. If a config file already exists (even if malformed), it is backed up with a unique `.bak` timestamped suffix before writing the new config.

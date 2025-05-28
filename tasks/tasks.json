@@ -1337,7 +1337,7 @@
           "title": "Create Helper Function for On-Demand Directory Creation",
           "description": "Create reusable utility function for ensuring journal directories exist when needed\n\nTDD Steps:\n1. WRITE TESTS FIRST\n   - Create `tests/unit/test_journal_utils.py`\n   - Test `ensure_journal_directory(file_path)` function\n   - Test cases: creates missing directories, handles existing directories, permission errors, nested paths\n   - RUN TESTS - VERIFY THEY FAIL\n2. IMPLEMENT FUNCTIONALITY\n   - Implement `ensure_journal_directory()` in `src/mcp_commit_story/journal.py`\n   - Use pattern: `file_path.parent.mkdir(parents=True, exist_ok=True)`\n   - Handle all error cases identified in tests\n   - RUN TESTS - VERIFY THEY PASS\n3. DOCUMENT AND COMPLETE\n   - Add documentation to function docstring\n   - Update engineering spec with new utility function\n   - MARK COMPLETE",
           "details": "",
-          "status": "pending",
+          "status": "done",
           "dependencies": [],
           "parentTaskId": 23
         },
