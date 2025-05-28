@@ -1,6 +1,6 @@
 # Task ID: 25
 # Title: Eliminate General CLI - Focus on MCP Server + AI Agent Workflow
-# Status: pending
+# Status: done
 # Dependencies: None
 # Priority: high
 # Description: Remove general-purpose CLI commands and focus on MCP server + AI agent workflow, keeping only essential setup commands.
