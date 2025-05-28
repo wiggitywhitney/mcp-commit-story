@@ -54,8 +54,8 @@ The MCP server must be launchable as a standalone process and expose the require
   - The MCP server configuration (how it is launched and discovered) is separate from the journal system's own configuration, which is managed via `.mcp-commit-storyrc.yaml` as described elsewhere in this specification.
 
 ## Key Features
-- MCP server with tools for journal operations (new-entry, summarize, blogify, etc.)
-- CLI interface for all operations
+- MCP server with tools for journal operations (new-entry, add-reflection, init, install-hook)
+- Setup-only CLI interface for initialization and hook installation
 - Journal entries per Git commit, written to daily Markdown files
 - Chat and terminal history collection for context
 - Configurable via .mcp-commit-storyrc.yaml (local and global precedence)
@@ -630,24 +630,41 @@ The Summary section should focus on these unique aspects rather than restating r
 
 ---
 
-## CLI Interface
+## CLI Interface (Setup Only)
 
-### Command Structure
+### Architectural Change
+
+As of Task 25, MCP Commit Story follows an **MCP-first architecture** with a minimal setup-only CLI. Operational commands have been moved to the MCP server for AI-agent integration.
+
+### Setup CLI Commands
+
+Entry Point: `mcp-commit-story-setup`
+
 ```bash
-mcp-commit-story [operation] [options]
+mcp-commit-story-setup [command] [options]
 ```
 
-### Supported Commands
-- `mcp-commit-story init` - Initialize journal in current repository
-- `mcp-commit-story new-entry [--debug]` - Create journal entry for current commit (with AI command collection)
-- `mcp-commit-story add-reflection "text"` - Add manual reflection to today's journal
-- `mcp-commit-story summarize --week [--debug]` - Generate summary for most recent week
-- `mcp-commit-story summarize --month [--debug]` - Generate summary for most recent month
-- `mcp-commit-story summarize --week 2025-01-13` - Week containing specific date
-- `mcp-commit-story summarize --range "2025-01-01:2025-01-31"` - Arbitrary range
-- `mcp-commit-story blogify <file1> [file2] ...` - Convert to blog post
-- `mcp-commit-story install-hook` - Install git post-commit hook
-- `mcp-commit-story backfill [--debug]` - Manually trigger missed commit check
+### Supported Setup Commands
+- `mcp-commit-story-setup journal-init` - Initialize journal in current repository
+- `mcp-commit-story-setup install-hook` - Install git post-commit hook
+
+### MCP Operations (AI/Agent Interface)
+Operational functionality is available via MCP server:
+- `journal/new-entry` - Create journal entry for commit (with AI command collection)
+- `journal/add-reflection` - Add manual reflection to journal
+- `journal/init` - Programmatic journal initialization  
+- `journal/install-hook` - Programmatic hook installation
+
+### Usage Pattern
+```bash
+# One-time setup (human)
+mcp-commit-story-setup journal-init
+mcp-commit-story-setup install-hook
+
+# Ongoing operations (AI/automated via MCP)
+# AI agents call: journal/new-entry, journal/add-reflection
+# Git hook automatically triggers: journal/new-entry
+```
 
 ### Global Options
 - `--config <path>` - Override config file location

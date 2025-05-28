@@ -151,4 +151,29 @@ def test_cli_journal_entry_permission_error(tmp_path):
             with open(nested_path, "w") as f:
                 f.write("Test entry")
     finally:
-        os.chmod(journal_dir, stat.S_IWRITE | stat.S_IREAD) 
+        os.chmod(journal_dir, stat.S_IWRITE | stat.S_IREAD)
+
+# Remove or skip all tests for operational CLI commands (new-entry, add-reflection, summarize, etc)
+# Keep only tests for setup commands (journal-init, install-hook)
+# Add a test that asserts the CLI help output does NOT mention new-entry or add-reflection, and DOES mention only setup commands
+
+def test_cli_is_setup_only():
+    """CLI should only contain setup commands, not operational commands."""
+    result = subprocess.run([
+        sys.executable, "-m", "mcp_commit_story.cli", "--help"
+    ], capture_output=True, text=True)
+    assert result.returncode == 0
+    
+    # Should contain setup commands
+    assert "journal-init" in result.stdout
+    assert "install-hook" in result.stdout
+    
+    # Should NOT contain operational commands (these are now MCP operations)
+    assert "new-entry" not in result.stdout
+    assert "add-reflection" not in result.stdout
+    assert "summarize" not in result.stdout
+    assert "blogify" not in result.stdout
+    assert "backfill" not in result.stdout
+    
+    # Should mention MCP in help text
+    assert "MCP" in result.stdout or "setup" in result.stdout.lower() 

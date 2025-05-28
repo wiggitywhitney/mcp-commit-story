@@ -3,9 +3,9 @@
 # Status: pending
 # Dependencies: 5, 6
 # Priority: high
-# Description: Create the functionality to add manual reflections to journal entries, ensuring they are prioritized in summaries.
+# Description: Create the functionality to add manual reflections to journal entries through the MCP server and AI agent, ensuring they are prioritized in summaries.
 # Details:
-Implement manual reflection addition in both the MCP server and CLI with the following features:
+Implement manual reflection addition in the MCP server with the following features:
 
 1. Reflection formatting:
 ```python
@@ -62,25 +62,7 @@ async def handle_add_reflection(request):
     }
 ```
 
-4. CLI command implementation:
-```python
-@cli.command()
-@click.argument("text")
-def add_reflection(text):
-    """Add manual reflection to today's journal"""
-    try:
-        # Load config
-        config = load_config()
-        
-        # Add reflection
-        file_path = add_reflection_to_journal(text, config)
-        
-        click.echo(f"Reflection added to {file_path}")
-    except Exception as e:
-        click.echo(f"Error: {e}")
-```
-
-5. Ensure journal directory utility:
+4. Ensure journal directory utility:
 ```python
 def ensure_journal_directory(file_path):
     """Ensure directories exist for the given file path, creating them on-demand if needed"""
@@ -93,22 +75,28 @@ def ensure_journal_directory(file_path):
 - All file-writing functions (including add_reflection_to_journal) must call ensure_journal_directory(file_path) before writing
 - No code should create directories upfront
 - Implementation must follow the on-demand directory creation pattern as documented in docs/on-demand-directory-pattern.md
+- Reflection addition is available as an MCP operation only, not a CLI command
+- Manual reflection addition is handled exclusively by the MCP server and AI agent
+- CLI functionality is limited to setup commands (journal-init, install-hook) as per updated documentation
 
 # Test Strategy:
 1. Unit tests for reflection formatting
 2. Tests for file appending
 3. Tests for MCP handler implementation
-4. Tests for CLI command implementation
-5. Tests for creating new journal file if needed
-6. Tests for appending to existing journal file
-7. Integration tests for full reflection addition flow
-8. Tests for ensure_journal_directory utility
-9. Tests for on-demand directory creation when directories don't exist
-10. Tests to verify proper directory structure is created
-11. Tests to verify compliance with on-demand directory creation pattern
-12. Tests to ensure no directories are created until file operations are performed
-13. Tests to verify ensure_journal_directory is called before any file writing operations
-14. Tests following patterns documented in docs/on-demand-directory-pattern.md
+4. Tests for creating new journal file if needed
+5. Tests for appending to existing journal file
+6. Integration tests for full reflection addition flow
+7. Tests for ensure_journal_directory utility
+8. Tests for on-demand directory creation when directories don't exist
+9. Tests to verify proper directory structure is created
+10. Tests to verify compliance with on-demand directory creation pattern
+11. Tests to ensure no directories are created until file operations are performed
+12. Tests to verify ensure_journal_directory is called before any file writing operations
+13. Tests following patterns documented in docs/on-demand-directory-pattern.md
+14. Tests to verify reflection addition is properly exposed as an MCP operation
+15. Tests to verify AI agent can successfully add reflections via the MCP operation
+16. Tests to verify no CLI commands exist for operational functions like adding reflections
+17. Tests to verify CLI is limited to setup commands (journal-init, install-hook) as specified
 
 # Subtasks:
 ## 10.1. Create ensure_journal_directory utility function [pending]
@@ -150,6 +138,36 @@ def ensure_journal_directory(file_path):
 ## 10.7. Review and update all file operations [pending]
 ### Dependencies: None
 ### Description: Review all file operations in the codebase to ensure they call ensure_journal_directory before writing and don't create directories upfront.
+### Details:
+
+
+## 10.8. Verify no CLI implementation for reflection addition [pending]
+### Dependencies: None
+### Description: Verify that no CLI command implementation exists for adding reflections, as this functionality will only be available through the MCP server.
+### Details:
+
+
+## 10.9. Add tests for AI agent reflection addition [pending]
+### Dependencies: None
+### Description: Create tests to verify that the AI agent can successfully add reflections through the MCP operation.
+### Details:
+
+
+## 10.10. Update documentation to reflect MCP-only implementation [pending]
+### Dependencies: None
+### Description: Update relevant documentation (including README.md) to clarify that manual reflection addition is handled by the MCP server and AI agent, not through CLI commands, in accordance with the updated engineering spec.
+### Details:
+
+
+## 10.11. Verify CLI is limited to setup commands only [pending]
+### Dependencies: None
+### Description: Review the CLI implementation to ensure it only includes setup commands (journal-init, install-hook) and no operational commands like add-reflection.
+### Details:
+
+
+## 10.12. Add tests to verify CLI command limitations [pending]
+### Dependencies: None
+### Description: Create tests to verify that the CLI only provides setup commands and does not include any operational commands for journal manipulation.
 ### Details:
 
 

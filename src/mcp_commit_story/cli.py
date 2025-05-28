@@ -49,9 +49,20 @@ def cli_output(result):
         print(json.dumps(output, indent=2))
         sys.exit(code)
 
-@click.group()
+@click.group(name='mcp-commit-story-setup')
+@click.version_option()
 def cli():
-    """MCP Commit Story CLI"""
+    """MCP Commit Story - Setup Commands Only
+    
+    Initialize and configure your automated engineering journal.
+    
+    This CLI provides setup commands only. Operational functionality 
+    is available via the MCP server for AI agents and integrated tools.
+    
+    Setup Commands:
+    - journal-init: Initialize journal configuration and directory structure
+    - install-hook: Install git post-commit hook for automated journal entries
+    """
     pass
 
 @cli.command('journal-init')
@@ -126,124 +137,6 @@ def install_hook(repo_path):
     }
     print(json.dumps(result, indent=2))
     return 0
-
-@cli.command('new-entry')
-@click.option('--repo-path', type=click.Path(), default=None, help='Path to git repository (default: current directory)')
-@click.option('--summary', type=str, required=True, help='Summary for the new journal entry')
-def new_entry(repo_path, summary):
-    """
-    Create a new journal entry in the MCP Journal system.
-    Returns JSON output matching the approved CLI contract.
-    """
-    try:
-        repo_path = Path(repo_path) if repo_path else Path.cwd()
-        # Remove direct directory creation; rely on append_to_journal_file for on-demand creation
-        journal_dir = repo_path / "journal" / "daily"
-        today = datetime.date.today().strftime("%Y-%m-%d")
-        journal_file = journal_dir / f"{today}-journal.md"
-        now = datetime.datetime.now().isoformat(timespec="seconds")
-        commit_hash = "manual"  # Could be improved to get HEAD commit
-        author = getpass.getuser()
-        entry = JournalEntry(
-            timestamp=now,
-            commit_hash=commit_hash,
-            summary=summary,
-            technical_synopsis=None,
-            accomplishments=None,
-            frustrations=None,
-            terminal_commands=None,
-            discussion_notes=None,
-            tone_mood=None,
-            commit_metadata={"author": author, "date": now}
-        )
-        append_to_journal_file(entry.to_markdown(), journal_file)
-        result = {
-            "status": "success",
-            "paths": {"journal_file": str(journal_file)},
-            "message": f"Journal entry added to {journal_file}"
-        }
-        cli_output(result)
-    except PermissionError as e:
-        output = {
-            "status": "error",
-            "message": f"Permission denied while creating journal directory or file: {e}",
-            "code": ERROR_CODES["filesystem"],
-            "details": "PermissionError in new-entry CLI: {}".format(repr(e))
-        }
-        print(json.dumps(output, indent=2))
-        sys.exit(ERROR_CODES["filesystem"])
-    except OSError as e:
-        output = {
-            "status": "error",
-            "message": f"File system error while creating journal entry: {e}",
-            "code": ERROR_CODES["filesystem"],
-            "details": "OSError in new-entry CLI: {}".format(repr(e))
-        }
-        print(json.dumps(output, indent=2))
-        sys.exit(ERROR_CODES["filesystem"])
-    except Exception as e:
-        output = {
-            "status": "error",
-            "message": str(e),
-            "code": ERROR_CODES["general"],
-            "details": "Exception in new-entry CLI: {}".format(repr(e))
-        }
-        print(json.dumps(output, indent=2))
-        sys.exit(ERROR_CODES["general"])
-
-@cli.command('add-reflection')
-@click.option('--repo-path', type=click.Path(), default=None, help='Path to git repository (default: current directory)')
-@click.option('--reflection', type=str, required=True, help='Reflection text to add to today\'s journal entry')
-def add_reflection(repo_path, reflection):
-    """
-    Add a reflection to today's journal entry in the MCP Journal system.
-    Returns JSON output matching the approved CLI contract.
-    """
-    try:
-        repo_path = Path(repo_path) if repo_path else Path.cwd()
-        journal_dir = repo_path / "journal" / "daily"
-        today = datetime.date.today().strftime("%Y-%m-%d")
-        journal_file = journal_dir / f"{today}-journal.md"
-        # Ensure parent directory exists using on-demand utility
-        ensure_journal_directory(journal_file)
-        if not journal_file.exists():
-            raise FileNotFoundError(f"Journal file {journal_file} does not exist. Please create an entry first.")
-        # Use append_to_journal_file for consistency
-        reflection_entry = "\n#### Reflection\n\n" + reflection + "\n"
-        append_to_journal_file(reflection_entry, journal_file)
-        result = {
-            "status": "success",
-            "paths": {"journal_file": str(journal_file)},
-            "message": f"Reflection added to {journal_file}"
-        }
-        cli_output(result)
-    except PermissionError as e:
-        output = {
-            "status": "error",
-            "message": f"Permission denied while creating journal directory or file: {e}",
-            "code": ERROR_CODES["filesystem"],
-            "details": "PermissionError in add-reflection CLI: {}".format(repr(e))
-        }
-        print(json.dumps(output, indent=2))
-        sys.exit(ERROR_CODES["filesystem"])
-    except OSError as e:
-        output = {
-            "status": "error",
-            "message": f"File system error while adding reflection: {e}",
-            "code": ERROR_CODES["filesystem"],
-            "details": "OSError in add-reflection CLI: {}".format(repr(e))
-        }
-        print(json.dumps(output, indent=2))
-        sys.exit(ERROR_CODES["filesystem"])
-    except Exception as e:
-        output = {
-            "status": "error",
-            "message": str(e),
-            "code": ERROR_CODES["general"],
-            "details": "Exception in add-reflection CLI: {}".format(repr(e))
-        }
-        print(json.dumps(output, indent=2))
-        sys.exit(ERROR_CODES["general"])
 
 if __name__ == "__main__":
     cli()

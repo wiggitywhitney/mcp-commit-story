@@ -144,3 +144,21 @@ MIT
 ---
 
 **MCP Commit Story: Because your engineering work is more than just code.**
+
+## Setup (CLI)
+
+- `mcp-commit-story-setup journal-init` — Initialize the journal in your repo
+- `mcp-commit-story-setup install-hook` — Install the post-commit hook
+
+## Operational Workflow
+
+All journal entry creation, reflection addition, and summarization are handled automatically by the MCP server and AI agent. There are no operational CLI commands for these tasks.
+
+- Use the MCP server for all journal operations
+- The AI agent is the primary interface for adding reflections, generating summaries, and managing journal entries
+
+## Architecture Rationale
+
+- Core functionality requires AI analysis and automation
+- Simpler product, fewer interfaces to maintain
+- Clear value proposition: "automatic engineering journal with AI analysis"

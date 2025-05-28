@@ -19,6 +19,7 @@ import toml
 from mcp_commit_story.journal_init import initialize_journal
 import inspect
 from mcp_commit_story.git_utils import install_post_commit_hook
+from mcp_commit_story.journal import append_to_journal_file
 
 # Type alias for an async tool handler
 ToolHandler = Callable[..., Awaitable[Any]]
@@ -104,12 +105,27 @@ def get_version_from_pyproject(pyproject_path: str = "pyproject.toml") -> str:
 def register_tools(server: FastMCP) -> None:
     """
     Register all journal tools with the MCP server.
-    This is a stub; actual tool registration should be implemented in other modules.
     """
-    # Example:
-    # @server.tool()
-    # async def journal_new_entry(...): ...
-    pass
+    
+    @server.tool()
+    async def journal_new_entry(request: JournalNewEntryRequest) -> JournalNewEntryResponse:
+        """Create a new journal entry with AI-generated content from git, chat, and terminal context."""
+        return await handle_journal_new_entry(request)
+    
+    @server.tool()
+    async def journal_add_reflection(request: AddReflectionRequest) -> AddReflectionResponse:
+        """Add a manual reflection to the journal for a specific date."""
+        return await handle_journal_add_reflection(request)
+    
+    @server.tool()
+    async def journal_init(request: dict) -> dict:
+        """Initialize journal configuration and directory structure."""
+        return await handle_journal_init(request)
+    
+    @server.tool()
+    async def journal_install_hook(request: dict) -> dict:
+        """Install git post-commit hook for automated journal entries."""
+        return await handle_journal_install_hook(request)
 
 def create_mcp_server(config_path: str = None) -> FastMCP:
     """
@@ -170,17 +186,26 @@ async def add_reflection_to_journal(request: AddReflectionRequest) -> AddReflect
     return {"status": "success", "file_path": "journal/daily/2025-05-26-journal.md", "error": None}
 
 @handle_mcp_error
-async def handle_journal_add_reflection(request: AddReflectionRequest) -> AddReflectionResponse:
+async def handle_journal_add_reflection(request):
     """
-    Handle the MCP operation 'journal/add-reflection'.
-    Expects a request with 'reflection' (str) and 'date' (ISO string).
-    Returns a response with status and file_path, or error if failed.
+    MCP operation: Add a manual reflection to the journal for a given date.
+    Args:
+        request (dict): Must contain 'text' (or 'reflection') and 'date' (YYYY-MM-DD)
+    Returns:
+        dict: {"status": "success", "file_path": ...} or error dict
     """
-    if "reflection" not in request:
-        return {"status": "error", "file_path": "", "error": "Missing required field: reflection"}
-    if "date" not in request:
-        return {"status": "error", "file_path": "", "error": "Missing required field: date"}
-    return await add_reflection_to_journal(request)
+    text = request.get("text") or request.get("reflection")
+    date = request.get("date")
+    if not text:
+        return {"status": "error", "error": "Missing required field: reflection/text"}
+    if not date:
+        return {"status": "error", "error": "Missing required field: date"}
+    # Determine file path (assume journal/daily/YYYY-MM-DD-journal.md)
+    journal_dir = "journal/daily"
+    os.makedirs(journal_dir, exist_ok=True)
+    file_path = os.path.join(journal_dir, f"{date}-journal.md")
+    append_to_journal_file(text + "\n", file_path)
+    return {"status": "success", "file_path": file_path}
 
 @handle_mcp_error
 async def handle_journal_init(request: dict) -> dict:

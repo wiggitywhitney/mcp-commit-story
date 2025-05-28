@@ -5,7 +5,7 @@
 # Priority: medium
 # Description: Create the functionality to generate daily, weekly, monthly, and yearly summaries of journal entries.
 # Details:
-Implement summary generation in both the MCP server and CLI with the following features:
+Implement summary generation in the MCP server with the following features:
 
 1. Date range utilities:
 ```python
@@ -214,59 +214,7 @@ async def handle_summarize(request):
     }
 ```
 
-6. CLI command implementation:
-```python
-@cli.command()
-@click.option("--week", is_flag=True, help="Summarize most recent week")
-@click.option("--month", is_flag=True, help="Summarize most recent month")
-@click.option("--day", "--date", help="Summarize specific day (YYYY-MM-DD)")
-@click.option("--range", help="Summarize date range (YYYY-MM-DD:YYYY-MM-DD)")
-@click.option("--debug", is_flag=True, help="Show debug information")
-def summarize(week, month, date, range, debug):
-    """Generate summary for specified period"""
-    try:
-        # Determine period
-        if week:
-            period = "week"
-        elif month:
-            period = "month"
-        else:
-            period = "day"
-        
-        # Load config
-        config = load_config()
-        
-        # Get date range
-        if range:
-            # Parse range (format: "YYYY-MM-DD:YYYY-MM-DD")
-            start_str, end_str = range.split(":")
-            start_date = datetime.strptime(start_str, "%Y-%m-%d").date()
-            end_date = datetime.strptime(end_str, "%Y-%m-%d").date()
-        else:
-            start_date, end_date = get_date_range(period, date)
-        
-        # Get journal files
-        files = get_journal_files_in_range(start_date, end_date, config)
-        if not files:
-            click.echo("No journal entries found in date range")
-            return
-        
-        # Generate summary
-        content = generate_summary(files, period, config)
-        
-        # Save summary
-        file_path = save_summary(content, period, start_date, config)
-        
-        click.echo(f"Summary saved to {file_path}")
-    except Exception as e:
-        if debug:
-            click.echo(f"Error: {e}")
-            traceback.print_exc()
-        else:
-            click.echo(f"Error: {e}")
-```
-
-7. Directory creation utility:
+6. Directory creation utility:
 ```python
 def ensure_journal_directory(dir_path):
     """Ensure the journal directory exists, creating it if necessary"""
@@ -276,11 +224,13 @@ def ensure_journal_directory(dir_path):
     return dir_path
 ```
 
-8. On-demand directory creation pattern:
+7. On-demand directory creation pattern:
 - All summary file-writing operations must use the on-demand directory creation pattern
 - Directories should only be created when needed, not upfront
 - All summary-writing functions (including save_summary) must call ensure_journal_directory(file_path) before writing
 - See docs/on-demand-directory-pattern.md for implementation details and test patterns
+
+Note: This implementation focuses solely on MCP/AI agent operations for summary generation. CLI functionality is limited to setup commands (journal-init, install-hook) only. Refer to updated documentation for details.
 
 # Test Strategy:
 1. Unit tests for date range utilities
@@ -288,15 +238,14 @@ def ensure_journal_directory(dir_path):
 3. Tests for summary generation
 4. Tests for summary file saving
 5. Tests for MCP handler implementation
-6. Tests for CLI command implementation
-7. Tests for handling different periods (day, week, month, year)
-8. Tests for handling date ranges
-9. Integration tests for full summary generation flow
-10. Tests for entry significance calculation
-11. Tests to verify that substantial work is properly prioritized in summaries
-12. Tests to verify that trivial entries are de-emphasized in summaries
-13. Tests with mixed entry types to ensure proper weighting in the final summary
-14. Tests for on-demand directory creation:
+6. Tests for handling different periods (day, week, month, year)
+7. Tests for handling date ranges
+8. Integration tests for full summary generation flow
+9. Tests for entry significance calculation
+10. Tests to verify that substantial work is properly prioritized in summaries
+11. Tests to verify that trivial entries are de-emphasized in summaries
+12. Tests with mixed entry types to ensure proper weighting in the final summary
+13. Tests for on-demand directory creation:
     - Test that summary directories are created automatically when they don't exist
     - Test that ensure_journal_directory() is called for all summary types (daily, weekly, monthly, yearly)
     - Test that directory creation works with nested paths
@@ -304,6 +253,10 @@ def ensure_journal_directory(dir_path):
     - Test that directories are only created when needed, not upfront
     - Verify that all summary-writing functions call ensure_journal_directory() before writing
     - Follow test patterns described in docs/on-demand-directory-pattern.md
+14. Tests to verify that summarization is available as an MCP operation
+15. Tests to verify that the AI agent can properly interact with the summarization functionality
+16. Verify that summary generation works correctly through the MCP interface only (not CLI)
+17. Test that the AI agent can request summaries for different time periods and date ranges
 
 # Subtasks:
 ## 11.1. Implement entry significance calculation [pending]
@@ -363,6 +316,30 @@ def ensure_journal_directory(dir_path):
 ## 11.10. Review and update all file-writing operations [pending]
 ### Dependencies: None
 ### Description: Review all file-writing operations in the codebase to ensure they follow the on-demand directory creation pattern.
+### Details:
+
+
+## 11.11. Verify MCP operation for summarization [pending]
+### Dependencies: None
+### Description: Ensure that summarization is properly implemented as an MCP operation and accessible to the AI agent.
+### Details:
+
+
+## 11.12. Test AI agent interaction with summarization [pending]
+### Dependencies: None
+### Description: Create tests to verify that the AI agent can properly request and process summary generation through the MCP server.
+### Details:
+
+
+## 11.13. Ensure summary generation is MCP-only [pending]
+### Dependencies: None
+### Description: Verify that summary generation functionality is only available through the MCP interface and not through CLI commands.
+### Details:
+
+
+## 11.14. Update documentation to reflect MCP-only approach [pending]
+### Dependencies: None
+### Description: Update relevant documentation to clarify that summary generation is only available through the MCP/AI agent interface, not through CLI commands.
 ### Details:
 
 

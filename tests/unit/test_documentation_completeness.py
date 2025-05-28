@@ -88,4 +88,18 @@ def test_file_operations_work_without_upfront_directory_creation(tmp_path):
     append_to_journal_file(entry, test_file)
     assert test_file.exists(), "File was not created by on-demand pattern"
     with open(test_file) as f:
-        assert f.read() == entry, "Entry not written correctly by on-demand pattern" 
+        assert f.read() == entry, "Entry not written correctly by on-demand pattern"
+
+
+def test_docs_no_operational_cli_commands():
+    """README.md and engineering spec should not mention operational CLI commands (expected to fail until docs updated)."""
+    for doc_path in ["README.md", "engineering-mcp-journal-spec-final.md"]:
+        if not Path(doc_path).exists():
+            continue
+        with open(doc_path) as f:
+            content = f.read().lower()
+            # Check for CLI command patterns, not MCP operations
+            assert "mcp-commit-story new-entry" not in content, f"{doc_path} still mentions new-entry CLI command"
+            assert "mcp-commit-story add-reflection" not in content, f"{doc_path} still mentions add-reflection CLI command"
+            assert "setup" in content or "install-hook" in content, f"{doc_path} does not mention setup commands"
+            assert "mcp server" in content or "ai agent" in content, f"{doc_path} does not mention MCP/AI workflow" 

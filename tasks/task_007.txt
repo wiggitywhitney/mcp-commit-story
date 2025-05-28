@@ -3,7 +3,7 @@
 # Status: pending
 # Dependencies: 2, 3, 5
 # Priority: high
-# Description: Create the command-line interface using Click to provide access to all journal operations.
+# Description: Create the command-line interface using Click to provide setup functionality for the journal.
 # Details:
 Implement the CLI interface in `src/mcp_journal/cli.py` with the following features:
 
@@ -17,37 +17,19 @@ def cli():
     pass
 ```
 
-2. Command implementations:
+2. Setup command implementations:
 ```python
 @cli.command()
 @click.option("--debug", is_flag=True, help="Show debug information")
-def init(debug):
+def journal_init(debug):
     """Initialize journal in current repository"""
     # Implementation
 
 @cli.command()
 @click.option("--debug", is_flag=True, help="Show debug information")
-def new_entry(debug):
-    """Create journal entry for current commit"""
+def install_hook(debug):
+    """Install Git hook to connect with MCP server"""
     # Implementation
-
-@cli.command()
-@click.argument("text")
-def add_reflection(text):
-    """Add manual reflection to today's journal"""
-    # Implementation
-
-@cli.command()
-@click.option("--week", is_flag=True, help="Summarize most recent week")
-@click.option("--month", is_flag=True, help="Summarize most recent month")
-@click.option("--day", "--date", help="Summarize specific day (YYYY-MM-DD)")
-@click.option("--range", help="Summarize date range (YYYY-MM-DD:YYYY-MM-DD)")
-@click.option("--debug", is_flag=True, help="Show debug information")
-def summarize(week, month, date, range, debug):
-    """Generate summary for specified period"""
-    # Implementation
-
-# Additional commands for other operations
 ```
 
 3. Global options:
@@ -71,10 +53,12 @@ if __name__ == "__main__":
     main()
 ```
 
+Note: This CLI is focused ONLY on setup commands (journal-init, install-hook). All operational tasks (journal entry creation, reflection addition, summarization, etc.) are handled by the MCP server and AI agents, not through this CLI. Refer to the updated documentation for details on how these operational tasks are managed.
+
 # Test Strategy:
-1. Unit tests for each CLI command
+1. Unit tests for setup CLI commands (journal-init, install-hook)
 2. Tests for command options and arguments
 3. Tests for error handling
 4. Tests for global options
-5. Integration tests for CLI commands
+5. Integration tests for setup commands
 6. Tests for exit codes and error messages

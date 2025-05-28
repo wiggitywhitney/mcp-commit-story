@@ -651,5 +651,5 @@ def test_append_to_journal_file_permission_error(monkeypatch, tmp_path):
     def raise_permission_error(fp):
         raise PermissionError("No permission to create directory")
     monkeypatch.setattr(journal_mod, "ensure_journal_directory", raise_permission_error)
-    with pytest.raises(PermissionError):
+    with pytest.raises(ValueError):
         append_to_journal_file(entry, file_path) 

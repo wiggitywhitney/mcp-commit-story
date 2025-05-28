@@ -1,7 +1,7 @@
 # Task ID: 4
 # Title: Implement Telemetry System
-# Status: pending
-# Dependencies: 1, 2, 6, 9, 10
+# Status: in-progress
+# Dependencies: 1, 2, 6
 # Priority: high
 # Description: Set up OpenTelemetry integration for tracing, metrics, and logging to provide observability for the MCP server.
 # Details:
@@ -65,6 +65,10 @@ def setup_logging(debug=False):
     # Additional logging configuration
 ```
 
+5. Ensure telemetry system is compatible with the new MCP/AI agent architecture.
+
+6. Focus on telemetry for the setup-only CLI scope, ensuring proper instrumentation of configuration and initialization processes.
+
 # Test Strategy:
 1. Unit tests for telemetry initialization
 2. Tests for tracing decorator functionality
@@ -72,3 +76,4 @@ def setup_logging(debug=False):
 4. Tests for logging configuration
 5. Mock telemetry exporters for testing
 6. Verify telemetry can be disabled via configuration
+7. Test telemetry integration with the setup-only CLI functionality

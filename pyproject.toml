@@ -35,4 +35,4 @@ dev = [
 ]
 
 [project.scripts]
-mcp-commit-story = "mcp_commit_story.cli:main" 
+mcp-commit-story-setup = "mcp_commit_story.cli:main" 

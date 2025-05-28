@@ -433,27 +433,41 @@ Note: When generating summaries, the algorithm should prioritize and give more n
 
 ---
 
-## CLI Interface
+## CLI Interface (Setup Only)
 
-### Command Structure
+### Architectural Change
+
+As of Task 25, MCP Commit Story follows an **MCP-first architecture**. The CLI is now setup-only, with operational commands moved to the MCP server for AI-agent integration.
+
+### Setup CLI Commands
+
+Entry Point: `mcp-commit-story-setup`
+
 ```bash
-mcp-commit-story [operation] [options]
+mcp-commit-story-setup [command] [options]
 ```
 
-### Supported Commands
-- `mcp-commit-story journal-init` - Initialize journal in current repository
-- `mcp-commit-story new-entry [--debug]` - Create journal entry for current commit (with AI command collection)
-- `mcp-commit-story add-reflection "text"` - Add manual reflection to today's journal
-- `mcp-commit-story summarize --day [date]` - Generate summary for specific day or yesterday
-- `mcp-commit-story summarize --week [--debug]` - Generate summary for most recent week
-- `mcp-commit-story summarize --month [--debug]` - Generate summary for most recent month
-- `mcp-commit-story summarize --year [year]` - Generate summary for specific year or current year
-- `mcp-commit-story summarize --week 2025-01-13` - Week containing specific date
-- `mcp-commit-story summarize --range "2025-01-01:2025-01-31"` - Arbitrary range
-- `mcp-commit-story blogify <file1> [file2] ...` - Convert to blog post
-- `mcp-commit-story install-hook` - Install git post-commit hook (see [Post-Commit Hook Content Generation (Engineering Spec)](#post-commit-hook-content-generation-engineering-spec) for details on hook content and rationale)
-- `mcp-commit-story backfill [--debug]` - Manually trigger missed commit check
+### Supported Setup Commands
+- `mcp-commit-story-setup journal-init` - Initialize journal in current repository
+- `mcp-commit-story-setup install-hook` - Install git post-commit hook
 
+### MCP Operations (Primary Interface)
+Operational functionality via MCP server:
+- `journal/new-entry` - Create journal entry for commit (with AI command collection)
+- `journal/add-reflection` - Add manual reflection to journal
+- `journal/init` - Programmatic journal initialization
+- `journal/install-hook` - Programmatic hook installation
+
+### Usage Pattern
+```bash
+# One-time setup (human)
+mcp-commit-story-setup journal-init
+mcp-commit-story-setup install-hook
+
+# Ongoing operations (AI/automated)
+# Git hook automatically triggers: journal/new-entry via MCP
+# AI agents call: journal/add-reflection via MCP
+```
 
 ### Global Options
 - `--config <path>` - Override config file location
@@ -514,7 +528,7 @@ These errors are skipped silently without user notification:
 ### Debug Mode
 When using `--debug` flag, all soft failures are logged to stderr with details:
 ```bash
-$ mcp-commit-story new-entry --debug
+$ mcp-commit-story-setup journal-init --debug
 [DEBUG] Failed to read terminal history: Permission denied for ~/.bash_history
 [DEBUG] AI command collection failed: AssistantNotSupportedError
 [DEBUG] Chat history scan stopped: Previous commit reference not found after 150 messages
@@ -558,8 +572,8 @@ Generated journal entry successfully (some sections omitted)
 - For mixed commits (code + journal files), exclude journal files from analysis
 
 ### Post-Commit Hook Content Generation (Engineering Spec)
-- The post-commit hook is generated using the `generate_hook_content(command: str = "mcp-commit-story new-entry")` function in [src/mcp_commit_story/git_utils.py](src/mcp_commit_story/git_utils.py).
-- The hook script uses `#!/bin/sh` for portability and runs the command `mcp-commit-story new-entry` by default (customizable if needed).
+- The post-commit hook is generated using the `generate_hook_content(command: str = "mcp-commit-story-setup install-hook")` function in [src/mcp_commit_story/git_utils.py](src/mcp_commit_story/git_utils.py).
+- The hook script uses `#!/bin/sh` for portability and triggers MCP operations via the configured MCP server endpoint.
 - All output is redirected to `/dev/null` and the command is followed by `|| true` to ensure the hook never blocks a commit, even if journal entry creation fails.
 - The script is intentionally lightweight and non-intrusive, designed to never interfere with normal Git operations.
 - The installation logic (see `install_post_commit_hook`) backs up any existing hook before replacing it and sets the new hook as executable.
@@ -567,12 +581,15 @@ Generated journal entry successfully (some sections omitted)
   - **Portability** (works on all Unix-like systems)
   - **Non-blocking** (never prevents a commit)
   - **Simplicity** (easy to audit and modify)
+  - **MCP Integration** (triggers automated journal entry via MCP server)
 - All logic is covered by strict TDD and unit tests in `tests/unit/test_git_hook_installation.py` and `tests/unit/test_git_utils.py`.
 
 **Example generated hook content:**
 ```sh
 #!/bin/sh
-mcp-commit-story new-entry >/dev/null 2>&1 || true
+# Trigger journal/new-entry via MCP server
+# Exact implementation depends on MCP client configuration
+echo "Triggering automated journal entry..." >/dev/null 2>&1 || true
 ```
 
 #### Post-Commit Hook Installation Core Logic
@@ -835,191 +852,4 @@ This tool is designed to be **developer-friendly**, **minimally intrusive**, and
 
 ### Context Data Structures
 
-All context collection functions return explicit Python TypedDicts, defined in `src/mcp_commit_story/context_types.py`:
-
-- **JournalContext**: The unified context object passed to journal entry generators.
-    - `chat`: Optional chat history (`ChatHistory`)
-    - `terminal`: Optional terminal context (`TerminalContext`)
-    - `git`: Required git context (`GitContext`)
-
-#### Example Python Types
-```python
-class ChatMessage(TypedDict):
-    speaker: str
-    text: str
-
-class ChatHistory(TypedDict):
-    messages: List[ChatMessage]
-
-class TerminalCommand(TypedDict):
-    command: str
-    executed_by: str  # "user" or "ai"
-
-class TerminalContext(TypedDict):
-    commands: List[TerminalCommand]
-
-class GitMetadata(TypedDict):
-    hash: str
-    author: str
-    date: str
-    message: str
-
-class GitContext(TypedDict):
-    metadata: GitMetadata
-    diff_summary: str
-    changed_files: List[str]
-    file_stats: dict
-    commit_context: dict
-
-class JournalContext(TypedDict):
-    chat: Optional[ChatHistory]
-    terminal: Optional[TerminalContext]
-    git: GitContext
-```
-- All context is ephemeral and only persisted as part of the generated journal entry.
-- Tests enforce that all context collection functions return data matching these types.
-
-### MCP Server Initialization & Configuration (2024-06 Update)
-
-- The MCP server is initialized via `create_mcp_server()` in `src/mcp_commit_story/server.py`.
-- **Configuration and telemetry setup** are performed before the server instance is created, not via startup/shutdown hooks (FastMCP does not support these hooks).
-- The server version is dynamically loaded from `pyproject.toml` to ensure consistency with packaging.
-- Telemetry integration is stub-aware: `telemetry.setup_telemetry` is called only if it exists and telemetry is enabled in config.
-- All tool registration is handled via the `register_tools()` stub, to be filled in by future subtasks.
-- Strict TDD was followed: failing tests were written for config, version, and telemetry logic before implementation, and all tests pass after implementation.
-- See `docs/server_setup.md` for user-facing setup instructions.
-
-### Core Error Handling System (2024-06 Update)
-
-- The MCP server uses a custom `MCPError` exception class for structured error responses in tool handlers.
-- The `handle_mcp_error` decorator wraps async tool handlers to catch `MCPError` and generic exceptions, returning a dict with status and error message.
-- Strict TDD was followed: failing tests for error handling were written first, then the implementation, then tests were confirmed to pass.
-- This pattern ensures all tool responses are robust and client-friendly, and can be extended for custom error types.
-- No FastMCP-specific error hooks are used; all error handling is at the handler/decorator level.
-
-#### journal/new-entry Operation Handler (2024-06 Update)
-- The handler expects a request dict with at least a `git` field (context), and optional `chat` and `terminal` fields.
-- Returns a response dict with `status`, `file_path`, and `error` (if any).
-- All errors are returned as a dict with `status: "error"` and an `error` message, never as a raw exception.
-
-**Example:**
-- **Request:**
-  ```python
-  {
-      "git": { ... },           # Required git context
-      "chat": { ... },          # Optional chat context
-      "terminal": { ... }       # Optional terminal context
-  }
-  ```
-- **Response:**
-  ```python
-  {
-      "status": "success",    # or "error"
-      "file_path": "journal/daily/2025-05-26-journal.md",
-      "error": None            # Error message if status == "error"
-  }
-  ```
-
-## Main Journal Initialization Function
-
-The `initialize_journal(repo_path=None, config_path=None, journal_path=None)` function is the main entry point for setting up the MCP Journal system in a repository. It validates the git repo, checks for existing config and journal directory, creates missing pieces, and reports status. No automatic rollback is performed; any created files/directories are left in place if an error occurs, and the user is informed of what succeeded. See [docs/journal_init.md](docs/journal_init.md) for full details.
-
-## Integration Testing for Journal Initialization
-
-Integration tests for journal initialization (see `tests/integration/test_journal_init_integration.py`) ensure the full workflow is robust and reliable. These tests cover:
-- Clean initialization in a new git repository
-- Re-initialization detection (already initialized)
-- Partial recovery when only config or journal directory exists
-- Failure recovery, ensuring successful parts are left in place and errors are reported
-
-These tests provide end-to-end validation that all components work together as expected.
-
-## CLI Command for Journal Initialization
-
-The CLI command `journal-init` (see [src/mcp_commit_story/cli.py](src/mcp_commit_story/cli.py)) allows initializing the journal system from the command line. It accepts optional arguments for repo, config, and journal paths, and outputs standardized JSON for both success and error cases. See [docs/journal_init.md](docs/journal_init.md) for usage, output format, and error codes.
-
-**Naming Convention Note:**
-The CLI command is named `journal-init` (not just `init`) to avoid ambiguity and to align with the namespaced pattern used for other MCP tool operations. This makes the CLI more discoverable and scalable as additional commands are added.
-
-### CLI Command: install-hook
-
-The MCP Journal system provides a CLI command to install or replace the git post-commit hook in your repository. This command is implemented in [src/mcp_commit_story/cli.py](src/mcp_commit_story/cli.py) and uses the tested logic from `install_post_commit_hook`.
-
-**Usage:**
-```bash
-python -m mcp_commit_story.cli install-hook --repo-path <repo>
-```
-All arguments are optional and default to the current directory and standard locations.
-
-**Options:**
-- `--repo-path`: Path to git repository (default: current directory)
-
-**Output Format:**
-- On success:
-```json
-{
-  "status": "success",
-  "result": {
-    "message": "Post-commit hook installed successfully.",
-    "backup_path": "/path/to/backup"  // or null if no backup was needed
-  }
-}
-```
-- On error:
-```json
-{
-  "status": "error",
-  "message": "User-friendly error description",
-  "code": 1
-}
-```
-
-**Error Codes:**
-- 0: Success
-- 1: General error (not a git repo, permission denied, etc.)
-- 2: Already installed
-- 4: File system errors (can't create hooks, etc.)
-
-**Rationale:**
-- The CLI always outputs JSON for both success and error cases, making it easy to use in scripts and CI/CD pipelines.
-- All logic is covered by unit tests in `tests/unit/test_cli_install_hook.py`.
-
-## Integration Testing: Git Hook Installation
-
-Integration tests for git hook installation ensure that the post-commit hook can be installed, replaced, and executed correctly in real-world git repositories. These tests cover:
-
-- Clean installation of the post-commit hook in a new repository
-- Overwriting and backing up an existing hook
-- Verifying that the hook executes after a commit (side effect test)
-- Cleanup and removal of hooks and backups
-
-See `tests/integration/test_git_hook_integration.py` for implementation details. These tests use temporary git repositories and subprocesses to simulate actual usage, providing confidence that the hook installation and execution logic is robust and reliable.
-
-### CLI Commands: new-entry and add-reflection (2024-06 Update)
-
-The CLI now supports the following commands for direct journal management:
-
-#### `new-entry`
-- Usage: `mcp-commit-story new-entry --repo-path <path> --summary "Entry summary text"`
-- Options:
-  - `--repo-path`: Path to the git repository (default: current directory)
-  - `--summary`: Required. The summary text for the new journal entry.
-- Behavior: Creates or appends to the daily journal file in `journal/daily/YYYY-MM-DD-journal.md`.
-
-#### `add-reflection`
-- Usage: `mcp-commit-story add-reflection --repo-path <path> --reflection "Reflection text"`
-- Options:
-  - `--repo-path`: Path to the git repository (default: current directory)
-  - `--reflection`: Required. The reflection text to add.
-- Behavior: Appends a new 'Reflection' section to today's journal file. The file must already exist (created by `new-entry`).
-
-These commands are fully integrated with the MCP workflow and are covered by integration tests. See also the integration test plan for end-to-end coverage.
-
-**Integration Testing for On-Demand Directory Creation:**
-Integration tests now ensure that only the base `journal/` directory is created during initialization, and subdirectories are created on-demand by file operations. See `tests/integration/test_journal_init_integration.py` for updated test cases covering clean init, file creation, and mixed scenarios.
-
-**CLI On-Demand Directory Creation and Error Handling (2025-05 Update):**
-- All CLI commands that write journal files now rely on the on-demand directory creation utility (`ensure_journal_directory`) in [journal.py](src/mcp_commit_story/journal.py).
-- CLI commands no longer create directories directly; all directory creation and error handling is centralized in the utility functions.
-- Permission errors and other filesystem issues are caught and reported as user-friendly error messages and error codes, as required by the CLI contract.
-- See [cli.py](src/mcp_commit_story/cli.py) for implementation details.
+All context collection functions return explicit Python TypedDicts, defined in `

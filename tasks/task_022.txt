@@ -25,6 +25,11 @@ Implement the remaining MCP server tool handlers in `src/mcp_commit_story/server
    - Return list of created entries
    - Must use on-demand directory creation pattern
 
+4. **journal/add-reflection** handler:
+   - Add reflection content to existing journal entries
+   - Accept entry path and reflection content
+   - Must use on-demand directory creation pattern
+
 All handlers should:
 - Use existing `@handle_mcp_error` decorator
 - Follow TypedDict patterns established in Tasks 6.3-6.4
@@ -33,8 +38,10 @@ All handlers should:
 - Include comprehensive error handling and validation
 - Call ensure_journal_directory(file_path) before writing any files
 - Never create directories upfront - only on demand when needed
+- Implement as MCP operations only (no CLI commands required)
+- Focus exclusively on MCP/AI agent operations for file-writing handlers
 
-Refer to docs/on-demand-directory-pattern.md for implementation details and test patterns.
+Note that the CLI functionality is limited to setup commands (journal-init, install-hook) only. All file-writing functionality must be implemented as MCP operations. Refer to the updated engineering spec and README.md for implementation details and test patterns.
 
 # Test Strategy:
 1. Unit tests for each new handler
@@ -45,3 +52,5 @@ Refer to docs/on-demand-directory-pattern.md for implementation details and test
 6. Verify on-demand directory creation pattern is used correctly
 7. Test that directories are only created when files are actually written
 8. Verify ensure_journal_directory() is called before file writes
+9. Verify all file-writing functionality is accessible via MCP operations only
+10. Test the journal/add-reflection handler functionality as an MCP operation

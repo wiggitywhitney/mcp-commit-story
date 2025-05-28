@@ -1,0 +1,59 @@
+# Task ID: 25
+# Title: Eliminate General CLI - Focus on MCP Server + AI Agent Workflow
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Remove general-purpose CLI commands and focus on MCP server + AI agent workflow, keeping only essential setup commands.
+
+Architectural Decision Rationale:
+- Core journal functionality requires AI analysis (humans can't meaningfully analyze chat/terminal/git context)
+- Automation is the primary value proposition ("set and forget" journal)
+- Simpler product with clearer value proposition
+- Eliminates feature creep and maintenance overhead
+
+Required Changes:
+1. Code Changes
+- Update src/mcp_commit_story/cli.py: Remove new-entry and add-reflection commands; keep only journal-init and install-hook (setup tasks); rename CLI group to focus on setup; update help text
+- Update pyproject.toml: Change entry point to mcp-commit-story-setup; update CLI references
+- Update src/mcp_commit_story/server.py: Add journal/add-reflection MCP operation; move functionality from CLI; ensure proper error handling and structured response
+2. Documentation Changes
+- Update README.md: Remove operational CLI examples; add setup-only section; explain AI-agent workflow; emphasize automation
+- Update engineering-mcp-journal-spec-final.md: Remove/minimize CLI Interface section; focus on MCP server operations; update MCP Operations; remove CLI command examples
+3. Task Plan Updates
+- Update tasks.json: Modify Task 7 to "Setup CLI Only"; update Tasks 9, 10, 11 to remove CLI requirements; update Task 22 to add journal/add-reflection MCP handler; note architectural change
+4. Testing Updates
+- Remove CLI tests for operational commands; keep setup command tests; add MCP server tests for journal/add-reflection; update integration tests
+
+Implementation Steps:
+- Write failing tests for new MCP journal/add-reflection operation
+- Remove operational CLI commands, keep setup commands
+- Implement MCP add-reflection handler with error handling
+- Update documentation for AI-first architecture
+- Update pyproject.toml entry point
+- Run full test suite
+- Update task plan
+
+Success Criteria:
+- Only setup commands remain in CLI
+- All operational functionality via MCP server
+- journal/add-reflection works as MCP operation
+- Documentation reflects AI-first workflow
+- All existing functionality preserved via MCP server
+- Clear, simplified value proposition in docs
+
+# Details:
+This task represents a major architectural shift from general-purpose CLI to MCP-first with setup-only CLI. The goal is to simplify the product by clearly separating setup (human) from operations (AI/automated).
+
+Files to modify:
+- src/mcp_commit_story/cli.py
+- src/mcp_commit_story/server.py
+- pyproject.toml
+- scripts/mcp-commit-story-prd.md
+- engineering-mcp-journal-spec-final.md
+- docs/ (create architecture.md)
+- tests/unit/test_cli.py
+- tests/integration/test_mcp_server_integration.py
+
+# Test Strategy:
+Write tests to verify CLI is setup-only and MCP operations work correctly. Update existing tests to reflect new architecture.
+

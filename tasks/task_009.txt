@@ -5,7 +5,7 @@
 # Priority: high
 # Description: Create the functionality to generate and save journal entries for Git commits, including context collection and formatting.
 # Details:
-Implement journal entry creation in both the MCP server and CLI with the following features:
+Implement journal entry creation in the MCP server with the following features:
 
 1. Entry generation workflow:
 ```python
@@ -59,9 +59,9 @@ def save_journal_entry(entry, config):
 
 3. MCP handler implementation:
 ```python
-@trace_operation("journal_new_entry")
-async def handle_new_entry(request):
-    """Handle journal/new-entry operation"""
+@trace_operation("journal_entry_creation")
+async def handle_journal_entry_creation(request):
+    """Handle journal entry creation operation"""
     debug = request.get("debug", False)
     
     # Load config
@@ -91,46 +91,16 @@ async def handle_new_entry(request):
     }
 ```
 
-4. CLI command implementation:
-```python
-@cli.command()
-@click.option("--debug", is_flag=True, help="Show debug information")
-def new_entry(debug):
-    """Create journal entry for current commit"""
-    try:
-        # Load config
-        config = load_config()
-        
-        # Get current commit
-        repo = get_repo()
-        commit = get_current_commit(repo)
-        
-        # Generate entry
-        entry = generate_journal_entry(commit, config, debug)
-        if not entry:
-            click.echo("Skipped (journal-only commit)")
-            return
-        
-        # Save entry
-        file_path = save_journal_entry(entry, config)
-        
-        click.echo(f"Journal entry saved to {file_path}")
-    except Exception as e:
-        if debug:
-            click.echo(f"Error: {e}")
-            traceback.print_exc()
-        else:
-            click.echo(f"Error: {e}")
-```
+Note: All operational journal entry and reflection tasks are handled by the MCP server and AI agent. The CLI commands are limited to setup functionality (journal-init, install-hook). The post-commit hook will call the MCP server endpoint for journal entry creation, which will be handled by the AI agent.
 
 # Test Strategy:
 1. Unit tests for entry generation workflow
 2. Tests for file saving
 3. Tests for MCP handler implementation
-4. Tests for CLI command implementation
-5. Tests for journal-only commit detection
-6. Tests for context collection
-7. Integration tests for full entry creation flow
+4. Tests for journal-only commit detection
+5. Tests for context collection
+6. Integration tests for full entry creation flow via MCP server
+7. Tests for post-commit hook functionality
 
 # Subtasks:
 ## 1. Install Simple Post-Commit Hook [pending]
@@ -140,8 +110,19 @@ def new_entry(debug):
 Create a simple post-commit hook installation function that:
 1. Writes a basic shell script to .git/hooks/post-commit
 2. Makes the hook executable
-3. Hook content: calls 'mcp-commit-story new-entry' command
+3. Hook content: calls the MCP server endpoint for journal entry creation
 4. No backup/restore logic (keep it simple for MVP)
 5. No auto-summarization triggers
 6. Basic error handling for missing .git directory
+
+## 2. Implement Journal Initialization CLI Command [pending]
+### Dependencies: None
+### Description: Create the journal-init CLI command to set up the initial journal structure and configuration.
+### Details:
+Implement the journal-init command that:
+1. Creates the necessary directory structure for the journal
+2. Sets up initial configuration values
+3. Validates the journal path
+4. Provides helpful output to the user
+5. Includes appropriate error handling
 

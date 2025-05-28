@@ -265,31 +265,28 @@ def get_journal_file_path(date, entry_type):
     else:
         raise ValueError(f"Unknown entry_type: {entry_type}")
 
-def append_to_journal_file(entry, file_path):
+def append_to_journal_file(text, file_path):
     """
-    Append a journal entry to the file at file_path. If the file does not exist, create it.
-    If the file exists and is not empty, prepend a horizontal rule (---) before the new entry.
-    On-demand directory creation: Automatically create parent directories as needed using ensure_journal_directory().
-    This ensures that directories are only created when needed, not upfront.
-    Raises ValueError if the file path is invalid or cannot be written to.
-    Example:
-        entry = "My journal entry"
-        file_path = Path("journal/daily/2025-05-28-journal.md")
-        append_to_journal_file(entry, file_path)
+    Append a text entry to the specified journal file, creating parent directories as needed (on-demand pattern).
+    This function implements the on-demand pattern for directory creation: parent directories are created only when needed, not upfront.
+    Raises ValueError if file cannot be written due to permissions.
+    Args:
+        text (str): The text to append
+        file_path (str or Path): The file to append to
     """
     file_path = Path(file_path)
-    ensure_journal_directory(file_path)
     try:
-        if file_path.exists() and file_path.stat().st_size > 0:
-            with open(file_path, "a", encoding="utf-8") as f:
-                f.write("\n---\n" + entry)
-        else:
-            with open(file_path, "a", encoding="utf-8") as f:
-                f.write(entry)
-    except OSError as e:
-        raise ValueError(f"append_to_journal_file: Could not write to file {file_path}: {e}")
-    except Exception as e:
-        raise ValueError(f"append_to_journal_file: Unexpected error for file {file_path}: {e}")
+        ensure_journal_directory(file_path)
+    except PermissionError as e:
+        raise ValueError(f"Permission denied (directory): {e}")
+    add_rule = file_path.exists() and file_path.stat().st_size > 0
+    try:
+        with open(file_path, "a") as f:
+            if add_rule:
+                f.write("\n---\n")
+            f.write(text)
+    except PermissionError as e:
+        raise ValueError(f"Permission denied (file): {e}")
 
 # Section Generator: Summary
 # Purpose: Generates the Summary section for a journal entry using AI.
