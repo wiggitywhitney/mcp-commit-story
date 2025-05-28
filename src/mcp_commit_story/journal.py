@@ -247,6 +247,10 @@ def get_journal_file_path(date, entry_type):
     """
     Return the correct journal file path based on date and entry type.
     entry_type: 'daily', 'daily_summary', 'weekly_summary', 'monthly_summary', 'yearly_summary'
+    Note: Subdirectories are created on-demand by file operations, not upfront.
+    Example:
+        file_path = get_journal_file_path("2025-05-28", "daily")
+        # file_path = Path("journal/daily/2025-05-28-journal.md")
     """
     if entry_type == "daily":
         return Path("journal/daily") / f"{date}-journal.md"
@@ -261,22 +265,17 @@ def get_journal_file_path(date, entry_type):
     else:
         raise ValueError(f"Unknown entry_type: {entry_type}")
 
-def create_journal_directories(base_dir):
-    """
-    Create all required journal subdirectories under base_dir.
-    """
-    (Path(base_dir) / "daily").mkdir(parents=True, exist_ok=True)
-    (Path(base_dir) / "summaries" / "daily").mkdir(parents=True, exist_ok=True)
-    (Path(base_dir) / "summaries" / "weekly").mkdir(parents=True, exist_ok=True)
-    (Path(base_dir) / "summaries" / "monthly").mkdir(parents=True, exist_ok=True)
-    (Path(base_dir) / "summaries" / "yearly").mkdir(parents=True, exist_ok=True)
-
 def append_to_journal_file(entry, file_path):
     """
     Append a journal entry to the file at file_path. If the file does not exist, create it.
     If the file exists and is not empty, prepend a horizontal rule (---) before the new entry.
-    Automatically create parent directories as needed using ensure_journal_directory().
+    On-demand directory creation: Automatically create parent directories as needed using ensure_journal_directory().
+    This ensures that directories are only created when needed, not upfront.
     Raises ValueError if the file path is invalid or cannot be written to.
+    Example:
+        entry = "My journal entry"
+        file_path = Path("journal/daily/2025-05-28-journal.md")
+        append_to_journal_file(entry, file_path)
     """
     file_path = Path(file_path)
     ensure_journal_directory(file_path)
@@ -919,10 +918,14 @@ def ensure_journal_directory(file_path):
     """
     Ensure the parent directory for the given file_path exists.
     Creates all missing parent directories as needed (on-demand pattern).
+    This utility should be used by all file operations that need to ensure parent directories exist, replacing any upfront directory creation pattern.
     Raises PermissionError if directory creation fails due to permissions.
     Does nothing if the directory already exists.
     Args:
         file_path (Path or str): The file path whose parent directory should be ensured.
+    Example:
+        file_path = Path("journal/daily/2025-05-28-journal.md")
+        ensure_journal_directory(file_path)
     """
     parent_dir = Path(file_path).parent
     try:

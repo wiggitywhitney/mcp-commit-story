@@ -18,24 +18,6 @@ def test_get_journal_file_path(date, entry_type, expected_path):
     path = journal.get_journal_file_path(date=date, entry_type=entry_type)
     assert str(path) == expected_path
 
-def test_create_journal_directories_creates_all_needed_dirs(tmp_path):
-    base_dir = tmp_path / "journal"
-    # Remove if exists
-    if base_dir.exists():
-        for sub in base_dir.iterdir():
-            if sub.is_dir():
-                for f in sub.iterdir():
-                    f.unlink()
-                sub.rmdir()
-        base_dir.rmdir()
-    # Should create all subdirs
-    journal.create_journal_directories(base_dir)
-    assert (base_dir / "daily").exists()
-    assert (base_dir / "summaries" / "daily").exists()
-    assert (base_dir / "summaries" / "weekly").exists()
-    assert (base_dir / "summaries" / "monthly").exists()
-    assert (base_dir / "summaries" / "yearly").exists()
-
 def test_append_to_journal_file_creates_and_appends(tmp_path):
     file_path = tmp_path / "journal" / "daily" / "2025-05-14-journal.md"
     entry1 = "### 2025-05-14 09:00 — Commit abc123\n\nFirst entry."

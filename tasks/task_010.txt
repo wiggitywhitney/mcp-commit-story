@@ -22,10 +22,10 @@ def add_reflection_to_journal(text, config):
     date = datetime.now().strftime("%Y-%m-%d")
     journal_path = Path(config["journal"]["path"])
     
-    # Use ensure_journal_directory utility to create directories if needed
-    ensure_journal_directory(journal_path)
-    
     file_path = journal_path / "daily" / f"{date}.md"
+    
+    # Use ensure_journal_directory utility to create directories if needed
+    ensure_journal_directory(file_path)
     
     # Create file if needed
     if not file_path.exists():
@@ -82,12 +82,17 @@ def add_reflection(text):
 
 5. Ensure journal directory utility:
 ```python
-def ensure_journal_directory(journal_path):
-    """Ensure journal directories exist, creating them on-demand if needed"""
-    daily_path = journal_path / "daily"
-    daily_path.mkdir(parents=True, exist_ok=True)
-    return daily_path
+def ensure_journal_directory(file_path):
+    """Ensure directories exist for the given file path, creating them on-demand if needed"""
+    directory = file_path.parent
+    directory.mkdir(parents=True, exist_ok=True)
+    return directory
 ```
+
+## Acceptance Criteria
+- All file-writing functions (including add_reflection_to_journal) must call ensure_journal_directory(file_path) before writing
+- No code should create directories upfront
+- Implementation must follow the on-demand directory creation pattern as documented in docs/on-demand-directory-pattern.md
 
 # Test Strategy:
 1. Unit tests for reflection formatting
@@ -100,6 +105,10 @@ def ensure_journal_directory(journal_path):
 8. Tests for ensure_journal_directory utility
 9. Tests for on-demand directory creation when directories don't exist
 10. Tests to verify proper directory structure is created
+11. Tests to verify compliance with on-demand directory creation pattern
+12. Tests to ensure no directories are created until file operations are performed
+13. Tests to verify ensure_journal_directory is called before any file writing operations
+14. Tests following patterns documented in docs/on-demand-directory-pattern.md
 
 # Subtasks:
 ## 10.1. Create ensure_journal_directory utility function [pending]
@@ -123,6 +132,24 @@ def ensure_journal_directory(journal_path):
 ## 10.4. Update existing tests for on-demand directory creation [pending]
 ### Dependencies: None
 ### Description: Modify existing tests to verify that the reflection addition process correctly creates directories on-demand when needed.
+### Details:
+
+
+## 10.5. Update ensure_journal_directory to accept file paths [pending]
+### Dependencies: None
+### Description: Modify the ensure_journal_directory function to accept a file path and create the parent directory structure, following the on-demand directory creation pattern.
+### Details:
+
+
+## 10.6. Add tests for on-demand directory creation compliance [pending]
+### Dependencies: None
+### Description: Create tests that verify all file-writing operations follow the on-demand directory creation pattern as documented in docs/on-demand-directory-pattern.md.
+### Details:
+
+
+## 10.7. Review and update all file operations [pending]
+### Dependencies: None
+### Description: Review all file operations in the codebase to ensure they call ensure_journal_directory before writing and don't create directories upfront.
 ### Details:
 
 

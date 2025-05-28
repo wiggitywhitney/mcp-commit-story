@@ -6,50 +6,7 @@ from pathlib import Path
 import subprocess
 import time
 
-from mcp_commit_story.journal_init import create_journal_directories, generate_default_config, validate_git_repository, initialize_journal
-
-
-def test_create_journal_directories_success(tmp_path):
-    base = tmp_path / "journal"
-    # Should create only the base journal/ directory
-    create_journal_directories(base)
-    assert base.is_dir()
-    # Subdirectories should NOT exist yet
-    assert not (base / "daily").exists()
-    assert not (base / "summaries").exists()
-
-
-def test_create_journal_directories_already_exists(tmp_path):
-    base = tmp_path / "journal"
-    base.mkdir(parents=True)
-    # Should not raise
-    create_journal_directories(base)
-    # Only base dir should exist
-    assert base.is_dir()
-    # Subdirectories should NOT exist
-    assert not (base / "daily").exists()
-    assert not (base / "summaries").exists()
-
-
-def test_create_journal_directories_permission_error(tmp_path):
-    # Create a read-only parent directory, then try to create a new journal directory inside it
-    parent = tmp_path / "readonly_parent"
-    parent.mkdir()
-    parent.chmod(stat.S_IREAD)
-    try:
-        journal_dir = parent / "journal"
-        with pytest.raises(PermissionError):
-            create_journal_directories(journal_dir)
-    finally:
-        parent.chmod(stat.S_IWRITE | stat.S_IREAD)
-
-
-def test_create_journal_directories_invalid_path(tmp_path):
-    # Use a file instead of a directory
-    file_path = tmp_path / "not_a_dir"
-    file_path.write_text("not a dir")
-    with pytest.raises(Exception):
-        create_journal_directories(file_path)
+from mcp_commit_story.journal_init import generate_default_config, validate_git_repository, initialize_journal
 
 
 def test_generate_default_config_creates_new(tmp_path):
@@ -163,23 +120,6 @@ def test_initialize_journal_already_initialized(tmp_path):
     assert "already initialized" in result["message"]
     assert result["paths"]["config"] == str(config_path)
     assert result["paths"]["journal"] == str(journal_path)
-
-
-def test_initialize_journal_partial_failure_and_rollback(tmp_path, monkeypatch):
-    subprocess.run(["git", "init"], cwd=tmp_path, check=True, stdout=subprocess.PIPE)
-    config_path = tmp_path / ".mcp-commit-storyrc.yaml"
-    journal_path = tmp_path / "journal"
-    # Simulate failure in create_journal_directories
-    def fail_create_journal_directories(path):
-        raise OSError("Simulated failure")
-    monkeypatch.setattr("mcp_commit_story.journal_init.create_journal_directories", fail_create_journal_directories)
-    result = initialize_journal(repo_path=tmp_path, config_path=config_path, journal_path=journal_path)
-    # Config should be created, journal should not
-    assert result["status"] == "error"
-    assert "Failed to create journal directory" in result["message"]
-    assert config_path.exists()
-    assert not journal_path.exists()
-    assert result["paths"].get("config") == str(config_path)
 
 
 def test_initialize_journal_not_a_git_repo(tmp_path):

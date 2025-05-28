@@ -220,21 +220,33 @@ journal:
 
 - The Technical Synopsis section provides a code-focused analysis of what changed in the commit. It should include architectural patterns, specific classes/functions modified, technical approach taken, and any other relevant technical details. This section is self-contained and generated from the JournalContext.
 
-### On-Demand Directory Creation Utility
+### On-Demand Directory Creation Pattern
 
-The MCP Journal system uses an on-demand directory creation pattern via the `ensure_journal_directory(file_path)` utility function (see [src/mcp_commit_story/journal.py](src/mcp_commit_story/journal.py)).
+### Rationale
+- Only create journal subdirectories (e.g., daily/, summaries/weekly/) when they are actually needed, not at initialization.
+- Prevents empty folders, keeps the repo clean, and matches natural usage patterns.
 
-- **Purpose:** Create parent directories for journal files only when needed, rather than all at once during initialization.
-- **Usage:** All file operations that write to the journal call this utility before writing, ensuring the required directory structure exists.
-- **Behavior:**
-  - Creates all missing parent directories for the given file path.
-  - Does nothing if the directory already exists.
-  - Raises `PermissionError` if directory creation fails due to permissions.
-- **Benefits:**
-  - Keeps the journal directory structure clean and avoids empty folders.
-  - Ensures robust error handling and is fully covered by unit tests.
+### Implementation
+- Use the utility function `ensure_journal_directory(file_path)` before any file write operation.
+- This function creates all missing parent directories for the given file path, does nothing if they already exist, and raises PermissionError on failure.
+- All journal file operations (append, save, etc.) must call this utility before writing.
 
-This approach replaces the previous pattern of up-front directory creation and is now the standard for all journal file operations.
+#### Example:
+```python
+from mcp_commit_story.journal import ensure_journal_directory
+file_path = Path("journal/daily/2025-05-28-journal.md")
+ensure_journal_directory(file_path)
+with open(file_path, "a") as f:
+    f.write(entry)
+```
+
+### Deprecation of Upfront Directory Creation
+- The old pattern of creating all subdirectories at init is fully removed.
+- No code should use or reference `create_journal_directories`.
+
+### Guidance
+- See [docs/on-demand-directory-pattern.md](docs/on-demand-directory-pattern.md) for implementation details, anti-patterns, and integration tips.
+- All future file-writing code (including Tasks 10, 11, 22) must use this pattern.
 
 ---
 

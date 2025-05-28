@@ -162,11 +162,13 @@ def save_summary(content, period, date, config):
     else:
         raise ValueError(f"Unknown period: {period}")
     
-    # Create directory if needed using the ensure_journal_directory utility
+    # Create file path
+    file_path = dir_path / file_name
+    
+    # Ensure directory exists using on-demand directory creation pattern
     ensure_journal_directory(dir_path)
     
     # Save file
-    file_path = dir_path / file_name
     with open(file_path, "w") as f:
         f.write(content)
     
@@ -274,6 +276,12 @@ def ensure_journal_directory(dir_path):
     return dir_path
 ```
 
+8. On-demand directory creation pattern:
+- All summary file-writing operations must use the on-demand directory creation pattern
+- Directories should only be created when needed, not upfront
+- All summary-writing functions (including save_summary) must call ensure_journal_directory(file_path) before writing
+- See docs/on-demand-directory-pattern.md for implementation details and test patterns
+
 # Test Strategy:
 1. Unit tests for date range utilities
 2. Tests for journal file collection
@@ -288,11 +296,14 @@ def ensure_journal_directory(dir_path):
 11. Tests to verify that substantial work is properly prioritized in summaries
 12. Tests to verify that trivial entries are de-emphasized in summaries
 13. Tests with mixed entry types to ensure proper weighting in the final summary
-14. Tests for directory creation:
+14. Tests for on-demand directory creation:
     - Test that summary directories are created automatically when they don't exist
     - Test that ensure_journal_directory() is called for all summary types (daily, weekly, monthly, yearly)
     - Test that directory creation works with nested paths
     - Test that no errors occur when directories already exist
+    - Test that directories are only created when needed, not upfront
+    - Verify that all summary-writing functions call ensure_journal_directory() before writing
+    - Follow test patterns described in docs/on-demand-directory-pattern.md
 
 # Subtasks:
 ## 11.1. Implement entry significance calculation [pending]
@@ -334,6 +345,24 @@ def ensure_journal_directory(dir_path):
 ## 11.7. Add tests for directory creation functionality [pending]
 ### Dependencies: None
 ### Description: Create tests to verify that summary directories are created automatically when they don't exist and that the ensure_journal_directory utility works correctly.
+### Details:
+
+
+## 11.8. Implement on-demand directory creation pattern [pending]
+### Dependencies: None
+### Description: Update all summary file-writing operations to follow the on-demand directory creation pattern as described in docs/on-demand-directory-pattern.md.
+### Details:
+
+
+## 11.9. Add tests for on-demand directory creation [pending]
+### Dependencies: None
+### Description: Create tests to verify that directories are only created when needed, not upfront, and that all summary-writing functions call ensure_journal_directory() before writing.
+### Details:
+
+
+## 11.10. Review and update all file-writing operations [pending]
+### Dependencies: None
+### Description: Review all file-writing operations in the codebase to ensure they follow the on-demand directory creation pattern.
 ### Details:
 
 

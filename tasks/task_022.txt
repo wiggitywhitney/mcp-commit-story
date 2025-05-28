@@ -11,16 +11,19 @@ Implement the remaining MCP server tool handlers in `src/mcp_commit_story/server
    - Depends on Task 11 (Summary Generation)
    - Handle daily, weekly, monthly, yearly summary requests
    - Return summary content and file paths
+   - Must use on-demand directory creation pattern
 
 2. **journal/blogify** handler:
    - Depends on Task 12 (Blog Post Generation)
    - Convert journal entries to blog post format
    - Accept multiple file inputs
+   - Must use on-demand directory creation pattern
 
 3. **journal/backfill** handler:
    - Depends on Task 13 (Backfill Functionality)
    - Detect and create entries for missed commits
    - Return list of created entries
+   - Must use on-demand directory creation pattern
 
 All handlers should:
 - Use existing `@handle_mcp_error` decorator
@@ -28,6 +31,10 @@ All handlers should:
 - Include proper async/await support
 - Integrate with existing backend logic from their dependency tasks
 - Include comprehensive error handling and validation
+- Call ensure_journal_directory(file_path) before writing any files
+- Never create directories upfront - only on demand when needed
+
+Refer to docs/on-demand-directory-pattern.md for implementation details and test patterns.
 
 # Test Strategy:
 1. Unit tests for each new handler
@@ -35,3 +42,6 @@ All handlers should:
 3. Error handling validation
 4. End-to-end workflow testing
 5. Backward compatibility with existing handlers
+6. Verify on-demand directory creation pattern is used correctly
+7. Test that directories are only created when files are actually written
+8. Verify ensure_journal_directory() is called before file writes

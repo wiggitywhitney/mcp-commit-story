@@ -89,21 +89,4 @@ def test_journal_init_with_existing_files(tmp_path):
     result2 = initialize_journal(repo_path=tmp_path, config_path=config_path, journal_path=journal_path)
     assert result2["status"] == "success"
     assert config_path.exists()
-    assert journal_path.exists() and journal_path.is_dir()
-
-
-def test_journal_failure_recovery(tmp_path, monkeypatch):
-    subprocess.run(["git", "init"], cwd=tmp_path, check=True, stdout=subprocess.PIPE)
-    config_path = tmp_path / ".mcp-commit-storyrc.yaml"
-    journal_path = tmp_path / "journal"
-    # Simulate failure in create_journal_directories
-    def fail_create_journal_directories(path):
-        raise OSError("Simulated failure")
-    monkeypatch.setattr("mcp_commit_story.journal_init.create_journal_directories", fail_create_journal_directories)
-    result = initialize_journal(repo_path=tmp_path, config_path=config_path, journal_path=journal_path)
-    # Config should be created, journal should not
-    assert result["status"] == "error"
-    assert "Failed to create journal directory" in result["message"]
-    assert config_path.exists()
-    assert not journal_path.exists()
-    assert result["paths"].get("config") == str(config_path) 
+    assert journal_path.exists() and journal_path.is_dir() 

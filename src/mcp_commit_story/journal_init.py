@@ -8,21 +8,6 @@ from .config import DEFAULT_CONFIG
 import copy
 from .git_utils import is_git_repo, get_repo
 
-def create_journal_directories(base_path: Path):
-    """
-    Create only the base journal directory at the given base path.
-    Subdirectories (daily/, summaries/, etc.) are now created on-demand by file operations.
-    Raises appropriate exceptions on error.
-    """
-    if base_path.exists() and not base_path.is_dir():
-        raise NotADirectoryError(f"{base_path} exists and is not a directory")
-    try:
-        base_path.mkdir(parents=True, exist_ok=True)
-    except PermissionError as e:
-        raise PermissionError(f"Permission denied while creating journal directory: {e}")
-    except Exception as e:
-        raise OSError(f"Failed to create journal directory: {e}")
-
 def generate_default_config(config_path, journal_path):
     """
     Generate a default configuration file at the given path, customizing the journal path.
@@ -75,6 +60,11 @@ def initialize_journal(repo_path=None, config_path=None, journal_path=None):
     Returns:
         dict: {"status": "success"/"error", "paths": {...}, "message": "..."}
     Rollback: No automatic rollback. Log what was created so user can manually clean up. Fail fast and report what succeeded.
+    Note:
+        Only the base journal directory is created during initialization. All subdirectories are created on-demand by file operations.
+    Example:
+        result = initialize_journal(repo_path="/path/to/repo")
+        # Only /path/to/repo/journal/ is created; subdirectories are created as needed.
     """
     created = {}
     try:
@@ -111,7 +101,7 @@ def initialize_journal(repo_path=None, config_path=None, journal_path=None):
         # Create journal directory if missing
         if not journal_exists:
             try:
-                create_journal_directories(journal_path)
+                journal_path.mkdir(parents=True, exist_ok=True)
                 created["journal"] = str(journal_path)
             except Exception as e:
                 return {"status": "error", "paths": created, "message": f"Failed to create journal directory: {e}"}
