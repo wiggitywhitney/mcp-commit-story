@@ -1357,7 +1357,7 @@
           "title": "Update Integration Tests",
           "description": "Ensure integration tests reflect and validate new on-demand directory behavior\n\nTDD Steps:\n1. WRITE TESTS FIRST\n   - Update `tests/integration/test_journal_init_integration.py`\n   - Test end-to-end initialization creates only base directory\n   - Test file operations trigger directory creation as needed\n   - Test cases: clean init workflow, file creation workflow, mixed scenarios\n   - RUN TESTS - VERIFY THEY FAIL\n2. IMPLEMENT FUNCTIONALITY\n   - Fix any integration issues discovered by tests\n   - Ensure all components work together with new directory pattern\n   - RUN TESTS - VERIFY THEY PASS\n3. DOCUMENT AND COMPLETE\n   - Update integration test documentation\n   - Note new behavior in test comments\n   - MARK COMPLETE",
           "details": "",
-          "status": "pending",
+          "status": "done",
           "dependencies": [
             "23.2",
             "23.3"

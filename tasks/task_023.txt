@@ -96,7 +96,7 @@ TDD Steps:
 ### Details:
 
 
-## 3. Update Integration Tests [pending]
+## 3. Update Integration Tests [done]
 ### Dependencies: 23.2, 23.3
 ### Description: Ensure integration tests reflect and validate new on-demand directory behavior
 
