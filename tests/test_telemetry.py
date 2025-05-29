@@ -6,7 +6,7 @@ from pathlib import Path
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from mcp_journal.telemetry import (
+from mcp_commit_story.telemetry import (
     setup_telemetry,
     get_tracer,
     get_meter,
