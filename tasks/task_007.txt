@@ -1,7 +1,7 @@
 # Task ID: 7
 # Title: Implement CLI Interface
 # Status: pending
-# Dependencies: 2, 3, 5
+# Dependencies: None
 # Priority: high
 # Description: Create the command-line interface using Click to provide setup functionality for the journal.
 # Details:

@@ -1,7 +1,7 @@
 # Task ID: 13
 # Title: Implement Backfill Functionality
 # Status: pending
-# Dependencies: 3, 5, 6, 7
+# Dependencies: 7
 # Priority: medium
 # Description: Create the functionality to detect and generate journal entries for missed commits.
 # Details:

@@ -1,7 +1,7 @@
 # Task ID: 10
 # Title: Implement Manual Reflection Addition
 # Status: pending
-# Dependencies: 5, 6
+# Dependencies: None
 # Priority: high
 # Description: Create the functionality to add manual reflections to journal entries through the MCP server and AI agent, ensuring they are prioritized in summaries.
 # Details:

@@ -1,7 +1,7 @@
 # Task ID: 4
 # Title: Implement Telemetry System
 # Status: in-progress
-# Dependencies: 1, 2, 6
+# Dependencies: None
 # Priority: high
 # Description: Set up OpenTelemetry integration for tracing, metrics, and logging to provide observability for the MCP server.
 # Details:
@@ -77,3 +77,423 @@ def setup_logging(debug=False):
 5. Mock telemetry exporters for testing
 6. Verify telemetry can be disabled via configuration
 7. Test telemetry integration with the setup-only CLI functionality
+
+# Subtasks:
+## 4.1. OpenTelemetry Foundation Setup [pending]
+### Dependencies: None
+### Description: Create basic OpenTelemetry initialization and configuration system
+### Details:
+TDD Steps:
+
+1. WRITE TESTS FIRST:
+   - Test setup_telemetry(config_dict) with enabled/disabled settings
+   - Test get_tracer(name) returns correct tracer instance
+   - Test get_meter(name) returns correct meter instance
+   - Test resource configuration with service name and attributes
+   - Test TracerProvider and MeterProvider initialization
+   - Test telemetry disabling via configuration
+   - RUN TESTS - VERIFY THEY FAIL
+
+2. GET APPROVAL FOR DESIGN CHOICES:
+   - Module structure: src/mcp_journal/telemetry.py with sub-modules?
+   - Configuration schema for telemetry settings
+   - Default state (enabled/disabled)
+   - Resource attributes beyond service name
+   - PAUSE FOR MANUAL APPROVAL
+
+3. IMPLEMENT FUNCTIONALITY:
+   - Add OpenTelemetry dependencies to requirements.txt
+   - Create telemetry.py module with initialization functions
+   - Implement resource configuration with service name and version
+   - Set up TracerProvider with appropriate processors
+   - Set up MeterProvider with appropriate readers
+   - Implement get_tracer and get_meter utility functions
+   - Add configuration-based disabling
+   - RUN TESTS - VERIFY THEY PASS
+
+4. DOCUMENT AND COMPLETE:
+   - Add docstrings to all public functions
+   - Add module-level documentation explaining usage
+   - Add comments explaining configuration options
+
+## 4.2. MCP Operation Instrumentation Decorators [pending]
+### Dependencies: None
+### Description: Create tracing decorators specifically for MCP operations
+### Details:
+TDD Steps:
+
+1. WRITE TESTS FIRST:
+   - Test @trace_mcp_operation(name) decorator on synchronous function
+   - Test decorator on function that raises exception
+   - Test decorator on async function
+   - Test span attributes are correctly set
+   - Test span context propagation to child operations
+   - Test error recording in spans
+   - Test custom attribute addition via decorator
+   - RUN TESTS - VERIFY THEY FAIL
+
+2. GET APPROVAL FOR DESIGN CHOICES:
+   - Semantic attribute naming convention for MCP operations
+   - Error handling strategy (record exception vs fail silently)
+   - Decorator API design (parameters, defaults)
+   - Async support approach
+   - PAUSE FOR MANUAL APPROVAL
+
+3. IMPLEMENT FUNCTIONALITY:
+   - Create MCPTracer class with trace_mcp_operation decorator
+   - Implement semantic attributes for MCP operations
+   - Add support for async function decoration
+   - Implement span status and exception recording
+   - Add context propagation utilities
+   - Create helper for adding custom attributes
+   - RUN TESTS - VERIFY THEY PASS
+
+4. DOCUMENT AND COMPLETE:
+   - Add docstrings with examples for all decorators
+   - Document semantic conventions for MCP spans
+   - Add usage examples in module documentation
+
+## 4.3. Auto-Instrumentation Integration [pending]
+### Dependencies: None
+### Description: Configure OpenTelemetry auto-instrumentation for common libraries
+### Details:
+TDD Steps:
+
+1. WRITE TESTS FIRST:
+   - Test enable_auto_instrumentation(config) with all instrumentors
+   - Test selective enabling of instrumentors
+   - Test disabled instrumentation
+   - Test HTTP request tracing with requests/aiohttp
+   - Test asyncio operation tracing
+   - Test SQLAlchemy instrumentation if applicable
+   - RUN TESTS - VERIFY THEY FAIL
+
+2. GET APPROVAL FOR DESIGN CHOICES:
+   - Which auto-instrumentors to include by default
+   - Configuration format for enabling/disabling instrumentors
+   - Performance vs observability trade-offs
+   - Integration with existing MCP components
+   - PAUSE FOR MANUAL APPROVAL
+
+3. IMPLEMENT FUNCTIONALITY:
+   - Add instrumentor dependencies to requirements.txt
+   - Implement enable_auto_instrumentation function
+   - Create configuration schema for instrumentors
+   - Add selective instrumentor enabling
+   - Integrate with configuration system
+   - Implement graceful fallback for missing instrumentors
+   - RUN TESTS - VERIFY THEY PASS
+
+4. DOCUMENT AND COMPLETE:
+   - Document each supported instrumentor
+   - Add configuration examples for common scenarios
+   - Document performance implications
+
+## 4.4. MCP-Specific Metrics Collection [pending]
+### Dependencies: None
+### Description: Define and implement metrics collection for MCP operations
+### Details:
+TDD Steps:
+
+1. WRITE TESTS FIRST:
+   - Test MCPMetrics class initialization
+   - Test record_tool_call(tool_name, success) method
+   - Test record_operation_duration(operation, duration) method
+   - Test metric labels and values are correctly set
+   - Test metric export format
+   - Test counter increments
+   - Test histogram recordings
+   - Test gauge updates
+   - RUN TESTS - VERIFY THEY FAIL
+
+2. GET APPROVAL FOR DESIGN CHOICES:
+   - Metric naming convention
+   - Business metrics to track
+   - Technical metrics to track
+   - Metric aggregation strategy
+   - Histogram bucket configuration
+   - PAUSE FOR MANUAL APPROVAL
+
+3. IMPLEMENT FUNCTIONALITY:
+   - Create MCPMetrics class
+   - Implement counters for operations and events
+   - Implement histograms for durations
+   - Implement gauges for state tracking
+   - Add semantic metric attributes
+   - Create metrics recording utilities
+   - Implement metric view configuration
+   - RUN TESTS - VERIFY THEY PASS
+
+4. DOCUMENT AND COMPLETE:
+   - Document each metric with purpose and interpretation
+   - Add examples of querying metrics in common systems
+   - Document metric data model and attributes
+
+## 4.5. Multi-Exporter Configuration System [pending]
+### Dependencies: None
+### Description: Support multiple telemetry exporters (console, OTLP, Prometheus) for vendor-neutral observability
+### Details:
+TDD Steps:
+
+1. WRITE TESTS FIRST:
+   - Test configure_exporters(config) with console exporter
+   - Test OTLP exporter configuration
+   - Test Prometheus exporter configuration
+   - Test multiple exporters simultaneously
+   - Test invalid configuration handling
+   - Test exporter initialization and failure handling
+   - Test environment variable overrides
+   - RUN TESTS - VERIFY THEY FAIL
+
+2. GET APPROVAL FOR DESIGN CHOICES:
+   - Configuration schema structure for exporters
+   - Fallback strategy when exporters fail
+   - Environment variable naming and precedence
+   - Prometheus metrics port and endpoint configuration
+   - OTLP endpoint configuration
+   - PAUSE FOR MANUAL APPROVAL
+
+3. IMPLEMENT FUNCTIONALITY:
+   - Add exporter dependencies to requirements.txt
+   - Implement console exporter configuration
+   - Implement OTLP exporter with gRPC and HTTP options
+   - Implement Prometheus exporter with MetricReader
+   - Create configuration validation
+   - Add graceful fallback handling
+   - Implement environment variable overrides
+   - Support vendor-neutral deployment options
+   - RUN TESTS - VERIFY THEY PASS
+
+4. DOCUMENT AND COMPLETE:
+   - Document each exporter configuration option
+   - Add examples for common observability backends
+   - Document environment variables for configuration
+
+## 4.6. Structured Logging with Trace Correlation [pending]
+### Dependencies: None
+### Description: Integrate logging with OpenTelemetry trace context
+### Details:
+TDD Steps:
+
+1. WRITE TESTS FIRST:
+   - Test OTelFormatter class initialization
+   - Test trace ID injection in log records
+   - Test span ID injection in log records
+   - Test structured log format (JSON)
+   - Test log correlation with active spans
+   - Test log-based metrics (optional)
+   - Test different log levels
+   - RUN TESTS - VERIFY THEY FAIL
+
+2. GET APPROVAL FOR DESIGN CHOICES:
+   - Log format (JSON vs structured text)
+   - Which log levels to correlate with traces
+   - Log-based metrics implementation
+   - Log enrichment strategy
+   - PAUSE FOR MANUAL APPROVAL
+
+3. IMPLEMENT FUNCTIONALITY:
+   - Create OTelFormatter class
+   - Implement trace correlation
+   - Add structured logging configuration
+   - Implement log record enrichment
+   - Add optional log-based metrics
+   - Create logging utility functions
+   - Integrate with existing logging
+   - RUN TESTS - VERIFY THEY PASS
+
+4. DOCUMENT AND COMPLETE:
+   - Document logging configuration options
+   - Add examples of querying correlated logs
+   - Document log format specification
+
+## 4.7. MCP Server Integration and End-to-End Testing [pending]
+### Dependencies: None
+### Description: Integrate telemetry with MCP server and validate complete pipeline
+### Details:
+TDD Steps:
+
+1. WRITE TESTS FIRST:
+   - Test full MCP server startup with telemetry
+   - Test tool call tracing end-to-end
+   - Test configuration validation
+   - Test telemetry disable/enable scenarios
+   - Test span propagation across components
+   - Test metrics collection during operations
+   - Test graceful degradation when telemetry fails
+   - RUN TESTS - VERIFY THEY FAIL
+
+2. GET APPROVAL FOR DESIGN CHOICES:
+   - Integration points in MCP server lifecycle
+   - Configuration schema final structure
+   - Performance impact acceptance criteria
+   - Telemetry data volume estimates
+   - PAUSE FOR MANUAL APPROVAL
+
+3. IMPLEMENT FUNCTIONALITY:
+   - Integrate telemetry setup into MCP server initialization
+   - Update configuration schema with telemetry section
+   - Apply tracing decorators to existing MCP operations
+   - Add metrics collection to key operations
+   - Implement graceful degradation when disabled
+   - Add health checks for telemetry system
+   - Create telemetry shutdown hooks
+   - RUN TESTS - VERIFY THEY PASS
+
+4. DOCUMENT AND COMPLETE:
+   - Document telemetry integration points
+   - Add configuration examples for production
+   - Document observability patterns and queries
+
+## 4.8. Instrument Journal Management Operations (Task 3) [pending]
+### Dependencies: None
+### Description: Add telemetry to existing journal creation and file operations for AI context flow observability
+### Details:
+TDD Steps:
+
+1. WRITE TESTS FIRST:
+   - Test journal creation operations are traced
+   - Test file operation metrics (create, read, write times)
+   - Test journal entry count metrics
+   - Test error scenarios in journal operations
+   - Test AI context flow tracing (prompt → journal entry)
+   - Test sensitive data handling in spans
+   - Test journal operation performance impact
+   - RUN TESTS - VERIFY THEY FAIL
+
+2. GET APPROVAL FOR DESIGN CHOICES:
+   - Which journal operations to instrument
+   - Metrics vs traces for file operations
+   - Sensitive data handling in spans
+   - Performance overhead acceptance criteria
+   - PAUSE FOR MANUAL APPROVAL
+
+3. IMPLEMENT FUNCTIONALITY:
+   - Add tracing decorators to journal.py functions
+   - Instrument file operations with duration metrics
+   - Add journal entry creation counters
+   - Implement AI context flow tracing
+   - Add error tracking for journal operations
+   - Create journal-specific semantic conventions
+   - Implement sensitive data filtering
+   - RUN TESTS - VERIFY THEY PASS
+
+4. DOCUMENT AND COMPLETE:
+   - Document journal operation telemetry
+   - Add examples of analyzing journal performance
+   - Document AI context flow observability
+
+## 4.9. Instrument Context Collection Operations (Task 5) [pending]
+### Dependencies: None
+### Description: Add telemetry to existing Git operations and file scanning for MCP context flow visibility
+### Details:
+TDD Steps:
+
+1. WRITE TESTS FIRST:
+   - Test Git operation tracing (git log, diff, status timing)
+   - Test file scanning metrics (files processed, scan duration)
+   - Test context collection success/failure rates
+   - Test memory usage during large repository scans
+   - Test context flow from Git → structured data
+   - Test performance impact on large repositories
+   - Test error handling in Git operations
+   - RUN TESTS - VERIFY THEY FAIL
+
+2. GET APPROVAL FOR DESIGN CHOICES:
+   - Git operation granularity for tracing
+   - File content handling in traces
+   - Performance impact mitigation for large repos
+   - Memory usage tracking approach
+   - PAUSE FOR MANUAL APPROVAL
+
+3. IMPLEMENT FUNCTIONALITY:
+   - Add tracing decorators to context_collection.py functions
+   - Instrument Git operations with command-level tracing
+   - Add file scanning performance metrics
+   - Implement context flow tracing
+   - Add memory usage tracking
+   - Create error tracking for Git operations
+   - Implement performance optimizations
+   - RUN TESTS - VERIFY THEY PASS
+
+4. DOCUMENT AND COMPLETE:
+   - Document Git operation telemetry
+   - Add examples of analyzing context collection performance
+   - Document context flow observability patterns
+
+## 4.10. Instrument Configuration Management (Task 6) [pending]
+### Dependencies: None
+### Description: Add telemetry to existing config loading and validation for system initialization observability
+### Details:
+TDD Steps:
+
+1. WRITE TESTS FIRST:
+   - Test configuration loading time tracking
+   - Test validation success/failure metrics
+   - Test configuration change detection
+   - Test environment variable resolution tracing
+   - Test sensitive value masking
+   - Test configuration reload events
+   - Test configuration → MCP server startup flow
+   - RUN TESTS - VERIFY THEY FAIL
+
+2. GET APPROVAL FOR DESIGN CHOICES:
+   - Configuration value privacy (mask sensitive values)
+   - Validation error detail level in spans
+   - Configuration reload event tracking
+   - Configuration metrics granularity
+   - PAUSE FOR MANUAL APPROVAL
+
+3. IMPLEMENT FUNCTIONALITY:
+   - Add tracing decorators to config.py functions
+   - Instrument config loading with duration metrics
+   - Add validation error tracking with context
+   - Implement sensitive value masking
+   - Create configuration change detection
+   - Add configuration reload event tracking
+   - Trace configuration → MCP server startup flow
+   - RUN TESTS - VERIFY THEY PASS
+
+4. DOCUMENT AND COMPLETE:
+   - Document configuration telemetry
+   - Add examples of analyzing configuration issues
+   - Document configuration flow observability
+
+## 4.11. Instrument Integration Tests for Telemetry Validation (Task 8) [pending]
+### Dependencies: None
+### Description: Add telemetry awareness to existing integration tests for end-to-end observability validation
+### Details:
+TDD Steps:
+
+1. WRITE TESTS FIRST:
+   - Test integration tests generate expected spans
+   - Test trace continuity across MCP tool chains
+   - Test metrics collection during integration scenarios
+   - Test telemetry doesn't break existing integration tests
+   - Test span attribute correctness
+   - Test metric value correctness
+   - Test telemetry in error scenarios
+   - RUN TESTS - VERIFY THEY FAIL
+
+2. GET APPROVAL FOR DESIGN CHOICES:
+   - Integration test telemetry scope
+   - Test environment telemetry configuration
+   - Telemetry assertion patterns in tests
+   - Mock vs real telemetry backends for testing
+   - PAUSE FOR MANUAL APPROVAL
+
+3. IMPLEMENT FUNCTIONALITY:
+   - Update existing integration tests to validate telemetry
+   - Add telemetry configuration for test environments
+   - Create telemetry assertion helpers
+   - Implement span collection and verification
+   - Add metric collection and verification
+   - Ensure AI → MCP → tool chain observability
+   - Create test-specific telemetry exporters
+   - RUN TESTS - VERIFY THEY PASS
+
+4. DOCUMENT AND COMPLETE:
+   - Document telemetry testing approach
+   - Add examples of telemetry validation in tests
+   - Document end-to-end observability validation
+

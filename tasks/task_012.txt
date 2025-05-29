@@ -1,7 +1,7 @@
 # Task ID: 12
 # Title: Implement Blog Post Generation
 # Status: pending
-# Dependencies: 5, 6, 7
+# Dependencies: 7
 # Priority: low
 # Description: Create the functionality to convert journal entries and summaries into blog post format for storytelling.
 # Details:
