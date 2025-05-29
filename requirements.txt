@@ -1,9 +1,10 @@
-# OpenTelemetry dependencies for telemetry system
+# OpenTelemetry dependencies for telemetry system (core only)
 opentelemetry-api>=1.20.0
 opentelemetry-sdk>=1.20.0
-opentelemetry-exporter-otlp-proto-grpc>=1.20.0
-opentelemetry-exporter-prometheus>=0.46b0
-opentelemetry-instrumentation>=0.41b0
-opentelemetry-instrumentation-requests>=0.41b0
-opentelemetry-instrumentation-aiohttp-client>=0.41b0
-opentelemetry-instrumentation-asyncio>=0.41b0 
+# Optional exporters that may not be available in all environments
+# opentelemetry-exporter-otlp-proto-grpc>=1.20.0
+# opentelemetry-exporter-prometheus>=0.46b0
+# opentelemetry-instrumentation>=0.41b0
+# opentelemetry-instrumentation-requests>=0.41b0  
+# opentelemetry-instrumentation-aiohttp-client>=0.41b0
+# opentelemetry-instrumentation-asyncio>=0.41b0 
