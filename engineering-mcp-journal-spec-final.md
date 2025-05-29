@@ -17,6 +17,7 @@
    - [Configuration](#configuration)
    - [AI Tone/Style Configuration](#ai-tonestyle-configuration)
    - [On-Demand Directory Creation Pattern](#on-demand-directory-creation-pattern)
+   - [Telemetry and Observability](#telemetry-and-observability)
 6. [Journal Entry Behavior](#journal-entry-behavior)
    - [Triggering](#triggering)
    - [Chat History Collection Method](#chat-history-collection-method)
@@ -131,7 +132,7 @@ The MCP server must be launchable as a standalone process and expose the require
 - **Git Integration**: GitPython library
 - **File I/O**: Standard library (pathlib, datetime)
 - **Testing**: pytest for unit/integration tests
-- **Observability**: OpenTelemetry for tracing, metrics, and logging
+- **Observability**: OpenTelemetry for distributed tracing, metrics collection, and structured logging with trace correlation
 
 ### Project Structure
 ```
@@ -326,6 +327,96 @@ with open(file_path, "a") as f:
 ### Guidance
 - See [docs/on-demand-directory-pattern.md](docs/on-demand-directory-pattern.md) for implementation details, anti-patterns, and integration tips.
 - All future file-writing code (including Tasks 10, 11, 22) must use this pattern.
+
+### Telemetry and Observability
+
+The system implements comprehensive observability using OpenTelemetry to provide insights into performance, reliability, and usage patterns across the entire AI → MCP → journal pipeline.
+
+#### Architecture
+- **OpenTelemetry Foundation**: TracerProvider and MeterProvider with configurable exporters
+- **Multi-Exporter Support**: Console (development), OTLP (production), Prometheus (metrics)
+- **Trace Correlation**: Distributed tracing across MCP operations and journal generation
+- **Structured Logging**: JSON logs with trace correlation for debugging
+
+#### Configuration
+```yaml
+telemetry:
+  enabled: true
+  service_name: "mcp-journal"
+  service_version: "1.0.0"
+  deployment_environment: "production"
+  exporters:
+    console:
+      enabled: true
+    otlp:
+      enabled: false
+      endpoint: "http://localhost:4317"
+    prometheus:
+      enabled: false
+      port: 8000
+  auto_instrumentation:
+    - requests
+    - aiohttp
+    - asyncio
+```
+
+#### Instrumentation Scope
+- **MCP Operations**: All tool calls from AI agents
+- **Journal Operations**: Entry creation, reflection addition, summarization
+- **Git Operations**: Context collection, file scanning, commit analysis
+- **Configuration**: Loading, validation, and initialization
+- **File Operations**: Journal file creation and updates
+
+#### Key Metrics Collected
+- `mcp_journal_operations_total{operation, status}`: Operation success/failure counts
+- `mcp_journal_operation_duration_seconds{operation}`: Performance histograms
+- `mcp_journal_git_operations_total{type}`: Git operation tracking
+- `mcp_journal_file_operations_total{operation}`: File I/O metrics
+- `mcp_journal_context_collection_duration_seconds`: Context gathering performance
+
+#### Trace Structure
+```
+ai_request
+├── mcp_tool_call{tool="journal/new-entry"}
+│   ├── git_commit_analysis
+│   ├── context_collection
+│   │   ├── chat_history_collection
+│   │   └── terminal_history_collection
+│   ├── journal_entry_generation
+│   └── file_write_operation
+└── mcp_response
+```
+
+#### Implementation Requirements
+- **Performance**: Minimal overhead (<5ms per operation)
+- **Error Handling**: Telemetry failures must not impact journal operations
+- **Privacy**: Sensitive data filtering in spans and logs
+- **Configurability**: Easy to disable for performance-critical scenarios
+
+#### Technical Implementation
+```python
+# src/mcp_commit_story/telemetry.py
+from opentelemetry import trace, metrics
+
+def setup_telemetry(config):
+    """Initialize OpenTelemetry based on configuration"""
+    # TracerProvider and MeterProvider setup
+    # Resource configuration with service attributes
+    # Exporter configuration based on config
+
+@trace_operation("mcp_operation")
+async def handle_mcp_request(request):
+    """Traced MCP operation handler"""
+    # Automatic span creation and attribute setting
+    
+def get_tracer(name="mcp_journal"):
+    """Get configured tracer for component"""
+    
+def get_meter(name="mcp_journal"):
+    """Get configured meter for metrics"""
+```
+
+For complete telemetry documentation, see [docs/telemetry.md](docs/telemetry.md).
 
 ---
 
