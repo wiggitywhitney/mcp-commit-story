@@ -102,4 +102,14 @@ This architecture ensures that:
 - Humans handle setup once
 - AI handles operations ongoing  
 - Automation works seamlessly
-- Integration is straightforward 
+- Integration is straightforward
+
+---
+
+## Related Documentation
+
+- **[MCP API Specification](mcp-api-specification.md)** - Detailed MCP operations, data formats, and integration patterns
+- **[Journal Behavior](journal-behavior.md)** - How journal entries are generated, structured, and configured
+- **[Implementation Guide](implementation-guide.md)** - Technical implementation details, patterns, and development workflow
+- **[Testing Standards](testing_standards.md)** - Testing approaches and quality standards
+- **[On-Demand Directory Pattern](on-demand-directory-pattern.md)** - File system organization patterns 

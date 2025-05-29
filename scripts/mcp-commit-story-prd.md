@@ -1,1175 +1,186 @@
 # Product Requirements Document (PRD)
-
-## Project Title
-Engineering Journal MCP Server
-
-## Overview
-A Model Context Protocol (MCP) server designed to capture and generate engineering journal entries within a code repository. The journal records commits, technical progress, decision-making context, and emotional tone, with the goal of producing content that can be analyzed for patterns and reused for storytelling (e.g., blog posts, conference talks).
-
-## Goals
-- Record accurate, structured engineering activity and emotional context
-- Enable narrative storytelling across daily, weekly, and monthly timelines
-- Identify patterns and trends in development work over time
-- Keep entries truthful (anti-hallucination), useful, and minimally intrusive
-- Integrate seamlessly with Git workflows and existing dev tools
-
-## Technology Stack
-- Python 3.9+
-- Anthropic MCP Python SDK
-- Click (CLI)
-- PyYAML (config)
-- GitPython
-- Standard library (pathlib, datetime)
-- pytest for testing
-- OpenTelemetry for tracing, metrics, and logging
-
-## MCP Server Configuration and Integration
-
-The MCP server must be launchable as a standalone process and expose the required journal operations (e.g., `journal/new-entry`, `journal/summarize`, etc.) as specified in this document. The server should be discoverable by compatible clients (such as AI-powered editors, agents, or other tools) via a standard configuration mechanism.
-
-- **Server Launch:**
-  - The method for launching the MCP server is not prescribed by this specification. It may be started via a CLI command, Python entry point, or any other mechanism appropriate to the environment.
-  - The server must remain running and accessible to clients for the duration of its use.
-
-- **Client/Editor Integration:**
-  - Clients (such as editors or agents) should be able to connect to the MCP server using a configuration block similar to the following:
-
-```json
-{
-  "mcpServers": {
-    "mcp-commit-story": {
-      "command": "<launch command>",
-      "args": ["<arg1>", "<arg2>", ...],
-      "env": {
-        "ANTHROPIC_API_KEY": "<optional>"
-      }
-    }
-  }
-}
-```
-  - The actual command, arguments, and environment variables will depend on the deployment and are not specified here.
-  - Environment variables such as API keys may be required if the underlying MCP SDK or AI provider requires them, but are not strictly necessary for local operation unless needed by dependencies.
-
-- **Separation of Concerns:**
-  - The MCP server configuration (how it is launched and discovered) is separate from the journal system's own configuration, which is managed via `.mcp-commit-storyrc.yaml` as described elsewhere in this specification.
-
-## Key Features
-- MCP server with tools for journal operations (new-entry, add-reflection, init, install-hook)
-- Setup-only CLI interface for initialization and hook installation
-- Journal entries per Git commit, written to daily Markdown files
-- Chat and terminal history collection for context
-- Configurable via .mcp-commit-storyrc.yaml (local and global precedence)
-- Error handling: fail fast on hard errors, skip with notes on soft errors
-- Git integration: post-commit hook, backfill, commit processing
-- Testing: TDD, >90% coverage, unit/integration/fixtures
-- Telemetry: OpenTelemetry instrumentation for observability
-
-## Implementation Guidelines
-- Test-driven development
-- High test coverage
-- Modular code: separate CLI, server, journal, git utils, config, telemetry
-- Use type hints
-- Small, single-purpose functions
-- Minimal external dependencies
-- Secure file and path handling
-- Instrumented operations with appropriate traces for monitoring
-
-## Deliverables
-- Working MCP server with all journal operations
-- CLI tool for all features
-- Journal directory structure with daily and summary files
-- Configuration system
-- Git integration (hook, backfill)
-- Comprehensive tests
-- Documentation (README, usage, config)
-- Telemetry integration for performance monitoring
-
-## Out of Scope
-- Web interface
-- Scheduled background agents
-- Plugin system
-- Project management tool integration
-
-## Success Criteria
-- Zero friction for normal dev workflow
-- Valuable output for retrospectives
-- Easy to customize and extend
-- Reliable operation across different environments
-- Observable performance and behavior
-- Minimal overhead from telemetry collection
+## MCP Commit Story - Engineering Journal Tool
 
 ---
 
-# Full Engineering Specification
+## **Product Overview**
 
-## Recursion Prevention (Anti-Recursion)
-- If a commit only modifies journal files, skip journal entry generation entirely.
-- If a commit modifies both code and journal files, generate an entry, but exclude journal files from the diff/stat analysis.
-- This logic is always-on and not configurable.
+**MCP Commit Story** is an automated engineering journal tool that captures the story behind code commits. It transforms development work into narrative entries that can be used for retrospectives, career documentation, and content creation.
 
-## Manual Reflection Prioritization
-- Manual reflections (user-added) are always prioritized in all summaries (daily, weekly, monthly, yearly).
-- Summaries have a dedicated "Manual Reflections" section at the top, visually distinct from inferred content.
-- If no manual reflections exist, the section is omitted gracefully.
-
-## Daily Summary Generation
-- CLI and MCP tool support a `--day` or `--date` option for generating a summary for a specific day.
-- Daily summaries are stored in `journal/summaries/daily/`.
-- Auto-generation of daily summaries is possible if enabled in the config (`auto_summarize`).
-
-## Error Handling Philosophy
-- Hard failures (e.g., missing repo) return actionable error messages and stop execution.
-- Soft failures (e.g., missing terminal/chat history) are omitted silently unless `--debug` is set.
-- Debug mode surfaces all soft failures to stderr, but never clutters journal output.
-
-## Pattern/Trend Analysis
-- The system is designed to help identify patterns and trends in development work over time, not just record events.
-
-## Telemetry Integration
-- OpenTelemetry used to instrument key operations for tracing and performance insights
-- Each MCP operation includes appropriate traces for monitoring
-- Telemetry can be configured or disabled via configuration
-- Minimal overhead to maintain system performance
-- Useful for debugging and performance optimization
-
-## Configuration Example
-```yaml
-journal:
-  path: journal/
-  auto_generate: true
-  include_terminal: true
-  include_chat: true
-  include_mood: true
-  auto_summarize:
-    daily: true
-    weekly: true
-    monthly: true
-    yearly: true
-```
-
-### Hot Config Reload & Strict Validation (Engineering Spec)
-- The MCP server supports hot configuration reload at runtime via `reload_config()` on the config object.
-- **Strict validation:** All required config fields (such as `journal.path`, `git.exclude_patterns`, `telemetry.enabled`) must be present and valid in the config file. If any required field is missing or invalid, the server will fail fast on startup or reload, raising a `ConfigError`.
-- Defaults are only applied for optional fields. Required fields must be explicitly set in the config file.
-- If you edit `.mcp-commit-storyrc.yaml` while the server is running, call `server.reload_config()` to apply changes. If the new config is invalid, the reload will fail and the previous config will remain active.
-- **Example:**
-  ```python
-  server = create_mcp_server()
-  # ... later, after editing config file ...
-  server.reload_config()  # Will raise ConfigError if config is invalid
-  ```
-- **Troubleshooting:**
-  - If you see a `ConfigError` on startup or reload, check that all required fields are present and valid in your config file.
-  - See this spec and the user docs for a full list of required fields and their types.
-
-### Journal Directory Structure (Engineering Spec)
-
-- The journal directory structure is initialized by `create_journal_directories(base_path)`.
-- Structure includes: `daily/`, `summaries/daily/`, `summaries/weekly/`, `summaries/monthly/`, `summaries/yearly/` under the configured `journal.path`.
-- If any directory already exists, it is left unchanged.
-- If `base_path` exists and is not a directory, a `NotADirectoryError` is raised.
-- Permission errors or invalid paths raise appropriate exceptions.
-
-**Integration Testing for On-Demand Directory Creation:**
-Integration tests now ensure that only the base `journal/` directory is created during initialization, and subdirectories are created on-demand by file operations. See `tests/integration/test_journal_init_integration.py` for updated test cases covering clean init, file creation, and mixed scenarios.
-
-See [docs/journal_init.md](../docs/journal_init.md) for full details and rationale.
-
-### Config File Creation & Backup (Engineering Spec)
-
-- The function `generate_default_config(config_path, journal_path)` creates a new config file using the latest schema and default values from the config system.
-- If a config file already exists (even if malformed), it is backed up with a unique `.bak` timestamped suffix before writing the new config.
-- The generated config is always consistent with the schema in `config.py`.
-- See [docs/journal_init.md](../docs/journal_init.md) for details and rationale.
-
-### Git Repository Validation (Engineering Spec)
-
-Before initializing the journal, the system validates that the target directory is a valid (non-bare) git repository with proper permissions using `validate_git_repository(path)`:
-
-- If the path does not exist, a `FileNotFoundError` is raised.
-- If the path exists but is not readable, a `PermissionError` is raised.
-- If the path is readable but not a git repo, a `FileNotFoundError` is raised.
-- If the path is a bare repo, a `ValueError` is raised.
-- Only non-bare, accessible git repositories are valid for journal initialization.
-
-This ensures journals are only initialized in appropriate development repositories and provides clear, actionable error messages for users.
-
-See [docs/journal_init.md](../docs/journal_init.md) and [src/mcp_commit_story/git_utils.py](../src/mcp_commit_story/git_utils.py) for details.
-
-- The main entry point for setup is the `initialize_journal(repo_path=None, config_path=None, journal_path=None)` function, which orchestrates validation, config creation, and directory setup. It supports partial recovery, fails fast on errors, and does not attempt automatic rollback (see docs/journal_init.md for details).
-
-- Integration tests for journal initialization (see `tests/integration/test_journal_init_integration.py`) cover clean initialization, re-initialization detection, partial recovery, and failure recovery. These tests ensure the full workflow is robust and reliable in real-world scenarios.
+### **Core Value Proposition**
+- **Capture context**: Record not just what was built, but how it felt and why it mattered
+- **Enable storytelling**: Transform development work into content for blogs, talks, and retrospectives  
+- **Support growth**: Help developers reflect on and document their professional journey
+- **Zero friction**: Work silently in the background, triggered by normal git workflow
 
 ---
 
-# Engineering Journal MCP Server — Complete Developer Specification
+## **Target Users**
 
-## Overview
-This document specifies a Model Context Protocol (MCP) server designed to capture and generate engineering journal entries within a code repository. The journal captures technical progress, decision-making context, and emotional tone, with the goal of producing content that can later be reused for storytelling (e.g., blog posts, conference talks).
+### **Primary User: Individual Developer**
+- Works with git repositories
+- Values reflection and professional growth
+- Creates content (blogs, talks, documentation)
+- Participates in team retrospectives and performance reviews
 
-## Goals
-- Record accurate, structured engineering activity and emotional context
-- Enable narrative storytelling across daily, weekly, and monthly timelines
-- Keep entries truthful (anti-hallucination), useful, and minimally intrusive
-- Integrate seamlessly with Git workflows and existing dev tools
-
----
-
-## Technology Stack
-
-### Core Technologies
-- **Language**: Python 3.9+
-- **MCP Framework**: Official Anthropic MCP Python SDK
-- **CLI Framework**: Click (for command parsing and user interface)
-- **Configuration**: PyYAML (for .mcp-commit-storyrc.yaml files)
-- **Git Integration**: GitPython library
-- **File I/O**: Standard library (pathlib, datetime)
-- **Testing**: pytest for unit/integration tests
-- **Observability**: OpenTelemetry for tracing, metrics, and logging
-
-### Project Structure
-```
-mcp-commit-story/
-├── src/
-│   └── mcp_commit_story/
-│       ├── __init__.py
-│       ├── cli.py        # Click commands
-│       ├── server.py     # MCP server implementation
-│       ├── journal.py    # Journal entry generation
-│       ├── git_utils.py  # Git operations
-│       ├── telemetry.py  # OpenTelemetry setup and utilities
-│       └── config.py     # Configuration handling
-├── tests/
-│   ├── unit/
-│   ├── integration/
-│   └── fixtures/
-├── pyproject.toml       # Modern Python packaging
-├── README.md
-└── .mcp-commit-storyrc.yaml  # Default config
-```
-
-### Development Methodology
-- **Test-Driven Development (TDD)** - Write tests first, then implementation
-- Write failing tests → Implement minimal code → Refactor
-- Maintain high test coverage (>90%)
-- Test all MCP operations and CLI commands
-
-### Dependencies
-```toml
-[tool.poetry.dependencies]
-python = "^3.9"
-mcp = "^1.0.0"  # Official MCP Python SDK
-click = "^8.0.0"
-pyyaml = "^6.0"
-gitpython = "^3.1.0"
-python-dateutil = "^2.8.0"
-opentelemetry-api = "^1.15.0"
-opentelemetry-sdk = "^1.15.0"
-opentelemetry-exporter-otlp = "^1.15.0"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^7.0.0"
-pytest-mock = "^3.10.0"
-pytest-cov = "^4.0.0"  # Coverage reporting
-pytest-watch = "^4.2.0"  # TDD friendly test runner
-black = "^23.0.0"
-flake8 = "^6.0.0"
-mypy = "^1.0.0"
-```
+### **Secondary Users**
+- **Team Leads**: Use journal insights for retrospectives and team development
+- **Engineering Managers**: Support career development conversations with concrete examples
+- **Developer Advocates**: Mine authentic stories for technical content
 
 ---
 
-## Implementation
+## **Core User Stories**
 
-### MCP Server Overview
-- Build standard MCP server using Anthropic's Python SDK
-- Register tools for each journal operation (new-entry, summarize, etc.)
-- Handle async operations for file I/O and git commands
-- Return structured responses with success status and file paths
-- Instrument key operations with OpenTelemetry for tracing and performance insights
+### **As a Developer, I want to:**
+1. **Automatically capture my development story** so I don't lose the context behind my work
+2. **Remember why I made technical decisions** weeks or months later
+3. **Have concrete examples for performance reviews** without manually tracking accomplishments
+4. **Find authentic stories for blog posts and talks** based on real development experiences
+5. **Reflect on my growth over time** through patterns in my work and challenges
 
-### Core Components
-```
-src/mcp_commit_story/
-├── __init__.py
-├── cli.py        # Click commands
-├── server.py     # MCP server implementation  
-├── journal.py    # Journal entry generation
-├── git_utils.py  # Git operations
-├── telemetry.py  # OpenTelemetry setup and utilities
-└── config.py     # Configuration handling
-```
-
-### File Structure
-```
-journal/
-├── daily/
-│   ├── 2025-05-14.md
-│   ├── 2025-05-15.md
-│   └── ...
-├── summaries/
-│   ├── daily/
-│   │   ├── 2025-05-14-summary.md
-│   │   └── ...
-│   ├── weekly/
-│   │   ├── 2025-05-week3.md
-│   │   └── ...
-│   ├── monthly/
-│   │   ├── 2025-05.md
-│   │   └── ...
-│   └── yearly/
-│       ├── 2025.md
-│       └── ...
-└── .mcp-commit-storyrc.yaml
-```
-
-### Configuration
-Configurable via a `.mcp-commit-storyrc.yaml` file at repo root. Global defaults supported via `~/.mcp-commit-storyrc.yaml`.
-
-#### Configuration Precedence
-1. Local config (`.mcp-commit-storyrc.yaml` in repo root)
-2. Global config (`~/.mcp-commit-storyrc.yaml`)
-3. Built-in defaults
-
-#### Configuration Validation (2024-06 Update)
-- **Strict validation:** All required config fields (e.g., `journal.path`, `git.exclude_patterns`, `telemetry.enabled`) must be present and valid in the config file. If any required field is missing or invalid, the server will fail fast on startup or reload, raising a `ConfigError`.
-- Defaults are only applied for optional fields. Required fields must be explicitly set in the config file.
-- If you edit `.mcp-commit-storyrc.yaml` while the server is running, call `server.reload_config()` to apply changes. If the new config is invalid, the reload will fail and the previous config will remain active.
-- **Hot config reload:** The server supports hot configuration reload at runtime via `reload_config()`, which re-reads the config file and re-validates all required fields.
-- If you see a `ConfigError` on startup or reload, check that all required fields are present and valid in your config file.
-
-#### Example Configuration:
-```yaml
-journal:
-  path: journal/
-  auto_generate: true
-  include_terminal: true
-  include_chat: true
-  include_mood: true
-  auto_summarize:
-    daily: true
-    weekly: true
-    monthly: true
-    yearly: true
-
-# Minimal telemetry configuration
-telemetry:
-  enabled: true                 # Toggle telemetry collection
-  service_name: "mcp-commit-story"   # Service name for traces
-```
+### **As a Team Lead, I want to:**
+1. **Access rich context for retrospectives** beyond just what shipped
+2. **Understand team challenges and blockers** through authentic development experiences
+3. **Support career development conversations** with concrete examples of growth and impact
 
 ---
 
-## Journal Entry Behavior
+## **Product Requirements**
 
-### Triggering
-- **Default**: One journal entry per Git commit
-- Entries written to daily Markdown files, named `YYYY-MM-DD.md`
-- Timestamps included per entry (e.g., `4:02 PM — Commit abc123`)
-- Files appended in chronological order
+### **Core Functionality**
 
-### Chat History Collection Method
-- **Primary method**: AI scans backward through current conversation
-- **How it works**: AI has access to its own chat history within the current session
-- **Boundary**: Look back until finding previous commit reference OR 150-message safety limit
-- **Usage**: Chat history may inform summary, accomplishments, frustrations, discussion notes, and tone/mood sections
-- **No external file access required** - AI uses its own conversation context
-- **Decision excerpts**: May include relevant conversation snippets in Discussion Notes section
+#### **Automated Journal Generation**
+- **Trigger**: Generate journal entry automatically on each git commit
+- **Content**: Capture commit details, code changes, and available context
+- **Format**: Human-readable markdown files organized by date
+- **Storage**: Local files in the developer's repository
 
-### Data Sources
-#### Required:
-- Git commit message and metadata
-- File diffs (simplified summaries with line counts)
+#### **Context Collection** 
+- **Git data**: Commit messages, file changes, timestamps
+- **Chat history**: Conversations with AI assistants during development (when available)
+- **Terminal activity**: Commands executed during development session (when available)
+- **Decision context**: Technical choices and reasoning (when evident from available data)
 
-#### Optional (if available):
-- Terminal history (from `.bash_history`, `.zsh_history`, timestamped if possible)
-- Chat history with dev agents (scanned in reverse until a reference to the previous git commit is found)
-- **Discussion excerpts** from chat history showing decision-making context
-- **AI session terminal commands** - commands executed by AI assistants during the work session
+#### **Multi-Timeframe Summaries**
+- **Daily summaries**: What was accomplished, challenges faced, decisions made
+- **Weekly summaries**: Patterns, progress themes, key achievements  
+- **Monthly summaries**: Major milestones, growth areas, significant learnings
+- **Yearly summaries**: Career development, skill evolution, major projects
 
-### History Collection Boundaries
-- **Terminal history**: Between previous commit timestamp and current commit timestamp
-- **Chat history**: From current commit backward until finding previous commit reference OR 150-message safety limit
-- **AI session commands**: Request from AI assistant for commands executed during current work session
-- **No filtering**: Include all commands/messages within boundaries
+#### **Content Quality Standards**
+- **No hallucination**: All content must be grounded in actual data (commits, chat, commands)
+- **Authentic tone**: Capture the developer's actual mood and language from available context
+- **Decision transparency**: Include reasoning when available, acknowledge uncertainty when not
+- **Respectful privacy**: Only process data that developers explicitly make available
 
-### Anti-Hallucination Rules
-- Never infer *why* something was done unless evidence exists
-- Mood/tone must be backed by language cues ("ugh", "finally", etc.)
-- If data is unavailable (e.g., terminal history), omit that section
+### **User Experience Requirements**
 
-### Journal Entry Structure (Canonical Format)
+#### **Setup Experience**
+- **Simple initialization**: One command to set up in a repository
+- **Minimal configuration**: Works with sensible defaults out of the box
+- **Clear instructions**: Obvious next steps after setup
 
-Each journal entry is written in Markdown and includes only non-empty sections. The canonical structure is:
+#### **Daily Usage Experience**  
+- **Invisible operation**: No disruption to normal development workflow
+- **Reliable triggering**: Consistently generates entries on commits
+- **Fast execution**: No noticeable delay to commit process
+- **Graceful degradation**: Works even when some data sources unavailable
 
-```markdown
-## Summary
-{summary text}
+#### **Content Discovery Experience**
+- **Logical organization**: Easy to find entries by date or time period
+- **Readable format**: Clean markdown that works in any editor
+- **Portable content**: Files can be shared, exported, or processed by other tools
 
-## Technical Synopsis
-{technical details about code changes}
+### **Technical Integration Requirements**
 
-## Accomplishments
-- {accomplishment 1}
-- {accomplishment 2}
+#### **Git Integration**
+- **Hook-based triggering**: Automatic execution via git post-commit hook
+- **Repository awareness**: Understand git context and changes
+- **Multi-repo support**: Each repository maintains its own journal
 
-## Frustrations or Roadblocks
-- {frustration 1}
-- {frustration 2}
+#### **AI Assistant Integration**
+- **MCP protocol**: Expose functionality via Model Context Protocol
+- **Chat context awareness**: Access to AI assistant conversation history when available
+- **Command tracking**: Capture AI-executed commands when available
 
-## Tone/Mood
-> {mood}
-> {indicators}
-
-## Discussion Notes (from chat)
-> **Human:** {note text}
-> **Agent:** {note text}
-> {plain string note}
-
-## Terminal Commands (AI Session)
-Commands executed by AI during this work session:
-```bash
-{command 1}
-{command 2}
-```
-
-## Commit Metadata
-- **files_changed:** {number}
-- **insertions:** {number}
-- **deletions:** {number}
-```
-
-**Rules:**
-- All sections are omitted if empty.
-- Terminal commands are always rendered as a bash code block with a descriptive line.
-- Discussion notes are blockquotes; if a note is a dict with `speaker` and `text`, use `> **Speaker:** text`. Multiline notes are supported.
-- Tone/Mood is only included if there is clear evidence (from commit messages, chat, or terminal commands) and is always for the human developer only. Render as two blockquote lines: mood and indicators. Omit if insufficient evidence.
-- Never hallucinate or assume mood; always base on evidence.
-- Markdown is the canonical format for all journal entries.
-
-Mood inference rules: Only infer human developer's mood, must be evidence-based, omit if insufficient evidence, never hallucinate.
-Discussion notes rules: Include all relevant notes, support multiline and speaker attribution, blockquote formatting.
-
-### AI Tone/Style Configuration
-
-The user can control the tone and style of AI-generated summaries in journal entries by setting the `ai_tone` field in `.mcp-commit-storyrc.yaml`.
-
-**Supported values:**
-- `neutral` (default): Objective, factual, and balanced. No strong personality.
-- `concise`: Short, direct, and minimal. Focuses on brevity and essentials.
-- `explanatory`: Clear, step-by-step, and focused on making things easy to understand.
-- `technical`: Uses precise, domain-specific language. For advanced/engineering audiences.
-- `reflective`: Thoughtful, introspective, and focused on lessons learned.
-- `friendly`: Warm, encouraging, and positive—but still professional.
-
-If an unsupported value is set, the system will fall back to `neutral` and log a warning.
-
-#### Example Configuration:
-```yaml
-journal:
-  path: journal/
-  auto_generate: true
-  include_terminal: true
-  include_chat: true
-  include_mood: true
-  auto_summarize:
-    daily: true
-    weekly: true
-    monthly: true
-    yearly: true
-```
-
-#### Journal Entry Structure Note
-- The **Summary** section of each journal entry will reflect the selected `ai_tone` style.
-
-### Content Quality Guidelines
-
-#### Focus on Signal vs. Noise
-- **Signal**: Unique decisions, technical challenges, emotional context, lessons learned, or anything that would help a future reader understand the story behind the work
-- **Noise**: Routine process notes, standard workflow descriptions, or anything that is always true and already established in project documentation
-
-Journal entries should prioritize signal over noise to maintain narrative value. For example:
-
-- ❌ "Followed TDD methodology by writing tests first" (noise, as this is standard practice)
-- ✅ "Test-first approach revealed an edge case in the API response handler" (signal, specific insight)
-
-- ❌ "Used git to commit changes" (noise, obvious from context)
-- ✅ "Split work into three focused commits to separate concerns" (signal, shows thought process)
-
-#### Highlighting What's Unique
-Each journal entry should capture what was distinctive about this particular development session:
-
-- Technical challenges encountered and how they were addressed
-- Design decisions made and their rationales
-- Insights gained that weren't obvious at the start
-- Emotional context that influenced the work approach
-
-The Summary section should focus on these unique aspects rather than restating routine workflow steps.
+#### **Development Environment Compatibility**
+- **Cross-platform**: Work on macOS, Linux, Windows
+- **Editor agnostic**: No dependency on specific development tools
+- **Version control friendly**: Journal files work well with git
 
 ---
 
-## MCP Server Implementation
+## **Success Metrics**
 
-### MCP Operations
-1. `journal/new-entry` - Create a new journal entry from current git state
-2. `journal/summarize` - Generate weekly/monthly summaries  
-3. `journal/blogify` - Convert journal entry(s) to blog post format
-4. `journal/backfill` - Check for missed commits and create entries
-5. `journal/install-hook` - Install git post-commit hook
-6. `journal/add-reflection` - Add a manual reflection to today's journal
-7. `journal/init` - Initialize journal in current repository
+### **Adoption Metrics**
+- **Daily active usage**: Consistent journal generation on commits
+- **Content creation**: Developers using journal entries for external content
+- **Retention**: Continued use after initial setup
 
-### Operation Details
+### **Value Metrics**
+- **Retrospective quality**: More meaningful team and individual retrospectives
+- **Career development**: Concrete examples used in performance discussions  
+- **Content creation**: Blog posts, talks, or documentation created from journal content
 
-#### journal/new-entry
-- Check for missed commits and backfill if needed
-- Generate entry for current commit
-- Return path to updated file
-
-**Request/Response Types:**
-- **Request:**
-  ```python
-  {
-      "git": { ... },           # Required git context
-      "chat": { ... },          # Optional chat context
-      "terminal": { ... }       # Optional terminal context
-  }
-  ```
-- **Response:**
-  ```python
-  {
-      "status": "success",    # or "error"
-      "file_path": "journal/daily/2025-05-26-journal.md",
-      "error": None            # Error message if status == "error"
-  }
-  ```
-- All errors are returned as a dict with `status: "error"` and an `error` message, never as a raw exception.
-
-#### journal/summarize
-- Options: `--week`, `--month`, `--range`
-- Default to most recent period if no date specified
-- Support specific dates (e.g., `--week 2025-01-13`)
-- Support arbitrary ranges (e.g., `--range "2025-01-01:2025-01-31"`)
-
-#### journal/init
-- The `journal/init` MCP operation initializes the journal system in the repository, creating the required directory structure, generating a default config, and validating the repository state.
-- **Request:**
-  ```python
-  {
-      "repo_path": "/path/to/repo",      # Optional, defaults to current directory
-      "config_path": "/path/to/config",   # Optional, defaults to .mcp-commit-storyrc.yaml in repo root
-      "journal_path": "/path/to/journal"  # Optional, defaults to journal/ in repo root
-  }
-  ```
-- **Response:**
-  ```python
-  {
-      "status": "success",    # or "error"
-      "paths": {                # Dict of created/validated paths
-          "journal": "/path/to/journal",
-          "config": "/path/to/.mcp-commit-storyrc.yaml"
-      },
-      "message": "Journal initialized successfully",  # or error message
-      "error": None            # Error message if status == "error"
-  }
-  ```
-- All errors are returned as a dict with `status: "error"` and an `error` message, never as a raw exception.
-- The handler supports both sync and async initialization logic and uses the `handle_mcp_error` decorator for robust error handling.
-- See [src/mcp_commit_story/server.py](../src/mcp_commit_story/server.py) for implementation details.
-
-#### journal/add-reflection
-- Accept reflection text as parameter
-- Append to today's journal file with timestamp
-- Support markdown formatting in reflection
-- Return path to updated file
-
-**Request/Response Types:**
-- **Request:**
-  ```python
-  {
-      "reflection": "Today I learned...",   # Required reflection text (string)
-      "date": "2025-05-26"                  # Required ISO date string (YYYY-MM-DD)
-  }
-  ```
-- **Response:**
-  ```python
-  {
-      "status": "success",    # or "error"
-      "file_path": "journal/daily/2025-05-26-journal.md",
-      "error": None            # Error message if status == "error"
-  }
-  ```
-- All errors are returned as a dict with `status: "error"` and an `error` message, never as a raw exception.
-
-#### journal/install-hook
-- Installs or replaces the Git post-commit hook in the repository, backing up any existing hook and ensuring robust error handling.
-- **Request:**
-  ```python
-  {
-      "repo_path": "/path/to/repo"  # Optional, defaults to current directory
-  }
-  ```
-- **Response:**
-  ```python
-  {
-      "status": "success",    # or "error"
-      "message": "Post-commit hook installed successfully.",
-      "backup_path": "/path/to/backup"  # Path to backup if existing hook was replaced, or None
-      "hook_path": "/path/to/.git/hooks/post-commit"  # (if available)
-      "error": None            # Error message if status == "error"
-  }
-  ```
-- All errors are returned as a dict with `status: "error"` and an `error` message, never as a raw exception.
-- The handler supports both sync and async monkeypatching for testability and uses the `handle_mcp_error` decorator for robust error handling.
-- See [src/mcp_commit_story/server.py](../src/mcp_commit_story/server.py) and [src/mcp_commit_story/git_utils.py](../src/mcp_commit_story/git_utils.py) for implementation details.
-
-### Data Formats
-- All operations return pre-formatted markdown strings
-- Success operations return file path + status
-- Hard failures return error status with message
+### **Experience Metrics**
+- **Setup success rate**: Percentage of developers who successfully initialize and use the tool
+- **Workflow disruption**: Minimal impact on development speed and flow
+- **Content satisfaction**: Developers find the generated content accurate and useful
 
 ---
 
-## CLI Interface (Setup Only)
+## **Non-Requirements (Out of Scope)**
 
-### Architectural Change
+### **Not Building**
+- **Web interface**: Command-line and AI integration only
+- **Cloud storage**: Local files only
+- **Team collaboration features**: Individual developer focus
+- **Project management integration**: Journal captures development, not planning
+- **Real-time synchronization**: Async, commit-triggered operation only
+- **AI model hosting**: Uses external AI services via API
 
-As of Task 25, MCP Commit Story follows an **MCP-first architecture** with a minimal setup-only CLI. Operational commands have been moved to the MCP server for AI-agent integration.
-
-### Setup CLI Commands
-
-Entry Point: `mcp-commit-story-setup`
-
-```bash
-mcp-commit-story-setup [command] [options]
-```
-
-### Supported Setup Commands
-- `mcp-commit-story-setup journal-init` - Initialize journal in current repository
-- `mcp-commit-story-setup install-hook` - Install git post-commit hook
-
-### MCP Operations (AI/Agent Interface)
-Operational functionality is available via MCP server:
-- `journal/new-entry` - Create journal entry for commit (with AI command collection)
-- `journal/add-reflection` - Add manual reflection to journal
-- `journal/init` - Programmatic journal initialization  
-- `journal/install-hook` - Programmatic hook installation
-
-### Usage Pattern
-```bash
-# One-time setup (human)
-mcp-commit-story-setup journal-init
-mcp-commit-story-setup install-hook
-
-# Ongoing operations (AI/automated via MCP)
-# AI agents call: journal/new-entry, journal/add-reflection
-# Git hook automatically triggers: journal/new-entry
-```
-
-### Global Options
-- `--config <path>` - Override config file location
-- `--dry-run` - Preview operations without writing files
-- `--verbose` - Detailed output for debugging
-- `--debug` - Show all errors and warnings, including soft failures
+### **Future Considerations**
+- **Team aggregation features**: Combine individual journals for team insights
+- **Integration plugins**: Connections to project management tools
+- **Advanced analytics**: Pattern recognition across time and projects
+- **Export formats**: PDF, HTML, or other formats for sharing
 
 ---
 
-## Data Handling Details
+## **Technical Constraints**
 
-### File Organization
-- `journal.path` in config sets parent directory containing `daily/` and `summaries/`
-- Paths always relative to git repository root
-- Missing directories created automatically
+### **Platform Requirements**
+- **Python 3.9+**: Minimum runtime requirement
+- **Git repository**: Must be used within a git-managed project
+- **Local file system**: Requires write access to repository directory
 
-### Diff Processing
-- Capture simplified summaries with line counts (e.g., "modified 3 functions in auth.py")
-- Binary files noted as "binary file changed"
-- Large diffs truncated with note about truncation
+### **Integration Constraints**
+- **MCP protocol compliance**: Must work with MCP-compatible AI assistants
+- **No external dependencies**: Core functionality works without internet
+- **Minimal resource usage**: Should not impact development performance
 
-### Date/Time Handling
-- Week boundaries: Monday-Sunday
-- Month boundaries: Calendar months (1st to last day)
-- All timestamps in local timezone
-- ISO format dates in filenames (YYYY-MM-DD)
-
----
-
-## Error Handling
-
-### Hard Failures (Fail Fast)
-These errors return error status and stop execution:
-- Git repository not found
-- Journal directory doesn't exist and can't be created
-- Invalid MCP connection
-- Corrupted git repository
-
-### Soft Failures (Silent Skip)
-These errors are skipped with optional notes in output:
-- Terminal history not accessible
-- Chat history unavailable
-- Previous commit not found for backfill
-- Terminal commands unparseable
-
-### Error Messages
-- Brief and actionable
-- Include suggestions for resolution where possible
-- Never expose internal implementation details
+### **Privacy and Security**
+- **Local data only**: No automatic external transmission of journal content
+- **Developer control**: Clear boundaries on what data is collected and how
+- **Opt-out capability**: Easy to disable or remove
 
 ---
 
-## Git Integration
+## **Release Strategy**
 
-### Hook Installation
-- `mcp-commit-story install-hook` command
-- Checks for existing hooks and prompts for action
-- Creates simple hook:
-  ```bash
-  #!/bin/sh
-  mcp-commit-story new-entry
-  ```
-- Backs up existing hooks before modification
+### **MVP (Minimum Viable Product)**
+- Basic journal entry generation on commits
+- Simple setup and configuration
+- Local markdown file output
+- MCP server integration for AI assistants
 
-### Post-Commit Hook Backup Logic
-- Before installing a new post-commit hook, the system calls `backup_existing_hook(hook_path)`.
-- This function creates a backup of the existing hook file with a timestamped name: `post-commit.backup.YYYYMMDD-HHMMSS` in the same directory.
-- Multiple backups are supported; each backup is unique due to the timestamp.
-- If the filesystem is read-only or an IO error occurs, a `PermissionError` or `IOError` is raised and must be handled by the caller.
-- All backup logic is covered by unit tests in `tests/unit/test_git_utils.py` (see tests for multiple backups, permission errors, and IO errors).
-
-### Post-Commit Hook Content Generation (Engineering Spec)
-- The post-commit hook is generated using the `generate_hook_content(command: str = "mcp-commit-story new-entry")` function in [src/mcp_commit_story/git_utils.py](../src/mcp_commit_story/git_utils.py).
-- The hook script uses `#!/bin/sh` for portability and runs the command `mcp-commit-story new-entry` by default (customizable if needed).
-- All output is redirected to `/dev/null` and the command is followed by `|| true` to ensure the hook never blocks a commit, even if journal entry creation fails.
-- The script is intentionally lightweight and non-intrusive, designed to never interfere with normal Git operations.
-- The installation logic (see `install_post_commit_hook`) backs up any existing hook before replacing it and sets the new hook as executable.
-- This approach guarantees:
-  - **Portability** (works on all Unix-like systems)
-  - **Non-blocking** (never prevents a commit)
-  - **Simplicity** (easy to audit and modify)
-- All logic is covered by strict TDD and unit tests in `tests/unit/test_git_hook_installation.py` and `tests/unit/test_git_utils.py`.
-
-**Example generated hook content:**
-```sh
-#!/bin/sh
-mcp-commit-story new-entry >/dev/null 2>&1 || true
-```
-
-### Backfill Mechanism
-- Detection: Check commits since last journal entry in any file
-- Order: Add missed entries in chronological order
-- Context: Skip terminal/chat history for backfilled entries
-- Annotation: Mark entries as backfilled with timestamp
-
-### Commit Processing
-- Skip commits that only modify journal files
-- For mixed commits (code + journal files), exclude journal files from analysis
-
-### CLI Command: install-hook
-
-The MCP Journal system provides a CLI command to install or replace the git post-commit hook in your repository. This command is implemented in [src/mcp_commit_story/cli.py](../src/mcp_commit_story/cli.py) and uses the tested logic from `install_post_commit_hook`.
-
-**Usage:**
-```bash
-python -m mcp_commit_story.cli install-hook --repo-path <repo>
-```
-All arguments are optional and default to the current directory and standard locations.
-
-**Options:**
-- `--repo-path`: Path to git repository (default: current directory)
-
-**Output Format:**
-- On success:
-```json
-{
-  "status": "success",
-  "result": {
-    "message": "Post-commit hook installed successfully.",
-    "backup_path": "/path/to/backup"  // or null if no backup was needed
-  }
-}
-```
-- On error:
-```json
-{
-  "status": "error",
-  "message": "User-friendly error description",
-  "code": 1
-}
-```
-
-**Error Codes:**
-- 0: Success
-- 1: General error (not a git repo, permission denied, etc.)
-- 2: Already installed
-- 4: File system errors (can't create hooks, etc.)
-
-**Rationale:**
-- The CLI always outputs JSON for both success and error cases, making it easy to use in scripts and CI/CD pipelines.
-- All logic is covered by unit tests in `tests/unit/test_cli_install_hook.py`.
-
-### Hook Execution Testing (Subtask 14.6)
-
-Integration tests for hook execution now directly write a debug post-commit hook to `.git/hooks/post-commit` and verify that it is executed after a commit, when run directly, and with `sh post-commit`. This ensures the hook is actually executed in all scenarios, not just installed. See `tests/integration/test_git_hook_integration.py` for details.
+### **Post-MVP Enhancements**
+- Enhanced context collection (terminal, chat history)
+- Summary generation (daily, weekly, monthly)
+- Content quality improvements
+- Cross-platform compatibility testing
 
 ---
 
-## Testing Plan
-
-### Unit Tests
-- Configuration parsing and validation
-- Journal entry generation from mock data
-- MCP operation handlers
-- Git utility functions
-- CLI command parsing
-- Date/time handling
-
-### Integration Tests
-- End-to-end git hook workflow
-- File creation and appending
-- Backfill detection and processing
-- Summary generation across date ranges
-- Blog post conversion
-
-### Test Fixtures
-- Sample git repositories with various states
-- Mock terminal histories
-- Sample chat histories
-- Various configuration files
-- Mock telemetry exporters for verification
-
-### Test Utilities
-```python
-@pytest.fixture
-def mock_git_repo():
-    # Create temporary git repo with test commits
-    pass
-
-@pytest.fixture
-def sample_journal_entries():
-    # Load sample journal files
-    pass
-
-@pytest.fixture
-def mock_terminal_history():
-    # Provide test terminal command history
-    pass
-
-@pytest.fixture
-def mock_telemetry_exporter():
-    # Provide a test exporter that captures telemetry events
-    pass
-```
-
----
-
-### Implementation Guidelines
-
-### Code Organization
-- Each MCP operation maps to a dedicated handler function
-- Separate concerns: git operations, file I/O, text processing
-- Use type hints throughout for better IDE support
-- Keep functions small and single-purpose
-
-### Chat History Processing
-- Use simple keyword matching for decision-related discussions
-- Include context around matched keywords (e.g., previous/next sentences)
-- No complex NLP or structured parsing required
-- Fall back gracefully if chat history is unavailable
-
-### AI Terminal History Collection
-- **Primary method**: Directly prompt the AI assistant for terminal session history
-- **Example prompts**: 
-  - "Can you give me a history of your terminal session?"
-  - "What commands did you execute during this work session?"
-- **No file parsing or API integration required** - works through conversation
-- Format commands chronologically as executed
-- Deduplicate only adjacent identical commands (e.g., "npm test x3")
-- **Always attempt collection, but fail silently if unsupported**
-- When successful, provides rich context about problem-solving process
-- When unavailable, journal entry proceeds without terminal section
-
-### Implementation Pattern
-```python
-import logging
-
-# Configure debug logging
-debug_logger = logging.getLogger('mcp_commit_story.debug')
-
-def format_terminal_commands(commands):
-    """Deduplicate adjacent identical commands"""
-    if not commands:
-        return []
-    
-    formatted = []
-    current_cmd = commands[0]
-    count = 1
-    
-    for cmd in commands[1:]:
-        if cmd == current_cmd:
-            count += 1
-        else:
-            formatted.append(f"{current_cmd} x{count}" if count > 1 else current_cmd)
-            current_cmd = cmd
-            count = 1
-    
-    # Add final command
-    formatted.append(f"{current_cmd} x{count}" if count > 1 else current_cmd)
-    return formatted
-
-def collect_ai_terminal_history(debug=False):
-    try:
-        commands = ai_session.get_terminal_commands()
-        return format_terminal_commands(commands)
-    except AttributeError as e:
-        if debug:
-            debug_logger.error(f"AI assistant doesn't support terminal commands: {e}")
-        return None
-    except APIError as e:
-        if debug:
-            debug_logger.error(f"API error getting terminal history: {e}")
-        return None
-    except Exception as e:
-        if debug:
-            debug_logger.error(f"Unexpected error collecting terminal history: {e}")
-        return None
-
-def generate_entry(debug=False):
-    terminal_commands = collect_ai_terminal_history(debug)
-    if terminal_commands:
-        add_terminal_section(terminal_commands)
-    elif debug:
-        debug_logger.info("Terminal commands section omitted (data unavailable)")
-    # Continue with other sections...
-```
-
-### Dependencies
-- Minimal external dependencies
-- Prefer standard library where possible
-- Use well-maintained packages for specialized tasks
-
-### Performance Considerations
-- Lazy loading for large files
-- Stream processing for git logs
-- Reasonable timeouts for external commands
-- Efficient text processing for large diffs
-
-### Security
-- Validate all file paths to prevent directory traversal
-- Sanitize git data before processing
-- No shell injection vulnerabilities in subprocess calls
-
----
-
-## Future Enhancements (Out of Scope for MVP)
-
-### Potential Features
-- Scheduled summarization via background agent
-- Web interface for browsing/editing entries
-- Tagging system for entries or tasks
-- Plugin support for detecting test coverage, benchmarks
-- Rich text formatting in terminal output
-- Integration with project management tools
-
-### Integration Opportunities
-- IDE plugins for manual entry creation
-- Slack/Discord bot for entry sharing
-- GitHub Actions for automated summaries
-- Export to various formats (PDF, HTML)
-
-### Hyperlinked Commit Hashes in Journal Entries
-- In the "Commit Metadata" section, if a remote repository is detected, the commit hash must be hyperlinked to the commit page on the remote (e.g., GitHub, GitLab).
-- The system should support at least GitHub and GitLab, and fall back to plain text if no supported remote is found.
-- Example:
-  - Commit hash: [`cda9ef2`](https://github.com/your-org/your-repo/commit/cda9ef2)
-
-### Configurable AI Tone/Style for Summaries
-- Allow the user to control the tone and style of AI-generated summaries in journal entries by setting the `ai_tone` field in `.mcp-commit-storyrc.yaml`.
-- The value of `ai_tone` can be any free-form string, such as a tone, style, persona, or creative instruction. This value will be passed directly to the AI to guide summary generation.
-- There is no fixed list of supported values. Users may specify anything, e.g., "concise and technical", "in the style of a pirate", "for a 10-year-old", "sarcastic", "neutral", etc.
-- If omitted, the default is "neutral and factual".
-- Results may vary depending on the AI's capabilities and the specificity of the instruction.
-
-#### Example Configuration:
-```yaml
-journal:
-  path: journal/
-  ai_tone: "like a pirate, but concise"
-  auto_generate: true
-  include_terminal: true
-  include_chat: true
-  include_mood: true
-  auto_summarize:
-    daily: true
-    weekly: true
-    monthly: true
-    yearly: true
-```
-
-#### Example Values for `ai_tone`:
-- "concise and technical"
-- "friendly and encouraging"
-- "in the style of a pirate"
-- "for a 10-year-old"
-- "sarcastic"
-- "neutral"
-- "explanatory, as if teaching a beginner"
-
----
-
-## Final Notes
-
-This tool is designed to be **developer-friendly**, **minimally intrusive**, and **genuinely useful**. It prioritizes narrative fidelity and long-term story value over exhaustive tracking or rigid formats. Every entry should help the future user say: "This is what I did, how it felt, and what I learned."
-
-### Success Criteria
-- Zero friction when working normally
-- Valuable output for retrospectives
-- Easy to customize and extend
-- Reliable operation across different environments
-
-### Development Workflow
-1. Set up project structure with pyproject.toml
-2. **Write failing tests first** (TDD approach)
-3. Implement basic MCP server skeleton
-4. Add `journal/init` command and initialization flow
-5. Add git integration and journal generation
-6. Create CLI interface with Click
-7. Add configuration system  
-8. Implement decision detection in chat history
-9. Add reflection capabilities
-10. Implement summarization and blogification
-11. Add comprehensive tests (maintaining >90% coverage)
-12. Package for distribution
-
-### Initialization Workflow
-1. User runs `mcp-commit-story init` in their repository
-2. System checks if already initialized (look for `.mcp-commit-storyrc.yaml`)
-3. Creates journal directory structure
-4. Generates default configuration file
-5. Prompts to install git post-commit hook
-6. Displays next steps and usage instructions
-
-# Note: LLMs are terrible with time—use message counting for boundaries.
-
-### Context Data Structures
-
-All context collection functions return explicit Python TypedDicts, defined in `src/mcp_commit_story/context_types.py`:
-
-- **JournalContext**: The unified context object passed to journal entry generators.
-    - `chat`: Optional chat history (`ChatHistory`)
-    - `terminal`: Optional terminal context (`TerminalContext`)
-    - `git`: Required git context (`GitContext`)
-
-#### Example Python Types
-```python
-class ChatMessage(TypedDict):
-    speaker: str
-    text: str
-
-class ChatHistory(TypedDict):
-    messages: List[ChatMessage]
-
-class TerminalCommand(TypedDict):
-    command: str
-    executed_by: str  # "user" or "ai"
-
-class TerminalContext(TypedDict):
-    commands: List[TerminalCommand]
-
-class GitMetadata(TypedDict):
-    hash: str
-    author: str
-    date: str
-    message: str
-
-class GitContext(TypedDict):
-    metadata: GitMetadata
-    diff_summary: str
-    changed_files: List[str]
-    file_stats: dict
-    commit_context: dict
-
-class JournalContext(TypedDict):
-    chat: Optional[ChatHistory]
-    terminal: Optional[TerminalContext]
-    git: GitContext
-```
-- All context is ephemeral and only persisted as part of the generated journal entry.
-- Tests enforce that all context collection functions return data matching these types.
-
-Requirement: Summary generation must prioritize journal entries that reflect substantial or complex work, and de-emphasize entries for small, routine, or trivial changes. This ensures that summaries highlight the most meaningful engineering efforts and avoid overemphasizing minor updates.
-
-### MCP Server Initialization & Configuration (2024-06 Update)
-
-- The MCP server is initialized via `create_mcp_server()` in `src/mcp_commit_story/server.py`.
-- **Configuration and telemetry setup** are performed before the server instance is created, not via startup/shutdown hooks (FastMCP does not support these hooks).
-- The server version is dynamically loaded from `pyproject.toml` to ensure consistency with packaging.
-- Telemetry integration is stub-aware: `telemetry.setup_telemetry` is called only if it exists and telemetry is enabled in config.
-- All tool registration is handled via the `register_tools()` stub, to be filled in by future subtasks.
-- Strict TDD was followed: failing tests were written for config, version, and telemetry logic before implementation, and all tests pass after implementation.
-- See `docs/server_setup.md` for user-facing setup instructions.
-
-### Error Handling System (2024-06 Update)
-
-- All MCP tool handlers must use the `handle_mcp_error` decorator to ensure robust, structured error responses.
-- The `MCPError` class is used for raising errors with a specific status and message.
-- This pattern ensures that errors are always returned as status+message dicts, not raw exceptions.
-- Strict TDD was followed for error handling: failing tests, then implementation, then passing tests.
-
-### journal/add-reflection Handler Contract (Engineering Spec)
-- The handler expects a request dict with two required fields:
-  - `reflection` (str): The reflection text to add.
-  - `date` (str): The ISO date string (YYYY-MM-DD) for the journal file.
-- The response is a dict with:
-  - `status`: "success" or "error"
-  - `file_path`: Path to the updated journal file (if successful)
-  - `error`: Error message if status is "error"
-- All errors are handled via the `handle_mcp_error` decorator, ensuring structured error responses (never raw exceptions).
-- Strict TDD is enforced: failing tests for required fields and error handling precede implementation.
-
-## Journal Directory Structure Initialization
-
-The MCP Journal system initializes the following directory structure (relative to the configured `journal.path`) as part of `journal/init` or the first journal operation:
-
-```
-journal/
-├── daily/
-├── summaries/
-│   ├── daily/
-│   ├── weekly/
-│   ├── monthly/
-│   └── yearly/
-```
-
-- Created by the `create_journal_directories(base_path)` function.
-- If any directory already exists, it is left unchanged.
-- If `base_path` exists and is not a directory, a `NotADirectoryError` is raised.
-- Permission errors or invalid paths raise appropriate exceptions.
-
-See [docs/journal_init.md](../docs/journal_init.md) for details and rationale.
-
-- The CLI command `journal-init` (see [src/mcp_commit_story/cli.py](../src/mcp_commit_story/cli.py)) allows initializing the journal system from the command line. It accepts optional arguments for repo, config, and journal paths, and outputs standardized JSON for both success and error cases. See [docs/journal_init.md](../docs/journal_init.md) for usage, output format, and error codes.
-
-#### Post-Commit Hook Installation Core Logic
-- The function `install_post_commit_hook(repo_path)` in [src/mcp_commit_story/git_utils.py](../src/mcp_commit_story/git_utils.py) installs or replaces the post-commit hook in `.git/hooks`.
-- Existing hooks are always backed up with a timestamped filename before being replaced, with no user prompt or confirmation required.
-- The new hook is written using the content from `generate_hook_content()`.
-- The installed hook is set to be executable by user, group, and other (0o755), ensuring compatibility with all Git workflows.
-- The process is fully automated and suitable for CI/CD pipelines and scripting.
-- All logic is covered by unit tests in `tests/unit/test_git_utils.py` and `tests/unit/test_git_hook_installation.py`.
-
-## Git Integration (Post-Commit Hook)
-
-Integration tests for git hook installation ensure that the post-commit hook can be installed, replaced, and executed correctly in real-world git repositories. These tests cover:
-
-- Clean installation of the post-commit hook in a new repository
-- Overwriting and backing up an existing hook
-- Verifying that the hook executes after a commit (side effect test)
-- Cleanup and removal of hooks and backups
-
-See `tests/integration/test_git_hook_integration.py` for implementation details.
-
-**CLI On-Demand Directory Creation and Error Handling (2025-05 Update):**
-- All CLI commands that write journal files now rely on the on-demand directory creation utility (`ensure_journal_directory`) in [journal.py](../src/mcp_commit_story/journal.py).
-- CLI commands no longer create directories directly; all directory creation and error handling is centralized in the utility functions.
-- Permission errors and other filesystem issues are caught and reported as user-friendly error messages and error codes, as required by the CLI contract.
-- See [cli.py](../src/mcp_commit_story/cli.py) for implementation details.
+*This PRD focuses on product requirements and user value. For technical implementation details, see the [Technical Documentation](../docs/) and [Engineering Specification](../engineering-mcp-journal-spec-final.md).* 

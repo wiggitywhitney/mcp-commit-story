@@ -27,53 +27,42 @@ MCP Commit Story helps you:
 Here's an example daily summary, generated from real sample data:
 
 ```markdown
-# 2025-05-24-daily.md
+# 2025-05-28-daily.md
 
 ## Summary
-A milestone day focused on formalizing the unified context model, implementing and testing all section generator scaffolds, and advancing the engineering journal MCP server's type safety and TDD rigor. The team completed foundational work on TypedDicts, section generator stubs, and comprehensive test fixtures, ensuring robust anti-hallucination compliance and future maintainability. All progress was meticulously tracked, with documentation, tests, and code kept in sync.
+A productive day focused on implementing the on-demand directory creation pattern and completing major architectural changes. The developer created an intelligent task archival system that reduced the active tasks.json file from 275KB to 62KB, addressing file size concerns. Task 25 was completed, implementing the MCP-first architecture decision by eliminating operational CLI commands. The day included multiple commits for on-demand directory creation, comprehensive test updates, and task management improvements.
 
 ## Key Accomplishments
-- Defined and documented TypedDicts for all context and section generator outputs (chat, terminal, git, journal, and all journal sections)
-- Updated all context collection functions and downstream code to use the new types
-- Implemented canonical AI-driven stubs for all section generators, each with a detailed, user-approved prompt and placeholder return
-- Created comprehensive test fixtures and mock data for all section generators, covering edge cases and ensuring robust TDD
-- Refactored journal entry structure to new canonical section order and renamed "Behind the Commit" to "Commit Metadata" throughout the codebase
-- Updated engineering spec, PRD, and README to reflect the new unified context model and section order
-- Added robust filtering of journal files to `collect_git_context` to prevent recursion and contamination
-- Ensured all local/dev tests pass and AI/content tests are xfail as expected
-- Maintained strict alignment between code, documentation, and Taskmaster task tracking
+The developer solved a practical file size problem by creating an archival system for completed tasks. After experiencing issues with Taskmaster MCP tools (resolved by refreshing), the developer created `scripts/archive_completed_tasks.py` to automatically archive complete task units, reducing the active task file significantly.
+
+The architectural decision from Task 25 was implemented - removing operational CLI commands (`new-entry`, `add-reflection`) while keeping setup commands, and renaming the entry point to `mcp-commit-story-setup`. This reflects the insight that journal operations require AI analysis that humans cannot meaningfully perform manually.
+
+Multiple commits advanced the on-demand directory creation pattern, replacing upfront directory creation with just-in-time creation using the `ensure_journal_directory` utility function.
+
+## Technical Progress (Detailed Implementation)
+- **Task Archival System**: Created `scripts/archive_completed_tasks.py` with validation logic ensuring complete task units (main task + all subtasks marked "done") before archival
+- **File Size Optimization**: Reduced `tasks/tasks.json` from 275KB to 62KB, archived 12 complete task units while preserving 12 active tasks
+- **Architectural Implementation**: Completed Task 25 - eliminated operational CLI commands, renamed entry point to `mcp-commit-story-setup`, updated MCP server with proper tool registration
+- **Directory Pattern Implementation**: Completed on-demand directory creation pattern with `ensure_journal_directory` utility, comprehensive TDD coverage, and removal of all upfront directory creation logic
 
 ## Challenges Overcome
-- Required careful coordination across code, tests, documentation, and task files to ensure consistency
-- Addressed friction updating all references to renamed sections and new order
-- Resolved test setup issues for git context filtering by ensuring all test files are created within the repo directory
-- Managed complexity in scaffolding and testing all section generators in a single day
-
-## Technical Progress
-- 7+ commits made throughout the day
-- Files changed: context_types.py, journal.py, git_utils.py, engineering-mcp-journal-spec-final.md, scripts/mcp-commit-story-prd.md, test_journal.py, test_journal_entry.py, test_git_utils.py, test_context_collection.py, summary_test_data.py, tasks.json, task_005.txt, README.md
-- Test coverage: All structure, compliance, and placeholder tests passing; AI/content tests xfail as expected
-- Major architectural improvements to section generator scaffolding, context model, and anti-hallucination safeguards
+- **Taskmaster MCP Tool Issues**: Experienced timeout issues with Taskmaster MCP tools, resolved by refreshing the connection
+- **Import Path Complexities**: Encountered Python import issues during TDD implementation requiring PYTHONPATH configuration and test structure adjustments
+- **Test Coordination**: Required careful updates across CLI tests, integration tests, and documentation to maintain consistency through architectural changes
 
 ## Learning & Insights
-- Canonical AI-driven function pattern (prompt in docstring, placeholder return) streamlines TDD and future AI integration
-- Unified context model and strict type safety reduce errors and improve maintainability
-- Comprehensive test fixtures and mock data are essential for robust, edge-case-driven TDD
-- Filtering journal files from git context is critical for recursion prevention and narrative fidelity
+- **Psychology of Progress**: Visual task completion provides significant psychological motivation - the developer noted satisfaction in seeing the task list shrink
+- **File Size Impact**: Large task files create practical problems - the 275KB to 62KB reduction addressed real usability issues
+- **AI Tool Quality**: Switching to Claude 4 Sonnet provided dramatically better development partnership and problem-solving capabilities
 
-## Mood & Tone Patterns
-Overall mood: Thorough, systematic, and satisfied
-Notable progression: Moved from foundational type/model work to broad implementation and test scaffolding, ending with robust, maintainable architecture
-Emotional arc: Some friction with coordination and test setup, but resolved with methodical, best-practice solutions
-
-## Decision Points
-- Chose to formalize all context and section generator types before implementing content logic
-- Opted for a unified context model and canonical section order for all journal entries
-- Prioritized anti-hallucination compliance and test-driven development in all new code
-- Added robust filtering to git context collection to prevent recursion
+## Discussion Highlights
+- **Human**: "Something went awry and the engineering spec got to be 6000+ lines long"
+- **Human**: "Tbh it is really satisfying to see my list of open tasks get smaller. I was already wishing for a way to visually see them getting checked off"
+- **Human**: "I'm disappointed that the subtask plans in task 4 are not as detailed as the ones in our planning doc"
 
 ## Developer Reflections
-No manual reflections were added to any entries today
+- **17:47**: "I switched to claude-4-sonnet and omg it is so much better, sweet baby jesus"
+- **18:47**: "I really like the discussion notes that Claude 4 Sonnet is capturing. It adds a lot of color and interest. I want the most interesting of these to bubble up into the daily summary. I also want the daily summary to include ALL manual reflections, ver betim. These are gold."
 ```
 
 ---
@@ -86,7 +75,14 @@ No manual reflections were added to any entries today
 - **Mood and emotion:** The journal reflects your mood and tone based on how you talk to the AI agent or what you write in commit messages—so if you vent, celebrate, or reflect, those feelings are captured authentically.
 - **Summaries and threads:** Daily, weekly, monthly, and yearly summaries help you spot patterns, track progress, and find the stories worth sharing.
 
-For a technical deep dive into the architecture, workflow, and engineering decisions behind MCP Commit Story, see the [engineering-mcp-journal-spec-final.md](engineering-mcp-journal-spec-final.md) document.
+For a technical deep dive into the architecture, workflow, and engineering decisions behind MCP Commit Story, see our **[Technical Documentation](docs/)** which includes:
+
+- **[Architecture Overview](docs/architecture.md)** - System design and architectural decisions
+- **[MCP API Specification](docs/mcp-api-specification.md)** - Complete API reference for integration
+- **[Implementation Guide](docs/implementation-guide.md)** - Development patterns and technical details
+- **[Journal Behavior](docs/journal-behavior.md)** - How entries are generated and structured
+
+For the complete engineering specification, see [engineering-mcp-journal-spec-final.md](engineering-mcp-journal-spec-final.md).
 
 ---
 
@@ -145,20 +141,9 @@ MIT
 
 **MCP Commit Story: Because your engineering work is more than just code.**
 
-## Setup (CLI)
+### For Developers & Integrators
 
-- `mcp-commit-story-setup journal-init` — Initialize the journal in your repo
-- `mcp-commit-story-setup install-hook` — Install the post-commit hook
-
-## Operational Workflow
-
-All journal entry creation, reflection addition, and summarization are handled automatically by the MCP server and AI agent. There are no operational CLI commands for these tasks.
-
-- Use the MCP server for all journal operations
-- The AI agent is the primary interface for adding reflections, generating summaries, and managing journal entries
-
-## Architecture Rationale
-
-- Core functionality requires AI analysis and automation
-- Simpler product, fewer interfaces to maintain
-- Clear value proposition: "automatic engineering journal with AI analysis"
+- **[Full Technical Documentation](docs/)** - Organized technical guides
+- **[Complete Engineering Spec](engineering-mcp-journal-spec-final.md)** - Comprehensive reference (900+ lines)
+- **[Architecture Decisions](docs/architecture.md)** - Why we built it this way
+- **[API Reference](docs/mcp-api-specification.md)** - Integration guide for MCP clients

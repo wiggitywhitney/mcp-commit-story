@@ -1,5 +1,84 @@
 # Commit Story MCP Server — Complete Developer Specification
 
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Goals](#goals)
+3. [MCP Server Configuration and Integration](#mcp-server-configuration-and-integration)
+4. [Technology Stack](#technology-stack)
+   - [Core Technologies](#core-technologies)
+   - [Project Structure](#project-structure)
+   - [Development Methodology](#development-methodology)
+   - [Dependencies](#dependencies)
+5. [Implementation](#implementation)
+   - [MCP Server Overview](#mcp-server-overview)
+   - [Core Components](#core-components)
+   - [File Structure](#file-structure)
+   - [Configuration](#configuration)
+   - [AI Tone/Style Configuration](#ai-tonestyle-configuration)
+   - [On-Demand Directory Creation Pattern](#on-demand-directory-creation-pattern)
+6. [Journal Entry Behavior](#journal-entry-behavior)
+   - [Triggering](#triggering)
+   - [Chat History Collection Method](#chat-history-collection-method)
+   - [Data Sources](#data-sources)
+   - [History Collection Boundaries](#history-collection-boundaries)
+   - [Anti-Hallucination Rules](#anti-hallucination-rules)
+   - [Recursion Prevention](#recursion-prevention)
+   - [Journal Entry Structure](#journal-entry-structure-canonical-format)
+   - [Content Quality Guidelines](#content-quality-guidelines)
+7. [MCP Server Implementation](#mcp-server-implementation)
+   - [MCP Operations](#mcp-operations)
+   - [Operation Details](#operation-details)
+   - [Data Formats](#data-formats)
+8. [CLI Interface (Setup Only)](#cli-interface-setup-only)
+   - [Architectural Change](#architectural-change)
+   - [Setup CLI Commands](#setup-cli-commands)
+   - [MCP Operations (Primary Interface)](#mcp-operations-primary-interface)
+   - [Usage Pattern](#usage-pattern)
+   - [Global Options](#global-options)
+9. [Data Handling Details](#data-handling-details)
+   - [File Organization](#file-organization)
+   - [Diff Processing](#diff-processing)
+   - [Date/Time Handling](#datetime-handling)
+10. [Error Handling](#error-handling)
+    - [Hard Failures (Fail Fast)](#hard-failures-fail-fast)
+    - [Soft Failures (Silent Skip)](#soft-failures-silent-skip)
+    - [Error Messages](#error-messages)
+    - [Debug Mode](#debug-mode)
+    - [Graceful Degradation Philosophy](#graceful-degradation-philosophy)
+11. [Git Integration](#git-integration)
+    - [Hook Installation](#hook-installation)
+    - [Backfill Mechanism](#backfill-mechanism)
+    - [Commit Processing](#commit-processing)
+    - [Post-Commit Hook Content Generation](#post-commit-hook-content-generation-engineering-spec)
+    - [Post-Commit Hook Installation Core Logic](#post-commit-hook-installation-core-logic)
+12. [Testing Plan](#testing-plan)
+    - [Unit Tests](#unit-tests)
+    - [Integration Tests](#integration-tests)
+    - [Test Fixtures](#test-fixtures)
+    - [Test Utilities](#test-utilities)
+    - [Hook Execution Testing](#hook-execution-testing-subtask-146)
+13. [Implementation Guidelines](#implementation-guidelines)
+    - [Code Organization](#code-organization)
+    - [Chat History Processing](#chat-history-processing)
+    - [AI Terminal History Collection](#ai-terminal-history-collection)
+    - [Implementation Pattern](#implementation-pattern)
+    - [Dependencies](#dependencies-1)
+    - [Performance Considerations](#performance-considerations)
+    - [Security](#security)
+14. [Future Enhancements (Out of Scope for MVP)](#future-enhancements-out-of-scope-for-mvp)
+    - [Potential Features](#potential-features)
+    - [Integration Opportunities](#integration-opportunities)
+    - [Hyperlinked Commit Hashes](#hyperlinked-commit-hashes-in-journal-entries)
+    - [Configurable AI Tone/Style](#configurable-ai-tonestyle-for-summaries)
+15. [Final Notes](#final-notes)
+    - [Success Criteria](#success-criteria)
+    - [Development Workflow](#development-workflow)
+    - [Initialization Workflow](#initialization-workflow)
+    - [Context Data Structures](#context-data-structures)
+
+---
+
 ## Overview
 This document specifies a Model Context Protocol (MCP) server designed to capture and generate engineering journal entries within a code repository. The journal records commits, technical progress, decision-making context, and emotional tone, with the goal of producing content that can be analyzed for patterns and reused for storytelling (e.g., blog posts, conference talks).
 
@@ -554,7 +633,7 @@ Generated journal entry successfully (some sections omitted)
 ## Git Integration
 
 ### Hook Installation
-- `mcp-commit-story install-hook` command
+- `mcp-commit-story-setup install-hook` command
 - Checks for existing hooks and prompts for action
 - Creates hook that implements recursion prevention logic
 - Backs up existing hooks before modification
@@ -841,7 +920,7 @@ This tool is designed to be **developer-friendly**, **minimally intrusive**, and
 14. Package for distribution
 
 ### Initialization Workflow
-1. User runs `mcp-commit-story journal-init` in their repository
+1. User runs `mcp-commit-story-setup journal-init` in their repository
 2. System checks if already initialized (look for `.mcp-commit-storyrc.yaml`)
 3. Creates journal directory structure
 4. Generates default configuration file
@@ -852,4 +931,35 @@ This tool is designed to be **developer-friendly**, **minimally intrusive**, and
 
 ### Context Data Structures
 
-All context collection functions return explicit Python TypedDicts, defined in `
+All context collection functions return explicit Python TypedDicts, defined in `src/mcp_commit_story/types.py`:
+
+```python
+from typing import TypedDict, Optional, List
+from datetime import datetime
+
+class JournalContext(TypedDict):
+    commit_hash: str
+    commit_message: str
+    timestamp: datetime
+    files_changed: List[str]
+    insertions: int
+    deletions: int
+    chat_history: Optional[List['ChatMessage']]
+    terminal_commands: Optional[List[str]]
+    mood_indicators: Optional[str]
+
+class ChatMessage(TypedDict):
+    speaker: str  # "Human" or "Agent"
+    text: str
+    timestamp: Optional[datetime]
+
+class SummaryContext(TypedDict):
+    period: str  # "day", "week", "month", "year"
+    start_date: datetime
+    end_date: datetime
+    journal_entries: List[str]
+    major_accomplishments: List[str]
+    patterns: List[str]
+```
+
+These structures ensure consistent data handling across all MCP operations and provide clear contracts for context collection and journal generation.
