@@ -165,6 +165,79 @@ def my_function():
         # Your logic here
 ```
 
+### MCP Operation Decorator
+
+For tracing MCP-specific operations, use the `trace_mcp_operation` decorator:
+
+```python
+from mcp_commit_story.telemetry import trace_mcp_operation
+
+# Basic usage
+@trace_mcp_operation("journal_entry_creation")
+def create_journal_entry():
+    # Your function implementation
+    pass
+
+# With custom attributes
+@trace_mcp_operation("tool_call", attributes={"tool.name": "journal/create"})
+async def handle_tool_call():
+    # Your async function implementation
+    pass
+
+# Full customization
+@trace_mcp_operation(
+    "complex_operation",
+    operation_type="mcp_tool", 
+    attributes={"priority": "high"}
+)
+def complex_operation():
+    pass
+```
+
+#### Decorator API
+
+**Parameters:**
+- `operation_name` (required): Name of the MCP operation for the span
+- `attributes` (optional): Dictionary of custom attributes to add to the span
+- `operation_type` (optional): Type of MCP operation (default: "mcp_operation")
+- `tracer_name` (optional): Name of the tracer to use (default: "mcp_journal")
+
+#### Semantic Attributes
+
+The decorator automatically sets these span attributes following OpenTelemetry semantic conventions:
+
+**Standard MCP Attributes:**
+- `mcp.operation.name`: The operation name provided to the decorator
+- `mcp.operation.type`: The type of MCP operation (e.g., "mcp_operation", "mcp_tool")
+- `mcp.function.name`: The actual Python function name
+- `mcp.function.module`: The module containing the function
+- `mcp.function.async`: Boolean indicating if the function is async
+
+**Result Attributes:**
+- `mcp.result.status`: "success" or "error" based on execution outcome
+
+**Error Attributes (when exceptions occur):**
+- `error.type`: The exception class name (e.g., "FileNotFoundError")
+- `error.message`: The exception message
+
+#### Features
+
+**Automatic Function Detection:**
+- Detects async vs sync functions using `asyncio.iscoroutinefunction()`
+- Applies appropriate wrapper automatically
+- Preserves original function metadata with `functools.wraps()`
+
+**Error Handling:**
+- Records exceptions in spans with full details
+- Sets span status to ERROR with descriptive messages
+- Always propagates exceptions (never suppresses them)
+- Follows observability principle: don't change application behavior
+
+**Context Propagation:**
+- Integrates with OpenTelemetry distributed tracing
+- Child operations automatically link to parent spans
+- Enables end-to-end request tracking across components
+
 ## Best Practices
 
 ### Performance

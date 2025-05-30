@@ -6,13 +6,16 @@ of MCP operations and journal management.
 """
 
 import uuid
-from typing import Optional, Dict, Any
+import asyncio
+import functools
+from typing import Optional, Dict, Any, Callable
 from opentelemetry import trace, metrics
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.resources import SERVICE_NAME, SERVICE_VERSION, SERVICE_INSTANCE_ID, Resource
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader, ConsoleMetricExporter
+from opentelemetry.trace import Status, StatusCode
 
 # Optional exporters - gracefully handle if not available
 try:
@@ -148,3 +151,109 @@ def shutdown_telemetry() -> None:
     metrics.set_meter_provider(metrics.NoOpMeterProvider())
     
     _telemetry_initialized = False 
+
+
+def trace_mcp_operation(
+    operation_name: str,
+    *,
+    attributes: Optional[Dict[str, Any]] = None,
+    operation_type: str = "mcp_operation",
+    tracer_name: str = "mcp_journal"
+) -> Callable:
+    """
+    Decorator for tracing MCP operations with OpenTelemetry.
+    
+    Args:
+        operation_name: Name of the MCP operation for the span
+        attributes: Optional custom attributes to add to the span
+        operation_type: Type of MCP operation (default: "mcp_operation")
+        tracer_name: Name of the tracer to use (default: "mcp_journal")
+        
+    Returns:
+        Decorated function with tracing instrumentation
+        
+    Example:
+        @trace_mcp_operation("journal_entry_creation")
+        def create_journal_entry():
+            pass
+            
+        @trace_mcp_operation("tool_call", attributes={"tool.name": "journal/create"})
+        async def handle_tool_call():
+            pass
+    """
+    def decorator(func: Callable) -> Callable:
+        if asyncio.iscoroutinefunction(func):
+            @functools.wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                tracer = get_tracer(tracer_name)
+                
+                with tracer.start_as_current_span(operation_name) as span:
+                    # Set standard MCP operation attributes
+                    span.set_attribute("mcp.operation.name", operation_name)
+                    span.set_attribute("mcp.operation.type", operation_type)
+                    span.set_attribute("mcp.function.name", func.__name__)
+                    span.set_attribute("mcp.function.module", func.__module__)
+                    span.set_attribute("mcp.function.async", True)
+                    
+                    # Add custom attributes if provided
+                    if attributes:
+                        for key, value in attributes.items():
+                            span.set_attribute(key, value)
+                    
+                    try:
+                        result = await func(*args, **kwargs)
+                        span.set_status(Status(StatusCode.OK))
+                        span.set_attribute("mcp.result.status", "success")
+                        return result
+                    except Exception as e:
+                        # Record exception details in span
+                        span.set_status(Status(StatusCode.ERROR, str(e)))
+                        span.record_exception(e)
+                        
+                        # Add error attributes
+                        span.set_attribute("error.type", type(e).__name__)
+                        span.set_attribute("error.message", str(e))
+                        span.set_attribute("mcp.result.status", "error")
+                        
+                        # Always propagate - never fail silently
+                        raise
+                        
+            return async_wrapper
+        else:
+            @functools.wraps(func)
+            def sync_wrapper(*args, **kwargs):
+                tracer = get_tracer(tracer_name)
+                
+                with tracer.start_as_current_span(operation_name) as span:
+                    # Set standard MCP operation attributes
+                    span.set_attribute("mcp.operation.name", operation_name)
+                    span.set_attribute("mcp.operation.type", operation_type)
+                    span.set_attribute("mcp.function.name", func.__name__)
+                    span.set_attribute("mcp.function.module", func.__module__)
+                    span.set_attribute("mcp.function.async", False)
+                    
+                    # Add custom attributes if provided
+                    if attributes:
+                        for key, value in attributes.items():
+                            span.set_attribute(key, value)
+                    
+                    try:
+                        result = func(*args, **kwargs)
+                        span.set_status(Status(StatusCode.OK))
+                        span.set_attribute("mcp.result.status", "success")
+                        return result
+                    except Exception as e:
+                        # Record exception details in span
+                        span.set_status(Status(StatusCode.ERROR, str(e)))
+                        span.record_exception(e)
+                        
+                        # Add error attributes
+                        span.set_attribute("error.type", type(e).__name__)
+                        span.set_attribute("error.message", str(e))
+                        span.set_attribute("mcp.result.status", "error")
+                        
+                        # Always propagate - never fail silently
+                        raise
+                        
+            return sync_wrapper
+    return decorator 

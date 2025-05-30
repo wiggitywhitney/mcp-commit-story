@@ -387,12 +387,6 @@ ai_request
 └── mcp_response
 ```
 
-#### Implementation Requirements
-- **Performance**: Minimal overhead (<5ms per operation)
-- **Error Handling**: Telemetry failures must not impact journal operations
-- **Privacy**: Sensitive data filtering in spans and logs
-- **Configurability**: Easy to disable for performance-critical scenarios
-
 #### Technical Implementation
 ```python
 # src/mcp_commit_story/telemetry.py
@@ -415,6 +409,40 @@ def get_tracer(name="mcp_journal"):
 def get_meter(name="mcp_journal"):
     """Get configured meter for metrics"""
 ```
+
+#### MCP Operation Instrumentation Decorator
+
+The system provides a dedicated `trace_mcp_operation` decorator for instrumenting MCP-specific operations with standardized semantic attributes and error handling:
+
+```python
+from mcp_commit_story.telemetry import trace_mcp_operation
+
+@trace_mcp_operation("journal_entry_creation")
+async def handle_journal_new_entry(request):
+    """Create a new journal entry with automatic tracing"""
+    # Implementation automatically gets:
+    # - Span creation with operation name
+    # - Standard MCP semantic attributes
+    # - Error recording and propagation
+    # - Performance timing
+```
+
+**Key Features:**
+- **Automatic Function Detection**: Detects async vs sync functions using `asyncio.iscoroutinefunction()`
+- **Semantic Conventions**: Follows OpenTelemetry standards with `mcp.*` namespace for MCP-specific attributes
+- **Error Handling**: Records exceptions in spans AND propagates them (never suppresses)
+- **Context Propagation**: Integrates with distributed tracing for end-to-end request tracking
+- **Function Metadata Preservation**: Uses `@functools.wraps()` to maintain original function signatures
+
+**Span Attributes Set:**
+- `mcp.operation.name`: The operation name provided to the decorator
+- `mcp.operation.type`: Type of MCP operation (default: "mcp_operation")
+- `mcp.function.name`: Python function name
+- `mcp.function.module`: Module containing the function
+- `mcp.function.async`: Boolean indicating async/sync function
+- `mcp.result.status`: "success" or "error" based on execution outcome
+- `error.type`: Exception class name (when errors occur)
+- `error.message`: Exception message (when errors occur)
 
 For complete telemetry documentation, see [docs/telemetry.md](docs/telemetry.md).
 
