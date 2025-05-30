@@ -3,9 +3,18 @@
 # Status: pending
 # Dependencies: None
 # Priority: high
-# Description: Create the functionality to add manual reflections to journal entries through the MCP server and AI agent, ensuring they are prioritized in summaries.
+# Description: Create the functionality to add manual reflections to journal entries through the MCP server and AI agent, ensuring they are prioritized in summaries. Begin with a research phase to determine the optimal implementation approach.
 # Details:
-Implement manual reflection addition in the MCP server with the following features:
+Before implementation, conduct research to determine whether manual reflections would be better implemented as an MCP prompt, an MCP tool, or both.
+
+Research considerations:
+1. UX/ease of use differences between prompts vs tools for manual reflection addition
+2. Technical implementation complexity for each approach
+3. Whether both options should be available or just one
+4. Integration with AI agents and workflow patterns
+5. Alignment with MCP-first architecture principles
+
+After research is complete and decisions are made, implement manual reflection addition in the MCP server with the following features:
 
 1. Reflection formatting:
 ```python
@@ -72,6 +81,7 @@ def ensure_journal_directory(file_path):
 ```
 
 ## Acceptance Criteria
+- Research phase completed with clear decisions on implementation approach
 - All file-writing functions (including add_reflection_to_journal) must call ensure_journal_directory(file_path) before writing
 - No code should create directories upfront
 - Implementation must follow the on-demand directory creation pattern as documented in docs/on-demand-directory-pattern.md
@@ -97,6 +107,7 @@ def ensure_journal_directory(file_path):
 15. Tests to verify AI agent can successfully add reflections via the MCP operation
 16. Tests to verify no CLI commands exist for operational functions like adding reflections
 17. Tests to verify CLI is limited to setup commands (journal-init, install-hook) as specified
+18. Tests for the chosen implementation approach (prompt vs. tool) based on research findings
 
 # Subtasks:
 ## 10.1. Create ensure_journal_directory utility function [pending]
@@ -168,6 +179,42 @@ def ensure_journal_directory(file_path):
 ## 10.12. Add tests to verify CLI command limitations [pending]
 ### Dependencies: None
 ### Description: Create tests to verify that the CLI only provides setup commands and does not include any operational commands for journal manipulation.
+### Details:
+
+
+## 10.13. Research UX differences between MCP prompts vs tools for reflections [pending]
+### Dependencies: None
+### Description: Evaluate the user experience differences between implementing manual reflections as an MCP prompt versus an MCP tool, considering ease of use, discoverability, and natural workflow integration.
+### Details:
+
+
+## 10.14. Analyze technical implementation complexity [pending]
+### Dependencies: None
+### Description: Compare the technical implementation complexity of MCP prompts versus MCP tools for manual reflection addition, including development effort, maintenance considerations, and potential limitations.
+### Details:
+
+
+## 10.15. Evaluate dual implementation approach [pending]
+### Dependencies: None
+### Description: Assess whether both MCP prompt and MCP tool implementations should be available for manual reflections, or if one approach is clearly superior for this use case.
+### Details:
+
+
+## 10.16. Document AI agent integration considerations [pending]
+### Dependencies: None
+### Description: Document how each approach (prompt vs. tool) would integrate with AI agents and existing workflow patterns, identifying any advantages or limitations.
+### Details:
+
+
+## 10.17. Verify alignment with MCP-first architecture [pending]
+### Dependencies: None
+### Description: Ensure the chosen approach aligns with MCP-first architecture principles and document the rationale for the implementation decision.
+### Details:
+
+
+## 10.18. Create implementation decision document [pending]
+### Dependencies: None
+### Description: Compile research findings into a decision document that clearly outlines the chosen implementation approach (prompt, tool, or both) with supporting rationale before proceeding with implementation.
 ### Details:
 
 

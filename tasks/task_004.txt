@@ -1,6 +1,6 @@
 # Task ID: 4
 # Title: Implement Telemetry System
-# Status: in-progress
+# Status: done
 # Dependencies: None
 # Priority: high
 # Description: Set up OpenTelemetry integration for tracing, metrics, and logging to provide observability for the MCP server.
@@ -79,7 +79,7 @@ def setup_logging(debug=False):
 7. Test telemetry integration with the setup-only CLI functionality
 
 # Subtasks:
-## 4.1. OpenTelemetry Foundation Setup [pending]
+## 4.1. OpenTelemetry Foundation Setup [done]
 ### Dependencies: None
 ### Description: Create basic OpenTelemetry initialization and configuration system
 ### Details:
@@ -116,7 +116,7 @@ TDD Steps:
    - Add module-level documentation explaining usage
    - Add comments explaining configuration options
 
-## 4.2. MCP Operation Instrumentation Decorators [pending]
+## 4.2. MCP Operation Instrumentation Decorators [done]
 ### Dependencies: None
 ### Description: Create tracing decorators specifically for MCP operations
 ### Details:
