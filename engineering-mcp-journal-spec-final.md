@@ -335,6 +335,7 @@ The system implements comprehensive observability using OpenTelemetry to provide
 #### Architecture
 - **OpenTelemetry Foundation**: TracerProvider and MeterProvider with configurable exporters
 - **Multi-Exporter Support**: Console (development), OTLP (production), Prometheus (metrics)
+- **Auto-Instrumentation**: Automatic tracing of HTTP requests, async operations, and logging
 - **Trace Correlation**: Distributed tracing across MCP operations and journal generation
 - **Structured Logging**: JSON logs with trace correlation for debugging
 
@@ -342,9 +343,19 @@ The system implements comprehensive observability using OpenTelemetry to provide
 ```yaml
 telemetry:
   enabled: true
-  service_name: "mcp-journal"
+  service_name: "mcp-commit-story"
   service_version: "1.0.0"
   deployment_environment: "production"
+  
+  auto_instrumentation:
+    enabled: true                  # Enable auto-instrumentation (default: true)
+    preset: "minimal"              # Preset: minimal, comprehensive, or custom
+    instrumentors:                 # Individual instrumentor control
+      requests: true               # HTTP requests library
+      aiohttp: true                # Async HTTP client
+      asyncio: true                # Async operations
+      logging: true                # Log-trace correlation
+      
   exporters:
     console:
       enabled: true
@@ -354,14 +365,53 @@ telemetry:
     prometheus:
       enabled: false
       port: 8000
-  auto_instrumentation:
-    - requests
-    - aiohttp
-    - asyncio
+```
+
+#### Auto-Instrumentation Implementation (Task 4.3)
+
+The system provides automatic instrumentation for common Python libraries, eliminating the need for manual tracing in most scenarios.
+
+**Core Function:**
+```python
+def enable_auto_instrumentation(config: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Enable OpenTelemetry auto-instrumentation for approved libraries.
+    Automatically called during setup_telemetry() initialization.
+    """
+```
+
+**Supported Instrumentors:**
+- **requests**: Automatic HTTP request tracing with the `requests` library
+- **aiohttp**: Async HTTP client tracing (graceful fallback if aiohttp not installed)
+- **asyncio**: Automatic tracing of asyncio operations and coroutines
+- **logging**: Automatic trace correlation in log messages
+
+**Preset Configurations:**
+- **minimal** (default): Enables `requests` and `logging` for basic observability
+- **comprehensive**: Enables all approved instrumentors for maximum visibility
+- **custom**: Respects individual instrumentor settings for granular control
+
+**Graceful Fallback:**
+- Missing target libraries (e.g., aiohttp not installed) are gracefully skipped
+- Failed instrumentors are tracked but don't break system operation
+- Returns detailed status including enabled/failed instrumentors
+
+**Integration:**
+Auto-instrumentation is automatically enabled during telemetry setup:
+```python
+# Called automatically in setup_telemetry()
+def setup_telemetry(config):
+    # ... existing TracerProvider/MeterProvider setup ...
+    
+    # Enable auto-instrumentation based on config
+    auto_instrumentation_result = enable_auto_instrumentation(config)
+    if auto_instrumentation_result.get('enabled_instrumentors'):
+        logger.info(f"Auto-instrumentation enabled for: {auto_instrumentation_result['enabled_instrumentors']}")
 ```
 
 #### Instrumentation Scope
-- **MCP Operations**: All tool calls from AI agents
+- **MCP Operations**: All tool calls from AI agents (via decorators)
+- **Auto-Instrumented Libraries**: HTTP requests, async operations, logging correlation
 - **Journal Operations**: Entry creation, reflection addition, summarization
 - **Git Operations**: Context collection, file scanning, commit analysis
 - **Configuration**: Loading, validation, and initialization
@@ -373,6 +423,8 @@ telemetry:
 - `mcp_journal_git_operations_total{type}`: Git operation tracking
 - `mcp_journal_file_operations_total{operation}`: File I/O metrics
 - `mcp_journal_context_collection_duration_seconds`: Context gathering performance
+- `http_requests_total{method, status_code}`: HTTP request metrics (auto-instrumented)
+- `asyncio_operations_total{operation}`: Async operation metrics (auto-instrumented)
 
 #### Trace Structure
 ```
@@ -381,8 +433,10 @@ ai_request
 │   ├── git_commit_analysis
 │   ├── context_collection
 │   │   ├── chat_history_collection
-│   │   └── terminal_history_collection
+│   │   ├── terminal_history_collection
+│   │   └── http_request (auto-instrumented)
 │   ├── journal_entry_generation
+│   │   └── async_operation (auto-instrumented)
 │   └── file_write_operation
 └── mcp_response
 ```
@@ -397,16 +451,24 @@ def setup_telemetry(config):
     # TracerProvider and MeterProvider setup
     # Resource configuration with service attributes
     # Exporter configuration based on config
+    # Auto-instrumentation integration
 
-@trace_operation("mcp_operation")
+def enable_auto_instrumentation(config):
+    """Enable automatic instrumentation for approved libraries"""
+    # Preset resolution (minimal/comprehensive/custom)
+    # Individual instrumentor enablement
+    # Graceful fallback for missing libraries
+    # Status reporting
+
+@trace_mcp_operation("mcp_operation")
 async def handle_mcp_request(request):
     """Traced MCP operation handler"""
     # Automatic span creation and attribute setting
     
-def get_tracer(name="mcp_journal"):
+def get_tracer(name="mcp_commit_story"):
     """Get configured tracer for component"""
     
-def get_meter(name="mcp_journal"):
+def get_meter(name="mcp_commit_story"):
     """Get configured meter for metrics"""
 ```
 

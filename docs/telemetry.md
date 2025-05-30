@@ -1,14 +1,15 @@
 # Telemetry and Observability
 
-This document describes the telemetry and observability capabilities of the MCP Journal system, built on OpenTelemetry standards.
+This document describes the telemetry and observability capabilities of the MCP Commit Story system, built on OpenTelemetry standards.
 
 ## Overview
 
-The MCP Journal implements comprehensive observability through OpenTelemetry, providing:
+The MCP Commit Story implements comprehensive observability through OpenTelemetry, providing:
 
 - **Distributed Tracing**: Track requests through the AI → MCP → tool call pipeline
 - **Metrics Collection**: Monitor operation performance, success rates, and system health
 - **Structured Logging**: Correlate logs with traces for debugging
+- **Auto-Instrumentation**: Automatic tracing of HTTP requests, async operations, and more
 - **Multi-Exporter Support**: Send telemetry to console, OTLP, Prometheus, and other backends
 
 ## Configuration
@@ -20,10 +21,19 @@ Telemetry is configured in the main configuration file:
 ```yaml
 telemetry:
   enabled: true                    # Master switch (default: true)
-  service_name: "mcp-journal"      # Service identifier
+  service_name: "mcp-commit-story" # Service identifier
   service_version: "1.0.0"         # Version for tracking
   deployment_environment: "production"  # Environment tag
   
+  auto_instrumentation:            # Automatic library instrumentation
+    enabled: true                  # Enable auto-instrumentation (default: true)
+    preset: "minimal"              # Preset: minimal, comprehensive, or custom
+    instrumentors:                 # Individual instrumentor control
+      requests: true               # HTTP requests library
+      aiohttp: true                # Async HTTP client
+      asyncio: true                # Async operations
+      logging: true                # Log-trace correlation
+      
   exporters:
     console:
       enabled: true                # Console output for development
@@ -33,11 +43,72 @@ telemetry:
     prometheus:
       enabled: false               # Prometheus metrics
       port: 8000
-      
-  auto_instrumentation:            # Automatic library instrumentation
-    - requests
-    - aiohttp
-    - asyncio
+```
+
+### Auto-Instrumentation
+
+The system provides automatic instrumentation for common libraries, eliminating the need for manual tracing in most cases.
+
+#### Approved Instrumentors
+
+- **requests**: Traces HTTP requests made with the `requests` library
+- **aiohttp**: Traces async HTTP requests with `aiohttp` client
+- **asyncio**: Traces async operations and coroutines
+- **logging**: Automatically correlates log messages with active traces
+
+#### Preset Configurations
+
+**Minimal Preset** (default):
+```yaml
+auto_instrumentation:
+  preset: "minimal"
+  # Enables: requests, logging
+```
+
+**Comprehensive Preset**:
+```yaml
+auto_instrumentation:
+  preset: "comprehensive"
+  # Enables: requests, aiohttp, asyncio, logging
+```
+
+**Custom Preset**:
+```yaml
+auto_instrumentation:
+  preset: "custom"
+  instrumentors:
+    requests: true
+    aiohttp: false    # Selective enabling
+    asyncio: true
+    logging: true
+```
+
+#### Graceful Fallback
+
+Auto-instrumentation gracefully handles missing libraries:
+- If a target library (e.g., `aiohttp`) isn't installed, instrumentation is skipped
+- Failed instrumentors are tracked but don't break the system
+- Logs warning messages for debugging
+
+#### Integration
+
+Auto-instrumentation is automatically enabled during telemetry setup:
+
+```python
+from mcp_commit_story.telemetry import setup_telemetry
+
+config = {
+    "telemetry": {
+        "enabled": True,
+        "auto_instrumentation": {
+            "enabled": True,
+            "preset": "comprehensive"
+        }
+    }
+}
+
+# This automatically enables auto-instrumentation
+setup_telemetry(config)
 ```
 
 ### Environment Variables

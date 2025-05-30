@@ -2,8 +2,8 @@
 # Title: Implement CLI Interface
 # Status: pending
 # Dependencies: None
-# Priority: high
-# Description: Create the command-line interface using Click to provide setup functionality for the journal.
+# Priority: medium
+# Description: Create the command-line interface using Click to provide setup functionality for the journal. This is a necessary foundation component for the MVP and other tasks.
 # Details:
 Implement the CLI interface in `src/mcp_journal/cli.py` with the following features:
 
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     main()
 ```
 
-Note: This CLI is focused ONLY on setup commands (journal-init, install-hook). All operational tasks (journal entry creation, reflection addition, summarization, etc.) are handled by the MCP server and AI agents, not through this CLI. Refer to the updated documentation for details on how these operational tasks are managed.
+Note: This CLI is focused primarily on setup commands (journal-init, install-hook), but is a necessary foundation for the MVP as it's a blocking dependency for tasks 11, 12, 13, and 15, and has subtasks from MVP Task 9 that require CLI functionality. Most operational tasks (journal entry creation, reflection addition, summarization, etc.) are handled by the MCP server and AI agents, not through this CLI.
 
 # Test Strategy:
 1. Unit tests for setup CLI commands (journal-init, install-hook)

@@ -153,7 +153,7 @@ TDD Steps:
    - Document semantic conventions for MCP spans
    - Add usage examples in module documentation
 
-## 4.3. Auto-Instrumentation Integration [pending]
+## 4.3. Auto-Instrumentation Integration [done]
 ### Dependencies: None
 ### Description: Configure OpenTelemetry auto-instrumentation for common libraries
 ### Details:

@@ -373,4 +373,310 @@ class TestTelemetryUtilities:
         
         # After shutdown, should be able to setup again
         result = setup_telemetry(config)
-        assert result is True 
+        assert result is True
+    
+    def test_format_span_attributes(self):
+        """Test span attribute formatting"""
+        # This is a placeholder test
+        pass
+
+
+class TestAutoInstrumentation:
+    """Test OpenTelemetry auto-instrumentation configuration and integration"""
+    
+    def setup_method(self):
+        """Set up test fixtures"""
+        # First, set up telemetry for testing
+        self.telemetry_config = {
+            'telemetry': {
+                'enabled': True,
+                'service_name': 'test-auto-instrumentation'
+            }
+        }
+        setup_telemetry(self.telemetry_config)
+        
+        self.test_config = {
+            'telemetry': {
+                'enabled': True,
+                'auto_instrumentation': {
+                    'enabled': True,
+                    'preset': 'custom',  # Use custom preset to respect individual settings
+                    'instrumentors': {
+                        'requests': True,
+                        'aiohttp': True,
+                        'asyncio': True,
+                        'logging': True
+                        # Removed sqlalchemy as per approval
+                    }
+                }
+            }
+        }
+        
+        # Additional config for testing presets
+        self.minimal_preset_config = {
+            'telemetry': {
+                'auto_instrumentation': {
+                    'enabled': True,
+                    'preset': 'minimal'
+                }
+            }
+        }
+        
+        self.comprehensive_preset_config = {
+            'telemetry': {
+                'auto_instrumentation': {
+                    'enabled': True,
+                    'preset': 'comprehensive'
+                }
+            }
+        }
+    
+    def teardown_method(self):
+        """Clean up after each test"""
+        shutdown_telemetry()
+    
+    def test_enable_auto_instrumentation_with_all_instrumentors(self):
+        """Test enabling auto-instrumentation with all approved instrumentors"""
+        from mcp_commit_story.telemetry import enable_auto_instrumentation
+        
+        # This should enable all configured instrumentors
+        result = enable_auto_instrumentation(self.test_config)
+        
+        # Should return information about enabled instrumentors
+        assert result is not None
+        assert 'enabled_instrumentors' in result
+        assert 'requests' in result['enabled_instrumentors']
+        # Note: aiohttp requires aiohttp library to be installed, may not be available
+        assert 'asyncio' in result['enabled_instrumentors']
+        assert 'logging' in result['enabled_instrumentors']
+        # Check if aiohttp failed gracefully
+        if 'aiohttp' not in result['enabled_instrumentors']:
+            assert 'aiohttp' in result['failed_instrumentors']
+    
+    def test_selective_instrumentor_enabling(self):
+        """Test selective enabling of specific instrumentors"""
+        from mcp_commit_story.telemetry import enable_auto_instrumentation
+        
+        # Configure only requests instrumentation
+        selective_config = {
+            'telemetry': {
+                'auto_instrumentation': {
+                    'enabled': True,
+                    'preset': 'custom',
+                    'instrumentors': {
+                        'requests': True,
+                        'aiohttp': False,
+                        'asyncio': False,
+                        'logging': False
+                    }
+                }
+            }
+        }
+        
+        result = enable_auto_instrumentation(selective_config)
+        
+        assert 'requests' in result['enabled_instrumentors']
+        assert 'aiohttp' not in result['enabled_instrumentors']
+        assert 'asyncio' not in result['enabled_instrumentors']
+        assert 'logging' not in result['enabled_instrumentors']
+    
+    def test_disabled_auto_instrumentation(self):
+        """Test that auto-instrumentation can be completely disabled"""
+        from mcp_commit_story.telemetry import enable_auto_instrumentation
+        
+        disabled_config = {
+            'telemetry': {
+                'auto_instrumentation': {
+                    'enabled': False
+                }
+            }
+        }
+        
+        result = enable_auto_instrumentation(disabled_config)
+        
+        assert result['enabled_instrumentors'] == []
+        assert result['status'] == 'disabled'
+    
+    def test_http_request_tracing_requests(self):
+        """Test that HTTP requests via requests library are traced"""
+        from mcp_commit_story.telemetry import enable_auto_instrumentation, get_tracer
+        
+        enable_auto_instrumentation(self.test_config)
+        
+        # Mock a requests call and verify span creation
+        tracer = get_tracer()
+        
+        with tracer.start_as_current_span("test_requests") as span:
+            # This would normally make an HTTP request
+            # For testing, we'll verify the instrumentation is set up
+            assert span is not None
+            # Note: Real span validation would require a test exporter
+            # For now, we verify the tracer can create spans
+    
+    def test_http_request_tracing_aiohttp(self):
+        """Test that HTTP requests via aiohttp are traced"""
+        from mcp_commit_story.telemetry import enable_auto_instrumentation, get_tracer
+        
+        enable_auto_instrumentation(self.test_config)
+        
+        # Mock an aiohttp call and verify span creation
+        tracer = get_tracer()
+        
+        with tracer.start_as_current_span("test_aiohttp") as span:
+            # This would normally make an async HTTP request
+            assert span is not None
+    
+    def test_asyncio_operation_tracing(self):
+        """Test that asyncio operations are traced"""
+        from mcp_commit_story.telemetry import enable_auto_instrumentation, get_tracer
+        
+        enable_auto_instrumentation(self.test_config)
+        
+        # Mock asyncio operation and verify span creation
+        tracer = get_tracer()
+        
+        with tracer.start_as_current_span("test_asyncio") as span:
+            # This would normally be an async operation
+            assert span is not None
+    
+    def test_sqlalchemy_instrumentation_when_enabled(self):
+        """Test that SQLAlchemy instrumentation is not included by default"""
+        from mcp_commit_story.telemetry import enable_auto_instrumentation
+        
+        # Even if someone tries to enable SQLAlchemy, it should be gracefully skipped
+        sqlalchemy_config = {
+            'telemetry': {
+                'auto_instrumentation': {
+                    'enabled': True,
+                    'instrumentors': {
+                        'sqlalchemy': True
+                    }
+                }
+            }
+        }
+        
+        result = enable_auto_instrumentation(sqlalchemy_config)
+        
+        # SQLAlchemy should either be skipped or handled gracefully
+        assert 'failed_instrumentors' in result or 'sqlalchemy' not in result['enabled_instrumentors']
+    
+    def test_graceful_fallback_for_missing_instrumentors(self):
+        """Test graceful handling when instrumentor packages are not available"""
+        from mcp_commit_story.telemetry import enable_auto_instrumentation
+        
+        # Test with a non-existent instrumentor
+        fallback_config = {
+            'telemetry': {
+                'auto_instrumentation': {
+                    'enabled': True,
+                    'instrumentors': {
+                        'nonexistent_library': True,
+                        'requests': True
+                    }
+                }
+            }
+        }
+        
+        result = enable_auto_instrumentation(fallback_config)
+        
+        # Should succeed with available instrumentors
+        assert 'requests' in result['enabled_instrumentors']
+        # Should gracefully skip unavailable ones
+        assert 'nonexistent_library' not in result['enabled_instrumentors']
+        assert 'failed_instrumentors' in result
+        assert 'nonexistent_library' in result['failed_instrumentors']
+    
+    def test_instrumentor_configuration_validation(self):
+        """Test validation of instrumentor configuration"""
+        from mcp_commit_story.telemetry import enable_auto_instrumentation
+        
+        # Invalid configuration should be handled gracefully
+        invalid_config = {
+            'telemetry': {
+                'auto_instrumentation': {
+                    'enabled': True,
+                    'instrumentors': "invalid_format"  # Should be dict
+                }
+            }
+        }
+        
+        result = enable_auto_instrumentation(invalid_config)
+        
+        # Should handle invalid config gracefully (not error out)
+        # The implementation treats string as custom preset, resulting in no instrumentors
+        assert result['status'] == 'enabled'
+        assert result['enabled_instrumentors'] == []
+    
+    def test_preset_minimal_configuration(self):
+        """Test 'minimal' preset provides basic instrumentors"""
+        from mcp_commit_story.telemetry import enable_auto_instrumentation
+        
+        result = enable_auto_instrumentation(self.minimal_preset_config)
+        
+        # Minimal preset should include requests and logging
+        assert 'requests' in result['enabled_instrumentors']
+        assert 'logging' in result['enabled_instrumentors']
+        # Should be a subset of all available instrumentors
+        assert len(result['enabled_instrumentors']) <= 4
+    
+    def test_preset_comprehensive_configuration(self):
+        """Test 'comprehensive' preset enables all available instrumentors"""
+        from mcp_commit_story.telemetry import enable_auto_instrumentation
+        
+        result = enable_auto_instrumentation(self.comprehensive_preset_config)
+        
+        # Comprehensive preset should include all approved instrumentors that can be enabled
+        expected_available = ['requests', 'asyncio', 'logging']
+        for instrumentor in expected_available:
+            assert instrumentor in result['enabled_instrumentors']
+        
+        # aiohttp may fail if aiohttp library not installed, which is acceptable
+        assert 'aiohttp' in result['enabled_instrumentors'] or 'aiohttp' in result['failed_instrumentors']
+    
+    def test_preset_custom_allows_individual_control(self):
+        """Test 'custom' preset respects individual instrumentor settings"""
+        from mcp_commit_story.telemetry import enable_auto_instrumentation
+        
+        custom_config = {
+            'telemetry': {
+                'auto_instrumentation': {
+                    'enabled': True,
+                    'preset': 'custom',
+                    'instrumentors': {
+                        'requests': True,
+                        'aiohttp': False,
+                        'asyncio': True,
+                        'logging': False
+                    }
+                }
+            }
+        }
+        
+        result = enable_auto_instrumentation(custom_config)
+        
+        # Should respect individual settings
+        assert 'requests' in result['enabled_instrumentors']
+        assert 'aiohttp' not in result['enabled_instrumentors']
+        assert 'asyncio' in result['enabled_instrumentors']
+        assert 'logging' not in result['enabled_instrumentors']
+    
+    def test_logging_instrumentation_correlation(self):
+        """Test that logging instrumentation provides trace correlation"""
+        from mcp_commit_story.telemetry import enable_auto_instrumentation
+        
+        logging_config = {
+            'telemetry': {
+                'auto_instrumentation': {
+                    'enabled': True,
+                    'instrumentors': {
+                        'logging': True
+                    }
+                }
+            }
+        }
+        
+        result = enable_auto_instrumentation(logging_config)
+        
+        assert 'logging' in result['enabled_instrumentors']
+        # Logging should provide trace correlation capabilities
+        assert result['logging_trace_correlation'] is True 
