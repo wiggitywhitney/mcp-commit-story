@@ -48,6 +48,11 @@ eggs/
 .eggs/
 *.egg
 
+# Test coverage
+.coverage
+.coverage.*
+htmlcov/
+
 # Virtual environments
 venv/
 .venv/
