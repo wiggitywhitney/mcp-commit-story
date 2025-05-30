@@ -189,7 +189,7 @@ TDD Steps:
    - Add configuration examples for common scenarios
    - Document performance implications
 
-## 4.4. MCP-Specific Metrics Collection [pending]
+## 4.4. MCP-Specific Metrics Collection [done]
 ### Dependencies: None
 ### Description: Define and implement metrics collection for MCP operations
 ### Details:

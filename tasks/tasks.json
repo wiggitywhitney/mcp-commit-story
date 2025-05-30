@@ -35,7 +35,7 @@
           "id": "4.4",
           "title": "MCP-Specific Metrics Collection",
           "description": "Define and implement metrics collection for MCP operations",
-          "status": "pending",
+          "status": "done",
           "details": "TDD Steps:\n\n1. WRITE TESTS FIRST:\n   - Test MCPMetrics class initialization\n   - Test record_tool_call(tool_name, success) method\n   - Test record_operation_duration(operation, duration) method\n   - Test metric labels and values are correctly set\n   - Test metric export format\n   - Test counter increments\n   - Test histogram recordings\n   - Test gauge updates\n   - RUN TESTS - VERIFY THEY FAIL\n\n2. GET APPROVAL FOR DESIGN CHOICES:\n   - Metric naming convention\n   - Business metrics to track\n   - Technical metrics to track\n   - Metric aggregation strategy\n   - Histogram bucket configuration\n   - PAUSE FOR MANUAL APPROVAL\n\n3. IMPLEMENT FUNCTIONALITY:\n   - Create MCPMetrics class\n   - Implement counters for operations and events\n   - Implement histograms for durations\n   - Implement gauges for state tracking\n   - Add semantic metric attributes\n   - Create metrics recording utilities\n   - Implement metric view configuration\n   - RUN TESTS - VERIFY THEY PASS\n\n4. DOCUMENT AND COMPLETE:\n   - Document each metric with purpose and interpretation\n   - Add examples of querying metrics in common systems\n   - Document metric data model and attributes"
         },
         {

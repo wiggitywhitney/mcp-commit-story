@@ -115,6 +115,9 @@
 - **Performance monitoring**: Track operation timing to ensure minimal workflow impact
 - **Error tracking**: Capture and report failures in journal generation process
 - **Configuration validation**: Verify system setup and integration health
+- **MCP-specific metrics**: Dedicated metrics for tool call success rates, operation performance, and system state
+- **Client attribution**: Track usage patterns and success rates across different AI clients (Cursor, Claude Desktop, etc.)
+- **Real-time monitoring**: Live metrics for active operations, queue depth, and resource utilization
 
 ---
 

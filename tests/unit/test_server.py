@@ -10,7 +10,6 @@ import tempfile
 import yaml
 import os
 
-@pytest.mark.asyncio
 def test_create_mcp_server_sets_name_and_calls_register_tools(tmp_path):
     # Patch pyproject.toml to a temp file with known version
     pyproject = tmp_path / "pyproject.toml"
@@ -36,7 +35,6 @@ version = "9.9.9"
                     reg_tools.assert_called_once_with(server)
             ver_patch.assert_called()
 
-@pytest.mark.asyncio
 def test_create_mcp_server_loads_config_and_telemetry(monkeypatch):
     # Patch load_config to return a config with telemetry enabled
     minimal_config = {
@@ -66,7 +64,6 @@ def test_create_mcp_server_loads_config_and_telemetry(monkeypatch):
             if telemetry_called is not None:
                 assert telemetry_called["called"]
 
-@pytest.mark.asyncio
 def test_mcp_error_response():
     @handle_mcp_error
     async def failing_tool(request):
@@ -75,7 +72,6 @@ def test_mcp_error_response():
     assert response["status"] == "fail-status"
     assert response["error"] == "fail message"
 
-@pytest.mark.asyncio
 def test_handle_mcp_error_catches_generic_exception():
     @handle_mcp_error
     async def generic_error_tool(request):
@@ -84,7 +80,6 @@ def test_handle_mcp_error_catches_generic_exception():
     assert response["status"] == "error"
     assert "unexpected!" in response["error"]
 
-@pytest.mark.asyncio
 def test_journal_new_entry_handler_success(monkeypatch):
     # Import (or define placeholder) for handler
     try:
@@ -100,7 +95,6 @@ def test_journal_new_entry_handler_success(monkeypatch):
     assert response["status"] == "success"
     assert "file_path" in response
 
-@pytest.mark.asyncio
 def test_journal_new_entry_handler_missing_fields():
     from mcp_commit_story.server import handle_journal_new_entry
     # Missing 'git' field
@@ -109,7 +103,6 @@ def test_journal_new_entry_handler_missing_fields():
     assert response["status"] == "error"
     assert "Missing required field: git" in response["error"]
 
-@pytest.mark.asyncio
 def test_journal_new_entry_handler_error_decorator():
     try:
         from mcp_commit_story.server import handle_journal_new_entry, handle_mcp_error
@@ -134,7 +127,6 @@ async def test_journal_add_reflection_handler(monkeypatch):
     assert result["status"] == "success"
     assert "file_path" in result
 
-@pytest.mark.asyncio
 def test_journal_add_reflection_handler_missing_fields():
     try:
         from mcp_commit_story.server import handle_journal_add_reflection
@@ -151,7 +143,6 @@ def test_journal_add_reflection_handler_missing_fields():
     assert response["status"] == "error"
     assert "Missing required field: date" in response["error"]
 
-@pytest.mark.asyncio
 def test_journal_add_reflection_handler_error_decorator():
     try:
         from mcp_commit_story.server import handle_journal_add_reflection, handle_mcp_error
@@ -245,7 +236,6 @@ def test_config_reload_raises_on_malformed_yaml(tmp_path):
     with pytest.raises(ConfigError):
         config.reload_config()
 
-@pytest.mark.asyncio
 def test_handle_journal_init_success(monkeypatch):
     from mcp_commit_story import server as server_mod
     # Mock initialize_journal to simulate success
@@ -259,7 +249,6 @@ def test_handle_journal_init_success(monkeypatch):
     assert "journal" in response["paths"]
     assert "message" in response
 
-@pytest.mark.asyncio
 def test_handle_journal_init_defaults_to_cwd(monkeypatch):
     from mcp_commit_story import server as server_mod
     async def fake_initialize_journal(repo_path=None, config_path=None, journal_path=None):
@@ -273,7 +262,6 @@ def test_handle_journal_init_defaults_to_cwd(monkeypatch):
     assert "journal" in response["paths"]
     assert "message" in response
 
-@pytest.mark.asyncio
 def test_handle_journal_init_invalid_repo(monkeypatch):
     from mcp_commit_story import server as server_mod
     async def fake_initialize_journal(repo_path=None, config_path=None, journal_path=None):
@@ -284,7 +272,6 @@ def test_handle_journal_init_invalid_repo(monkeypatch):
     assert response["status"] == "error"
     assert "Invalid repo path" in response["error"]
 
-@pytest.mark.asyncio
 def test_handle_journal_init_permission_error(monkeypatch):
     from mcp_commit_story import server as server_mod
     async def fake_initialize_journal(repo_path=None, config_path=None, journal_path=None):
@@ -295,7 +282,6 @@ def test_handle_journal_init_permission_error(monkeypatch):
     assert response["status"] == "error"
     assert "Permission denied" in response["error"]
 
-@pytest.mark.asyncio
 def test_handle_journal_init_already_initialized(monkeypatch):
     from mcp_commit_story import server as server_mod
     async def fake_initialize_journal(repo_path=None, config_path=None, journal_path=None):
@@ -306,7 +292,6 @@ def test_handle_journal_init_already_initialized(monkeypatch):
     assert response["status"] == "error"
     assert "already initialized" in response["error"].lower()
 
-@pytest.mark.asyncio
 def test_handle_journal_install_hook_success(monkeypatch):
     try:
         from mcp_commit_story import server as server_mod
@@ -322,7 +307,6 @@ def test_handle_journal_install_hook_success(monkeypatch):
     assert "hook_path" in response
     assert "message" in response
 
-@pytest.mark.asyncio
 def test_handle_journal_install_hook_defaults_to_cwd(monkeypatch):
     from mcp_commit_story import server as server_mod
     async def fake_install_post_commit_hook(repo_path=None):
@@ -334,7 +318,6 @@ def test_handle_journal_install_hook_defaults_to_cwd(monkeypatch):
     assert response["status"] == "success"
     assert "hook_path" in response
 
-@pytest.mark.asyncio
 def test_handle_journal_install_hook_not_a_git_repo(monkeypatch):
     from mcp_commit_story import server as server_mod
     async def fake_install_post_commit_hook(repo_path=None):
@@ -345,7 +328,6 @@ def test_handle_journal_install_hook_not_a_git_repo(monkeypatch):
     assert response["status"] == "error"
     assert "Not a git repository" in response["error"]
 
-@pytest.mark.asyncio
 def test_handle_journal_install_hook_permission_error(monkeypatch):
     from mcp_commit_story import server as server_mod
     async def fake_install_post_commit_hook(repo_path=None):
@@ -356,7 +338,6 @@ def test_handle_journal_install_hook_permission_error(monkeypatch):
     assert response["status"] == "error"
     assert "Permission denied" in response["error"]
 
-@pytest.mark.asyncio
 def test_handle_journal_install_hook_existing_hook_backup(monkeypatch):
     from mcp_commit_story import server as server_mod
     async def fake_install_post_commit_hook(repo_path=None):

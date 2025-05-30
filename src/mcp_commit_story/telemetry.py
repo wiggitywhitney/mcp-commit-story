@@ -33,10 +33,11 @@ except ImportError:
     PROMETHEUS_AVAILABLE = False
 
 
-# Global state
+# Global state tracking
 _telemetry_initialized = False
 _tracer_provider: Optional[TracerProvider] = None
 _meter_provider: Optional[MeterProvider] = None
+_mcp_metrics: Optional["MCPMetrics"] = None
 
 logger = logging.getLogger(__name__)
 
@@ -46,50 +47,59 @@ def setup_telemetry(config: Dict[str, Any]) -> bool:
     Initialize OpenTelemetry based on configuration.
     
     Args:
-        config: Configuration dictionary with telemetry settings
+        config: Configuration dictionary containing telemetry settings
         
     Returns:
-        bool: True if telemetry was enabled and initialized, False if disabled
+        bool: True if telemetry was enabled and configured, False if disabled
     """
-    global _telemetry_initialized, _tracer_provider, _meter_provider
+    global _telemetry_initialized, _tracer_provider, _meter_provider, _mcp_metrics
     
-    # Check if telemetry is enabled (default: True)
+    # Check if telemetry is enabled
     telemetry_config = config.get("telemetry", {})
     enabled = telemetry_config.get("enabled", True)
     
     if not enabled:
-        logger.info("Telemetry is disabled via configuration")
+        logger.info("Telemetry disabled via configuration")
         return False
     
-    # Create resource with service information
-    service_name = telemetry_config.get("service_name", "mcp-commit-story")
-    service_version = telemetry_config.get("service_version", "unknown")
-    deployment_environment = telemetry_config.get("deployment_environment", "development")
+    if _telemetry_initialized:
+        logger.debug("Telemetry already initialized, skipping")
+        return True
     
-    resource = Resource(attributes={
-        SERVICE_NAME: service_name,
-        SERVICE_VERSION: service_version,
-        SERVICE_INSTANCE_ID: str(uuid.uuid4()),
-        "deployment.environment": deployment_environment,
-    })
-    
-    # Initialize TracerProvider
-    _tracer_provider = TracerProvider(resource=resource)
-    trace.set_tracer_provider(_tracer_provider)
-    
-    # Initialize MeterProvider  
-    _meter_provider = MeterProvider(resource=resource)
-    metrics.set_meter_provider(_meter_provider)
-    
-    # Enable auto-instrumentation if configured
-    auto_instrumentation_result = enable_auto_instrumentation(config)
-    if auto_instrumentation_result.get('enabled_instrumentors'):
-        logger.info(f"Auto-instrumentation enabled for: {auto_instrumentation_result['enabled_instrumentors']}")
-    
-    _telemetry_initialized = True
-    logger.info(f"Telemetry initialized for service: {service_name}")
-    
-    return True
+    try:
+        # Setup service resource
+        service_name = telemetry_config.get("service_name", "mcp-commit-story")
+        service_version = telemetry_config.get("service_version", "1.0.0")
+        deployment_env = telemetry_config.get("deployment_environment", "development")
+        
+        resource = Resource.create({
+            SERVICE_NAME: service_name,
+            SERVICE_VERSION: service_version,
+            "deployment.environment": deployment_env,
+        })
+        
+        # Initialize TracerProvider
+        tracer_provider = TracerProvider(resource=resource)
+        trace.set_tracer_provider(tracer_provider)
+        
+        # Initialize MeterProvider  
+        meter_provider = MeterProvider(resource=resource)
+        metrics.set_meter_provider(meter_provider)
+        
+        # Setup auto-instrumentation if configured
+        if telemetry_config.get("auto_instrumentation", {}).get("enabled", True):
+            enable_auto_instrumentation(config)
+        
+        # Initialize MCP metrics instance
+        _mcp_metrics = MCPMetrics()
+        
+        _telemetry_initialized = True
+        logger.info(f"Telemetry system initialized for service: {service_name}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to initialize telemetry: {e}")
+        return False
 
 
 def enable_auto_instrumentation(config: Dict[str, Any]) -> Dict[str, Any]:
@@ -355,19 +365,236 @@ def trace_mcp_operation(
     return decorator
 
 
-def shutdown_telemetry() -> None:
+def shutdown_telemetry():
+    """Shutdown telemetry and clean up resources."""
+    global _telemetry_initialized, _tracer_provider, _meter_provider, _mcp_metrics
+    
+    if not _telemetry_initialized:
+        return
+    
+    try:
+        # Shutdown TracerProvider
+        if _tracer_provider:
+            _tracer_provider.shutdown()
+            _tracer_provider = None
+        
+        # Shutdown MeterProvider
+        if _meter_provider:
+            _meter_provider.shutdown() 
+            _meter_provider = None
+        
+        # Clear metrics instance
+        _mcp_metrics = None
+        
+    except Exception as e:
+        logger.error(f"Error during telemetry shutdown: {e}")
+    finally:
+        _telemetry_initialized = False
+        logger.info("Telemetry system shutdown complete")
+
+
+class MCPMetrics:
     """
-    Shutdown telemetry system and clean up resources.
+    MCP-specific metrics collection for OpenTelemetry.
+    
+    Provides counters, histograms, and gauges for tracking MCP operations,
+    tool calls, and system state with semantic attributes.
     """
-    global _telemetry_initialized, _tracer_provider, _meter_provider
     
-    if _tracer_provider:
-        _tracer_provider.shutdown()
-        _tracer_provider = None
+    def __init__(self):
+        """Initialize MCP metrics with OpenTelemetry meter."""
+        self.meter = get_meter("mcp_metrics")
+        
+        # Initialize metric instruments
+        self._setup_counters()
+        self._setup_histograms()
+        self._setup_gauges()
+        
+        # Internal state for testing/inspection
+        self._counter_values = {}
+        self._histogram_data = {}
+        self._gauge_values = {}
     
-    if _meter_provider:
-        _meter_provider.shutdown() 
-        _meter_provider = None
+    def _setup_counters(self):
+        """Set up counter metrics for MCP operations."""
+        self.tool_calls_counter = self.meter.create_counter(
+            name="mcp.tool_calls_total",
+            description="Total number of MCP tool calls",
+            unit="1"
+        )
+        
+        self.operations_counter = self.meter.create_counter(
+            name="mcp.operations_total", 
+            description="Total number of MCP operations",
+            unit="1"
+        )
+        
+        self.errors_counter = self.meter.create_counter(
+            name="mcp.errors_total",
+            description="Total number of MCP errors",
+            unit="1"
+        )
     
-    _telemetry_initialized = False
-    logger.info("Telemetry system shutdown complete") 
+    def _setup_histograms(self):
+        """Set up histogram metrics for duration tracking."""
+        # Standard duration buckets optimized for MCP operations (sub-second to several seconds)
+        duration_buckets = [0.001, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
+        
+        self.operation_duration_histogram = self.meter.create_histogram(
+            name="mcp.operation_duration_seconds",
+            description="Duration of MCP operations in seconds",
+            unit="s"
+        )
+        
+        self.tool_call_duration_histogram = self.meter.create_histogram(
+            name="mcp.tool_call_duration_seconds", 
+            description="Duration of MCP tool calls in seconds",
+            unit="s"
+        )
+    
+    def _setup_gauges(self):
+        """Set up gauge metrics for state tracking."""
+        self.active_operations_gauge = self.meter.create_gauge(
+            name="mcp.active_operations",
+            description="Number of currently active MCP operations",
+            unit="1"
+        )
+        
+        self.queue_size_gauge = self.meter.create_gauge(
+            name="mcp.queue_size",
+            description="Number of operations in the MCP queue",
+            unit="1"
+        )
+        
+        self.memory_usage_gauge = self.meter.create_gauge(
+            name="mcp.memory_usage_bytes",
+            description="Memory usage in bytes",
+            unit="By"
+        )
+    
+    def record_tool_call(self, tool_name: str, success: bool, **attributes):
+        """
+        Record a tool call metric with semantic attributes.
+        
+        Args:
+            tool_name: Name of the MCP tool being called
+            success: Whether the tool call succeeded
+            **attributes: Additional semantic attributes like client_type, error_type, etc.
+        """
+        # Build semantic attributes
+        attrs = {
+            "tool_name": tool_name,
+            "success": str(success).lower(),
+            **attributes
+        }
+        
+        # Record counter
+        self.tool_calls_counter.add(1, attrs)
+        
+        # Track internal state for testing
+        self._update_counter_values("tool_calls_total", tool_name, "success" if success else "failure")
+    
+    def record_operation_duration(self, operation: str, duration: float, **attributes):
+        """
+        Record operation duration metric.
+        
+        Args:
+            operation: Name of the operation
+            duration: Duration in seconds
+            **attributes: Additional semantic attributes like model, operation_type, client_type, etc.
+        """
+        # Build semantic attributes
+        attrs = {
+            "operation": operation,
+            **attributes
+        }
+        
+        # Record histogram
+        self.operation_duration_histogram.record(duration, attrs)
+        
+        # Track internal state for testing
+        self._update_histogram_data("operation_duration_seconds", operation, duration)
+    
+    def set_active_operations(self, count: int, **attributes):
+        """Set the number of active operations."""
+        self.active_operations_gauge.set(count, attributes)
+        self._gauge_values["active_operations"] = count
+    
+    def set_queue_size(self, size: int, **attributes):
+        """Set the queue size."""
+        self.queue_size_gauge.set(size, attributes)
+        self._gauge_values["queue_size"] = size
+    
+    def set_memory_usage_mb(self, mb: float, **attributes):
+        """Set memory usage in megabytes."""
+        bytes_value = mb * 1024 * 1024
+        self.memory_usage_gauge.set(bytes_value, attributes)
+        self._gauge_values["memory_usage_mb"] = mb
+    
+    def get_metric_data(self):
+        """Get metric data for testing/inspection."""
+        return {
+            "tool_calls_total": self._counter_values.get("tool_calls_total", {}),
+            "operation_duration_seconds": self._histogram_data.get("operation_duration_seconds", {}),
+            "active_operations": self._gauge_values.get("active_operations"),
+            "queue_size": self._gauge_values.get("queue_size"),
+            "memory_usage_mb": self._gauge_values.get("memory_usage_mb")
+        }
+    
+    def get_counter_values(self):
+        """Get counter values for testing."""
+        return {"tool_calls_total": self._counter_values.get("tool_calls_total", {})}
+    
+    def get_histogram_data(self):
+        """Get histogram data for testing."""
+        return self._histogram_data
+    
+    def get_gauge_values(self):
+        """Get gauge values for testing."""
+        return self._gauge_values
+    
+    def get_metric_names(self):
+        """Get all metric names."""
+        return [
+            "mcp.tool_calls_total",
+            "mcp.operation_duration_seconds",
+            "mcp.active_operations", 
+            "mcp.queue_size",
+            "mcp.memory_usage_bytes"
+        ]
+    
+    def get_metric_attributes(self, metric_name: str):
+        """Get expected attributes for a metric."""
+        # Base attributes for different metrics
+        base_attributes = {
+            "mcp.tool_calls_total": ["tool_name", "success", "tool_type", "operation_type", "client_type", "error_type", "file_type"],
+            "mcp.operation_duration_seconds": ["operation", "model", "operation_type", "client_type"]
+        }
+        return base_attributes.get(metric_name, [])
+    
+    def _update_counter_values(self, metric_name: str, key: str, result: str):
+        """Update internal counter values for testing."""
+        if metric_name not in self._counter_values:
+            self._counter_values[metric_name] = {}
+        if key not in self._counter_values[metric_name]:
+            self._counter_values[metric_name][key] = {"success": 0, "failure": 0}
+        self._counter_values[metric_name][key][result] += 1
+    
+    def _update_histogram_data(self, metric_name: str, key: str, value: float):
+        """Update internal histogram data for testing."""
+        if metric_name not in self._histogram_data:
+            self._histogram_data[metric_name] = {}
+        if key not in self._histogram_data[metric_name]:
+            self._histogram_data[metric_name][key] = {"count": 0, "sum": 0.0}
+        self._histogram_data[metric_name][key]["count"] += 1
+        self._histogram_data[metric_name][key]["sum"] += value
+
+
+def get_mcp_metrics() -> Optional["MCPMetrics"]:
+    """
+    Get the global MCP metrics instance.
+    
+    Returns:
+        MCPMetrics instance if telemetry is initialized, None otherwise
+    """
+    return _mcp_metrics 

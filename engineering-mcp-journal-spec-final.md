@@ -426,6 +426,95 @@ def setup_telemetry(config):
 - `http_requests_total{method, status_code}`: HTTP request metrics (auto-instrumented)
 - `asyncio_operations_total{operation}`: Async operation metrics (auto-instrumented)
 
+#### MCP-Specific Metrics Collection
+
+The system provides dedicated metrics collection for MCP operations through the `MCPMetrics` class, enabling detailed monitoring of tool calls, operation performance, and system state.
+
+**Core Implementation:**
+```python
+class MCPMetrics:
+    """MCP-specific metrics collection for OpenTelemetry"""
+    
+    def record_tool_call(self, tool_name: str, success: bool, **attributes):
+        """Record tool call metrics with semantic attributes"""
+        
+    def record_operation_duration(self, operation: str, duration: float, **attributes):
+        """Record operation duration metrics"""
+        
+    def set_active_operations(self, count: int, **attributes):
+        """Set current active operations gauge"""
+```
+
+**Available MCP Metrics:**
+
+*Counters (total counts over time):*
+- `mcp.tool_calls_total`: Total MCP tool calls with rich semantic attributes
+- `mcp.operations_total`: Total MCP operations performed
+- `mcp.errors_total`: Total errors encountered
+
+*Histograms (distribution tracking):*
+- `mcp.operation_duration_seconds`: Duration of MCP operations
+- `mcp.tool_call_duration_seconds`: Tool call execution time
+
+*Gauges (current state):*
+- `mcp.active_operations`: Currently active MCP operations
+- `mcp.queue_size`: Operations waiting in MCP queue
+- `mcp.memory_usage_bytes`: Current memory usage
+
+**Semantic Attributes for Analytics:**
+- `tool_name`: Specific MCP tool (e.g., "file_read", "journal_create")
+- `success`: Boolean success/failure indicator
+- `tool_type`: Tool category ("filesystem", "git", "network", "ai")
+- `operation_type`: Specific operation ("read", "write", "generate", "collect")
+- `client_type`: AI client source ("cursor", "claude-desktop", etc.)
+- `error_type`: Error classification ("timeout", "permission", "not_found")
+- `file_type`: File type being processed ("json", "py", "md")
+- `model`: AI model used ("gpt-4", "claude-3")
+
+**Usage Example:**
+```python
+from mcp_commit_story.telemetry import get_mcp_metrics
+
+metrics = get_mcp_metrics()
+if metrics:
+    # Record tool call with rich context
+    metrics.record_tool_call(
+        "journal_create",
+        success=True,
+        tool_type="ai",
+        operation_type="generate",
+        client_type="cursor",
+        model="gpt-4"
+    )
+    
+    # Record operation timing
+    metrics.record_operation_duration(
+        "context_collection", 
+        2.1,
+        operation_type="collect",
+        client_type="cursor"
+    )
+```
+
+**Integration with Telemetry Lifecycle:**
+- **Initialization**: Automatically created during `setup_telemetry()`
+- **Access**: Available via `get_mcp_metrics()` utility function
+- **Cleanup**: Automatically cleaned up during `shutdown_telemetry()`
+
+**Monitoring and Alerting Patterns:**
+The metrics enable sophisticated monitoring patterns for operational insights:
+
+```promql
+# Tool call error rate by client
+rate(mcp_tool_calls_total{success="false"}[5m]) by (client_type)
+
+# 95th percentile operation duration
+histogram_quantile(0.95, mcp_operation_duration_seconds_bucket)
+
+# Tool usage by type and client
+sum by (tool_type, client_type) (mcp_tool_calls_total)
+```
+
 #### Trace Structure
 ```
 ai_request

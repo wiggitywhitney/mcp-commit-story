@@ -155,6 +155,161 @@ Example metrics:
 - `mcp_journal_operation_duration_seconds{operation="git_analysis"}`
 - `mcp_journal_active_spans_total`
 
+### MCP-Specific Metrics Collection
+
+The system provides dedicated metrics collection for MCP operations through the `MCPMetrics` class. This enables detailed monitoring of tool calls, operation performance, and system state.
+
+#### Available Metrics
+
+**Counters (total counts over time):**
+- `mcp.tool_calls_total`: Total number of MCP tool calls with labels for tool name, success status, and semantic attributes
+- `mcp.operations_total`: Total number of MCP operations performed
+- `mcp.errors_total`: Total number of errors encountered
+
+**Histograms (distribution of values):**
+- `mcp.operation_duration_seconds`: Duration of MCP operations in seconds
+- `mcp.tool_call_duration_seconds`: Duration of specific tool calls in seconds
+
+**Gauges (current state):**
+- `mcp.active_operations`: Number of currently active MCP operations
+- `mcp.queue_size`: Number of operations waiting in the MCP queue
+- `mcp.memory_usage_bytes`: Current memory usage in bytes
+
+#### Semantic Attributes
+
+Metrics include rich semantic attributes for filtering and aggregation:
+
+**Tool Call Attributes:**
+- `tool_name`: Name of the MCP tool (e.g., "file_read", "git_log")
+- `success`: Boolean indicating success/failure ("true"/"false")
+- `tool_type`: Category of tool ("filesystem", "git", "network", "ai")
+- `operation_type`: Specific operation ("read", "write", "generate", "collect")
+- `client_type`: AI client making the request ("cursor", "claude-desktop", etc.)
+- `error_type`: Classification of failures ("timeout", "permission", "not_found")
+- `file_type`: Type of file being processed ("json", "py", "md", etc.)
+
+**Operation Attributes:**
+- `operation`: Name of the operation being measured
+- `model`: AI model used for processing (e.g., "gpt-4", "claude-3")
+- `operation_type`: Category of operation ("generation", "analysis", "formatting")
+- `client_type`: Source client for the operation
+
+#### Usage Examples
+
+**Recording Tool Calls:**
+```python
+from mcp_commit_story.telemetry import get_mcp_metrics
+
+metrics = get_mcp_metrics()
+
+# Record successful tool call
+metrics.record_tool_call(
+    "file_read", 
+    success=True,
+    tool_type="filesystem",
+    operation_type="read",
+    client_type="cursor",
+    file_type="json"
+)
+
+# Record failed tool call with error details
+metrics.record_tool_call(
+    "network_request",
+    success=False,
+    tool_type="network", 
+    operation_type="fetch",
+    client_type="claude-desktop",
+    error_type="timeout"
+)
+```
+
+**Recording Operation Durations:**
+```python
+import time
+
+start_time = time.time()
+# ... perform operation ...
+duration = time.time() - start_time
+
+metrics.record_operation_duration(
+    "journal_generation",
+    duration,
+    model="gpt-4",
+    operation_type="generation",
+    client_type="cursor"
+)
+```
+
+**Updating System State:**
+```python
+# Update current system state
+metrics.set_active_operations(5)
+metrics.set_queue_size(12)
+metrics.set_memory_usage_mb(256.5)
+```
+
+#### Integration with Telemetry System
+
+MCP metrics are automatically initialized when telemetry is enabled:
+
+```python
+from mcp_commit_story.telemetry import setup_telemetry, get_mcp_metrics
+
+# Setup telemetry (includes MCP metrics)
+config = {"telemetry": {"enabled": True}}
+setup_telemetry(config)
+
+# Access metrics instance
+metrics = get_mcp_metrics()
+if metrics:
+    metrics.record_tool_call("example_tool", success=True)
+```
+
+The metrics instance lifecycle is managed automatically:
+- **Initialization**: Created during `setup_telemetry()`
+- **Access**: Available via `get_mcp_metrics()`
+- **Cleanup**: Cleared during `shutdown_telemetry()`
+
+#### Metric Naming Conventions
+
+All MCP metrics follow OpenTelemetry naming conventions:
+- **Prefix**: All metrics start with `mcp.` for namespace isolation
+- **Units**: Durations are in seconds, memory in bytes, counts are unitless
+- **Descriptors**: Clear, concise descriptions for each metric
+- **Labels**: Consistent semantic attribute naming across metrics
+
+#### Monitoring and Alerting
+
+Common monitoring patterns for MCP metrics:
+
+**Error Rate Monitoring:**
+```promql
+# Tool call error rate over 5 minutes
+rate(mcp_tool_calls_total{success="false"}[5m]) / 
+rate(mcp_tool_calls_total[5m])
+```
+
+**Performance Monitoring:**
+```promql
+# 95th percentile operation duration
+histogram_quantile(0.95, mcp_operation_duration_seconds_bucket)
+```
+
+**Client Analysis:**
+```promql
+# Tool calls by client type
+sum by (client_type) (mcp_tool_calls_total)
+```
+
+**Resource Monitoring:**
+```promql
+# Current memory usage
+mcp_memory_usage_bytes
+
+# Queue depth
+mcp_queue_size
+```
+
 ### Logs
 
 Structured logs with trace correlation:

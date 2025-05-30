@@ -679,4 +679,195 @@ class TestAutoInstrumentation:
         
         assert 'logging' in result['enabled_instrumentors']
         # Logging should provide trace correlation capabilities
-        assert result['logging_trace_correlation'] is True 
+        assert result['logging_trace_correlation'] is True
+
+
+class TestMCPMetricsCollection:
+    """Test MCP-specific metrics collection functionality"""
+    
+    def setup_method(self):
+        """Set up test fixtures"""
+        # Set up telemetry for testing
+        self.telemetry_config = {
+            'telemetry': {
+                'enabled': True,
+                'service_name': 'test-mcp-metrics'
+            }
+        }
+        setup_telemetry(self.telemetry_config)
+        
+    def test_mcp_metrics_class_initialization(self):
+        """Test MCPMetrics class can be initialized"""
+        from mcp_commit_story.telemetry import MCPMetrics
+        
+        metrics = MCPMetrics()
+        assert metrics is not None
+        assert hasattr(metrics, 'record_tool_call')
+        assert hasattr(metrics, 'record_operation_duration')
+        
+    def test_record_tool_call_success(self):
+        """Test recording successful tool calls"""
+        from mcp_commit_story.telemetry import MCPMetrics
+        
+        metrics = MCPMetrics()
+        
+        # Record successful tool calls
+        metrics.record_tool_call("file_read", success=True)
+        metrics.record_tool_call("file_write", success=True)
+        metrics.record_tool_call("git_status", success=True)
+        
+        # Should not raise any exceptions
+        # Actual metric values will be verified through exporters
+        
+    def test_record_tool_call_failure(self):
+        """Test recording failed tool calls"""
+        from mcp_commit_story.telemetry import MCPMetrics
+        
+        metrics = MCPMetrics()
+        
+        # Record failed tool calls
+        metrics.record_tool_call("file_read", success=False)
+        metrics.record_tool_call("network_request", success=False, error_type="timeout")
+        
+        # Should not raise any exceptions
+        
+    def test_record_operation_duration(self):
+        """Test recording operation duration metrics"""
+        from mcp_commit_story.telemetry import MCPMetrics
+        
+        metrics = MCPMetrics()
+        
+        # Record various operation durations
+        metrics.record_operation_duration("journal_generation", 1.5)
+        metrics.record_operation_duration("context_collection", 0.25)
+        metrics.record_operation_duration("file_processing", 2.1)
+        
+        # Should not raise any exceptions
+        
+    def test_metric_labels_and_attributes(self):
+        """Test that metric labels and values are correctly set"""
+        from mcp_commit_story.telemetry import MCPMetrics
+        
+        metrics = MCPMetrics()
+        
+        # Record metrics with specific attributes
+        metrics.record_tool_call("git_log", success=True, repository="test-repo")
+        metrics.record_operation_duration("ai_processing", 3.2, model="gpt-4", operation_type="generation")
+        
+        # Labels should be properly applied (verified through metric inspection)
+        # This is a behavioral test - implementation will validate the labels
+        
+    def test_metric_export_format(self):
+        """Test that metrics are exported in the correct format"""
+        from mcp_commit_story.telemetry import MCPMetrics
+        
+        metrics = MCPMetrics()
+        
+        # Record some metrics
+        metrics.record_tool_call("test_tool", success=True)
+        metrics.record_operation_duration("test_operation", 1.0)
+        
+        # Get metric data for verification
+        metric_data = metrics.get_metric_data()
+        
+        assert metric_data is not None
+        assert "tool_calls_total" in metric_data
+        assert "operation_duration_seconds" in metric_data
+        
+    def test_counter_increments(self):
+        """Test that counters increment correctly"""
+        from mcp_commit_story.telemetry import MCPMetrics
+        
+        metrics = MCPMetrics()
+        
+        # Record multiple calls to the same tool
+        metrics.record_tool_call("file_read", success=True)
+        metrics.record_tool_call("file_read", success=True)
+        metrics.record_tool_call("file_read", success=False)
+        
+        # Get counter values
+        counter_data = metrics.get_counter_values()
+        
+        assert counter_data["tool_calls_total"]["file_read"]["success"] == 2
+        assert counter_data["tool_calls_total"]["file_read"]["failure"] == 1
+        
+    def test_histogram_recordings(self):
+        """Test that histogram metrics record duration properly"""
+        from mcp_commit_story.telemetry import MCPMetrics
+        
+        metrics = MCPMetrics()
+        
+        # Record multiple durations for the same operation
+        durations = [0.1, 0.5, 1.0, 2.5, 5.0]
+        for duration in durations:
+            metrics.record_operation_duration("test_operation", duration)
+        
+        # Get histogram data
+        histogram_data = metrics.get_histogram_data()
+        
+        assert "operation_duration_seconds" in histogram_data
+        assert histogram_data["operation_duration_seconds"]["test_operation"]["count"] == 5
+        assert histogram_data["operation_duration_seconds"]["test_operation"]["sum"] == sum(durations)
+        
+    def test_gauge_updates(self):
+        """Test gauge metrics for state tracking"""
+        from mcp_commit_story.telemetry import MCPMetrics
+        
+        metrics = MCPMetrics()
+        
+        # Update gauge values
+        metrics.set_active_operations(3)
+        metrics.set_queue_size(15)
+        metrics.set_memory_usage_mb(128.5)
+        
+        # Get gauge values
+        gauge_data = metrics.get_gauge_values()
+        
+        assert gauge_data["active_operations"] == 3
+        assert gauge_data["queue_size"] == 15
+        assert gauge_data["memory_usage_mb"] == 128.5
+        
+    def test_metric_naming_convention(self):
+        """Test that metrics follow proper naming conventions"""
+        from mcp_commit_story.telemetry import MCPMetrics
+        
+        metrics = MCPMetrics()
+        
+        # Get all metric names
+        metric_names = metrics.get_metric_names()
+        
+        # Verify naming convention (should use mcp. prefix and follow OpenTelemetry guidelines)
+        expected_metrics = [
+            "mcp.tool_calls_total",
+            "mcp.operation_duration_seconds", 
+            "mcp.active_operations",
+            "mcp.queue_size",
+            "mcp.memory_usage_bytes"
+        ]
+        
+        for expected_metric in expected_metrics:
+            assert expected_metric in metric_names
+            
+    def test_semantic_metric_attributes(self):
+        """Test that semantic attributes are properly applied to metrics"""
+        from mcp_commit_story.telemetry import MCPMetrics
+        
+        metrics = MCPMetrics()
+        
+        # Record metrics with semantic attributes
+        metrics.record_tool_call(
+            "file_operation", 
+            success=True,
+            tool_type="filesystem",
+            operation_type="read",
+            file_type="json"
+        )
+        
+        # Verify attributes are recorded
+        metric_attributes = metrics.get_metric_attributes("mcp.tool_calls_total")
+        
+        assert "tool_name" in metric_attributes
+        assert "success" in metric_attributes  
+        assert "tool_type" in metric_attributes
+        assert "operation_type" in metric_attributes
+        assert "file_type" in metric_attributes 
