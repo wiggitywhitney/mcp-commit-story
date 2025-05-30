@@ -19,7 +19,13 @@ dependencies = [
     "python-dateutil>=2.8.0",
     "opentelemetry-api>=1.15.0",
     "opentelemetry-sdk>=1.15.0",
-    "opentelemetry-exporter-otlp>=1.15.0"
+    "opentelemetry-exporter-otlp>=1.15.0",
+    # Auto-instrumentation dependencies (required for telemetry tests)
+    "opentelemetry-instrumentation>=0.41b0",
+    "opentelemetry-instrumentation-requests>=0.41b0",
+    "opentelemetry-instrumentation-aiohttp-client>=0.41b0",
+    "opentelemetry-instrumentation-asyncio>=0.41b0",
+    "opentelemetry-instrumentation-logging>=0.41b0"
 ]
 
 [project.optional-dependencies]
