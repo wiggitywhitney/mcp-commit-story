@@ -37,12 +37,23 @@ telemetry:
   exporters:
     console:
       enabled: true                # Console output for development
+      traces: true                 # Export traces to console
+      metrics: true                # Export metrics to console
     otlp:
       enabled: false               # OTLP for production backends
       endpoint: "http://localhost:4317"
+      protocol: "grpc"             # or "http"
+      headers:
+        authorization: "Bearer token123"
+      timeout: 30                  # Connection timeout in seconds
+      traces: true                 # Export traces via OTLP
+      metrics: true                # Export metrics via OTLP
     prometheus:
       enabled: false               # Prometheus metrics
-      port: 8000
+      port: 8888                   # Metrics endpoint port
+      endpoint: "/metrics"         # Metrics endpoint path
+      metrics: true                # Export metrics (only supported type)
+      traces: false                # Prometheus doesn't support traces
 ```
 
 ### Auto-Instrumentation
@@ -118,6 +129,192 @@ Sensitive configuration can be provided via environment variables:
 - `OTEL_EXPORTER_OTLP_ENDPOINT`: Override OTLP endpoint
 - `OTEL_SERVICE_NAME`: Override service name
 - `OTEL_RESOURCE_ATTRIBUTES`: Additional resource attributes
+
+### Multi-Exporter Configuration System
+
+The telemetry system includes an enhanced multi-exporter configuration system with environment variable precedence hierarchy, partial success error handling, and comprehensive validation.
+
+#### Environment Variable Precedence Hierarchy
+
+Configuration values are resolved in the following order (highest to lowest priority):
+
+1. **MCP-specific environment variables** (highest priority):
+   - `MCP_PROMETHEUS_PORT`: Override Prometheus port
+   - `MCP_CONSOLE_ENABLED`: Enable/disable console exporter ("true"/"false")
+   - `MCP_OTLP_ENDPOINT`: Override OTLP endpoint URL
+   - `MCP_OTLP_ENABLED`: Enable/disable OTLP exporter ("true"/"false")
+   - `MCP_PROMETHEUS_ENABLED`: Enable/disable Prometheus exporter ("true"/"false")
+
+2. **Standard OpenTelemetry environment variables**:
+   - `OTEL_EXPORTER_OTLP_ENDPOINT`: OTLP endpoint URL
+   - `OTEL_EXPORTER_OTLP_HEADERS`: OTLP headers (comma-separated key=value pairs)
+   - `OTEL_EXPORTER_OTLP_TIMEOUT`: OTLP timeout in seconds
+   - `OTEL_SERVICE_NAME`: Service name
+
+3. **Configuration file values**: Values specified in YAML/JSON config
+
+4. **Built-in defaults** (lowest priority): System defaults
+
+#### Enhanced Error Handling with Partial Success
+
+The multi-exporter system provides graceful degradation when individual exporters fail:
+
+```python
+{
+    "status": "partial_success",
+    "successful_exporters": ["console", "prometheus"],
+    "failed_exporters": {
+        "otlp": {
+            "error": "Connection timeout",
+            "details": "Failed to connect to http://localhost:4317 after 10 seconds"
+        }
+    }
+}
+```
+
+**Status Values:**
+- `"success"`: All enabled exporters configured successfully
+- `"partial_success"`: Some exporters succeeded, others failed
+- `"failure"`: All exporters failed to configure
+
+#### Comprehensive Configuration Validation
+
+The system validates all configuration parameters:
+
+**Prometheus Validation:**
+- Port range: 1-65535
+- Endpoint must start with "/"
+
+**OTLP Validation:**
+- Protocol must be "grpc" or "http"
+- Timeout must be positive integer
+- Headers must be valid key-value pairs
+
+**General Validation:**
+- All required fields are present
+- Data types match expected formats
+- Cross-exporter compatibility checks
+
+#### Multi-Exporter Support
+
+**Console Exporter:**
+- Outputs traces and metrics to console/stdout
+- Ideal for development and debugging
+- Supports both traces and metrics
+
+**OTLP Exporter:**
+- OpenTelemetry Protocol for production backends
+- Supports both gRPC and HTTP protocols
+- Compatible with Jaeger, DataDog, New Relic, etc.
+- Configurable headers for authentication
+- Supports both traces and metrics
+
+**Prometheus Exporter:**
+- Exposes metrics in Prometheus format
+- HTTP endpoint for scraping
+- Metrics only (traces not supported)
+- Configurable port and endpoint path
+
+#### Example Configurations
+
+**Development Configuration:**
+```yaml
+telemetry:
+  exporters:
+    console:
+      enabled: true
+      traces: true
+      metrics: true
+```
+
+**Production Configuration:**
+```yaml
+telemetry:
+  exporters:
+    console:
+      enabled: false
+    otlp:
+      enabled: true
+      endpoint: "https://api.honeycomb.io:443"
+      protocol: "grpc"
+      headers:
+        "x-honeycomb-team": "${HONEYCOMB_API_KEY}"
+      traces: true
+      metrics: true
+    prometheus:
+      enabled: true
+      port: 8888
+      endpoint: "/metrics"
+      metrics: true
+```
+
+**Hybrid Configuration:**
+```yaml
+telemetry:
+  exporters:
+    console:
+      enabled: true
+      traces: true
+      metrics: false   # Only trace debugging locally
+    otlp:
+      enabled: true
+      endpoint: "http://jaeger:14268/api/traces"
+      protocol: "http"
+      traces: true
+      metrics: false   # Send traces to Jaeger
+    prometheus:
+      enabled: true
+      port: 9090
+      endpoint: "/metrics"
+      metrics: true    # Expose metrics for Prometheus
+```
+
+#### Environment Variable Override Examples
+
+**Override OTLP endpoint:**
+```bash
+export MCP_OTLP_ENDPOINT="https://your-backend.com:4317"
+export OTEL_EXPORTER_OTLP_HEADERS="authorization=Bearer your-token"
+```
+
+**Enable Prometheus in production:**
+```bash
+export MCP_PROMETHEUS_ENABLED="true"
+export MCP_PROMETHEUS_PORT="9090"
+```
+
+#### Graceful Degradation
+
+The multi-exporter system ensures system reliability:
+
+- **No Cascading Failures**: One failed exporter doesn't break others
+- **Detailed Error Reporting**: Specific error messages for debugging
+- **Logging**: All exporter failures are logged for monitoring
+- **Operational Continuity**: Application continues running even if all exporters fail
+
+#### Programmatic Usage
+
+```python
+from mcp_commit_story.multi_exporter import configure_exporters
+
+config = {
+    "telemetry": {
+        "exporters": {
+            "console": {"enabled": True},
+            "otlp": {"enabled": True, "endpoint": "http://localhost:4317"},
+            "prometheus": {"enabled": True, "port": 8888}
+        }
+    }
+}
+
+result = configure_exporters(config)
+
+if result.status == "success":
+    print("All exporters configured successfully")
+elif result.status == "partial_success":
+    print(f"Some exporters failed: {result.failed_exporters}")
+    print(f"Working exporters: {result.successful_exporters}")
+```
 
 ## Telemetry Data
 

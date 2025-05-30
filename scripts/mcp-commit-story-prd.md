@@ -118,6 +118,9 @@
 - **MCP-specific metrics**: Dedicated metrics for tool call success rates, operation performance, and system state
 - **Client attribution**: Track usage patterns and success rates across different AI clients (Cursor, Claude Desktop, etc.)
 - **Real-time monitoring**: Live metrics for active operations, queue depth, and resource utilization
+- **Multi-exporter telemetry system**: Enhanced telemetry configuration supporting multiple export destinations (console, OTLP, Prometheus) with environment variable precedence hierarchy and graceful degradation when individual exporters fail
+- **Production-ready monitoring**: Configurable telemetry exporters for different environments - console output for development, OTLP for production observability backends (Jaeger, DataDog, New Relic), and Prometheus metrics for infrastructure monitoring
+- **Robust error handling**: Partial success reporting when some telemetry exporters fail, ensuring system continues operating even if monitoring infrastructure has issues
 
 ---
 
