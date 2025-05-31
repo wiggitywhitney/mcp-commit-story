@@ -1,4 +1,8 @@
-from typing import TypedDict, List, Optional, Union, Dict
+try:
+    from typing import TypedDict, List, Optional, Union, Dict
+except ImportError:
+    from typing import List, Optional, Union, Dict
+    from typing_extensions import TypedDict
 
 class ChatMessage(TypedDict):
     speaker: str
