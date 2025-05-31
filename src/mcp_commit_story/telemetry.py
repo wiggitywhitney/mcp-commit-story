@@ -65,13 +65,12 @@ def setup_telemetry(config: Dict[str, Any]) -> bool:
         logger.info("Telemetry disabled via configuration")
         return False
     
-    # Always create fresh providers to avoid ProxyTracerProvider issues
-    # This ensures tests get real TracerProvider instances
-    if _telemetry_initialized:
-        logger.debug("Telemetry already initialized, reinitializing with fresh providers")
-        shutdown_telemetry()
-    
     try:
+        # Shutdown existing telemetry first to ensure clean state
+        if _telemetry_initialized:
+            logger.debug("Telemetry already initialized, reinitializing with fresh providers")
+            shutdown_telemetry()
+        
         # Setup service resource
         service_name = telemetry_config.get("service_name", "mcp-commit-story")
         service_version = telemetry_config.get("service_version", "1.0.0")
@@ -83,13 +82,31 @@ def setup_telemetry(config: Dict[str, Any]) -> bool:
             "deployment.environment": deployment_env,
         })
         
-        # Initialize TracerProvider with force=True to override any existing provider
+        # Create fresh TracerProvider
         _tracer_provider = TracerProvider(resource=resource)
-        trace.set_tracer_provider(_tracer_provider)
         
-        # Initialize MeterProvider with force=True to override any existing provider  
+        # Try to set the tracer provider, handling the case where it's already set
+        try:
+            trace.set_tracer_provider(_tracer_provider)
+        except RuntimeError as e:
+            if "not allowed" in str(e):
+                # In test environments, we may need to work around the global state
+                logger.warning("Could not override global TracerProvider, using existing one")
+                # Still keep our reference for span processors, etc.
+            else:
+                raise
+        
+        # Create fresh MeterProvider
         _meter_provider = MeterProvider(resource=resource)
-        metrics.set_meter_provider(_meter_provider)
+        
+        # Try to set the meter provider, handling the case where it's already set  
+        try:
+            metrics.set_meter_provider(_meter_provider)
+        except RuntimeError as e:
+            if "not allowed" in str(e):
+                logger.warning("Could not override global MeterProvider, using existing one")
+            else:
+                raise
         
         # Setup auto-instrumentation if configured
         if telemetry_config.get("auto_instrumentation", {}).get("enabled", True):
@@ -389,13 +406,21 @@ def shutdown_telemetry():
     try:
         # Shutdown TracerProvider
         if _tracer_provider:
-            _tracer_provider.shutdown()
-            _tracer_provider = None
+            try:
+                _tracer_provider.shutdown()
+            except Exception as e:
+                logger.warning(f"Error shutting down TracerProvider: {e}")
+            finally:
+                _tracer_provider = None
         
         # Shutdown MeterProvider
         if _meter_provider:
-            _meter_provider.shutdown() 
-            _meter_provider = None
+            try:
+                _meter_provider.shutdown()
+            except Exception as e:
+                logger.warning(f"Error shutting down MeterProvider: {e}")
+            finally:
+                _meter_provider = None
         
         # Clear metrics instance
         _mcp_metrics = None

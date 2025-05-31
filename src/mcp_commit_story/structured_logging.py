@@ -85,11 +85,20 @@ class OTelFormatter(logging.Formatter):
         
         # Add trace correlation if span is active
         current_span = get_current_span()
-        if current_span and current_span.is_recording():
-            span_context = current_span.get_span_context()
-            if span_context.trace_id and span_context.span_id:
-                log_data["trace_id"] = format(span_context.trace_id, '032x')
-                log_data["span_id"] = format(span_context.span_id, '016x')
+        if current_span and hasattr(current_span, 'get_span_context'):
+            try:
+                span_context = current_span.get_span_context()
+                # Check if we have valid trace and span IDs (non-zero)
+                if (span_context and 
+                    hasattr(span_context, 'trace_id') and 
+                    hasattr(span_context, 'span_id') and
+                    span_context.trace_id != 0 and 
+                    span_context.span_id != 0):
+                    log_data["trace_id"] = format(span_context.trace_id, '032x')
+                    log_data["span_id"] = format(span_context.span_id, '016x')
+            except Exception:
+                # If we can't get span context for any reason, just continue without trace correlation
+                pass
         
         # Add extra fields if present (from logger.info("msg", extra={...}))
         if hasattr(record, '__dict__'):
