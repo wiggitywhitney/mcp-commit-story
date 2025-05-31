@@ -12,9 +12,11 @@ Intended for use as the main server entrypoint for the mcp-commit-story project.
 import os
 import logging
 from typing import Callable, Awaitable, Any, Optional, Dict
-try:
+import sys
+
+if sys.version_info >= (3, 12):
     from typing import TypedDict
-except ImportError:
+else:
     from typing_extensions import TypedDict
 from mcp.server.fastmcp import FastMCP, Context
 from mcp_commit_story.config import load_config, Config, ConfigError

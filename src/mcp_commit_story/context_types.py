@@ -1,7 +1,9 @@
-try:
-    from typing import TypedDict, List, Optional, Union, Dict
-except ImportError:
-    from typing import List, Optional, Union, Dict
+import sys
+from typing import List, Optional, Union, Dict
+
+if sys.version_info >= (3, 12):
+    from typing import TypedDict
+else:
     from typing_extensions import TypedDict
 
 class ChatMessage(TypedDict):
