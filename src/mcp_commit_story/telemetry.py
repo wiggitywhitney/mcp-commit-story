@@ -9,6 +9,8 @@ import uuid
 import asyncio
 import functools
 import logging
+import re
+import os
 from typing import Optional, Dict, Any, Callable, List, Union
 from opentelemetry import trace, metrics
 from opentelemetry.sdk.trace import TracerProvider
@@ -320,79 +322,74 @@ def get_meter(name: str = "mcp_commit_story") -> metrics.Meter:
     return metrics.get_meter(name)
 
 
-def trace_mcp_operation(
-    operation_name: str, 
-    *, 
-    attributes: Optional[Dict[str, Union[str, int, float, bool]]] = None
-) -> Callable:
+def trace_mcp_operation(operation_name: str, attributes: Optional[Dict[str, Any]] = None):
     """
-    Decorator for tracing MCP operations with semantic attributes.
+    Decorator to trace MCP operations with OpenTelemetry using enhanced sensitive data filtering.
+    Supports both sync and async functions.
     
     Args:
         operation_name: Name of the operation for the span
-        attributes: Optional custom attributes to add to the span
-        
-    Returns:
-        Decorated function with tracing capabilities
+        attributes: Additional attributes to add to the span (will be sanitized)
     """
-    def decorator(func: Callable) -> Callable:
-        # Preserve function metadata
-        @functools.wraps(func)
-        def sync_wrapper(*args, **kwargs):
-            tracer = get_tracer()
-            
-            with tracer.start_as_current_span(operation_name) as span:
-                # Set semantic attributes for MCP operations
-                span.set_attribute("mcp.operation.name", operation_name)
-                span.set_attribute("mcp.operation.type", "sync")
-                
-                # Add custom attributes if provided
-                if attributes:
-                    for key, value in attributes.items():
-                        span.set_attribute(key, value)
-                
-                try:
-                    result = func(*args, **kwargs)
-                    span.set_status(Status(StatusCode.OK))
-                    return result
-                except Exception as e:
-                    # Record the exception in the span
-                    span.record_exception(e)
-                    span.set_status(Status(StatusCode.ERROR, str(e)))
-                    # Re-raise the exception (record AND propagate)
-                    raise
-        
-        @functools.wraps(func)
-        async def async_wrapper(*args, **kwargs):
-            tracer = get_tracer()
-            
-            with tracer.start_as_current_span(operation_name) as span:
-                # Set semantic attributes for MCP operations
-                span.set_attribute("mcp.operation.name", operation_name)
-                span.set_attribute("mcp.operation.type", "async")
-                
-                # Add custom attributes if provided
-                if attributes:
-                    for key, value in attributes.items():
-                        span.set_attribute(key, value)
-                
-                try:
-                    result = await func(*args, **kwargs)
-                    span.set_status(Status(StatusCode.OK))
-                    return result
-                except Exception as e:
-                    # Record the exception in the span
-                    span.record_exception(e)
-                    span.set_status(Status(StatusCode.ERROR, str(e)))
-                    # Re-raise the exception (record AND propagate)
-                    raise
-        
-        # Auto-detect if function is async and return appropriate wrapper
+    def decorator(func: Callable):
         if asyncio.iscoroutinefunction(func):
+            @functools.wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                tracer = trace.get_tracer(__name__)
+                with tracer.start_as_current_span(operation_name) as span:
+                    try:
+                        # Add sanitized default attributes
+                        span.set_attribute("mcp.tool_name", sanitize_for_telemetry(func.__name__))
+                        span.set_attribute("mcp.operation_type", sanitize_for_telemetry(operation_name))
+                        
+                        # Add sanitized custom attributes
+                        if attributes:
+                            for key, value in attributes.items():
+                                span.set_attribute(key, sanitize_for_telemetry(value))
+                        
+                        # Execute the async function
+                        result = await func(*args, **kwargs)
+                        
+                        # Mark span as successful
+                        span.set_status(Status(StatusCode.OK))
+                        return result
+                        
+                    except Exception as e:
+                        # Record error with sanitized message
+                        span.set_status(Status(StatusCode.ERROR, sanitize_for_telemetry(str(e))))
+                        span.set_attribute("error.type", sanitize_for_telemetry(type(e).__name__))
+                        span.set_attribute("error.message", sanitize_for_telemetry(str(e)))
+                        raise
             return async_wrapper
         else:
-            return sync_wrapper
-    
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                tracer = trace.get_tracer(__name__)
+                with tracer.start_as_current_span(operation_name) as span:
+                    try:
+                        # Add sanitized default attributes
+                        span.set_attribute("mcp.tool_name", sanitize_for_telemetry(func.__name__))
+                        span.set_attribute("mcp.operation_type", sanitize_for_telemetry(operation_name))
+                        
+                        # Add sanitized custom attributes
+                        if attributes:
+                            for key, value in attributes.items():
+                                span.set_attribute(key, sanitize_for_telemetry(value))
+                        
+                        # Execute the function
+                        result = func(*args, **kwargs)
+                        
+                        # Mark span as successful
+                        span.set_status(Status(StatusCode.OK))
+                        return result
+                        
+                    except Exception as e:
+                        # Record error with sanitized message
+                        span.set_status(Status(StatusCode.ERROR, sanitize_for_telemetry(str(e))))
+                        span.set_attribute("error.type", sanitize_for_telemetry(type(e).__name__))
+                        span.set_attribute("error.message", sanitize_for_telemetry(str(e)))
+                        raise
+            return wrapper
     return decorator
 
 
@@ -637,3 +634,108 @@ def get_mcp_metrics() -> Optional["MCPMetrics"]:
         MCPMetrics instance if telemetry is initialized, None otherwise
     """
     return _mcp_metrics 
+
+
+def sanitize_for_telemetry(value: Any, debug_mode: bool = False) -> str:
+    """
+    Sanitize potentially sensitive values for telemetry spans with enhanced filtering patterns.
+    
+    Args:
+        value: The value to sanitize
+        debug_mode: If True, applies less aggressive sanitization for development/debugging
+    
+    Handles:
+    - Git information (commit hashes, branch names)
+    - URLs (query parameters, auth tokens)
+    - Connection strings
+    - File content metadata
+    - Personal information
+    - Authentication data
+    """
+    if value is None:
+        return ""
+    
+    str_value = str(value)
+    
+    # In debug mode, apply minimal sanitization - only truly sensitive data
+    if debug_mode:
+        # Only sanitize the most critical sensitive data in debug mode
+        # API keys and tokens (common patterns)
+        str_value = re.sub(r'\b[A-Za-z0-9]{32,}\b', lambda m: m.group(0)[:8] + '***' if len(m.group(0)) > 16 else m.group(0), str_value)
+        
+        # JSON Web Tokens
+        str_value = re.sub(r'\b[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\b', 'jwt.***', str_value)
+        
+        # Bearer tokens in headers
+        str_value = re.sub(r'(Bearer\s+)[A-Za-z0-9\-._~+/]+=*', r'\1***', str_value, flags=re.IGNORECASE)
+        
+        # Database passwords in connection strings
+        str_value = re.sub(r'(password|pwd|secret)=([^;,\s]+)', r'\1=***', str_value, flags=re.IGNORECASE)
+        
+        # Limit length to prevent span overflow
+        if len(str_value) > 2000:  # More generous limit in debug mode
+            str_value = str_value[:1997] + "..."
+        
+        return str_value
+    
+    # Production mode: Full aggressive sanitization
+    # Git information patterns
+    # Full commit hashes (preserve first 8 chars for debugging)
+    str_value = re.sub(r'\b([a-f0-9]{8})[a-f0-9]{32,}\b', r'\1...', str_value)
+    
+    # Git branch names containing personal/sensitive info
+    str_value = re.sub(r'(branch|ref)s?[:/].*?/(feature|bugfix|hotfix)/[^/\s]+', r'\1/\2/***', str_value)
+    
+    # URL patterns
+    # Query parameters (keep first param name for debugging)
+    str_value = re.sub(r'(\?[^=&\s]+=[^&\s]*)', r'\1&***', str_value)
+    
+    # Auth tokens in URLs
+    str_value = re.sub(r'(token|auth|key|secret)=[^&\s]+', r'\1=***', str_value, flags=re.IGNORECASE)
+    
+    # Bearer tokens in headers
+    str_value = re.sub(r'(Bearer\s+)[A-Za-z0-9\-._~+/]+=*', r'\1***', str_value, flags=re.IGNORECASE)
+    
+    # Connection strings
+    # Database connection strings
+    str_value = re.sub(r'(password|pwd|secret)=([^;,\s]+)', r'\1=***', str_value, flags=re.IGNORECASE)
+    str_value = re.sub(r'(mongodb|postgres|mysql)://[^@]*@', r'\1://***:***@', str_value)
+    
+    # API endpoints with credentials
+    str_value = re.sub(r'(https?://)[^@/]+:[^@/]+@', r'\1***:***@', str_value)
+    
+    # File content metadata
+    # File sizes (keep for debugging, but truncate large numbers)
+    str_value = re.sub(r'\b(\d{4,})\d{4,}\b', r'\1***', str_value)
+    
+    # File paths (keep directory structure but obscure specific file names)
+    str_value = re.sub(r'(/[^/\s]+){3,}(/[^/\s]+\.[a-zA-Z0-9]+)', r'/***\2', str_value)
+    
+    # Personal information patterns
+    # Email addresses (keep domain for debugging)
+    str_value = re.sub(r'\b[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+\.[A-Z|a-z]{2,})', r'***@\1', str_value)
+    
+    # IP addresses (keep first octet)
+    str_value = re.sub(r'\b(\d{1,3})\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', r'\1.***.***.***', str_value)
+    
+    # Phone numbers (basic pattern)
+    str_value = re.sub(r'\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b', '***-***-****', str_value)
+    
+    # Authentication data
+    # API keys (common patterns)
+    str_value = re.sub(r'\b[A-Za-z0-9]{20,}\b', lambda m: m.group(0)[:8] + '***' if len(m.group(0)) > 16 else m.group(0), str_value)
+    
+    # JSON Web Tokens
+    str_value = re.sub(r'\b[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\b', 'jwt.***', str_value)
+    
+    # Session IDs and UUIDs
+    str_value = re.sub(r'\b[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\b', 'uuid-***', str_value, flags=re.IGNORECASE)
+    
+    # Environment variable patterns
+    str_value = re.sub(r'(export\s+)?[A-Z_]+(KEY|SECRET|TOKEN|PASSWORD|AUTH)=[^\s]+', r'\1***=***', str_value)
+    
+    # Limit length to prevent span overflow
+    if len(str_value) > 1000:
+        str_value = str_value[:997] + "..."
+    
+    return str_value 

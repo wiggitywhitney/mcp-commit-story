@@ -459,4 +459,275 @@ curl http://localhost:8000/metrics
 
 # View recent traces (if using console exporter)
 tail -f /var/log/application.log | grep trace_id
-``` 
+```
+
+## Journal Operations Instrumentation
+
+The journal management system includes comprehensive OpenTelemetry instrumentation for observability into AI-driven content generation and file operations.
+
+### Instrumented Operations
+
+#### File Operations
+All journal file operations are traced and measured:
+
+```python
+from mcp_commit_story.journal import append_to_journal_file, get_journal_file_path
+
+# File path generation with telemetry
+file_path = get_journal_file_path("daily", "2025-05-31")
+# Span: journal.get_file_path
+# Attributes: journal.entry_type, journal.date, file.name, directory.name
+
+# File writing with metrics
+append_to_journal_file(content, file_path)
+# Span: journal.append_file  
+# Metrics: journal.file_write_duration_seconds, journal.file_write_total
+# Attributes: file.path, file.extension, journal.content_length, file.size_bytes
+```
+
+#### AI Generation Operations
+All AI content generation functions are instrumented:
+
+```python
+from mcp_commit_story.journal import generate_summary_section
+
+# AI generation with context tracking
+summary = generate_summary_section(journal_context)
+# Span: journal.generate_summary
+# Metrics: journal.ai_generation_duration_seconds
+# Attributes: journal.context_size, journal.entry_id, section_type="summary"
+```
+
+#### Reading Operations
+Journal parsing and serialization operations:
+
+```python
+from mcp_commit_story.journal import JournalParser, JournalEntry
+
+# Parse journal content
+entry = JournalParser.parse(markdown_content)
+# Span: journal.parse_entry
+# Metrics: journal.parse_duration_seconds, journal.parse_operations_total
+# Attributes: journal.content_length, journal.sections_parsed, journal.entry_id
+
+# Serialize to markdown
+markdown = entry.to_markdown()
+# Span: journal.serialize_entry
+# Metrics: journal.serialize_duration_seconds, journal.serialize_operations_total
+# Attributes: journal.entry_id, journal.output_length
+```
+
+### Journal-Specific Metrics
+
+#### Duration Histograms
+- `journal.file_write_duration_seconds`: File write operation latency
+- `journal.ai_generation_duration_seconds`: AI content generation time (labeled by section_type)
+- `journal.directory_operation_duration_seconds`: Directory creation/validation time
+- `journal.parse_duration_seconds`: Journal content parsing time
+- `journal.serialize_duration_seconds`: Journal entry serialization time
+- `journal.config_load_duration_seconds`: Configuration loading time
+- `journal.path_generation_duration_seconds`: File path generation time
+
+#### Operation Counters
+- `journal.file_write_total`: File write operations (success/failure)
+- `journal.generation_operations_total`: AI generation operations by section type
+- `journal.directory_operations_total`: Directory operations (success/failure)
+- `journal.parse_operations_total`: Journal parsing operations
+- `journal.serialize_operations_total`: Journal serialization operations
+- `journal.config_load_operations_total`: Configuration loading operations
+- `journal.path_generation_operations_total`: Path generation operations
+
+### Semantic Conventions
+
+#### Standard Attributes
+- `operation_type`: Type of operation (file_write, ai_generation, parse, etc.)
+- `file_type`: File format (markdown, toml, etc.)
+- `section_type`: Journal section being generated (summary, technical_synopsis, etc.)
+
+#### Journal-Specific Attributes
+- `journal.entry_id`: Commit hash or unique identifier for the journal entry
+- `journal.entry_type`: Type of journal entry (daily, feature, etc.)
+- `journal.date`: Date associated with the journal entry
+- `journal.context_size`: Size of context provided to AI generation
+- `journal.content_length`: Length of content being processed
+- `journal.output_length`: Length of generated output
+- `journal.sections_parsed`: Number of sections successfully parsed
+
+#### Privacy-Conscious Attributes
+- `file.name`: Filename only (not full path) for privacy
+- `directory.name`: Directory name only (not full path)
+- `config.file_path`: Basename only for configuration files
+
+#### Error Classification
+- `error.category`: Categorized error types:
+  - `permission_denied_file`: File permission errors
+  - `permission_denied_directory`: Directory permission errors
+  - `file_not_found`: Missing file errors
+  - `empty_content`: Empty or invalid content
+  - `invalid_format`: Parsing format errors
+  - `ai_generation_failed`: AI generation errors
+  - `serialization_failed`: Serialization errors
+  - `config_load_failed`: Configuration loading errors
+
+### Sensitive Data Protection
+
+The journal instrumentation includes comprehensive sensitive data filtering:
+
+#### Automatic Sanitization
+All span attributes are automatically sanitized using `sanitize_for_telemetry()`:
+
+```python
+# Git information (preserves first 8 chars for debugging)
+"abc123def456..." → "abc123de..."
+
+# URLs and query parameters  
+"https://api.example.com?token=secret123&user=john" → "https://api.example.com?token=***&***"
+
+# File paths (preserves structure, obscures specifics)
+"/home/user/project/src/file.py" → "/****/file.py"
+
+# Email addresses (preserves domain)
+"user@example.com" → "***@example.com"
+
+# API keys and tokens
+"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." → "Bearer ***"
+```
+
+#### Protected Information Types
+- Git commit hashes, branch names
+- URLs with query parameters and auth tokens
+- Database connection strings
+- File content metadata and paths
+- Personal information (emails, IPs, phone numbers)
+- Authentication data (API keys, JWTs, UUIDs)
+- Environment variables with sensitive names
+
+### Performance Monitoring
+
+#### Overhead Thresholds
+The instrumentation is designed to meet strict performance criteria:
+- **Individual operations**: ≤5% overhead
+- **Batch operations**: ≤10% overhead
+- **Concurrent operations**: Minimal contention
+
+#### Performance Metrics
+Monitor telemetry impact using these metrics:
+```python
+# Check operation overhead
+baseline_time = measure_without_telemetry()
+instrumented_time = measure_with_telemetry()
+overhead_percent = ((instrumented_time - baseline_time) / baseline_time) * 100
+
+# Should be ≤5% for individual operations, ≤10% for batch
+assert overhead_percent <= 5.0  # Individual operations
+assert overhead_percent <= 10.0  # Batch operations
+```
+
+### Usage Examples
+
+#### Basic Journal Operation Monitoring
+```python
+from mcp_commit_story.telemetry import get_mcp_metrics
+from mcp_commit_story.journal import append_to_journal_file
+
+# Get metrics instance
+metrics = get_mcp_metrics()
+
+# Perform journal operation (automatically instrumented)
+append_to_journal_file("Journal content", "/path/to/journal.md")
+
+# Check metrics
+metric_data = metrics.get_metric_data()
+print(f"File writes: {metric_data['journal.file_write_total']}")
+```
+
+#### AI Generation Monitoring
+```python
+from mcp_commit_story.journal import generate_summary_section
+
+# Generate content (automatically traced and measured)
+journal_context = {"chat_history": {...}, "terminal_context": {...}}
+summary = generate_summary_section(journal_context)
+
+# Metrics automatically recorded:
+# - journal.ai_generation_duration_seconds (histogram)
+# - journal.generation_operations_total (counter)
+# Span attributes include context_size, entry_id, section_type
+```
+
+#### Error Monitoring
+```python
+from opentelemetry import trace
+
+# Errors are automatically captured in spans
+try:
+    append_to_journal_file(content, "/invalid/path")
+except Exception as e:
+    # Span automatically includes:
+    # - error.category: "permission_denied_file"
+    # - error.message: sanitized error message
+    # - span status: ERROR
+    pass
+```
+
+### Integration with Observability Platforms
+
+#### Honeycomb Query Examples
+```sql
+-- AI generation performance by section type
+SELECT AVG(duration_ms), section_type 
+FROM spans 
+WHERE name = "journal.generate_*" 
+GROUP BY section_type
+
+-- File operation error rates
+SELECT COUNT(*) as errors, error.category
+FROM spans 
+WHERE name LIKE "journal.*" AND status = "ERROR"
+GROUP BY error.category
+
+-- Journal processing pipeline
+SELECT trace_id, name, duration_ms
+FROM spans 
+WHERE trace_id IN (
+  SELECT trace_id FROM spans WHERE name = "journal.append_file"
+)
+ORDER BY start_time
+```
+
+#### Grafana Dashboard Queries
+```promql
+# AI generation latency by section type
+histogram_quantile(0.95, 
+  rate(journal_ai_generation_duration_seconds_bucket[5m])
+) by (section_type)
+
+# File operation success rate
+rate(journal_file_write_total{success="true"}[5m]) / 
+rate(journal_file_write_total[5m])
+
+# Journal processing throughput
+rate(journal_generation_operations_total[5m])
+```
+
+### Best Practices for Journal Operations
+
+#### Context Correlation
+- Journal entries are correlated using `journal.entry_id` (typically commit hash)
+- AI generation operations include `journal.context_size` for performance analysis
+- File operations include size metrics for capacity planning
+
+#### Error Handling
+- All errors are categorized for easier analysis
+- Sensitive information is automatically filtered from error messages
+- Span status reflects operation success/failure
+
+#### Performance Optimization
+- Use `journal.context_size` to identify oversized AI contexts
+- Monitor `journal.ai_generation_duration_seconds` for performance regressions
+- Track file operation metrics for I/O bottleneck identification
+
+#### Security Considerations
+- File paths are sanitized to show only filenames
+- Configuration data is filtered for sensitive values
+- AI context content is not logged directly (only size metrics) 
