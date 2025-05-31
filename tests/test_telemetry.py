@@ -23,6 +23,12 @@ from opentelemetry.trace import Status, StatusCode
 class TestTelemetrySetup:
     """Test OpenTelemetry foundation setup functionality."""
     
+    def setup_method(self):
+        """Set up test environment with fresh telemetry state."""
+        # Reset global telemetry state before each test
+        from src.mcp_commit_story.telemetry import shutdown_telemetry
+        shutdown_telemetry()
+    
     def test_setup_telemetry_enabled(self):
         """Test setup_telemetry with enabled configuration."""
         config = {

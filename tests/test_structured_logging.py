@@ -23,6 +23,19 @@ class TestOTelFormatter:
     
     def setup_method(self):
         """Set up test environment before each test."""
+        # Import setup_telemetry to ensure proper initialization
+        from src.mcp_commit_story.telemetry import setup_telemetry
+        
+        # Setup telemetry first to ensure proper provider initialization
+        config = {
+            "telemetry": {
+                "enabled": True,
+                "service_name": "test-service",
+                "service_version": "1.0.0"
+            }
+        }
+        setup_telemetry(config)
+        
         # Setup tracing for testing
         self.resource = Resource.create({"service.name": "test-service"})
         self.tracer_provider = TracerProvider(resource=self.resource)

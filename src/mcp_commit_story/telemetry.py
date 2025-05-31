@@ -65,9 +65,11 @@ def setup_telemetry(config: Dict[str, Any]) -> bool:
         logger.info("Telemetry disabled via configuration")
         return False
     
+    # Always create fresh providers to avoid ProxyTracerProvider issues
+    # This ensures tests get real TracerProvider instances
     if _telemetry_initialized:
-        logger.debug("Telemetry already initialized, skipping")
-        return True
+        logger.debug("Telemetry already initialized, reinitializing with fresh providers")
+        shutdown_telemetry()
     
     try:
         # Setup service resource
@@ -81,13 +83,13 @@ def setup_telemetry(config: Dict[str, Any]) -> bool:
             "deployment.environment": deployment_env,
         })
         
-        # Initialize TracerProvider
-        tracer_provider = TracerProvider(resource=resource)
-        trace.set_tracer_provider(tracer_provider)
+        # Initialize TracerProvider with force=True to override any existing provider
+        _tracer_provider = TracerProvider(resource=resource)
+        trace.set_tracer_provider(_tracer_provider)
         
-        # Initialize MeterProvider  
-        meter_provider = MeterProvider(resource=resource)
-        metrics.set_meter_provider(meter_provider)
+        # Initialize MeterProvider with force=True to override any existing provider  
+        _meter_provider = MeterProvider(resource=resource)
+        metrics.set_meter_provider(_meter_provider)
         
         # Setup auto-instrumentation if configured
         if telemetry_config.get("auto_instrumentation", {}).get("enabled", True):
