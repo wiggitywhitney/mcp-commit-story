@@ -24,7 +24,7 @@
    - Add documentation IF NEEDED in three places:
      1. **Docs directory**: Does a new file need to be created or would more info go in an existing file? Do what feels appropriate. Is this type of documentation needed at all? Consider user guides, API docs, or technical explanations.
      2. **PRD**: Update product requirements to reflect new capabilities, user-facing features, or system behavior changes
-     3. **Engineering Spec**: Update technical implementation details, architecture notes, and add to TOC if needed
+     3. **Engineering Spec**: Update technical implementation details, architecture notes, and make sure TOC is current
    - **Do not remove existing information unless it's incorrect**
    - **No approval needed** - make documentation edits directly
    - **Run the entire test suite and make sure all tests are passing**
@@ -53,7 +53,7 @@
    - Add documentation IF NEEDED in three places:
      1. **Docs directory**: New file or existing file? What feels appropriate?
      2. **PRD**: Update requirements for user-facing changes  
-     3. **Engineering Spec**: Update technical details and TOC if needed
+     3. **Engineering Spec**: Update technical details and make sure TOC is current
    - **Do not remove existing information unless it's incorrect**
    - **No approval needed** - make edits directly
    - **Run the entire test suite and make sure all tests are passing**
@@ -86,6 +86,6 @@
 ### Documentation Guidelines
 - **Docs directory**: Add new files for major features that need user-facing documentation, API references, or technical guides. Update existing files for enhancements to covered topics. Ask yourself: "Do users or future developers need this explained?" If the answer is no, skip this section.
 - **PRD**: Update product requirements and user stories when adding user-facing capabilities, changing system behavior, or introducing new features that affect the product vision
-- **Engineering Spec**: Always update for technical implementation details, architectural changes, new modules, or modifications to existing system design. Update the TOC if adding new major sections.
+- **Engineering Spec**: Always update for technical implementation details, architectural changes, new modules, or modifications to existing system design. Make sure TOC is current when adding new sections.
 - **Golden rule**: Don't remove existing information unless it's factually incorrect
 - **Efficiency**: Make edits directly without seeking approval - use your best judgment

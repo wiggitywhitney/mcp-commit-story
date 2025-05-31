@@ -28,7 +28,21 @@ DEFAULT_CONFIG = {
     },
     'telemetry': {
         'enabled': False,
-        'service_name': 'mcp-commit-story'
+        'service_name': 'mcp-commit-story',
+        'service_version': '1.0.0',
+        'deployment_environment': 'development',
+        'exporters': {
+            'console': {
+                'enabled': True
+            },
+            'otlp': {
+                'enabled': False
+            }
+        },
+        'auto_instrumentation': {
+            'enabled': True,
+            'preset': 'minimal'
+        }
     }
 }
 

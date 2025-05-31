@@ -110,21 +110,18 @@
 - **Version control friendly**: Journal files work well with git
 
 #### **Observability and Monitoring**
-- **System health visibility**: Ability to monitor journal generation success rates and performance
-- **Debugging support**: Trace journal creation pipeline when issues occur
-- **Performance monitoring**: Track operation timing to ensure minimal workflow impact
-- **Error tracking**: Capture and report failures in journal generation process
-- **Configuration validation**: Verify system setup and integration health
-- **MCP-specific metrics**: Dedicated metrics for tool call success rates, operation performance, and system state
-- **Client attribution**: Track usage patterns and success rates across different AI clients (Cursor, Claude Desktop, etc.)
-- **Real-time monitoring**: Live metrics for active operations, queue depth, and resource utilization
-- **Multi-exporter telemetry system**: Enhanced telemetry configuration supporting multiple export destinations (console, OTLP, Prometheus) with environment variable precedence hierarchy and graceful degradation when individual exporters fail
-- **Production-ready monitoring**: Configurable telemetry exporters for different environments - console output for development, OTLP for production observability backends (Jaeger, DataDog, New Relic), and Prometheus metrics for infrastructure monitoring
-- **Robust error handling**: Partial success reporting when some telemetry exporters fail, ensuring system continues operating even if monitoring infrastructure has issues
-- **Structured logging with trace correlation**: JSON-formatted logs that automatically include OpenTelemetry trace and span IDs when spans are active, enabling seamless correlation between logs, traces, and metrics for comprehensive debugging and monitoring
-- **Sensitive data protection**: Automatic redaction of passwords, API keys, tokens, and other sensitive information from log output to ensure security in centralized logging systems
-- **Performance-optimized logging**: Lazy evaluation of expensive log data computations, only processing complex objects when logging is actually enabled at the configured level
-- **Log-based metrics**: Optional collection of operational metrics derived from log entries, including error rates by service/operation and log volume trends for capacity planning
+- **Comprehensive telemetry integration**: Complete OpenTelemetry-based observability system integrated throughout the MCP server lifecycle
+- **End-to-end tracing**: Distributed traces capture the complete journey from MCP tool call initiation through journal generation and file writing
+- **Real-time metrics collection**: Automatic collection of tool call counts, durations, success/failure rates, and system performance metrics
+- **Structured logging with trace correlation**: JSON-formatted logs automatically enhanced with OpenTelemetry trace and span IDs for seamless debugging
+- **Multi-environment telemetry support**: Production-ready configuration with console output for development and OTLP export for production observability backends
+- **Graceful degradation**: System continues operating normally even when telemetry infrastructure fails, ensuring reliability
+- **Performance monitoring**: Sub-5ms overhead per operation with comprehensive timing and resource utilization tracking
+- **MCP-specific observability**: Dedicated metrics for tool call patterns, client attribution (Cursor, Claude Desktop), and operation success rates
+- **Security-conscious logging**: Automatic redaction of sensitive data (passwords, API keys, tokens) from all log output
+- **Health monitoring**: Built-in health checks for telemetry system status and integration verification
+- **Hot configuration reload**: Update telemetry settings without restarting the MCP server
+- **Production deployment ready**: Configurable exporters supporting Jaeger, DataDog, New Relic, Prometheus, and custom observability backends
 
 ---
 

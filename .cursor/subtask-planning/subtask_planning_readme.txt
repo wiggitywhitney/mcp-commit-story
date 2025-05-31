@@ -55,7 +55,7 @@ Each subtask includes comprehensive completion verification:
 When completing subtasks, add documentation IF NEEDED in three places:
 1. **Docs directory**: User guides, API documentation, or technical explanations
 2. **PRD**: Product requirements and user-facing feature descriptions  
-3. **Engineering Spec**: Technical implementation details and architecture
+3. **Engineering Spec**: Technical implementation details, architecture, and make sure TOC is current
 
 ### Completion Verification Checklist
 Before marking any subtask complete:

@@ -15,6 +15,7 @@ from typing import Callable, Awaitable, Any, TypedDict, Optional, Dict
 from mcp.server.fastmcp import FastMCP, Context
 from mcp_commit_story.config import load_config, Config, ConfigError
 from mcp_commit_story import telemetry
+from mcp_commit_story.telemetry import trace_mcp_operation, get_mcp_metrics
 import toml
 from mcp_commit_story.journal_init import initialize_journal
 import inspect
@@ -66,28 +67,72 @@ class MCPError(Exception):
 
 def handle_mcp_error(func):
     """
-    Decorator for handling MCP errors in async tool handlers.
-
-    Usage:
-        @handle_mcp_error
-        async def my_tool(...):
-            ...
-            raise MCPError("Something went wrong")
-
-    - Catches MCPError and returns a structured error response
-    - Catches generic exceptions and returns a generic error response
-    - Preserves async/await compatibility
-    - Ensures all errors are returned as dicts, not raw exceptions
+    Decorator that handles MCP operation errors gracefully and provides standardized error responses.
+    
+    This decorator wraps MCP tool functions to:
+    - Catch any exceptions and convert them to appropriate error responses
+    - Provide consistent error formatting across all tools
+    - Add metrics collection for operation tracking
+    - Log errors appropriately for debugging
+    
+    Returns:
+        For successful operations: The original function's return value
+        For failed operations: {"status": "error", "error": "error_message"}
     """
     import functools
+    import time
+    import logging
+    
     @functools.wraps(func)
     async def wrapper(*args, **kwargs):
+        operation_name = func.__name__
+        start_time = time.time()
+        
+        # Get metrics instance if available
+        metrics = None
         try:
-            return await func(*args, **kwargs)
+            metrics = get_mcp_metrics()
+        except Exception:
+            # Metrics not available, continue without them
+            pass
+        
+        try:
+            result = await func(*args, **kwargs)
+            
+            # Record successful operation metrics
+            if metrics:
+                duration = time.time() - start_time
+                metrics.record_tool_call(operation_name, True)
+                metrics.record_operation_duration(operation_name, duration)
+            
+            return result
+        
         except MCPError as e:
-            return {"status": e.status, "error": e.message}
+            # Expected MCP error - convert to standardized response, preserving custom status
+            error_response = {"status": e.status, "error": e.message}
+            
+            # Record failed operation metrics
+            if metrics:
+                duration = time.time() - start_time
+                metrics.record_tool_call(operation_name, False, error_type="mcp_error")
+                metrics.record_operation_duration(operation_name, duration, success=False)
+            
+            logging.warning(f"MCP operation {operation_name} failed: {e}")
+            return error_response
+        
         except Exception as e:
-            return {"status": "error", "error": str(e)}
+            # Unexpected error - log and convert to standardized response
+            error_response = {"status": "error", "error": f"Internal error: {str(e)}"}
+            
+            # Record failed operation metrics
+            if metrics:
+                duration = time.time() - start_time
+                metrics.record_tool_call(operation_name, False, error_type="internal_error")
+                metrics.record_operation_duration(operation_name, duration, success=False)
+            
+            logging.error(f"Unexpected error in MCP operation {operation_name}: {e}")
+            return error_response
+    
     return wrapper
 
 def get_version_from_pyproject(pyproject_path: str = "pyproject.toml") -> str:
@@ -108,21 +153,25 @@ def register_tools(server: FastMCP) -> None:
     """
     
     @server.tool()
+    @trace_mcp_operation("journal_new_entry")
     async def journal_new_entry(request: JournalNewEntryRequest) -> JournalNewEntryResponse:
         """Create a new journal entry with AI-generated content from git, chat, and terminal context."""
         return await handle_journal_new_entry(request)
     
     @server.tool()
+    @trace_mcp_operation("journal_add_reflection")
     async def journal_add_reflection(request: AddReflectionRequest) -> AddReflectionResponse:
         """Add a manual reflection to the journal for a specific date."""
         return await handle_journal_add_reflection(request)
     
     @server.tool()
+    @trace_mcp_operation("journal_init")
     async def journal_init(request: dict) -> dict:
         """Initialize journal configuration and directory structure."""
         return await handle_journal_init(request)
     
     @server.tool()
+    @trace_mcp_operation("journal_install_hook")
     async def journal_install_hook(request: dict) -> dict:
         """Install git post-commit hook for automated journal entries."""
         return await handle_journal_install_hook(request)
@@ -131,36 +180,70 @@ def create_mcp_server(config_path: str = None) -> FastMCP:
     """
     Create and configure the MCP server instance for mcp-commit-story.
     - Loads configuration from .mcp-commit-storyrc.yaml (or given path)
-    - Integrates telemetry if enabled and available
+    - Integrates telemetry if enabled and available (with graceful degradation)
     - Registers all journal tools (stub)
     - Returns a FastMCP server instance ready to run
     Raises ConfigError or other exceptions on startup failure.
     """
     app_name = "mcp-commit-story"
     version = get_version_from_pyproject()
-    # Load config and setup telemetry before server instantiation
+    
+    # Load config first
     try:
         config = load_config(config_path)
-        # Only call telemetry.setup_telemetry if it exists
-        setup_telemetry = getattr(telemetry, "setup_telemetry", None)
-        if callable(setup_telemetry) and config.telemetry_enabled:
-            setup_telemetry(config)
-        logging.info("MCP server startup complete.")
+        logging.info(f"Configuration loaded successfully. Telemetry enabled: {config.telemetry_enabled}")
     except ConfigError as ce:
         logging.error(f"Configuration error during startup: {ce}")
         raise
     except Exception as e:
-        logging.error(f"Unexpected error during startup: {e}")
+        logging.error(f"Unexpected error loading configuration: {e}")
         raise
-    server = FastMCP(app_name, version=version)
-    register_tools(server)
-    # Attach config and hot reload method to server for runtime use
-    server.config = config
-    def reload_config():
-        config.reload_config()
-        logging.info("Config hot reloaded successfully.")
-    server.reload_config = reload_config
-    return server
+    
+    # Early telemetry integration with graceful error handling
+    telemetry_initialized = False
+    try:
+        # Only call telemetry.setup_telemetry if it exists
+        setup_telemetry = getattr(telemetry, "setup_telemetry", None)
+        if callable(setup_telemetry):
+            telemetry_initialized = setup_telemetry(config.as_dict())
+            if telemetry_initialized:
+                logging.info("Telemetry system initialized successfully")
+            else:
+                logging.info("Telemetry disabled via configuration")
+        else:
+            logging.warning("Telemetry setup function not available")
+    except Exception as e:
+        logging.warning(f"Telemetry setup failed, continuing without telemetry: {e}")
+        telemetry_initialized = False
+    
+    # Create server instance
+    try:
+        server = FastMCP(app_name, version=version)
+        register_tools(server)
+        
+        # Attach config and telemetry status to server for runtime use
+        server.config = config
+        server.telemetry_initialized = telemetry_initialized
+        
+        def reload_config():
+            config.reload_config()
+            logging.info("Config hot reloaded successfully.")
+        server.reload_config = reload_config
+        
+        logging.info("MCP server startup complete.")
+        return server
+        
+    except Exception as e:
+        logging.error(f"Error creating MCP server: {e}")
+        # If telemetry was initialized, try to shut it down
+        if telemetry_initialized:
+            try:
+                shutdown_telemetry = getattr(telemetry, "shutdown_telemetry", None)
+                if callable(shutdown_telemetry):
+                    shutdown_telemetry()
+            except Exception as shutdown_error:
+                logging.warning(f"Error shutting down telemetry during server creation failure: {shutdown_error}")
+        raise
 
 async def generate_journal_entry(request: JournalNewEntryRequest) -> JournalNewEntryResponse:
     """
