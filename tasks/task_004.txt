@@ -427,12 +427,6 @@ Created comprehensive test suite in `tests/test_mcp_server_telemetry_integration
 
 3. **config validation failure**: Missing journal.path in minimal config - need to handle defaults properly
 
-4. **Key Integration Points Identified:**
-   - Current server.py calls `setup_telemetry` conditionally based on config.telemetry_enabled
-   - Need to enhance tool handlers with tracing decorators
-   - Need to add metrics collection to MCP operations
-   - Need to improve error handling for telemetry failures
-
 **Next Steps:**
 - Move to Design Approval phase
 - Identify specific integration points in server lifecycle
@@ -661,32 +655,6 @@ TDD Steps:
    - **Make sure pyproject.toml is updated as needed**
    - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
-<info added on 2025-05-31T12:12:27.304Z>
-5. TOC MAINTENANCE:
-   - Before adding new documentation to the Engineering Spec, first fix existing TOC errors:
-     1. Add missing "Implementation Guidelines" section to TOC
-     2. Remove journal entry format headers incorrectly listed as document sections
-     3. Move "Graceful Degradation Philosophy" to be a subsection under "Error Handling"
-   - After adding journal telemetry implementation details to the Engineering Spec, update the TOC to include any new sections or subsections
-   - Verify TOC links correctly point to all sections and subsections
-   - Ensure proper indentation and hierarchy in the TOC structure
-</info added on 2025-05-31T12:12:27.304Z>
-<info added on 2025-05-31T12:15:19.546Z>
-4. DOCUMENT AND COMPLETE:
-   - Add documentation IF NEEDED in three places:
-     1. **Docs directory**: Update telemetry.md with journal operation instrumentation examples
-     2. **PRD**: Update if adding user-facing journal monitoring features
-     3. **Engineering Spec**: Update with journal telemetry implementation details and make sure TOC is current
-   - **Do not remove existing information unless it's incorrect**
-   - **No approval needed** - make documentation edits directly
-   - **Run the entire test suite and make sure all tests are passing**
-   - **Make sure pyproject.toml is updated as needed**
-   - Double check all subtask requirements are met before marking this subtask as complete
-   - **MARK COMPLETE**
-</info added on 2025-05-31T12:15:19.546Z>
-<info added on 2025-05-31T12:17:24.424Z>
-AI Assistant: I'll help update the subtask by removing the TOC Maintenance section as requested.
-</info added on 2025-05-31T12:17:24.424Z>
 
 ## 9. Instrument Context Collection Operations (Task 5) [pending]
 ### Dependencies: None
@@ -732,32 +700,6 @@ TDD Steps:
    - **Make sure pyproject.toml is updated as needed**
    - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
-<info added on 2025-05-31T12:13:01.656Z>
-5. TOC MAINTENANCE:
-   - Before adding new documentation to the Engineering Spec, first fix existing TOC errors:
-     1. Add missing "Implementation Guidelines" section to TOC
-     2. Remove journal entry format headers incorrectly listed as document sections
-     3. Move "Graceful Degradation Philosophy" to be a subsection under "Error Handling"
-   - After adding telemetry implementation details to the Engineering Spec, update the TOC to include any new sections or subsections
-   - Verify TOC links work correctly and all document sections are properly represented
-   - Ensure proper indentation and hierarchy in the TOC structure
-</info added on 2025-05-31T12:13:01.656Z>
-<info added on 2025-05-31T12:15:30.429Z>
-4. DOCUMENT AND COMPLETE:
-   - Add documentation IF NEEDED in three places:
-     1. **Docs directory**: Update telemetry.md with Git operation instrumentation and context collection monitoring
-     2. **PRD**: Update if adding user-facing context collection monitoring features
-     3. **Engineering Spec**: Update with context collection telemetry implementation details and make sure TOC is current
-   - **Do not remove existing information unless it's incorrect**
-   - **No approval needed** - make documentation edits directly
-   - **Run the entire test suite and make sure all tests are passing**
-   - **Make sure pyproject.toml is updated as needed**
-   - Double check all subtask requirements are met before marking this subtask as complete
-   - **MARK COMPLETE**
-</info added on 2025-05-31T12:15:30.429Z>
-<info added on 2025-05-31T12:17:31.456Z>
-AI: The user has requested to remove the "5. TOC MAINTENANCE:" section and all its bullet points. Since this is a deletion request rather than an addition, no new text needs to be added to the subtask details.
-</info added on 2025-05-31T12:17:31.456Z>
 
 ## 10. Instrument Configuration Management (Task 6) [pending]
 ### Dependencies: None
@@ -803,12 +745,6 @@ TDD Steps:
    - **Make sure pyproject.toml is updated as needed**
    - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
-<info added on 2025-05-31T12:15:39.503Z>
-- Add documentation IF NEEDED in three places:
-     1. **Docs directory**: Update telemetry.md with configuration loading instrumentation examples
-     2. **PRD**: Update if adding user-facing configuration monitoring features
-     3. **Engineering Spec**: Update with configuration telemetry implementation details and make sure TOC is current
-</info added on 2025-05-31T12:15:39.503Z>
 
 ## 11. Instrument Integration Tests for Telemetry Validation (Task 8) [pending]
 ### Dependencies: None
@@ -854,17 +790,4 @@ TDD Steps:
    - **Make sure pyproject.toml is updated as needed**
    - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
-<info added on 2025-05-31T12:15:50.156Z>
-4. DOCUMENT AND COMPLETE:
-   - Add documentation IF NEEDED in three places:
-     1. **Docs directory**: Update telemetry.md with integration test telemetry validation examples
-     2. **PRD**: Update if adding user-facing integration monitoring features
-     3. **Engineering Spec**: Update with error handling telemetry implementation details and make sure TOC is current
-   - **Do not remove existing information unless it's incorrect**
-   - **No approval needed** - make documentation edits directly
-   - **Run the entire test suite and make sure all tests are passing**
-   - **Make sure pyproject.toml is updated as needed**
-   - Double check all subtask requirements are met before marking this subtask as complete
-   - **MARK COMPLETE**
-</info added on 2025-05-31T12:15:50.156Z>
 

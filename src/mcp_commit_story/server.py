@@ -11,7 +11,11 @@ Intended for use as the main server entrypoint for the mcp-commit-story project.
 """
 import os
 import logging
-from typing import Callable, Awaitable, Any, TypedDict, Optional, Dict
+from typing import Callable, Awaitable, Any, Optional, Dict
+try:
+    from typing import TypedDict
+except ImportError:
+    from typing_extensions import TypedDict
 from mcp.server.fastmcp import FastMCP, Context
 from mcp_commit_story.config import load_config, Config, ConfigError
 from mcp_commit_story import telemetry
