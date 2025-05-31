@@ -1,3 +1,23 @@
+"""
+Unit tests for telemetry module configuration and basic functionality.
+
+These are UNIT TESTS that focus on telemetry setup logic and configuration.
+For integration tests with real OpenTelemetry providers, see test_telemetry_integration.py
+
+This module tests the telemetry initialization, configuration, and utility functions
+for Task 4.1-4.7 of the telemetry system implementation.
+
+Usage:
+    # Run just unit tests (fast)
+    pytest tests/test_telemetry.py -v
+    
+    # Run just integration tests (comprehensive)
+    pytest tests/test_telemetry_integration.py -v
+    
+    # Run both  
+    pytest tests/test_telemetry*.py -v
+"""
+
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 import sys

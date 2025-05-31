@@ -1,8 +1,21 @@
 """
-Tests for structured logging with OpenTelemetry trace correlation.
+Unit tests for structured logging with OpenTelemetry trace correlation.
+
+These are UNIT TESTS that use mocks for fast, isolated testing of the OTelFormatter logic.
+For integration tests with real OpenTelemetry providers, see test_structured_logging_integration.py
 
 This module tests the OTelFormatter class and trace-correlated logging functionality
 for Task 4.6 of the telemetry system implementation.
+
+Usage:
+    # Run just unit tests (fast)
+    pytest tests/test_structured_logging.py -v
+    
+    # Run just integration tests (comprehensive)  
+    pytest tests/test_structured_logging_integration.py -v
+    
+    # Run both
+    pytest tests/test_structured_logging*.py -v
 """
 
 import json
