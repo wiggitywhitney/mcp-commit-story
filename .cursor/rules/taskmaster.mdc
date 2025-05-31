@@ -11,6 +11,21 @@ This document provides a detailed reference for interacting with Taskmaster, cov
 
 **Important:** Several MCP tools involve AI processing... The AI-powered tools include `parse_prd`, `analyze_project_complexity`, `update_subtask`, `update_task`, `update`, `expand_all`, `expand_task`, and `add_task`.
 
+**⚠️ CRITICAL: DO NOT DIRECTLY EDIT tasks/tasks.json**
+- Never manually edit the `tasks/tasks.json` file directly 
+- Never manually edit individual task files in the `tasks/` directory
+- Always use the MCP tools or CLI commands to modify tasks
+- Direct editing can cause structural incompatibilities with the TaskMaster system
+- Use the appropriate tools like `add_task`, `update_task`, `set_task_status`, etc. for all modifications
+- If you encounter tool failures, troubleshoot the tools rather than bypassing them with direct edits - use context7 and consult the documentation
+
+**📋 MCP TOOLS ARE FOR AI AGENTS ONLY**
+- MCP tools (like `mcp_taskmaster-ai_get_tasks`) are designed for AI assistants/agents to call programmatically
+- Users should never attempt to call MCP tools directly in their terminal or code
+- Users should use the `task-master` CLI commands instead (e.g., `task-master list`, `task-master next`)
+- MCP tools provide structured data exchange for integrated development environments like Cursor
+- If you're a human user, stick to the CLI commands documented in this reference
+
 ---
 
 ## Initialization & Setup
@@ -320,63 +335,3 @@ This document provides a detailed reference for interacting with Taskmaster, cov
 ### 21. Analyze Project Complexity (`analyze_project_complexity`)
 
 *   **MCP Tool:** `analyze_project_complexity`
-*   **CLI Command:** `task-master analyze-complexity [options]`
-*   **Description:** `Have Taskmaster analyze your tasks to determine their complexity and suggest which ones need to be broken down further.`
-*   **Key Parameters/Options:**
-    *   `output`: `Where to save the complexity analysis report (default: 'scripts/task-complexity-report.json').` (CLI: `-o, --output <file>`)
-    *   `threshold`: `The minimum complexity score (1-10) that should trigger a recommendation to expand a task.` (CLI: `-t, --threshold <number>`)
-    *   `research`: `Enable research role for more accurate complexity analysis. Requires appropriate API key.` (CLI: `-r, --research`)
-    *   `file`: `Path to your Taskmaster 'tasks.json' file. Default relies on auto-detection.` (CLI: `-f, --file <file>`)
-*   **Usage:** Used before breaking down tasks to identify which ones need the most attention.
-*   **Important:** This MCP tool makes AI calls and can take up to a minute to complete. Please inform users to hang tight while the operation is in progress.
-
-### 22. View Complexity Report (`complexity_report`)
-
-*   **MCP Tool:** `complexity_report`
-*   **CLI Command:** `task-master complexity-report [options]`
-*   **Description:** `Display the task complexity analysis report in a readable format.`
-*   **Key Parameters/Options:**
-    *   `file`: `Path to the complexity report (default: 'scripts/task-complexity-report.json').` (CLI: `-f, --file <file>`)
-*   **Usage:** Review and understand the complexity analysis results after running analyze-complexity.
-
----
-
-## File Management
-
-### 23. Generate Task Files (`generate`)
-
-*   **MCP Tool:** `generate`
-*   **CLI Command:** `task-master generate [options]`
-*   **Description:** `Create or update individual Markdown files for each task based on your tasks.json.`
-*   **Key Parameters/Options:**
-    *   `output`: `The directory where Taskmaster should save the task files (default: in a 'tasks' directory).` (CLI: `-o, --output <directory>`)
-    *   `file`: `Path to your Taskmaster 'tasks.json' file. Default relies on auto-detection.` (CLI: `-f, --file <file>`)
-*   **Usage:** Run this after making changes to tasks.json to keep individual task files up to date.
-
----
-
-## Environment Variables Configuration (Updated)
-
-Taskmaster primarily uses the **`.taskmasterconfig`** file (in project root) for configuration (models, parameters, logging level, etc.), managed via `task-master models --setup`.
-
-Environment variables are used **only** for sensitive API keys related to AI providers and specific overrides like the Ollama base URL:
-
-*   **API Keys (Required for corresponding provider):**
-    *   `ANTHROPIC_API_KEY`
-    *   `PERPLEXITY_API_KEY`
-    *   `OPENAI_API_KEY`
-    *   `GOOGLE_API_KEY`
-    *   `MISTRAL_API_KEY`
-    *   `AZURE_OPENAI_API_KEY` (Requires `AZURE_OPENAI_ENDPOINT` too)
-    *   `OPENROUTER_API_KEY`
-    *   `XAI_API_KEY`
-    *   `OLLANA_API_KEY` (Requires `OLLAMA_BASE_URL` too)
-*   **Endpoints (Optional/Provider Specific inside .taskmasterconfig):**
-    *   `AZURE_OPENAI_ENDPOINT`
-    *   `OLLAMA_BASE_URL` (Default: `http://localhost:11434/api`)
-
-**Set API keys** in your **`.env`** file in the project root (for CLI use) or within the `env` section of your **`.cursor/mcp.json`** file (for MCP/Cursor integration). All other settings (model choice, max tokens, temperature, log level, custom endpoints) are managed in `.taskmasterconfig` via `task-master models` command or `models` MCP tool.
-
----
-
-For details on how these commands fit into the development process, see the [Development Workflow Guide](mdc:.cursor/rules/dev_workflow.mdc).
