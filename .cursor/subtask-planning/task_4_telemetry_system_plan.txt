@@ -32,10 +32,14 @@ Breaking down Task 4 into focused subtasks for implementing OpenTelemetry-based 
 
 4. **DOCUMENT AND COMPLETE**
    - Add documentation IF NEEDED in three places:
-     1. To docs directory (create telemetry.md guide)
-     2. PRD (update observability section) 
-     3. Engineering Spec (add telemetry architecture)
-   - Double check all subtask requirements are met
+     1. **Docs directory**: Update telemetry.md with decorator usage examples
+     2. **PRD**: Update if adding user-facing features
+     3. **Engineering Spec**: Update with decorator implementation details
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
 
 ---
@@ -66,8 +70,15 @@ Breaking down Task 4 into focused subtasks for implementing OpenTelemetry-based 
    - **RUN TESTS - VERIFY THEY PASS**
 
 4. **DOCUMENT AND COMPLETE**
-   - Add documentation IF NEEDED in three places
-   - Double check all subtask requirements are met
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update telemetry.md with decorator usage examples
+     2. **PRD**: Update if adding user-facing features
+     3. **Engineering Spec**: Update with decorator implementation details
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
 
 ---
@@ -97,8 +108,15 @@ Breaking down Task 4 into focused subtasks for implementing OpenTelemetry-based 
    - **RUN TESTS - VERIFY THEY PASS**
 
 4. **DOCUMENT AND COMPLETE**
-   - Add documentation IF NEEDED in three places
-   - Double check all subtask requirements are met
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update telemetry.md with auto-instrumentation usage examples
+     2. **PRD**: Update if adding user-facing features
+     3. **Engineering Spec**: Update with auto-instrumentation implementation details
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
 
 ---
@@ -129,8 +147,15 @@ Breaking down Task 4 into focused subtasks for implementing OpenTelemetry-based 
    - **RUN TESTS - VERIFY THEY PASS**
 
 4. **DOCUMENT AND COMPLETE**
-   - Add documentation IF NEEDED in three places
-   - Double check all subtask requirements are met
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update telemetry.md with metrics usage examples
+     2. **PRD**: Update if adding user-facing features
+     3. **Engineering Spec**: Update with metrics implementation details
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
 
 ---
@@ -162,8 +187,15 @@ Breaking down Task 4 into focused subtasks for implementing OpenTelemetry-based 
    - **RUN TESTS - VERIFY THEY PASS**
 
 4. **DOCUMENT AND COMPLETE**
-   - Add documentation IF NEEDED in three places
-   - Double check all subtask requirements are met
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update telemetry.md with exporter usage examples
+     2. **PRD**: Update if adding user-facing features
+     3. **Engineering Spec**: Update with exporter implementation details
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
 
 ---
@@ -193,8 +225,15 @@ Breaking down Task 4 into focused subtasks for implementing OpenTelemetry-based 
    - **RUN TESTS - VERIFY THEY PASS**
 
 4. **DOCUMENT AND COMPLETE**
-   - Add documentation IF NEEDED in three places
-   - Double check all subtask requirements are met
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update telemetry.md with logging usage examples
+     2. **PRD**: Update if adding user-facing features
+     3. **Engineering Spec**: Update with logging implementation details
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
 
 ---
@@ -224,8 +263,15 @@ Breaking down Task 4 into focused subtasks for implementing OpenTelemetry-based 
    - **RUN TESTS - VERIFY THEY PASS**
 
 4. **DOCUMENT AND COMPLETE**
-   - Add documentation IF NEEDED in three places
-   - Double check all subtask requirements are met
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update telemetry.md with integration guide and configuration examples
+     2. **PRD**: Update observability section with end-to-end telemetry capabilities
+     3. **Engineering Spec**: Update with MCP server integration details and architecture
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
 
 ---
@@ -255,8 +301,15 @@ Breaking down Task 4 into focused subtasks for implementing OpenTelemetry-based 
    - **RUN TESTS - VERIFY THEY PASS**
 
 4. **DOCUMENT AND COMPLETE**
-   - Add documentation IF NEEDED in three places
-   - Double check all subtask requirements are met
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update telemetry.md with journal operation instrumentation examples
+     2. **PRD**: Update if adding user-facing journal monitoring features
+     3. **Engineering Spec**: Update with journal telemetry implementation details
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
 
 ---
@@ -286,8 +339,15 @@ Breaking down Task 4 into focused subtasks for implementing OpenTelemetry-based 
    - **RUN TESTS - VERIFY THEY PASS**
 
 4. **DOCUMENT AND COMPLETE**
-   - Add documentation IF NEEDED in three places
-   - Double check all subtask requirements are met
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update telemetry.md with Git operation instrumentation and context collection monitoring
+     2. **PRD**: Update if adding user-facing context collection monitoring features
+     3. **Engineering Spec**: Update with context collection telemetry implementation details
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
 
 ---
@@ -317,8 +377,15 @@ Breaking down Task 4 into focused subtasks for implementing OpenTelemetry-based 
    - **RUN TESTS - VERIFY THEY PASS**
 
 4. **DOCUMENT AND COMPLETE**
-   - Add documentation IF NEEDED in three places
-   - Double check all subtask requirements are met
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update telemetry.md with configuration loading instrumentation examples
+     2. **PRD**: Update if adding user-facing configuration monitoring features
+     3. **Engineering Spec**: Update with configuration telemetry implementation details
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
 
 ---
@@ -348,6 +415,13 @@ Breaking down Task 4 into focused subtasks for implementing OpenTelemetry-based 
    - **RUN TESTS - VERIFY THEY PASS**
 
 4. **DOCUMENT AND COMPLETE**
-   - Add documentation IF NEEDED in three places
-   - Double check all subtask requirements are met
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update telemetry.md with integration test usage examples
+     2. **PRD**: Update if adding user-facing features
+     3. **Engineering Spec**: Update with integration test implementation details
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE** 

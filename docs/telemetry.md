@@ -1,720 +1,316 @@
-# Telemetry and Observability
+# Telemetry System Documentation
 
-This document describes the telemetry and observability capabilities of the MCP Commit Story system, built on OpenTelemetry standards.
+This document describes the comprehensive telemetry system implemented for MCP Commit Story, providing observability through OpenTelemetry traces, metrics, and structured logging.
 
 ## Overview
 
-The MCP Commit Story implements comprehensive observability through OpenTelemetry, providing:
+The telemetry system provides three key observability pillars:
+- **Tracing**: Request flow and operation tracking
+- **Metrics**: Quantitative measurements and KPIs  
+- **Structured Logging**: JSON-formatted logs with trace correlation
 
-- **Distributed Tracing**: Track requests through the AI → MCP → tool call pipeline
-- **Metrics Collection**: Monitor operation performance, success rates, and system health
-- **Structured Logging**: Correlate logs with traces for debugging
-- **Auto-Instrumentation**: Automatic tracing of HTTP requests, async operations, and more
-- **Multi-Exporter Support**: Send telemetry to console, OTLP, Prometheus, and other backends
+## Architecture
 
-## Configuration
+The system is built on OpenTelemetry standards with vendor-neutral export capabilities:
+- **Traces**: BatchSpanProcessor with configurable exporters
+- **Metrics**: PeriodicExportingMetricReader with multiple export formats
+- **Structured Logging**: Custom OTelFormatter with automatic trace correlation
 
-### Basic Setup
+## Structured Logging with Trace Correlation
 
-Telemetry is configured in the main configuration file:
+### Features
 
-```yaml
-telemetry:
-  enabled: true                    # Master switch (default: true)
-  service_name: "mcp-commit-story" # Service identifier
-  service_version: "1.0.0"         # Version for tracking
-  deployment_environment: "production"  # Environment tag
-  
-  auto_instrumentation:            # Automatic library instrumentation
-    enabled: true                  # Enable auto-instrumentation (default: true)
-    preset: "minimal"              # Preset: minimal, comprehensive, or custom
-    instrumentors:                 # Individual instrumentor control
-      requests: true               # HTTP requests library
-      aiohttp: true                # Async HTTP client
-      asyncio: true                # Async operations
-      logging: true                # Log-trace correlation
-      
-  exporters:
-    console:
-      enabled: true                # Console output for development
-      traces: true                 # Export traces to console
-      metrics: true                # Export metrics to console
-    otlp:
-      enabled: false               # OTLP for production backends
-      endpoint: "http://localhost:4317"
-      protocol: "grpc"             # or "http"
-      headers:
-        authorization: "Bearer token123"
-      timeout: 30                  # Connection timeout in seconds
-      traces: true                 # Export traces via OTLP
-      metrics: true                # Export metrics via OTLP
-    prometheus:
-      enabled: false               # Prometheus metrics
-      port: 8888                   # Metrics endpoint port
-      endpoint: "/metrics"         # Metrics endpoint path
-      metrics: true                # Export metrics (only supported type)
-      traces: false                # Prometheus doesn't support traces
+- **JSON Format**: All logs output as structured JSON for parsing and analysis
+- **Automatic Trace Correlation**: Active span IDs automatically injected into logs
+- **Sensitive Data Redaction**: Automatic sanitization of passwords, tokens, API keys
+- **Performance Optimization**: Lazy evaluation for expensive log data
+- **Metrics Integration**: Optional log-based metrics collection
+
+### Log Format
+
+Standard JSON structure includes:
+```json
+{
+  "timestamp": "2024-01-15T10:30:45.123456Z",
+  "level": "INFO",
+  "message": "Operation completed successfully",
+  "logger": "mcp_commit_story.module",
+  "pathname": "/path/to/file.py",
+  "lineno": 42,
+  "trace_id": "1234567890abcdef1234567890abcdef",
+  "span_id": "abcdef1234567890",
+  "operation_id": "abc123",
+  "user_id": "12345"
+}
 ```
 
-### Auto-Instrumentation
+When spans are active, `trace_id` and `span_id` are automatically added for correlation.
 
-The system provides automatic instrumentation for common libraries, eliminating the need for manual tracing in most cases.
+### Sensitive Data Protection
 
-#### Approved Instrumentors
+The system automatically redacts sensitive information from logs:
+- Password fields: `password`, `user_password`, `db_password`
+- Tokens: `token`, `api_token`, `access_token`, `refresh_token`
+- Keys: `api_key`, `private_key`, `secret_key`
+- Authentication: `auth`, `authorization`, `credentials`
+- Sessions: `session_id`, `cookie`
 
-- **requests**: Traces HTTP requests made with the `requests` library
-- **aiohttp**: Traces async HTTP requests with `aiohttp` client
-- **asyncio**: Traces async operations and coroutines
-- **logging**: Automatically correlates log messages with active traces
+Nested structures are recursively sanitized, replacing sensitive values with `[REDACTED]`.
 
-#### Preset Configurations
+### Performance Optimization
 
-**Minimal Preset** (default):
-```yaml
-auto_instrumentation:
-  preset: "minimal"
-  # Enables: requests, logging
+For expensive computations:
+```python
+from mcp_commit_story.structured_logging import LazyLogData, log_performance_optimized
+
+# Lazy evaluation - only computed if logging enabled
+expensive_data = LazyLogData(lambda: serialize_complex_object(data))
+
+# Recommended pattern - check level before expensive operations
+if logger.isEnabledFor(logging.DEBUG):
+    logger.debug("Complex details", extra={"data": expensive_computation()})
+
+# Or use performance-optimized helper
+log_performance_optimized(
+    logger, 
+    logging.DEBUG, 
+    "Operation details", 
+    {"complex_data": expensive_data}
+)
 ```
 
-**Comprehensive Preset**:
-```yaml
-auto_instrumentation:
-  preset: "comprehensive"
-  # Enables: requests, aiohttp, asyncio, logging
-```
-
-**Custom Preset**:
-```yaml
-auto_instrumentation:
-  preset: "custom"
-  instrumentors:
-    requests: true
-    aiohttp: false    # Selective enabling
-    asyncio: true
-    logging: true
-```
-
-#### Graceful Fallback
-
-Auto-instrumentation gracefully handles missing libraries:
-- If a target library (e.g., `aiohttp`) isn't installed, instrumentation is skipped
-- Failed instrumentors are tracked but don't break the system
-- Logs warning messages for debugging
-
-#### Integration
-
-Auto-instrumentation is automatically enabled during telemetry setup:
+### Integration Usage
 
 ```python
 from mcp_commit_story.telemetry import setup_telemetry
+from mcp_commit_story.structured_logging import get_correlated_logger
 
+# Setup during initialization
 config = {
     "telemetry": {
         "enabled": True,
-        "auto_instrumentation": {
-            "enabled": True,
-            "preset": "comprehensive"
+        "service_name": "my-service",
+        "logging": {
+            "level": "INFO",
+            "format": "json",
+            "correlation": True,
+            "metrics": True
         }
     }
 }
 
-# This automatically enables auto-instrumentation
 setup_telemetry(config)
+
+# Use throughout application
+logger = get_correlated_logger(__name__)
+logger.info("User action", extra={
+    "user_id": "12345",
+    "action": "file_upload",
+    "file_size": 1024
+})
 ```
 
-### Environment Variables
+### Configuration
 
-Sensitive configuration can be provided via environment variables:
-
-- `OTEL_EXPORTER_OTLP_ENDPOINT`: Override OTLP endpoint
-- `OTEL_SERVICE_NAME`: Override service name
-- `OTEL_RESOURCE_ATTRIBUTES`: Additional resource attributes
-
-### Multi-Exporter Configuration System
-
-The telemetry system includes an enhanced multi-exporter configuration system with environment variable precedence hierarchy, partial success error handling, and comprehensive validation.
-
-#### Environment Variable Precedence Hierarchy
-
-Configuration values are resolved in the following order (highest to lowest priority):
-
-1. **MCP-specific environment variables** (highest priority):
-   - `MCP_PROMETHEUS_PORT`: Override Prometheus port
-   - `MCP_CONSOLE_ENABLED`: Enable/disable console exporter ("true"/"false")
-   - `MCP_OTLP_ENDPOINT`: Override OTLP endpoint URL
-   - `MCP_OTLP_ENABLED`: Enable/disable OTLP exporter ("true"/"false")
-   - `MCP_PROMETHEUS_ENABLED`: Enable/disable Prometheus exporter ("true"/"false")
-
-2. **Standard OpenTelemetry environment variables**:
-   - `OTEL_EXPORTER_OTLP_ENDPOINT`: OTLP endpoint URL
-   - `OTEL_EXPORTER_OTLP_HEADERS`: OTLP headers (comma-separated key=value pairs)
-   - `OTEL_EXPORTER_OTLP_TIMEOUT`: OTLP timeout in seconds
-   - `OTEL_SERVICE_NAME`: Service name
-
-3. **Configuration file values**: Values specified in YAML/JSON config
-
-4. **Built-in defaults** (lowest priority): System defaults
-
-#### Enhanced Error Handling with Partial Success
-
-The multi-exporter system provides graceful degradation when individual exporters fail:
-
+Configure logging via telemetry config:
 ```python
 {
-    "status": "partial_success",
-    "successful_exporters": ["console", "prometheus"],
-    "failed_exporters": {
-        "otlp": {
-            "error": "Connection timeout",
-            "details": "Failed to connect to http://localhost:4317 after 10 seconds"
-        }
-    }
-}
-```
-
-**Status Values:**
-- `"success"`: All enabled exporters configured successfully
-- `"partial_success"`: Some exporters succeeded, others failed
-- `"failure"`: All exporters failed to configure
-
-#### Comprehensive Configuration Validation
-
-The system validates all configuration parameters:
-
-**Prometheus Validation:**
-- Port range: 1-65535
-- Endpoint must start with "/"
-
-**OTLP Validation:**
-- Protocol must be "grpc" or "http"
-- Timeout must be positive integer
-- Headers must be valid key-value pairs
-
-**General Validation:**
-- All required fields are present
-- Data types match expected formats
-- Cross-exporter compatibility checks
-
-#### Multi-Exporter Support
-
-**Console Exporter:**
-- Outputs traces and metrics to console/stdout
-- Ideal for development and debugging
-- Supports both traces and metrics
-
-**OTLP Exporter:**
-- OpenTelemetry Protocol for production backends
-- Supports both gRPC and HTTP protocols
-- Compatible with Jaeger, DataDog, New Relic, etc.
-- Configurable headers for authentication
-- Supports both traces and metrics
-
-**Prometheus Exporter:**
-- Exposes metrics in Prometheus format
-- HTTP endpoint for scraping
-- Metrics only (traces not supported)
-- Configurable port and endpoint path
-
-#### Example Configurations
-
-**Development Configuration:**
-```yaml
-telemetry:
-  exporters:
-    console:
-      enabled: true
-      traces: true
-      metrics: true
-```
-
-**Production Configuration:**
-```yaml
-telemetry:
-  exporters:
-    console:
-      enabled: false
-    otlp:
-      enabled: true
-      endpoint: "https://api.honeycomb.io:443"
-      protocol: "grpc"
-      headers:
-        "x-honeycomb-team": "${HONEYCOMB_API_KEY}"
-      traces: true
-      metrics: true
-    prometheus:
-      enabled: true
-      port: 8888
-      endpoint: "/metrics"
-      metrics: true
-```
-
-**Hybrid Configuration:**
-```yaml
-telemetry:
-  exporters:
-    console:
-      enabled: true
-      traces: true
-      metrics: false   # Only trace debugging locally
-    otlp:
-      enabled: true
-      endpoint: "http://jaeger:14268/api/traces"
-      protocol: "http"
-      traces: true
-      metrics: false   # Send traces to Jaeger
-    prometheus:
-      enabled: true
-      port: 9090
-      endpoint: "/metrics"
-      metrics: true    # Expose metrics for Prometheus
-```
-
-#### Environment Variable Override Examples
-
-**Override OTLP endpoint:**
-```bash
-export MCP_OTLP_ENDPOINT="https://your-backend.com:4317"
-export OTEL_EXPORTER_OTLP_HEADERS="authorization=Bearer your-token"
-```
-
-**Enable Prometheus in production:**
-```bash
-export MCP_PROMETHEUS_ENABLED="true"
-export MCP_PROMETHEUS_PORT="9090"
-```
-
-#### Graceful Degradation
-
-The multi-exporter system ensures system reliability:
-
-- **No Cascading Failures**: One failed exporter doesn't break others
-- **Detailed Error Reporting**: Specific error messages for debugging
-- **Logging**: All exporter failures are logged for monitoring
-- **Operational Continuity**: Application continues running even if all exporters fail
-
-#### Programmatic Usage
-
-```python
-from mcp_commit_story.multi_exporter import configure_exporters
-
-config = {
     "telemetry": {
-        "exporters": {
-            "console": {"enabled": True},
-            "otlp": {"enabled": True, "endpoint": "http://localhost:4317"},
-            "prometheus": {"enabled": True, "port": 8888}
+        "logging": {
+            "level": "INFO",          # Log level 
+            "format": "json",         # Always JSON (only supported format)
+            "correlation": True,      # Enable trace correlation
+            "metrics": False,         # Enable log-based metrics
+            "handlers": ["console"]   # Output destinations
         }
     }
 }
-
-result = configure_exporters(config)
-
-if result.status == "success":
-    print("All exporters configured successfully")
-elif result.status == "partial_success":
-    print(f"Some exporters failed: {result.failed_exporters}")
-    print(f"Working exporters: {result.successful_exporters}")
 ```
 
-## Telemetry Data
+When telemetry is disabled, correlation is automatically disabled but structured logging continues to work.
 
-### Traces
+## Multi-Exporter Configuration
 
-The system generates traces for:
+### Supported Exporters
 
-- **MCP Operations**: Tool calls from AI agents
-- **Journal Operations**: Entry creation, reflection addition
-- **Git Operations**: Context collection, file scanning
-- **Configuration**: Loading and validation
+1. **Console Exporter** (Default)
+   - Always available for development and debugging
+   - Human-readable trace and metric output
 
-Example trace hierarchy:
-```
-ai_request
-├── mcp_tool_call
-│   ├── journal_entry_creation
-│   │   ├── git_commit_analysis
-│   │   ├── context_collection
-│   │   └── file_write_operation
-│   └── response_formatting
-└── ai_response
-```
+2. **OTLP Exporter** (Production)
+   - gRPC protocol: `otlp-grpc`
+   - HTTP protocol: `otlp-http`
+   - Compatible with observability platforms
 
-### Metrics
+3. **Prometheus Exporter** (Metrics)
+   - Native Prometheus format metrics
+   - HTTP endpoint for scraping
 
-Key metrics collected:
+### Environment Variable Precedence
 
-- **Operation Counters**: Success/failure rates by operation type
-- **Duration Histograms**: Performance distribution for operations
-- **System Gauges**: Active spans, memory usage, file counts
+Configuration follows a hierarchical precedence system:
 
-Example metrics:
-- `mcp_journal_operations_total{operation="create_entry", status="success"}`
-- `mcp_journal_operation_duration_seconds{operation="git_analysis"}`
-- `mcp_journal_active_spans_total`
+1. **MCP-specific variables** (highest priority)
+2. **Standard OpenTelemetry variables** (medium priority)  
+3. **Default values** (lowest priority)
 
-### MCP-Specific Metrics Collection
+#### MCP-Specific Variables
+```bash
+# Service identification
+MCP_SERVICE_NAME="mcp-commit-story"
+MCP_SERVICE_VERSION="1.0.0"
+MCP_DEPLOYMENT_ENVIRONMENT="production"
 
-The system provides dedicated metrics collection for MCP operations through the `MCPMetrics` class. This enables detailed monitoring of tool calls, operation performance, and system state.
+# Exporter selection (comma-separated list)
+MCP_TELEMETRY_EXPORTERS="console,otlp-grpc,prometheus"
 
-#### Available Metrics
+# OTLP configuration
+MCP_OTLP_ENDPOINT="https://api.honeycomb.io:443"
+MCP_OTLP_HEADERS="x-honeycomb-team=your-api-key"
+MCP_OTLP_INSECURE="false"
 
-**Counters (total counts over time):**
-- `mcp.tool_calls_total`: Total number of MCP tool calls with labels for tool name, success status, and semantic attributes
-- `mcp.operations_total`: Total number of MCP operations performed
-- `mcp.errors_total`: Total number of errors encountered
-
-**Histograms (distribution of values):**
-- `mcp.operation_duration_seconds`: Duration of MCP operations in seconds
-- `mcp.tool_call_duration_seconds`: Duration of specific tool calls in seconds
-
-**Gauges (current state):**
-- `mcp.active_operations`: Number of currently active MCP operations
-- `mcp.queue_size`: Number of operations waiting in the MCP queue
-- `mcp.memory_usage_bytes`: Current memory usage in bytes
-
-#### Semantic Attributes
-
-Metrics include rich semantic attributes for filtering and aggregation:
-
-**Tool Call Attributes:**
-- `tool_name`: Name of the MCP tool (e.g., "file_read", "git_log")
-- `success`: Boolean indicating success/failure ("true"/"false")
-- `tool_type`: Category of tool ("filesystem", "git", "network", "ai")
-- `operation_type`: Specific operation ("read", "write", "generate", "collect")
-- `client_type`: AI client making the request ("cursor", "claude-desktop", etc.)
-- `error_type`: Classification of failures ("timeout", "permission", "not_found")
-- `file_type`: Type of file being processed ("json", "py", "md", etc.)
-
-**Operation Attributes:**
-- `operation`: Name of the operation being measured
-- `model`: AI model used for processing (e.g., "gpt-4", "claude-3")
-- `operation_type`: Category of operation ("generation", "analysis", "formatting")
-- `client_type`: Source client for the operation
-
-#### Usage Examples
-
-**Recording Tool Calls:**
-```python
-from mcp_commit_story.telemetry import get_mcp_metrics
-
-metrics = get_mcp_metrics()
-
-# Record successful tool call
-metrics.record_tool_call(
-    "file_read", 
-    success=True,
-    tool_type="filesystem",
-    operation_type="read",
-    client_type="cursor",
-    file_type="json"
-)
-
-# Record failed tool call with error details
-metrics.record_tool_call(
-    "network_request",
-    success=False,
-    tool_type="network", 
-    operation_type="fetch",
-    client_type="claude-desktop",
-    error_type="timeout"
-)
+# Prometheus configuration  
+MCP_PROMETHEUS_PORT="8000"
+MCP_PROMETHEUS_ENDPOINT="/metrics"
 ```
 
-**Recording Operation Durations:**
-```python
-import time
+#### Standard OpenTelemetry Variables
+```bash
+# Service identification
+OTEL_SERVICE_NAME="mcp-commit-story"
+OTEL_SERVICE_VERSION="1.0.0"
 
-start_time = time.time()
-# ... perform operation ...
-duration = time.time() - start_time
-
-metrics.record_operation_duration(
-    "journal_generation",
-    duration,
-    model="gpt-4",
-    operation_type="generation",
-    client_type="cursor"
-)
+# OTLP configuration
+OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
+OTEL_EXPORTER_OTLP_HEADERS="authorization=Bearer token"
+OTEL_EXPORTER_OTLP_INSECURE="true"
 ```
 
-**Updating System State:**
-```python
-# Update current system state
-metrics.set_active_operations(5)
-metrics.set_queue_size(12)
-metrics.set_memory_usage_mb(256.5)
+### Exporter Configuration Examples
+
+#### Console Only (Development)
+```bash
+MCP_TELEMETRY_EXPORTERS="console"
 ```
 
-#### Integration with Telemetry System
-
-MCP metrics are automatically initialized when telemetry is enabled:
-
-```python
-from mcp_commit_story.telemetry import setup_telemetry, get_mcp_metrics
-
-# Setup telemetry (includes MCP metrics)
-config = {"telemetry": {"enabled": True}}
-setup_telemetry(config)
-
-# Access metrics instance
-metrics = get_mcp_metrics()
-if metrics:
-    metrics.record_tool_call("example_tool", success=True)
+#### OTLP gRPC (Production)  
+```bash
+MCP_TELEMETRY_EXPORTERS="otlp-grpc"
+MCP_OTLP_ENDPOINT="https://api.honeycomb.io:443"
+MCP_OTLP_HEADERS="x-honeycomb-team=your-api-key"
 ```
 
-The metrics instance lifecycle is managed automatically:
-- **Initialization**: Created during `setup_telemetry()`
-- **Access**: Available via `get_mcp_metrics()`
-- **Cleanup**: Cleared during `shutdown_telemetry()`
-
-#### Metric Naming Conventions
-
-All MCP metrics follow OpenTelemetry naming conventions:
-- **Prefix**: All metrics start with `mcp.` for namespace isolation
-- **Units**: Durations are in seconds, memory in bytes, counts are unitless
-- **Descriptors**: Clear, concise descriptions for each metric
-- **Labels**: Consistent semantic attribute naming across metrics
-
-#### Monitoring and Alerting
-
-Common monitoring patterns for MCP metrics:
-
-**Error Rate Monitoring:**
-```promql
-# Tool call error rate over 5 minutes
-rate(mcp_tool_calls_total{success="false"}[5m]) / 
-rate(mcp_tool_calls_total[5m])
+#### Multiple Exporters (Comprehensive)
+```bash
+MCP_TELEMETRY_EXPORTERS="console,otlp-grpc,prometheus"
+MCP_OTLP_ENDPOINT="https://api.honeycomb.io:443"
+MCP_OTLP_HEADERS="x-honeycomb-team=your-api-key"
+MCP_PROMETHEUS_PORT="8000"
 ```
 
-**Performance Monitoring:**
-```promql
-# 95th percentile operation duration
-histogram_quantile(0.95, mcp_operation_duration_seconds_bucket)
+### Validation and Error Handling
+
+#### Validation Rules
+- **Exporters**: Must be from supported list: `console`, `otlp-grpc`, `otlp-http`, `prometheus`
+- **OTLP Endpoint**: Must be valid URL format when OTLP exporters enabled
+- **Prometheus Port**: Must be valid integer between 1024-65535
+- **Headers**: Must be in format `key1=value1,key2=value2`
+
+#### Partial Success Handling
+The system implements graceful degradation:
+- Invalid exporters are skipped with warning logs
+- Failed exporter initialization doesn't prevent system startup
+- At least one successful exporter required for telemetry to be marked as enabled
+- Detailed validation errors logged for troubleshooting
+
+#### Error Messages
+```
+Invalid exporter 'jaeger': supported exporters are console, otlp-grpc, otlp-http, prometheus
+Missing required OTLP endpoint for exporter: otlp-grpc
+Invalid Prometheus port '99999': must be between 1024 and 65535
+Failed to initialize exporter 'otlp-grpc': connection refused
 ```
 
-**Client Analysis:**
-```promql
-# Tool calls by client type
-sum by (client_type) (mcp_tool_calls_total)
-```
+## Metrics Collection
 
-**Resource Monitoring:**
-```promql
-# Current memory usage
-mcp_memory_usage_bytes
+The system provides comprehensive MCP-specific metrics:
 
-# Queue depth
-mcp_queue_size
-```
+### Counters
+- `mcp.tool_calls_total`: Total tool calls with success/failure labels
+- `mcp.operations_total`: Total operations by type
+- `mcp.errors_total`: Error counts by category
 
-### Logs
+### Histograms  
+- `mcp.operation_duration_seconds`: Operation latency distribution
+- `mcp.tool_call_duration_seconds`: Tool call performance
 
-Structured logs with trace correlation:
-
-```json
-{
-  "timestamp": "2025-01-28T10:30:00Z",
-  "level": "INFO",
-  "message": "Journal entry created",
-  "trace_id": "abc123...",
-  "span_id": "def456...",
-  "operation": "create_entry",
-  "commit_id": "sha123..."
-}
-```
-
-## Usage Patterns
-
-### Development
-
-For local development, enable console exporter:
-
-```yaml
-telemetry:
-  enabled: true
-  exporters:
-    console:
-      enabled: true
-```
-
-### Production
-
-For production deployments, use OTLP with your observability backend:
-
-```yaml
-telemetry:
-  enabled: true
-  service_name: "mcp-journal-prod"
-  deployment_environment: "production"
-  exporters:
-    otlp:
-      enabled: true
-      endpoint: "https://your-backend.com:4317"
-    prometheus:
-      enabled: true
-      port: 8000
-```
-
-### Debugging
-
-To troubleshoot specific operations:
-
-1. Enable debug logging and console tracing
-2. Look for trace IDs in error logs
-3. Search for the trace ID across all telemetry data
-4. Analyze the trace timeline and span attributes
-
-## Integration with MCP Server
-
-The telemetry system integrates with the MCP server lifecycle:
-
-1. **Initialization**: Telemetry setup during server startup
-2. **Request Handling**: Automatic tracing of MCP operations
-3. **Shutdown**: Graceful telemetry provider cleanup
-
-### Custom Instrumentation
-
-For custom operations, use the provided decorators:
-
-```python
-from mcp_journal.telemetry import get_tracer
-
-tracer = get_tracer("my_component")
-
-@trace_operation("custom_operation")
-def my_function():
-    with tracer.start_as_current_span("detailed_work") as span:
-        span.set_attribute("custom.attribute", "value")
-        # Your logic here
-```
-
-### MCP Operation Decorator
-
-For tracing MCP-specific operations, use the `trace_mcp_operation` decorator:
-
-```python
-from mcp_commit_story.telemetry import trace_mcp_operation
-
-# Basic usage
-@trace_mcp_operation("journal_entry_creation")
-def create_journal_entry():
-    # Your function implementation
-    pass
-
-# With custom attributes
-@trace_mcp_operation("tool_call", attributes={"tool.name": "journal/create"})
-async def handle_tool_call():
-    # Your async function implementation
-    pass
-
-# Full customization
-@trace_mcp_operation(
-    "complex_operation",
-    operation_type="mcp_tool", 
-    attributes={"priority": "high"}
-)
-def complex_operation():
-    pass
-```
-
-#### Decorator API
-
-**Parameters:**
-- `operation_name` (required): Name of the MCP operation for the span
-- `attributes` (optional): Dictionary of custom attributes to add to the span
-- `operation_type` (optional): Type of MCP operation (default: "mcp_operation")
-- `tracer_name` (optional): Name of the tracer to use (default: "mcp_journal")
-
-#### Semantic Attributes
-
-The decorator automatically sets these span attributes following OpenTelemetry semantic conventions:
-
-**Standard MCP Attributes:**
-- `mcp.operation.name`: The operation name provided to the decorator
-- `mcp.operation.type`: The type of MCP operation (e.g., "mcp_operation", "mcp_tool")
-- `mcp.function.name`: The actual Python function name
-- `mcp.function.module`: The module containing the function
-- `mcp.function.async`: Boolean indicating if the function is async
-
-**Result Attributes:**
-- `mcp.result.status`: "success" or "error" based on execution outcome
-
-**Error Attributes (when exceptions occur):**
-- `error.type`: The exception class name (e.g., "FileNotFoundError")
-- `error.message`: The exception message
-
-#### Features
-
-**Automatic Function Detection:**
-- Detects async vs sync functions using `asyncio.iscoroutinefunction()`
-- Applies appropriate wrapper automatically
-- Preserves original function metadata with `functools.wraps()`
-
-**Error Handling:**
-- Records exceptions in spans with full details
-- Sets span status to ERROR with descriptive messages
-- Always propagates exceptions (never suppresses them)
-- Follows observability principle: don't change application behavior
-
-**Context Propagation:**
-- Integrates with OpenTelemetry distributed tracing
-- Child operations automatically link to parent spans
-- Enables end-to-end request tracking across components
+### Gauges
+- `mcp.active_operations`: Current concurrent operations
+- `mcp.queue_size`: Request queue depth
+- `mcp.memory_usage_mb`: Current memory consumption
 
 ## Best Practices
 
-### Performance
+### Logging
+1. **Use semantic attributes**: Add structured context with `extra` parameter
+2. **Check log levels**: Use `logger.isEnabledFor()` for expensive operations
+3. **Avoid sensitive data**: System auto-redacts but be mindful of field names
+4. **Correlation context**: Logs within spans automatically get trace correlation
 
-- Telemetry adds minimal overhead when enabled
-- Use sampling for high-volume operations
-- Disable telemetry in performance-critical scenarios
+### Tracing
+1. **Meaningful span names**: Use descriptive operation names
+2. **Semantic attributes**: Add context like `user_id`, `operation_type`
+3. **Error handling**: Spans automatically record exceptions
+4. **Nested operations**: Child spans inherit trace context
 
-### Security
+### Metrics
+1. **Consistent labeling**: Use standard attributes across metrics
+2. **Appropriate types**: Counters for totals, histograms for latency
+3. **Resource efficiency**: Avoid high-cardinality labels
 
-- Sensitive data is automatically filtered from spans
-- Configuration values are masked in telemetry
-- Use secure endpoints for production exporters
+## Security Considerations
 
-### Monitoring
-
-Set up alerts on:
-- High error rates in MCP operations
-- Increased operation latency
-- Telemetry system health metrics
+- **API Keys**: Never log authentication credentials
+- **Sensitive Fields**: Auto-redaction covers common patterns but review field names
+- **Network Security**: Use TLS for OTLP exports in production
+- **Access Control**: Secure metrics endpoints appropriately
 
 ## Troubleshooting
 
 ### Common Issues
 
-**Telemetry not appearing:**
-- Check `telemetry.enabled` configuration
-- Verify exporter endpoints are reachable
-- Check for provider initialization errors
+1. **Missing Trace Correlation**
+   - Verify telemetry is enabled and spans are active
+   - Check logging instrumentation is enabled
 
-**High overhead:**
-- Reduce sampling rate
-- Disable auto-instrumentation for unused libraries
-- Use efficient exporters (avoid console in production)
+2. **Exporter Failures**
+   - Check network connectivity for OTLP endpoints
+   - Verify authentication credentials
+   - Review validation error messages
 
-**Missing context:**
-- Ensure proper span propagation
-- Check trace correlation configuration
-- Verify parent-child span relationships
+3. **Performance Impact**
+   - Use lazy evaluation for expensive log data
+   - Adjust export intervals for high-volume scenarios
+   - Monitor exporter queue depths
 
-### Logs to Monitor
+### Debug Configuration
+```python
+config = {
+    "telemetry": {
+        "enabled": True,
+        "logging": {
+            "level": "DEBUG",
+            "correlation": True
+        }
+    }
+}
+```
 
-Key log messages for telemetry health:
-- "Telemetry initialized successfully"
-- "Exporter connection failed"
-- "Span export errors"
-- "Provider shutdown completed"
+### Monitoring Commands
+```bash
+# Check metrics endpoint
+curl http://localhost:8000/metrics
 
-## Future Enhancements
-
-Planned telemetry improvements:
-
-- Custom metric dashboards
-- Anomaly detection on operation patterns
-- Integration with APM tools
-- Automated performance regression detection
-- Cross-service trace correlation 
+# View recent traces (if using console exporter)
+tail -f /var/log/application.log | grep trace_id
+``` 

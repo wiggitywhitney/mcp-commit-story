@@ -1,6 +1,6 @@
 # Task ID: 4
 # Title: Implement Telemetry System
-# Status: done
+# Status: in-progress
 # Dependencies: None
 # Priority: high
 # Description: Set up OpenTelemetry integration for tracing, metrics, and logging to provide observability for the MCP server.
@@ -79,7 +79,7 @@ def setup_logging(debug=False):
 7. Test telemetry integration with the setup-only CLI functionality
 
 # Subtasks:
-## 4.1. OpenTelemetry Foundation Setup [done]
+## 1. OpenTelemetry Foundation Setup [done]
 ### Dependencies: None
 ### Description: Create basic OpenTelemetry initialization and configuration system
 ### Details:
@@ -116,7 +116,7 @@ TDD Steps:
    - Add module-level documentation explaining usage
    - Add comments explaining configuration options
 
-## 4.2. MCP Operation Instrumentation Decorators [done]
+## 2. MCP Operation Instrumentation Decorators [done]
 ### Dependencies: None
 ### Description: Create tracing decorators specifically for MCP operations
 ### Details:
@@ -153,7 +153,7 @@ TDD Steps:
    - Document semantic conventions for MCP spans
    - Add usage examples in module documentation
 
-## 4.3. Auto-Instrumentation Integration [done]
+## 3. Auto-Instrumentation Integration [done]
 ### Dependencies: None
 ### Description: Configure OpenTelemetry auto-instrumentation for common libraries
 ### Details:
@@ -189,7 +189,7 @@ TDD Steps:
    - Add configuration examples for common scenarios
    - Document performance implications
 
-## 4.4. MCP-Specific Metrics Collection [done]
+## 4. MCP-Specific Metrics Collection [done]
 ### Dependencies: None
 ### Description: Define and implement metrics collection for MCP operations
 ### Details:
@@ -229,7 +229,7 @@ TDD Steps:
    - Add examples of querying metrics in common systems
    - Document metric data model and attributes
 
-## 4.5. Multi-Exporter Configuration System [done]
+## 5. Multi-Exporter Configuration System [done]
 ### Dependencies: None
 ### Description: Support multiple telemetry exporters (console, OTLP, Prometheus) for vendor-neutral observability
 ### Details:
@@ -269,13 +269,58 @@ TDD Steps:
    - Add examples for common observability backends
    - Document environment variables for configuration
 
-## 4.6. Structured Logging with Trace Correlation [pending]
+## 6. Structured Logging with Trace Correlation [done]
 ### Dependencies: None
 ### Description: Integrate logging with OpenTelemetry trace context
 ### Details:
+✅ TASK 4.6 COMPLETED SUCCESSFULLY!
+
+## Implementation Summary
+
+Successfully implemented comprehensive structured logging with OpenTelemetry trace correlation:
+
+### ✅ Core Features Implemented:
+- **OTelFormatter**: JSON formatter with automatic trace/span ID injection
+- **LogMetricsHandler**: Optional log-based metrics collection
+- **Sensitive Data Protection**: Automatic redaction of passwords, tokens, API keys
+- **Performance Optimization**: LazyLogData wrapper and level-aware logging helpers
+- **Integration Functions**: setup_structured_logging(), get_correlated_logger()
+
+### ✅ Enhanced Features (User Requested):
+- **Sensitive Data Filtering**: Recursive sanitization with configurable patterns
+- **Performance Optimization**: Lazy evaluation for expensive computations
+- **Clean Integration**: Seamless integration with existing telemetry system
+
+### ✅ Test Coverage: 23/23 PASSING
+- OTelFormatter functionality (8 tests)
+- Log-based metrics (3 tests) 
+- Utility functions (3 tests)
+- Sensitive data filtering (3 tests)
+- Performance optimization (3 tests)
+- Integration patterns (3 tests)
+
+### ✅ Documentation Updated:
+1. **docs/telemetry.md**: Comprehensive structured logging documentation
+2. **PRD**: Updated observability section with structured logging features
+3. **Engineering Spec**: Added detailed structured logging implementation section
+
+### ✅ Integration Complete:
+- Integrated into main telemetry.py module
+- Automatic initialization during setup_telemetry()
+- Works with or without active telemetry (graceful degradation)
+- Follows multi-exporter configuration patterns
+
+### ✅ Security & Performance:
+- Automatic redaction of sensitive fields (passwords, tokens, keys)
+- Lazy evaluation prevents expensive computations when logging disabled
+- JSON format enables rich querying in centralized logging systems
+- Trace correlation enables drilling down from metrics to specific requests
+
+**Status: COMPLETE** ✅
+
 TDD Steps:
 
-1. WRITE TESTS FIRST:
+1. ✅ WRITE TESTS FIRST:
    - Test OTelFormatter class initialization
    - Test trace ID injection in log records
    - Test span ID injection in log records
@@ -283,16 +328,16 @@ TDD Steps:
    - Test log correlation with active spans
    - Test log-based metrics (optional)
    - Test different log levels
-   - RUN TESTS - VERIFY THEY FAIL
+   - RUN TESTS - VERIFIED THEY FAILED
 
-2. GET APPROVAL FOR DESIGN CHOICES:
-   - Log format (JSON vs structured text)
-   - Which log levels to correlate with traces
-   - Log-based metrics implementation
-   - Log enrichment strategy
-   - PAUSE FOR MANUAL APPROVAL
+2. ✅ GET APPROVAL FOR DESIGN CHOICES:
+   - Log format (JSON vs structured text) - APPROVED: JSON
+   - Which log levels to correlate with traces - APPROVED: All levels
+   - Log-based metrics implementation - APPROVED: Optional LogMetricsHandler
+   - Log enrichment strategy - APPROVED: Automatic trace context injection
+   - ADDITIONAL USER ENHANCEMENTS APPROVED
 
-3. IMPLEMENT FUNCTIONALITY:
+3. ✅ IMPLEMENT FUNCTIONALITY:
    - Create OTelFormatter class
    - Implement trace correlation
    - Add structured logging configuration
@@ -300,16 +345,17 @@ TDD Steps:
    - Add optional log-based metrics
    - Create logging utility functions
    - Integrate with existing logging
-   - RUN TESTS - VERIFY THEY PASS
+   - RUN TESTS - VERIFIED THEY PASS (23/23)
 
-4. DOCUMENT AND COMPLETE:
+4. ✅ DOCUMENT AND COMPLETE:
    - Document logging configuration options
    - Add examples of querying correlated logs
    - Document log format specification
+   - Updated PRD and Engineering Spec
 
-## 4.7. MCP Server Integration and End-to-End Testing [pending]
+## 7. MCP Server Integration and End-to-End Testing [pending]
 ### Dependencies: None
-### Description: Integrate telemetry with MCP server and validate complete pipeline
+### Description: Integrate telemetry with MCP server and validate complete pipeline [Updated: 5/31/2025]
 ### Details:
 TDD Steps:
 
@@ -341,11 +387,18 @@ TDD Steps:
    - RUN TESTS - VERIFY THEY PASS
 
 4. DOCUMENT AND COMPLETE:
-   - Document telemetry integration points
-   - Add configuration examples for production
-   - Document observability patterns and queries
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update telemetry.md with integration guide and configuration examples
+     2. **PRD**: Update observability section with end-to-end telemetry capabilities
+     3. **Engineering Spec**: Update with MCP server integration details and architecture
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
+   - **MARK COMPLETE**
 
-## 4.8. Instrument Journal Management Operations (Task 3) [pending]
+## 8. Instrument Journal Management Operations (Task 3) [pending]
 ### Dependencies: None
 ### Description: Add telemetry to existing journal creation and file operations for AI context flow observability
 ### Details:
@@ -379,11 +432,18 @@ TDD Steps:
    - RUN TESTS - VERIFY THEY PASS
 
 4. DOCUMENT AND COMPLETE:
-   - Document journal operation telemetry
-   - Add examples of analyzing journal performance
-   - Document AI context flow observability
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update telemetry.md with journal operation instrumentation examples
+     2. **PRD**: Update if adding user-facing journal monitoring features
+     3. **Engineering Spec**: Update with journal telemetry implementation details
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
+   - **MARK COMPLETE**
 
-## 4.9. Instrument Context Collection Operations (Task 5) [pending]
+## 9. Instrument Context Collection Operations (Task 5) [pending]
 ### Dependencies: None
 ### Description: Add telemetry to existing Git operations and file scanning for MCP context flow visibility
 ### Details:
@@ -417,11 +477,18 @@ TDD Steps:
    - RUN TESTS - VERIFY THEY PASS
 
 4. DOCUMENT AND COMPLETE:
-   - Document Git operation telemetry
-   - Add examples of analyzing context collection performance
-   - Document context flow observability patterns
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update telemetry.md with Git operation instrumentation and context collection monitoring
+     2. **PRD**: Update if adding user-facing context collection monitoring features
+     3. **Engineering Spec**: Update with context collection telemetry implementation details
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
+   - **MARK COMPLETE**
 
-## 4.10. Instrument Configuration Management (Task 6) [pending]
+## 10. Instrument Configuration Management (Task 6) [pending]
 ### Dependencies: None
 ### Description: Add telemetry to existing config loading and validation for system initialization observability
 ### Details:
@@ -455,11 +522,18 @@ TDD Steps:
    - RUN TESTS - VERIFY THEY PASS
 
 4. DOCUMENT AND COMPLETE:
-   - Document configuration telemetry
-   - Add examples of analyzing configuration issues
-   - Document configuration flow observability
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update telemetry.md with configuration loading instrumentation examples
+     2. **PRD**: Update if adding user-facing configuration monitoring features
+     3. **Engineering Spec**: Update with configuration telemetry implementation details
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
+   - **MARK COMPLETE**
 
-## 4.11. Instrument Integration Tests for Telemetry Validation (Task 8) [pending]
+## 11. Instrument Integration Tests for Telemetry Validation (Task 8) [pending]
 ### Dependencies: None
 ### Description: Add telemetry awareness to existing integration tests for end-to-end observability validation
 ### Details:
@@ -493,7 +567,14 @@ TDD Steps:
    - RUN TESTS - VERIFY THEY PASS
 
 4. DOCUMENT AND COMPLETE:
-   - Document telemetry testing approach
-   - Add examples of telemetry validation in tests
-   - Document end-to-end observability validation
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update telemetry.md with integration test telemetry validation examples
+     2. **PRD**: Update if adding user-facing integration monitoring features
+     3. **Engineering Spec**: Update with integration test telemetry implementation details
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
+   - **MARK COMPLETE**
 

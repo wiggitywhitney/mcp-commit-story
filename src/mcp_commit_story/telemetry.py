@@ -18,6 +18,9 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExport
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader, ConsoleMetricExporter
 from opentelemetry.trace import Status, StatusCode
 
+# Import structured logging functionality
+from .structured_logging import setup_structured_logging
+
 # Optional exporters - gracefully handle if not available
 try:
     from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
@@ -89,6 +92,11 @@ def setup_telemetry(config: Dict[str, Any]) -> bool:
         # Setup auto-instrumentation if configured
         if telemetry_config.get("auto_instrumentation", {}).get("enabled", True):
             enable_auto_instrumentation(config)
+        
+        # Setup structured logging with telemetry integration
+        structured_logging_enabled = setup_structured_logging(config)
+        if structured_logging_enabled:
+            logger.info("Structured logging with trace correlation enabled")
         
         # Initialize MCP metrics instance
         _mcp_metrics = MCPMetrics()
@@ -254,9 +262,13 @@ def _enable_logging_instrumentation() -> bool:
     try:
         from opentelemetry.instrumentation.logging import LoggingInstrumentor
         LoggingInstrumentor().instrument()
+        
+        # Additional integration with structured logging
+        logger.info("OpenTelemetry logging instrumentation enabled")
+        logger.debug("Logs will now include trace correlation when spans are active")
         return True
     except ImportError:
-        logger.warning("logging instrumentation package not available")
+        logger.warning("OpenTelemetry logging instrumentation package not available")
         return False
     except Exception as e:
         logger.error(f"Failed to instrument logging: {e}")

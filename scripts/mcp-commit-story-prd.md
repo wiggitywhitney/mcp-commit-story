@@ -121,6 +121,10 @@
 - **Multi-exporter telemetry system**: Enhanced telemetry configuration supporting multiple export destinations (console, OTLP, Prometheus) with environment variable precedence hierarchy and graceful degradation when individual exporters fail
 - **Production-ready monitoring**: Configurable telemetry exporters for different environments - console output for development, OTLP for production observability backends (Jaeger, DataDog, New Relic), and Prometheus metrics for infrastructure monitoring
 - **Robust error handling**: Partial success reporting when some telemetry exporters fail, ensuring system continues operating even if monitoring infrastructure has issues
+- **Structured logging with trace correlation**: JSON-formatted logs that automatically include OpenTelemetry trace and span IDs when spans are active, enabling seamless correlation between logs, traces, and metrics for comprehensive debugging and monitoring
+- **Sensitive data protection**: Automatic redaction of passwords, API keys, tokens, and other sensitive information from log output to ensure security in centralized logging systems
+- **Performance-optimized logging**: Lazy evaluation of expensive log data computations, only processing complex objects when logging is actually enabled at the configured level
+- **Log-based metrics**: Optional collection of operational metrics derived from log entries, including error rates by service/operation and log volume trends for capacity planning
 
 ---
 

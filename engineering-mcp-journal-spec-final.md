@@ -527,209 +527,175 @@ def enable_auto_instrumentation(config: Dict[str, Any]) -> Dict[str, Any]:
 
 **Graceful Fallback:**
 - Missing target libraries (e.g., aiohttp not installed) are gracefully skipped
-- Failed instrumentors are tracked but don't break system operation
-- Returns detailed status including enabled/failed instrumentors
+- Failed instrumentors are tracked but don't prevent system startup
+- Warning messages logged for debugging purposes
 
 **Integration:**
 Auto-instrumentation is automatically enabled during telemetry setup:
+
 ```python
 # Called automatically in setup_telemetry()
 def setup_telemetry(config):
-    # ... existing TracerProvider/MeterProvider setup ...
-    
-    # Enable auto-instrumentation based on config
-    auto_instrumentation_result = enable_auto_instrumentation(config)
-    if auto_instrumentation_result.get('enabled_instrumentors'):
-        logger.info(f"Auto-instrumentation enabled for: {auto_instrumentation_result['enabled_instrumentors']}")
+    # ... other setup ...
+    if telemetry_config.get("auto_instrumentation", {}).get("enabled", True):
+        enable_auto_instrumentation(config)
 ```
 
-#### Instrumentation Scope
-- **MCP Operations**: All tool calls from AI agents (via decorators)
-- **Auto-Instrumented Libraries**: HTTP requests, async operations, logging correlation
-- **Journal Operations**: Entry creation, reflection addition, summarization
-- **Git Operations**: Context collection, file scanning, commit analysis
-- **Configuration**: Loading, validation, and initialization
-- **File Operations**: Journal file creation and updates
+#### Structured Logging with Trace Correlation (Task 4.6)
 
-#### Key Metrics Collected
-- `mcp_journal_operations_total{operation, status}`: Operation success/failure counts
-- `mcp_journal_operation_duration_seconds{operation}`: Performance histograms
-- `mcp_journal_git_operations_total{type}`: Git operation tracking
-- `mcp_journal_file_operations_total{operation}`: File I/O metrics
-- `mcp_journal_context_collection_duration_seconds`: Context gathering performance
-- `http_requests_total{method, status_code}`: HTTP request metrics (auto-instrumented)
-- `asyncio_operations_total{operation}`: Async operation metrics (auto-instrumented)
-
-#### MCP-Specific Metrics Collection
-
-The system provides dedicated metrics collection for MCP operations through the `MCPMetrics` class, enabling detailed monitoring of tool calls, operation performance, and system state.
+The system implements comprehensive structured logging with automatic OpenTelemetry trace correlation, providing seamless integration between logs, traces, and metrics for enhanced observability.
 
 **Core Implementation:**
 ```python
-class MCPMetrics:
-    """MCP-specific metrics collection for OpenTelemetry"""
+# src/mcp_commit_story/structured_logging.py
+class OTelFormatter(logging.Formatter):
+    """JSON formatter with automatic OpenTelemetry trace correlation"""
     
-    def record_tool_call(self, tool_name: str, success: bool, **attributes):
-        """Record tool call metrics with semantic attributes"""
-        
-    def record_operation_duration(self, operation: str, duration: float, **attributes):
-        """Record operation duration metrics"""
-        
-    def set_active_operations(self, count: int, **attributes):
-        """Set current active operations gauge"""
-```
+    def format(self, record: logging.LogRecord) -> str:
+        """Format log record as JSON with trace context"""
 
-**Available MCP Metrics:**
-
-*Counters (total counts over time):*
-- `mcp.tool_calls_total`: Total MCP tool calls with rich semantic attributes
-- `mcp.operations_total`: Total MCP operations performed
-- `mcp.errors_total`: Total errors encountered
-
-*Histograms (distribution tracking):*
-- `mcp.operation_duration_seconds`: Duration of MCP operations
-- `mcp.tool_call_duration_seconds`: Tool call execution time
-
-*Gauges (current state):*
-- `mcp.active_operations`: Currently active MCP operations
-- `mcp.queue_size`: Operations waiting in MCP queue
-- `mcp.memory_usage_bytes`: Current memory usage
-
-**Semantic Attributes for Analytics:**
-- `tool_name`: Specific MCP tool (e.g., "file_read", "journal_create")
-- `success`: Boolean success/failure indicator
-- `tool_type`: Tool category ("filesystem", "git", "network", "ai")
-- `operation_type`: Specific operation ("read", "write", "generate", "collect")
-- `client_type`: AI client source ("cursor", "claude-desktop", etc.)
-- `error_type`: Error classification ("timeout", "permission", "not_found")
-- `file_type`: File type being processed ("json", "py", "md")
-- `model`: AI model used ("gpt-4", "claude-3")
-
-**Usage Example:**
-```python
-from mcp_commit_story.telemetry import get_mcp_metrics
-
-metrics = get_mcp_metrics()
-if metrics:
-    # Record tool call with rich context
-    metrics.record_tool_call(
-        "journal_create",
-        success=True,
-        tool_type="ai",
-        operation_type="generate",
-        client_type="cursor",
-        model="gpt-4"
-    )
+class LogMetricsHandler(logging.Handler):
+    """Optional handler for collecting log-based metrics"""
     
-    # Record operation timing
-    metrics.record_operation_duration(
-        "context_collection", 
-        2.1,
-        operation_type="collect",
-        client_type="cursor"
-    )
-```
+    def emit(self, record: logging.LogRecord) -> None:
+        """Emit log-based metrics to OpenTelemetry"""
 
-**Integration with Telemetry Lifecycle:**
-- **Initialization**: Automatically created during `setup_telemetry()`
-- **Access**: Available via `get_mcp_metrics()` utility function
-- **Cleanup**: Automatically cleaned up during `shutdown_telemetry()`
+def setup_structured_logging(config: Dict[str, Any]) -> bool:
+    """Configure structured logging with telemetry integration"""
 
-**Monitoring and Alerting Patterns:**
-The metrics enable sophisticated monitoring patterns for operational insights:
-
-```promql
-# Tool call error rate by client
-rate(mcp_tool_calls_total{success="false"}[5m]) by (client_type)
-
-# 95th percentile operation duration
-histogram_quantile(0.95, mcp_operation_duration_seconds_bucket)
-
-# Tool usage by type and client
-sum by (tool_type, client_type) (mcp_tool_calls_total)
-```
-
-#### Trace Structure
-```
-ai_request
-├── mcp_tool_call{tool="journal/new-entry"}
-│   ├── git_commit_analysis
-│   ├── context_collection
-│   │   ├── chat_history_collection
-│   │   ├── terminal_history_collection
-│   │   └── http_request (auto-instrumented)
-│   ├── journal_entry_generation
-│   │   └── async_operation (auto-instrumented)
-│   └── file_write_operation
-└── mcp_response
-```
-
-#### Technical Implementation
-```python
-# src/mcp_commit_story/telemetry.py
-from opentelemetry import trace, metrics
-
-def setup_telemetry(config):
-    """Initialize OpenTelemetry based on configuration"""
-    # TracerProvider and MeterProvider setup
-    # Resource configuration with service attributes
-    # Exporter configuration based on config
-    # Auto-instrumentation integration
-
-def enable_auto_instrumentation(config):
-    """Enable automatic instrumentation for approved libraries"""
-    # Preset resolution (minimal/comprehensive/custom)
-    # Individual instrumentor enablement
-    # Graceful fallback for missing libraries
-    # Status reporting
-
-@trace_mcp_operation("mcp_operation")
-async def handle_mcp_request(request):
-    """Traced MCP operation handler"""
-    # Automatic span creation and attribute setting
-    
-def get_tracer(name="mcp_commit_story"):
-    """Get configured tracer for component"""
-    
-def get_meter(name="mcp_commit_story"):
-    """Get configured meter for metrics"""
-```
-
-#### MCP Operation Instrumentation Decorator
-
-The system provides a dedicated `trace_mcp_operation` decorator for instrumenting MCP-specific operations with standardized semantic attributes and error handling:
-
-```python
-from mcp_commit_story.telemetry import trace_mcp_operation
-
-@trace_mcp_operation("journal_entry_creation")
-async def handle_journal_new_entry(request):
-    """Create a new journal entry with automatic tracing"""
-    # Implementation automatically gets:
-    # - Span creation with operation name
-    # - Standard MCP semantic attributes
-    # - Error recording and propagation
-    # - Performance timing
+def get_correlated_logger(name: str) -> logging.Logger:
+    """Get logger configured for trace correlation"""
 ```
 
 **Key Features:**
-- **Automatic Function Detection**: Detects async vs sync functions using `asyncio.iscoroutinefunction()`
-- **Semantic Conventions**: Follows OpenTelemetry standards with `mcp.*` namespace for MCP-specific attributes
-- **Error Handling**: Records exceptions in spans AND propagates them (never suppresses)
-- **Context Propagation**: Integrates with distributed tracing for end-to-end request tracking
-- **Function Metadata Preservation**: Uses `@functools.wraps()` to maintain original function signatures
 
-**Span Attributes Set:**
-- `mcp.operation.name`: The operation name provided to the decorator
-- `mcp.operation.type`: Type of MCP operation (default: "mcp_operation")
-- `mcp.function.name`: Python function name
-- `mcp.function.module`: Module containing the function
-- `mcp.function.async`: Boolean indicating async/sync function
-- `mcp.result.status`: "success" or "error" based on execution outcome
-- `error.type`: Exception class name (when errors occur)
-- `error.message`: Exception message (when errors occur)
+*JSON Format with Trace Correlation:*
+- All logs output as structured JSON for parsing and analysis
+- Automatic injection of `trace_id` and `span_id` when spans are active
+- Standard OpenTelemetry trace format for seamless correlation
+- Consistent timestamp formatting with microsecond precision
 
-For complete telemetry documentation, see [docs/telemetry.md](docs/telemetry.md).
+*Sensitive Data Protection:*
+- Automatic redaction of passwords, tokens, API keys, and credentials
+- Recursive sanitization of nested data structures
+- Configurable sensitive field patterns
+- Security-first approach for centralized logging systems
+
+*Performance Optimization:*
+- Lazy evaluation of expensive log data computations
+- `LazyLogData` wrapper for deferred object serialization
+- Level-aware logging helpers to avoid unnecessary processing
+- Minimal overhead when logging is disabled
+
+*Log-Based Metrics Integration:*
+- Optional collection of operational metrics from log entries
+- Error rate tracking by service and operation
+- Log volume trends for capacity planning
+- Integration with existing OpenTelemetry metrics pipeline
+
+**Configuration:**
+```yaml
+telemetry:
+  logging:
+    level: "INFO"                 # Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    format: "json"                # Always JSON (only supported format)
+    correlation: true             # Enable trace correlation (default: true)
+    metrics: false                # Enable log-based metrics (default: false)
+    handlers: ["console"]         # Output destinations
+    sensitive_fields:             # Additional sensitive field patterns
+      - "custom_secret"
+      - "internal_token"
+```
+
+**Usage Patterns:**
+
+*Basic Structured Logging:*
+```python
+from mcp_commit_story.structured_logging import get_correlated_logger
+
+logger = get_correlated_logger(__name__)
+
+# Automatic trace correlation when spans are active
+logger.info("Operation completed", extra={
+    "operation_id": "abc123",
+    "user_id": "12345",
+    "duration_ms": 150
+})
+```
+
+*Performance-Optimized Logging:*
+```python
+from mcp_commit_story.structured_logging import LazyLogData, log_performance_optimized
+
+# Lazy evaluation - only computed if logging enabled
+expensive_data = LazyLogData(lambda: serialize_complex_object(data))
+
+# Recommended pattern for expensive operations
+if logger.isEnabledFor(logging.DEBUG):
+    logger.debug("Complex operation details", extra={
+        "operation_data": expensive_computation()
+    })
+
+# Or use performance-optimized helper
+log_performance_optimized(
+    logger, 
+    logging.DEBUG, 
+    "Operation details", 
+    {"complex_data": expensive_data}
+)
+```
+
+*Sensitive Data Handling:*
+```python
+from mcp_commit_story.structured_logging import sanitize_log_data
+
+# Automatic sanitization
+user_data = {
+    "username": "john_doe",
+    "password": "secret123",  # Will be redacted
+    "api_key": "abc123",      # Will be redacted
+    "profile": {"email": "john@example.com"}
+}
+
+sanitized = sanitize_log_data(user_data)
+logger.info("User operation", extra={"user_data": sanitized})
+```
+
+**Log Format Example:**
+```json
+{
+  "timestamp": "2024-01-15T10:30:45.123456Z",
+  "level": "INFO",
+  "message": "Journal entry created successfully",
+  "logger": "mcp_commit_story.journal",
+  "pathname": "/src/mcp_commit_story/journal.py",
+  "lineno": 42,
+  "trace_id": "1234567890abcdef1234567890abcdef",
+  "span_id": "abcdef1234567890",
+  "operation_id": "create_entry_001",
+  "commit_hash": "abc123def456",
+  "files_changed": 3,
+  "duration_ms": 150
+}
+```
+
+**Integration with Telemetry System:**
+- Automatically initialized during `setup_telemetry()` when enabled
+- Seamless integration with existing OpenTelemetry instrumentation
+- Works with or without active telemetry (graceful degradation)
+- Consistent with multi-exporter configuration patterns
+
+**Security Considerations:**
+- Default sensitive field patterns cover common security risks
+- Recursive sanitization prevents data leakage in nested structures
+- Field name matching is case-insensitive and substring-based
+- Custom sensitive patterns can be added via configuration
+
+**Monitoring and Alerting:**
+- Log-based metrics enable alerting on error rates and volume
+- Trace correlation allows drilling down from metrics to specific requests
+- JSON format enables rich querying in centralized logging systems
+- Performance metrics help identify expensive operations
 
 ---
 
