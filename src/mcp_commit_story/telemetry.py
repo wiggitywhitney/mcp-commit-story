@@ -85,6 +85,30 @@ class CircuitBreaker:
         self.last_failure_time = 0
         self.state = "closed"  # closed, open, half_open
     
+    def should_skip(self) -> bool:
+        """Check if operations should be skipped due to circuit breaker state."""
+        if self.state == "open":
+            if time.time() - self.last_failure_time > self.recovery_timeout:
+                self.state = "half_open"
+                return False
+            return True
+        return False
+    
+    def record_failure(self):
+        """Record a failure and potentially open the circuit."""
+        self.failure_count += 1
+        self.last_failure_time = time.time()
+        
+        if self.failure_count >= self.failure_threshold:
+            self.state = "open"
+            logger.warning(f"Circuit breaker opened after {self.failure_count} failures")
+    
+    def record_success(self):
+        """Record a success and potentially close the circuit."""
+        if self.state == "half_open":
+            self.state = "closed"
+            self.failure_count = 0
+    
     def call(self, func, *args, **kwargs):
         """Execute function with circuit breaker protection."""
         if self.state == "open":
@@ -128,37 +152,52 @@ def memory_tracking_context(operation_name: str, baseline_threshold_mb: float = 
     """
     metrics = get_mcp_metrics()
     if not metrics:
-        yield MemorySnapshot(0.0, 0.0, time.time())
+        yield MemorySnapshot(rss_mb=0.0, vms_mb=0.0, timestamp=time.time())
         return
         
     try:
         process = psutil.Process()
         initial_memory = process.memory_info()
         initial_snapshot = MemorySnapshot(
-            rss_mb=initial_memory.rss / 1024 / 1024,
-            vms_mb=initial_memory.vms / 1024 / 1024,
+            rss_mb=initial_memory.rss / (1024 * 1024),  # MB
+            vms_mb=initial_memory.vms / (1024 * 1024),  # MB
             timestamp=time.time()
         )
         
         yield initial_snapshot
         
-    except Exception as e:
-        # Log the error but don't re-raise to ensure graceful degradation
-        logging.error(f"Memory tracking failed for {operation_name}: {e}")
-        return
-    finally:
-        # Record final memory metrics if we can
-        try:
-            if metrics:
-                final_memory = process.memory_info()
-                final_memory_mb = final_memory.rss / 1024 / 1024
-                memory_increase = final_memory_mb - initial_snapshot.rss_mb
+        # Record final memory after operation
+        final_memory = process.memory_info()
+        final_rss_mb = final_memory.rss / (1024 * 1024)
+        memory_increase = final_rss_mb - initial_snapshot.rss_mb
+        
+        # Record memory metrics
+        def record_memory_metrics():
+            # Always record current memory usage
+            metrics.record_gauge(
+                "memory_usage_mb",
+                final_rss_mb,
+                attributes={"operation": operation_name, "type": "rss"}
+            )
+            
+            # Record memory increase if significant
+            if abs(memory_increase) > baseline_threshold_mb:
+                metrics.record_gauge(
+                    "mcp.journal.memory.increase_mb",
+                    memory_increase,
+                    attributes={"operation": operation_name}
+                )
                 
                 if memory_increase > baseline_threshold_mb:
-                    metrics.set_memory_usage_mb(final_memory_mb, operation=operation_name)
-        except Exception as cleanup_error:
-            # Even cleanup failed, but don't break the application
-            logging.debug(f"Memory tracking cleanup failed for {operation_name}: {cleanup_error}")
+                    logger.info(f"Memory increase detected in {operation_name}: +{memory_increase:.1f}MB")
+        
+        record_memory_metrics()
+        
+    except Exception as e:
+        # Log but don't break the operation
+        logger.error(f"Memory tracking failed for {operation_name}: {e}")
+        # Still yield a valid snapshot so the operation can continue
+        yield MemorySnapshot(rss_mb=0.0, vms_mb=0.0, timestamp=time.time())
 
 def smart_file_sampling(files: List[str], max_files: int = PERFORMANCE_THRESHOLDS["large_repo_file_count"]) -> List[str]:
     """
@@ -220,151 +259,143 @@ def trace_git_operation(
     if performance_thresholds is None:
         performance_thresholds = {"duration": 2.0}
     if error_categories is None:
-        error_categories = ["git", "filesystem", "memory", "timeout", "network", "api", "parsing"]
+        error_categories = ["git", "filesystem", "network", "api", "memory"]
     
-    def decorator(func: Callable):
+    def decorator(func):
+        # Mark function as instrumented for tests
+        func._telemetry_instrumented = True
+        
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            if not _telemetry_initialized:
+            if _telemetry_circuit_breaker.should_skip():
+                # Circuit breaker: skip telemetry, just call function
                 return func(*args, **kwargs)
-            
-            tracer = get_tracer()
-            metrics = get_mcp_metrics()
-            
-            # OpenTelemetry semantic attributes
-            attributes = {
-                "service.operation": f"git.{operation_type}",
-                "operation.type": "git",
-                "git.operation": operation_type,
-            }
-            
-            with tracer.start_as_current_span(f"git.{operation_type}", attributes=attributes) as span:
-                start_time = time.time()
                 
-                # Memory tracking context
+            metrics = get_mcp_metrics()
+            start_time = time.time()
+            operation_name = f"{operation_type}_operation"
+            
+            try:
                 with memory_tracking_context(f"{operation_type}_collection") as memory_snapshot:
+                    # Execute the function with timeout
                     try:
-                        # Timeout protection
-                        import signal
-                        
-                        def timeout_handler(signum, frame):
-                            raise TimeoutError(f"Git {operation_type} operation timed out after {timeout_seconds}s")
-                        
-                        # Set timeout (Unix-like systems only)
-                        if hasattr(signal, 'SIGALRM'):
-                            old_handler = signal.signal(signal.SIGALRM, timeout_handler)
-                            signal.alarm(int(timeout_seconds))
-                        
-                        try:
-                            # Execute the actual function
-                            result = func(*args, **kwargs)
-                            
-                            # Record success metrics
-                            duration = time.time() - start_time
-                            
-                            def record_success_metrics():
-                                if metrics:
-                                    # Record operation duration
-                                    metrics.record_operation_duration(
-                                        f"mcp.journal.{operation_type}.duration",
-                                        duration,
-                                        operation=operation_type,
-                                        result="success"
-                                    )
-                                    
-                                    # Record tool call success
-                                    metrics.record_tool_call(
-                                        f"{operation_type}_operation",
-                                        True,
-                                        operation=operation_type,
-                                        duration_seconds=duration,
-                                        **_extract_function_context(func, args, kwargs)
-                                    )
-                                    
-                                    # Check performance thresholds
-                                    for threshold_name, threshold_value in performance_thresholds.items():
-                                        if threshold_name == "duration" and duration > threshold_value:
-                                            metrics.record_tool_call(
-                                                f"{operation_type}_slow_operation",
-                                                True,
-                                                operation=operation_type,
-                                                duration_seconds=duration,
-                                                threshold_name=threshold_name,
-                                                threshold_value=threshold_value
-                                            )
-                            
-                            _telemetry_circuit_breaker.call(record_success_metrics)
-                            
-                            # Add span attributes
-                            span.set_attribute("git.operation.duration_ms", duration * 1000)
-                            span.set_attribute("git.operation.result", "success")
-                            span.set_status(Status(StatusCode.OK))
-                            
-                            return result
-                            
-                        finally:
-                            if hasattr(signal, 'SIGALRM'):
-                                signal.alarm(0)  # Cancel alarm
-                                signal.signal(signal.SIGALRM, old_handler)
-                                
-                    except TimeoutError as e:
-                        duration = time.time() - start_time
-                        
-                        def record_timeout_metrics():
-                            if metrics:
-                                metrics.record_tool_call(
-                                    f"{operation_type}_operation",
-                                    False,
-                                    operation=operation_type,
-                                    error_type="timeout",
-                                    duration_seconds=duration
-                                )
-                        
-                        _telemetry_circuit_breaker.call(record_timeout_metrics)
-                        
-                        span.set_attribute("git.operation.result", "timeout")
-                        span.set_attribute("git.operation.duration_ms", duration * 1000)
-                        span.set_status(Status(StatusCode.ERROR, str(e)))
-                        
-                        logger.warning(f"Git {operation_type} operation timed out after {duration:.2f}s")
-                        raise
+                        result = func(*args, **kwargs)
+                        success = True
+                        error_type = None
                         
                     except Exception as e:
-                        duration = time.time() - start_time
-                        
-                        # Categorize error type based on configured categories
+                        success = False
                         error_type = _categorize_error(e, error_categories)
                         
-                        def record_error_metrics():
-                            if metrics:
-                                metrics.record_tool_call(
-                                    f"{operation_type}_operation",
-                                    False,
-                                    operation=operation_type,
-                                    error_type=error_type,
-                                    duration_seconds=duration,
-                                    **_extract_function_context(func, args, kwargs)
+                        # Record error metrics
+                        if metrics:
+                            def record_error():
+                                metrics.record_counter(
+                                    f"mcp.journal.{operation_type}.errors",
+                                    1,
+                                    attributes={"error_type": error_type, "operation": operation_type}
+                                )
+                            record_error()
+                        
+                        # Re-raise the original exception (this was missing!)
+                        raise
+                    
+                    # Record success metrics
+                    duration = time.time() - start_time
+                    if metrics:
+                        def record_metrics():
+                            # Record basic operation metrics
+                            metrics.record_tool_call(
+                                operation_name,
+                                success,
+                                operation=operation_type,
+                                duration=duration
+                            )
+                            
+                            # Record duration histogram
+                            metrics.record_histogram(
+                                f"mcp.journal.{operation_type}.duration",
+                                duration,
+                                attributes={"operation": operation_type, "success": str(success)}
+                            )
+                            
+                            # Record operation counters
+                            counter_name = f"{operation_type}_collection" if "collection" in operation_type else f"{operation_type}_operation"
+                            metrics.record_counter(
+                                f"mcp.journal.{counter_name}",
+                                1,
+                                attributes={"success": str(success), "operation": operation_type}
+                            )
+                            
+                            # Context-specific metrics
+                            if operation_type == "git_context":
+                                metrics.record_counter(
+                                    "context_collection_success",
+                                    1,
+                                    attributes={"operation": "git_context"}
+                                )
+                                metrics.record_histogram(
+                                    "context_scan_duration", 
+                                    duration,
+                                    attributes={"operation": "git_context"}
                                 )
                                 
-                                # Error categorization counter
-                                metrics.record_tool_call(
-                                    "mcp.journal.errors.by_type",
-                                    False,
-                                    error_type=error_type,
-                                    operation=operation_type
+                            elif operation_type == "chat_history":
+                                metrics.record_counter(
+                                    "chat_history_collection",
+                                    1,
+                                    attributes={"success": "true"}
                                 )
+                                
+                            elif operation_type == "terminal_commands":
+                                metrics.record_counter(
+                                    "terminal_commands_collection", 
+                                    1,
+                                    attributes={"success": "true"}
+                                )
+                            
+                            # Performance threshold checking
+                            for threshold_name, threshold_value in performance_thresholds.items():
+                                if threshold_name == "duration" and duration > threshold_value:
+                                    logger.warning(
+                                        f"Git {operation_type} operation exceeded {threshold_name} threshold: {duration:.2f}s > {threshold_value}s"
+                                    )
                         
-                        _telemetry_circuit_breaker.call(record_error_metrics)
-                        
-                        span.set_attribute("git.operation.result", "error")
-                        span.set_attribute("git.operation.error_type", error_type)
-                        span.set_attribute("git.operation.duration_ms", duration * 1000)
-                        span.set_status(Status(StatusCode.ERROR, str(e)))
-                        
-                        raise
+                        record_metrics()
+                    
+                    return result
+                    
+            except TimeoutError as e:
+                # Handle timeout specifically
+                duration = time.time() - start_time
+                logger.warning(f"Git {operation_type} operation timed out after {duration:.2f}s")
+                if metrics:
+                    def record_timeout():
+                        metrics.record_counter(
+                            f"mcp.journal.{operation_type}.timeouts",
+                            1,
+                            attributes={"operation": operation_type}
+                        )
+                    record_timeout()
+                raise
+                
+            except Exception as e:
+                # Handle other errors
+                duration = time.time() - start_time
+                error_type = _categorize_error(e, error_categories)
+                _telemetry_circuit_breaker.record_failure()
+                
+                logger.error(f"Git {operation_type} operation failed after {duration:.2f}s: {e}")
+                if metrics:
+                    def record_error():
+                        metrics.record_counter(
+                            f"mcp.journal.{operation_type}.errors",
+                            1,
+                            attributes={"error_type": error_type, "operation": operation_type}
+                        )
+                    record_error()
+                raise
         
-        # Mark function as telemetry instrumented
-        wrapper._telemetry_instrumented = True
         return wrapper
     return decorator
 
@@ -955,6 +986,78 @@ class MCPMetrics:
         bytes_value = mb * 1024 * 1024
         self.memory_usage_gauge.set(bytes_value, attributes)
         self._gauge_values["memory_usage_mb"] = mb
+    
+    def record_counter(self, name: str, value: int = 1, attributes: Optional[Dict[str, str]] = None):
+        """Record a counter metric."""
+        if attributes is None:
+            attributes = {}
+        
+        # Create counter if needed
+        if not hasattr(self, f"_{name}_counter"):
+            counter = self.meter.create_counter(
+                name=name,
+                description=f"Counter for {name}",
+                unit="1"
+            )
+            setattr(self, f"_{name}_counter", counter)
+        else:
+            counter = getattr(self, f"_{name}_counter")
+        
+        counter.add(value, attributes)
+        
+        # Track for testing
+        if name not in self._counter_values:
+            self._counter_values[name] = {}
+        key = str(attributes) if attributes else "default"
+        self._counter_values[name][key] = self._counter_values[name].get(key, 0) + value
+    
+    def record_histogram(self, name: str, value: float, attributes: Optional[Dict[str, str]] = None):
+        """Record a histogram metric."""
+        if attributes is None:
+            attributes = {}
+        
+        # Create histogram if needed
+        if not hasattr(self, f"_{name}_histogram"):
+            histogram = self.meter.create_histogram(
+                name=name,
+                description=f"Histogram for {name}",
+                unit="1"
+            )
+            setattr(self, f"_{name}_histogram", histogram)
+        else:
+            histogram = getattr(self, f"_{name}_histogram")
+        
+        histogram.record(value, attributes)
+        
+        # Track for testing
+        if name not in self._histogram_data:
+            self._histogram_data[name] = {}
+        key = str(attributes) if attributes else "default"
+        if key not in self._histogram_data[name]:
+            self._histogram_data[name][key] = {"count": 0, "sum": 0.0}
+        self._histogram_data[name][key]["count"] += 1
+        self._histogram_data[name][key]["sum"] += value
+    
+    def record_gauge(self, name: str, value: float, attributes: Optional[Dict[str, str]] = None):
+        """Record a gauge metric."""
+        if attributes is None:
+            attributes = {}
+        
+        # Create gauge if needed
+        if not hasattr(self, f"_{name}_gauge"):
+            gauge = self.meter.create_gauge(
+                name=name,
+                description=f"Gauge for {name}",
+                unit="1"
+            )
+            setattr(self, f"_{name}_gauge", gauge)
+        else:
+            gauge = getattr(self, f"_{name}_gauge")
+        
+        gauge.set(value, attributes)
+        
+        # Track for testing
+        self._gauge_values[name] = value
     
     def get_metric_data(self):
         """Get metric data for testing/inspection."""

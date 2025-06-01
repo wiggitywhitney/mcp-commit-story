@@ -100,10 +100,14 @@ class TestGitOperationTracing:
         # Create some unstaged changes
         (Path(repo.working_tree_dir) / "new_file.py").write_text("# new file")
         
-        # This should fail - no git status instrumentation yet
-        with pytest.raises(AttributeError):
-            from mcp_commit_story.context_collection import get_git_status_with_telemetry
-            get_git_status_with_telemetry(repo)
+        # Now that we've implemented the function, it should work
+        from mcp_commit_story.context_collection import get_git_status_with_telemetry
+        result = get_git_status_with_telemetry(repo)
+        
+        # Should return a result
+        assert result is not None
+        assert isinstance(result, dict)
+        assert 'status' in result
 
 
 class TestFileScannineMetrics:

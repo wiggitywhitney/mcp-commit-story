@@ -30,39 +30,71 @@ Here's an example daily summary, generated from real sample data:
 # 2025-05-28-daily.md
 
 ## Summary
-A productive day focused on implementing the on-demand directory creation pattern and completing major architectural changes. The developer created an intelligent task archival system that reduced the active tasks.json file from 275KB to 62KB, addressing file size concerns. Task 25 was completed, implementing the MCP-first architecture decision by eliminating operational CLI commands. The day included multiple commits for on-demand directory creation, comprehensive test updates, and task management improvements.
+A productive day focused on implementing the on-demand directory creation pattern and 
+completing major architectural changes. The developer created an intelligent task 
+archival system that reduced the active tasks.json file from 275KB to 62KB, addressing 
+file size concerns. Task 25 was completed, implementing the MCP-first architecture 
+decision by eliminating operational CLI commands. The day included multiple commits for 
+on-demand directory creation, comprehensive test updates, and task management improvements.
 
 ## Key Accomplishments
-The developer solved a practical file size problem by creating an archival system for completed tasks. After experiencing issues with Taskmaster MCP tools (resolved by refreshing), the developer created `scripts/archive_completed_tasks.py` to automatically archive complete task units, reducing the active task file significantly.
+The developer solved a practical file size problem by creating an archival system for 
+completed tasks. After experiencing issues with Taskmaster MCP tools (resolved by 
+refreshing), the developer created `scripts/archive_completed_tasks.py` to automatically 
+archive complete task units, reducing the active task file significantly.
 
-The architectural decision from Task 25 was implemented - removing operational CLI commands (`new-entry`, `add-reflection`) while keeping setup commands, and renaming the entry point to `mcp-commit-story-setup`. This reflects the insight that journal operations require AI analysis that humans cannot meaningfully perform manually.
+The architectural decision from Task 25 was implemented - removing operational CLI 
+commands (`new-entry`, `add-reflection`) while keeping setup commands, and renaming the 
+entry point to `mcp-commit-story-setup`. This reflects the insight that journal 
+operations require AI analysis that humans cannot meaningfully perform manually.
 
-Multiple commits advanced the on-demand directory creation pattern, replacing upfront directory creation with just-in-time creation using the `ensure_journal_directory` utility function.
+Multiple commits advanced the on-demand directory creation pattern, replacing upfront 
+directory creation with just-in-time creation using the `ensure_journal_directory` 
+utility function.
 
 ## Technical Progress (Detailed Implementation)
-- **Task Archival System**: Created `scripts/archive_completed_tasks.py` with validation logic ensuring complete task units (main task + all subtasks marked "done") before archival
-- **File Size Optimization**: Reduced `tasks/tasks.json` from 275KB to 62KB, archived 12 complete task units while preserving 12 active tasks
-- **Architectural Implementation**: Completed Task 25 - eliminated operational CLI commands, renamed entry point to `mcp-commit-story-setup`, updated MCP server with proper tool registration
-- **Directory Pattern Implementation**: Completed on-demand directory creation pattern with `ensure_journal_directory` utility, comprehensive TDD coverage, and removal of all upfront directory creation logic
+- **Task Archival System**: Created `scripts/archive_completed_tasks.py` with validation 
+  logic ensuring complete task units (main task + all subtasks marked "done") before 
+  archival
+- **File Size Optimization**: Reduced `tasks/tasks.json` from 275KB to 62KB, archived 
+  12 complete task units while preserving 12 active tasks
+- **Architectural Implementation**: Completed Task 25 - eliminated operational CLI 
+  commands, renamed entry point to `mcp-commit-story-setup`, updated MCP server with 
+  proper tool registration
+- **Directory Pattern Implementation**: Completed on-demand directory creation pattern 
+  with `ensure_journal_directory` utility, comprehensive TDD coverage, and removal of 
+  all upfront directory creation logic
 
 ## Challenges Overcome
-- **Taskmaster MCP Tool Issues**: Experienced timeout issues with Taskmaster MCP tools, resolved by refreshing the connection
-- **Import Path Complexities**: Encountered Python import issues during TDD implementation requiring PYTHONPATH configuration and test structure adjustments
-- **Test Coordination**: Required careful updates across CLI tests, integration tests, and documentation to maintain consistency through architectural changes
+- **Taskmaster MCP Tool Issues**: Experienced timeout issues with Taskmaster MCP tools, 
+  resolved by refreshing the connection
+- **Import Path Complexities**: Encountered Python import issues during TDD 
+  implementation requiring PYTHONPATH configuration and test structure adjustments
+- **Test Coordination**: Required careful updates across CLI tests, integration tests, 
+  and documentation to maintain consistency through architectural changes
 
 ## Learning & Insights
-- **Psychology of Progress**: Visual task completion provides significant psychological motivation - the developer noted satisfaction in seeing the task list shrink
-- **File Size Impact**: Large task files create practical problems - the 275KB to 62KB reduction addressed real usability issues
-- **AI Tool Quality**: Switching to Claude 4 Sonnet provided dramatically better development partnership and problem-solving capabilities
+- **Psychology of Progress**: Visual task completion provides significant psychological 
+  motivation - the developer noted satisfaction in seeing the task list shrink
+- **File Size Impact**: Large task files create practical problems - the 275KB to 62KB 
+  reduction addressed real usability issues
+- **AI Tool Quality**: Switching to Claude 4 Sonnet provided dramatically better 
+  development partnership and problem-solving capabilities
 
 ## Discussion Highlights
 - **Human**: "Something went awry and the engineering spec got to be 6000+ lines long"
-- **Human**: "Tbh it is really satisfying to see my list of open tasks get smaller. I was already wishing for a way to visually see them getting checked off"
-- **Human**: "I'm disappointed that the subtask plans in task 4 are not as detailed as the ones in our planning doc"
+- **Human**: "Tbh it is really satisfying to see my list of open tasks get smaller. 
+  I was already wishing for a way to visually see them getting checked off"
+- **Human**: "I'm disappointed that the subtask plans in task 4 are not as detailed as 
+  the ones in our planning doc"
 
 ## Developer Reflections
-- **17:47**: "I switched to claude-4-sonnet and omg it is so much better, sweet baby jesus"
-- **18:47**: "I really like the discussion notes that Claude 4 Sonnet is capturing. It adds a lot of color and interest. I want the most interesting of these to bubble up into the daily summary. I also want the daily summary to include ALL manual reflections, ver betim. These are gold."
+- **17:47**: "I switched to claude-4-sonnet and omg it is so much better, sweet baby 
+  jesus"
+- **18:47**: "I really like the discussion notes that Claude 4 Sonnet is capturing. 
+  It adds a lot of color and interest. I want the most interesting of these to bubble 
+  up into the daily summary. I also want the daily summary to include ALL manual 
+  reflections, ver betim. These are gold."
 ```
 
 ---
