@@ -155,49 +155,58 @@ def memory_tracking_context(operation_name: str, baseline_threshold_mb: float = 
         yield MemorySnapshot(rss_mb=0.0, vms_mb=0.0, timestamp=time.time())
         return
         
+    process = psutil.Process()
+    initial_memory = process.memory_info()
+    initial_snapshot = MemorySnapshot(
+        rss_mb=initial_memory.rss / (1024 * 1024),  # MB
+        vms_mb=initial_memory.vms / (1024 * 1024),  # MB
+        timestamp=time.time()
+    )
+    
+    exception_occurred = False
     try:
-        process = psutil.Process()
-        initial_memory = process.memory_info()
-        initial_snapshot = MemorySnapshot(
-            rss_mb=initial_memory.rss / (1024 * 1024),  # MB
-            vms_mb=initial_memory.vms / (1024 * 1024),  # MB
-            timestamp=time.time()
-        )
-        
         yield initial_snapshot
         
-        # Record final memory after operation
-        final_memory = process.memory_info()
-        final_rss_mb = final_memory.rss / (1024 * 1024)
-        memory_increase = final_rss_mb - initial_snapshot.rss_mb
-        
-        # Record memory metrics
-        def record_memory_metrics():
-            # Always record current memory usage
-            metrics.record_gauge(
-                "memory_usage_mb",
-                final_rss_mb,
-                attributes={"operation": operation_name, "type": "rss"}
-            )
-            
-            # Record memory increase if significant
-            if abs(memory_increase) > baseline_threshold_mb:
-                metrics.record_gauge(
-                    "mcp.journal.memory.increase_mb",
-                    memory_increase,
-                    attributes={"operation": operation_name}
-                )
-                
-                if memory_increase > baseline_threshold_mb:
-                    logger.info(f"Memory increase detected in {operation_name}: +{memory_increase:.1f}MB")
-        
-        record_memory_metrics()
-        
     except Exception as e:
-        # Log but don't break the operation
+        exception_occurred = True
+        # Log but don't interfere with exception propagation
         logger.error(f"Memory tracking failed for {operation_name}: {e}")
-        # Still yield a valid snapshot so the operation can continue
-        yield MemorySnapshot(rss_mb=0.0, vms_mb=0.0, timestamp=time.time())
+        raise  # Re-raise the exception
+        
+    finally:
+        # Always try to record memory metrics if possible
+        if not exception_occurred:
+            try:
+                # Record final memory after operation
+                final_memory = process.memory_info()
+                final_rss_mb = final_memory.rss / (1024 * 1024)
+                memory_increase = final_rss_mb - initial_snapshot.rss_mb
+                
+                # Record memory metrics
+                def record_memory_metrics():
+                    # Always record current memory usage
+                    metrics.record_gauge(
+                        "memory_usage_mb",
+                        final_rss_mb,
+                        attributes={"operation": operation_name, "type": "rss"}
+                    )
+                    
+                    # Record memory increase if significant
+                    if abs(memory_increase) > baseline_threshold_mb:
+                        metrics.record_gauge(
+                            "mcp.journal.memory.increase_mb",
+                            memory_increase,
+                            attributes={"operation": operation_name}
+                        )
+                        
+                        if memory_increase > baseline_threshold_mb:
+                            logger.info(f"Memory increase detected in {operation_name}: +{memory_increase:.1f}MB")
+                
+                record_memory_metrics()
+                
+            except Exception as mem_error:
+                # Don't let memory tracking errors break the main operation
+                logger.error(f"Failed to record memory metrics for {operation_name}: {mem_error}")
 
 def smart_file_sampling(files: List[str], max_files: int = PERFORMANCE_THRESHOLDS["large_repo_file_count"]) -> List[str]:
     """
@@ -339,29 +348,35 @@ def trace_git_operation(
                                     duration,
                                     attributes={"operation": "git_context"}
                                 )
-                                
+                                # Record files processed metric
+                                if hasattr(result, 'changed_files') and isinstance(result.get('changed_files'), list):
+                                    metrics.record_counter(
+                                        "files_processed",
+                                        len(result['changed_files']),
+                                        attributes={"operation": "git_context"}
+                                    )
+                            
                             elif operation_type == "chat_history":
                                 metrics.record_counter(
                                     "chat_history_collection",
                                     1,
-                                    attributes={"success": "true"}
+                                    attributes={"operation": "chat_history"}
                                 )
                                 
                             elif operation_type == "terminal_commands":
                                 metrics.record_counter(
-                                    "terminal_commands_collection", 
+                                    "terminal_commands_collection",
                                     1,
-                                    attributes={"success": "true"}
+                                    attributes={"operation": "terminal_commands"}
                                 )
                             
-                            # Performance threshold checking
-                            for threshold_name, threshold_value in performance_thresholds.items():
-                                if threshold_name == "duration" and duration > threshold_value:
-                                    logger.warning(
-                                        f"Git {operation_type} operation exceeded {threshold_name} threshold: {duration:.2f}s > {threshold_value}s"
-                                    )
+                            # Performance threshold warnings
+                            duration_threshold = performance_thresholds.get("duration", 2.0)
+                            if duration > duration_threshold:
+                                logger.warning(f"{operation_type} operation exceeded threshold: {duration:.2f}s > {duration_threshold}s")
                         
                         record_metrics()
+                        _telemetry_circuit_breaker.record_success()
                     
                     return result
                     
@@ -380,12 +395,10 @@ def trace_git_operation(
                 raise
                 
             except Exception as e:
-                # Handle other errors
                 duration = time.time() - start_time
                 error_type = _categorize_error(e, error_categories)
-                _telemetry_circuit_breaker.record_failure()
                 
-                logger.error(f"Git {operation_type} operation failed after {duration:.2f}s: {e}")
+                # Record error metrics
                 if metrics:
                     def record_error():
                         metrics.record_counter(
@@ -393,7 +406,13 @@ def trace_git_operation(
                             1,
                             attributes={"error_type": error_type, "operation": operation_type}
                         )
+                    
                     record_error()
+                
+                _telemetry_circuit_breaker.record_failure()
+                logger.error(f"Git {operation_type} operation failed after {duration:.2f}s: {e}")
+                
+                # Re-raise the original exception
                 raise
         
         return wrapper

@@ -6,6 +6,7 @@ This module provides unified functions for collecting chat, terminal, and git co
 
 import os
 import time
+import logging
 from mcp_commit_story.context_types import ChatHistory, TerminalContext, GitContext
 from mcp_commit_story.git_utils import get_repo, get_current_commit, get_commit_details, get_commit_diff_summary, classify_file_type, classify_commit_size, NULL_TREE
 from mcp_commit_story.telemetry import (
@@ -16,6 +17,8 @@ from mcp_commit_story.telemetry import (
     PERFORMANCE_THRESHOLDS,
     _telemetry_circuit_breaker
 )
+
+logger = logging.getLogger(__name__)
 
 
 @trace_git_operation("chat_history", 
@@ -46,7 +49,7 @@ def collect_chat_history(since_commit=None, max_messages_back=150) -> ChatHistor
     - Ignore purely administrative chat (like "please wait" or "let me check"), but include discussions about tooling, environment, or workflow.
     - Return ONLY the messages that contain meaningful context about the development process leading to this commit.
     """
-    # Validation that was in the original tests - raise ValueError for None inputs
+    # Validate that required parameters are provided
     if since_commit is None or max_messages_back is None:
         raise ValueError("collect_chat_history: since_commit and max_messages_back must not be None")
     
@@ -55,7 +58,7 @@ def collect_chat_history(since_commit=None, max_messages_back=150) -> ChatHistor
 
 
 @trace_git_operation("terminal_commands",
-                    performance_thresholds={"duration": 1.0}, 
+                    performance_thresholds={"duration": 1.0},
                     error_categories=["api", "network", "parsing"])
 def collect_ai_terminal_commands(since_commit=None, max_messages_back=150) -> TerminalContext:
     """
@@ -82,11 +85,11 @@ def collect_ai_terminal_commands(since_commit=None, max_messages_back=150) -> Te
     - Record both successful and failed attempts to provide context about the development process.
     - Return commands in chronological order to preserve the development narrative.
     """
-    # Validation that was in the original tests - raise ValueError for None inputs  
+    # Validate that required parameters are provided
     if since_commit is None or max_messages_back is None:
         raise ValueError("collect_ai_terminal_commands: since_commit and max_messages_back must not be None")
     
-    # TODO: AI will replace this with actual terminal analysis per the prompt above
+    # Return empty structure for now
     return TerminalContext(commands=[])
 
 
@@ -143,7 +146,17 @@ def collect_git_context(commit_hash=None, repo=None, journal_path=None) -> GitCo
     # Changed files with smart sampling and performance limits
     parent = commit.parents[0] if commit.parents else None
     # For the initial commit, diff against the empty tree (NULL_TREE)
-    diffs = commit.diff(parent) if parent else commit.diff(NULL_TREE)
+    try:
+        diffs = commit.diff(parent) if parent else commit.diff(NULL_TREE)
+        
+        # Defensive programming: handle case where diff returns None
+        if diffs is None:
+            raise TypeError("Git diff operation returned None - possibly due to repository corruption or timeout")
+            
+    except (TypeError, AttributeError) as e:
+        # Handle cases where diff() returns None or other unexpected types
+        logger.error(f"Git diff operation failed: {e}")
+        raise
     
     all_changed_files = []
     total_file_count = 0
