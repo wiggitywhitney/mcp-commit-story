@@ -88,6 +88,12 @@ The system automatically collects comprehensive metrics:
 - `mcp_file_operations_total{operation_type}` - File I/O operations  
 - `mcp_context_collection_duration_seconds` - Context gathering performance
 
+#### Configuration Management Metrics
+- `mcp.config.operations_total{operation, result}` - Configuration operation tracking
+- `mcp.config.load_duration_seconds{operation}` - Configuration loading performance
+- `mcp.config.reload_events_total{trigger, result}` - Configuration reload events
+- `mcp.config.validation_errors_total{field_path, error_type}` - Validation error tracking
+
 ### Structured Logging Integration
 
 All logs are automatically enhanced with trace correlation:
@@ -881,4 +887,177 @@ rate(journal_generation_operations_total[5m])
 #### Security Considerations
 - File paths are sanitized to show only filenames
 - Configuration data is filtered for sensitive values
-- AI context content is not logged directly (only size metrics) 
+- AI context content is not logged directly (only size metrics)
+
+### Configuration Management Telemetry
+
+The system provides comprehensive observability for configuration operations including loading, validation, and hot reloads:
+
+#### Instrumented Operations
+
+**Configuration Loading**
+```python
+@trace_config_operation("load")
+def load_config(config_path: Optional[str] = None) -> 'Config':
+    \"\"\"Load configuration with full telemetry instrumentation.\"\"\"
+    # Function implementation with automatic telemetry
+```
+
+**Configuration Validation** 
+```python
+@trace_config_operation("validate")
+def validate_config(config: Dict[str, Any]) -> Dict[str, Any]:
+    \"\"\"Validate configuration with error categorization.\"\"\"
+    # Function implementation with automatic telemetry
+```
+
+**Configuration Reloading**
+```python
+@trace_config_operation("reload")
+def reload_config(self):
+    \"\"\"Hot reload configuration with change detection.\"\"\"
+    # Function implementation with automatic telemetry
+```
+
+#### Telemetry Features
+
+**Performance Monitoring**
+- **Load Duration Warning**: 250ms threshold for initial config loads
+- **Reload Duration Warning**: 500ms threshold for config reloads  
+- **Validation Duration Warning**: 100ms threshold for validation operations
+- **Sampling Strategy**: 100% for initial loads/reloads, 5% for high-frequency access
+
+**Privacy Protection**
+```python
+# Sensitive values are automatically hashed
+config_path_hash = hash_sensitive_value("/path/to/config")
+# Results in: "a1b2c3d4" (8-character SHA256 prefix)
+```
+
+**Error Categorization**
+- `yaml_error` - Malformed YAML syntax
+- `file_error` - File access permissions/not found
+- `validation_error` - Schema validation failures
+- `type_error` - Incorrect data types
+- `missing_field` - Required fields absent
+
+**Change Detection**
+```python
+# Automatic tracking of configuration modifications
+def detect_config_changes(old_config: dict, new_config: dict) -> List[str]:
+    \"\"\"Detect and track specific field changes.\"\"\"
+    # Implementation with telemetry reporting
+```
+
+#### Circuit Breaker Protection
+
+Configuration telemetry includes circuit breaker protection to prevent cascading failures:
+
+```python
+# Circuit breaker per operation type
+CONFIG_CIRCUIT_BREAKERS = {
+    "load": CircuitBreaker(failure_threshold=5, recovery_timeout=300.0),
+    "reload": CircuitBreaker(failure_threshold=5, recovery_timeout=300.0), 
+    "validate": CircuitBreaker(failure_threshold=5, recovery_timeout=300.0),
+}
+```
+
+#### Example Metrics Output
+
+**Successful Configuration Load**
+```json
+{
+  "metric_name": "mcp.config.operations_total",
+  "value": 1,
+  "attributes": {
+    "operation": "load",
+    "result": "success",
+    "config_source": "file",
+    "has_config_file": true
+  }
+}
+```
+
+**Configuration Validation Error**
+```json
+{
+  "metric_name": "mcp.config.operations_total", 
+  "value": 1,
+  "attributes": {
+    "operation": "validate",
+    "result": "failure",
+    "error_type": "missing_field",
+    "config_validation_error": true
+  }
+}
+```
+
+**Configuration Reload Performance**
+```json
+{
+  "metric_name": "mcp.config.reload_duration_seconds",
+  "value": 0.245,
+  "attributes": {
+    "operation": "reload",
+    "result": "success",
+    "changes_detected": true,
+    "config_complexity": "moderate"
+  }
+}
+```
+
+#### Integration with MCP Server Startup
+
+Configuration telemetry integrates seamlessly with server initialization:
+
+```python
+# Server startup with configuration telemetry
+async def create_mcp_server():
+    try:
+        # Configuration loading is automatically instrumented
+        config = load_config()  # Generates telemetry spans/metrics
+        
+        # Telemetry setup respects config telemetry settings
+        telemetry_initialized = setup_telemetry(config.as_dict())
+        
+        # Config dependency tracking for startup
+        if telemetry_initialized:
+            metrics = get_mcp_metrics()
+            metrics.record_mcp_server_config_dependency(
+                config_path=config._config_path,
+                startup_phase="initialization",
+                required=True
+            )
+    except Exception as e:
+        # Configuration errors are automatically categorized and tracked
+        logger.error(f"Configuration error during startup: {e}")
+```
+
+#### Troubleshooting Configuration Issues
+
+**Configuration Load Failures**
+```bash
+# Check configuration loading metrics
+curl -s http://localhost:8080/metrics | grep "mcp.config.operations_total.*failure"
+
+# Look for specific error categories
+curl -s http://localhost:8080/metrics | grep "error_type"
+```
+
+**Performance Issues**
+```bash
+# Monitor configuration operation duration
+curl -s http://localhost:8080/metrics | grep "mcp.config.*duration_seconds"
+
+# Check for slow operations exceeding thresholds
+curl -s http://localhost:8080/metrics | grep "mcp.config.slow_operations_total"
+```
+
+**Configuration Change Tracking**
+```bash
+# Monitor configuration reload events
+curl -s http://localhost:8080/metrics | grep "mcp.config.reload_events_total"
+
+# Track configuration change detection
+curl -s http://localhost:8080/metrics | grep "mcp.config.change_detection"
+``` 

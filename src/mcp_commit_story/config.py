@@ -7,6 +7,12 @@ import os
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple, Union
 import yaml
+import logging
+
+# Import telemetry for configuration instrumentation
+from .telemetry import trace_config_operation, hash_sensitive_value
+
+logger = logging.getLogger(__name__)
 
 # Default configuration
 DEFAULT_CONFIG = {
@@ -149,6 +155,7 @@ class Config:
     def get(self, key, default=None):
         return self._config_dict.get(key, default)
 
+    @trace_config_operation("reload")
     def reload_config(self):
         """
         Reload configuration from disk and re-validate. Raises ConfigError on any missing/invalid field.
@@ -230,6 +237,7 @@ def merge_configs(base: Dict[str, Any], overlay: Dict[str, Any]) -> Dict[str, An
             
     return result
 
+@trace_config_operation("validate")
 def validate_config(config: Dict[str, Any]) -> Dict[str, Any]:
     """
     Validate configuration and apply defaults for missing values.
@@ -260,11 +268,16 @@ def validate_config(config: Dict[str, Any]) -> Dict[str, Any]:
     
     return config
 
-def load_config(config_path: Optional[str] = None) -> Config:
+@trace_config_operation("load")
+def load_config(config_path: Optional[str] = None) -> 'Config':
     """
-    Load configuration from a file with proper precedence.
-    Always returns a Config object.
-    Raises ConfigError on malformed YAML or invalid types.
+    Load configuration from file or return default configuration.
+    
+    Args:
+        config_path: Path to config file, or None for default search
+        
+    Returns:
+        Config instance with loaded configuration
     """
     import copy
     config_data = copy.deepcopy(DEFAULT_CONFIG)
@@ -298,6 +311,7 @@ def load_config(config_path: Optional[str] = None) -> Config:
     # Validate config, apply defaults for missing fields (handled in Config)
     return Config(config_data, config_path=config_file_used)
 
+@trace_config_operation("save")
 def save_config(config: Config, config_path: Optional[str] = None) -> bool:
     """
     Save configuration to a file.
