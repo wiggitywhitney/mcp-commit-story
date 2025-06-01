@@ -5,10 +5,22 @@ This module provides unified functions for collecting chat, terminal, and git co
 """
 
 import os
+import time
 from mcp_commit_story.context_types import ChatHistory, TerminalContext, GitContext
 from mcp_commit_story.git_utils import get_repo, get_current_commit, get_commit_details, get_commit_diff_summary, classify_file_type, classify_commit_size, NULL_TREE
+from mcp_commit_story.telemetry import (
+    trace_git_operation, 
+    memory_tracking_context, 
+    smart_file_sampling,
+    get_mcp_metrics,
+    PERFORMANCE_THRESHOLDS,
+    _telemetry_circuit_breaker
+)
 
 
+@trace_git_operation("chat_history", 
+                    performance_thresholds={"duration": 1.0},
+                    error_categories=["api", "network", "parsing"])
 def collect_chat_history(since_commit=None, max_messages_back=150) -> ChatHistory:
     """
     Returns:
@@ -83,9 +95,14 @@ def collect_chat_history(since_commit=None, max_messages_back=150) -> ChatHistor
     """
     if since_commit is None or max_messages_back is None:
         raise ValueError("collect_chat_history: since_commit and max_messages_back must not be None")
+    
+    # TODO: AI will replace this with actual chat analysis per the prompt above
     return ChatHistory(messages=[])
 
 
+@trace_git_operation("terminal_commands",
+                    performance_thresholds={"duration": 1.0}, 
+                    error_categories=["api", "network", "parsing"])
 def collect_ai_terminal_commands(since_commit=None, max_messages_back=150) -> TerminalContext:
     """
     Returns:
@@ -127,9 +144,14 @@ def collect_ai_terminal_commands(since_commit=None, max_messages_back=150) -> Te
     """
     if since_commit is None or max_messages_back is None:
         raise ValueError("collect_ai_terminal_commands: since_commit and max_messages_back must not be None")
+    
+    # TODO: AI will replace this with actual command analysis per the prompt above
     return TerminalContext(commands=[])
 
 
+@trace_git_operation("git_context",
+                    performance_thresholds={"duration": 2.0},
+                    error_categories=["git", "filesystem", "memory"])
 def collect_git_context(commit_hash=None, repo=None, journal_path=None) -> GitContext:
     """
     Collect structured git context for a given commit hash (or HEAD if None).
@@ -150,6 +172,8 @@ def collect_git_context(commit_hash=None, repo=None, journal_path=None) -> GitCo
     """
     if repo is None:
         repo = get_repo()
+    
+    # Get commit with error handling
     try:
         if commit_hash is None:
             commit = get_current_commit(repo)
@@ -162,7 +186,8 @@ def collect_git_context(commit_hash=None, repo=None, journal_path=None) -> GitCo
         if isinstance(e, gitlib.BadName):
             raise
         raise
-    # Metadata
+    
+    # Metadata collection
     details = get_commit_details(commit)
     metadata = {
         'hash': details.get('hash'),
@@ -170,49 +195,78 @@ def collect_git_context(commit_hash=None, repo=None, journal_path=None) -> GitCo
         'date': details.get('datetime'),
         'message': details.get('message'),
     }
+    
     # Diff summary
     diff_summary = get_commit_diff_summary(commit)
-    # Changed files
+    
+    # Changed files with smart sampling and performance limits
     parent = commit.parents[0] if commit.parents else None
     # For the initial commit, diff against the empty tree (NULL_TREE)
     diffs = commit.diff(parent) if parent else commit.diff(NULL_TREE)
-    changed_files = []
-    file_stats = {'source': 0, 'config': 0, 'docs': 0, 'tests': 0}
+    
+    all_changed_files = []
+    total_file_count = 0
+    
+    # Collect all files first for analysis
     for diff in diffs:
         fname = diff.b_path or diff.a_path
         if fname:
-            changed_files.append(fname)
+            all_changed_files.append(fname)
+            total_file_count += 1
+    
+    # Apply performance mitigation for large commits
+    if total_file_count > PERFORMANCE_THRESHOLDS["detailed_analysis_file_count_limit"]:
+        # Skip detailed analysis for very large commits
+        changed_files = all_changed_files[:10]  # Take first 10 for summary
+        file_stats = {'source': 0, 'config': 0, 'docs': 0, 'tests': 0, 'large_commit_truncated': True}
+        diff_summary += f"\n[Large commit: {total_file_count} files, analysis truncated for performance]"
+    else:
+        # Apply smart sampling for medium-large commits
+        sampled_files = smart_file_sampling(all_changed_files)
+        changed_files = sampled_files
+        
+        # Calculate file stats on sampled files
+        file_stats = {'source': 0, 'config': 0, 'docs': 0, 'tests': 0}
+        
+        for fname in changed_files:
             ftype = classify_file_type(fname)
             if ftype in file_stats:
                 file_stats[ftype] += 1
             else:
                 file_stats['source'] += 1  # Default bucket
+    
     # --- Recursion prevention: filter out journal files ---
     if journal_path:
         journal_rel = os.path.relpath(journal_path, repo.working_tree_dir)
+        original_count = len(changed_files)
         changed_files = [f for f in changed_files if not f.startswith(journal_rel)]
-        # Regenerate file_stats without journal files
-        file_stats = {'source': 0, 'config': 0, 'docs': 0, 'tests': 0}
-        for f in changed_files:
-            ftype = classify_file_type(f)
-            if ftype in file_stats:
-                file_stats[ftype] += 1
-            else:
-                file_stats['source'] += 1
-        # Regenerate diff_summary without journal files
-        # (Optional: for now, just note in diff_summary if journal files were filtered)
-        diff_summary += "\n[Journal files filtered for recursion prevention]"
-    # Commit size
+        
+        # Regenerate file_stats without journal files if they were filtered
+        if len(changed_files) != original_count:
+            file_stats = {'source': 0, 'config': 0, 'docs': 0, 'tests': 0}
+            for f in changed_files:
+                ftype = classify_file_type(f)
+                if ftype in file_stats:
+                    file_stats[ftype] += 1
+                else:
+                    file_stats['source'] += 1
+            # Note the filtering in diff_summary
+            diff_summary += "\n[Journal files filtered for recursion prevention]"
+    
+    # Commit size classification
     stats = details.get('stats', {})
     insertions = stats.get('insertions', 0)
     deletions = stats.get('deletions', 0)
     size_classification = classify_commit_size(insertions, deletions)
+    
     # Merge status
     is_merge = len(commit.parents) > 1
     commit_context = {
         'size_classification': size_classification,
         'is_merge': is_merge,
     }
+    
+    # Build final result
     return {
         'metadata': metadata,
         'diff_summary': diff_summary,

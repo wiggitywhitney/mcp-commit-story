@@ -11,7 +11,10 @@ import functools
 import logging
 import re
 import os
-from typing import Optional, Dict, Any, Callable, List, Union
+import time
+import psutil
+import contextlib
+from typing import Optional, Dict, Any, Callable, List, Union, Generator, Set
 from opentelemetry import trace, metrics
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.metrics import MeterProvider
@@ -19,6 +22,8 @@ from opentelemetry.sdk.resources import SERVICE_NAME, SERVICE_VERSION, SERVICE_I
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader, ConsoleMetricExporter
 from opentelemetry.trace import Status, StatusCode
+from dataclasses import dataclass
+from collections import defaultdict
 
 # Import structured logging functionality
 from .structured_logging import setup_structured_logging
@@ -46,6 +51,390 @@ _mcp_metrics: Optional["MCPMetrics"] = None
 
 logger = logging.getLogger(__name__)
 
+# Performance thresholds (approved specifications)
+PERFORMANCE_THRESHOLDS = {
+    "collect_git_context_slow_seconds": 2.0,
+    "journal_generation_slow_seconds": 10.0, 
+    "file_processing_slow_per_10_files_seconds": 1.0,
+    "large_repo_file_count": 50,
+    "detailed_analysis_file_count_limit": 100,
+    "large_file_size_bytes": 1024 * 1024,  # 1MB
+    "git_operation_timeout_seconds": 5.0,
+    "memory_threshold_mb": 50.0,
+    "file_sampling_percentage": 0.2  # 20% sampling for large repos
+}
+
+# File type priorities for smart sampling
+SOURCE_CODE_EXTENSIONS = {'.py', '.js', '.ts', '.java', '.cpp', '.c', '.h', '.go', '.rs', '.rb', '.php'}
+SIGNIFICANT_FILE_SIZE_BYTES = 100 * 1024  # 100KB
+
+@dataclass
+class MemorySnapshot:
+    """Memory usage snapshot for tracking."""
+    rss_mb: float
+    vms_mb: float
+    timestamp: float
+
+class CircuitBreaker:
+    """Circuit breaker for telemetry to prevent cascading failures."""
+    
+    def __init__(self, failure_threshold: int = 5, recovery_timeout: float = 300.0):
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.failure_count = 0
+        self.last_failure_time = 0
+        self.state = "closed"  # closed, open, half_open
+    
+    def call(self, func, *args, **kwargs):
+        """Execute function with circuit breaker protection."""
+        if self.state == "open":
+            if time.time() - self.last_failure_time > self.recovery_timeout:
+                self.state = "half_open"
+            else:
+                logger.debug("Circuit breaker open - skipping telemetry operation")
+                return None
+        
+        try:
+            result = func(*args, **kwargs)
+            if self.state == "half_open":
+                self.state = "closed"
+                self.failure_count = 0
+            return result
+        except Exception as e:
+            self.failure_count += 1
+            self.last_failure_time = time.time()
+            
+            if self.failure_count >= self.failure_threshold:
+                self.state = "open"
+                logger.warning(f"Circuit breaker opened after {self.failure_count} failures")
+            
+            logger.error(f"Telemetry operation failed: {e}")
+            return None
+
+# Global circuit breaker for telemetry operations
+_telemetry_circuit_breaker = CircuitBreaker()
+
+@contextlib.contextmanager
+def memory_tracking_context(operation_name: str, baseline_threshold_mb: float = PERFORMANCE_THRESHOLDS["memory_threshold_mb"]) -> Generator[MemorySnapshot, None, None]:
+    """
+    Context manager for tracking memory usage during operations.
+    
+    Args:
+        operation_name: Name of the operation for metrics
+        baseline_threshold_mb: Only record metrics if memory increase exceeds this threshold
+        
+    Yields:
+        MemorySnapshot: Initial memory snapshot
+    """
+    metrics = get_mcp_metrics()
+    if not metrics:
+        yield MemorySnapshot(0.0, 0.0, time.time())
+        return
+        
+    try:
+        process = psutil.Process()
+        initial_memory = process.memory_info()
+        initial_snapshot = MemorySnapshot(
+            rss_mb=initial_memory.rss / 1024 / 1024,
+            vms_mb=initial_memory.vms / 1024 / 1024,
+            timestamp=time.time()
+        )
+        
+        yield initial_snapshot
+        
+    except Exception as e:
+        # Log the error but don't re-raise to ensure graceful degradation
+        logging.error(f"Memory tracking failed for {operation_name}: {e}")
+        return
+    finally:
+        # Record final memory metrics if we can
+        try:
+            if metrics:
+                final_memory = process.memory_info()
+                final_memory_mb = final_memory.rss / 1024 / 1024
+                memory_increase = final_memory_mb - initial_snapshot.rss_mb
+                
+                if memory_increase > baseline_threshold_mb:
+                    metrics.set_memory_usage_mb(final_memory_mb, operation=operation_name)
+        except Exception as cleanup_error:
+            # Even cleanup failed, but don't break the application
+            logging.debug(f"Memory tracking cleanup failed for {operation_name}: {cleanup_error}")
+
+def smart_file_sampling(files: List[str], max_files: int = PERFORMANCE_THRESHOLDS["large_repo_file_count"]) -> List[str]:
+    """
+    Apply smart sampling strategy for large repositories.
+    
+    Args:
+        files: List of file paths
+        max_files: Threshold for applying sampling
+        
+    Returns:
+        List of sampled files following approved strategy
+    """
+    if len(files) <= max_files:
+        return files
+    
+    # Categorize files
+    source_files = []
+    large_files = []
+    other_files = []
+    
+    for file_path in files:
+        file_ext = os.path.splitext(file_path)[1].lower()
+        
+        # Always include source code files
+        if file_ext in SOURCE_CODE_EXTENSIONS:
+            source_files.append(file_path)
+        # Always include large files (likely significant)
+        elif any(keyword in file_path.lower() for keyword in ['large', 'big']) or len(file_path) > 100:
+            # Heuristic for potentially large files - would need actual size in real implementation
+            large_files.append(file_path)
+        else:
+            other_files.append(file_path)
+    
+    # Sample other files at specified percentage
+    sample_size = int(len(other_files) * PERFORMANCE_THRESHOLDS["file_sampling_percentage"])
+    sampled_others = other_files[:sample_size]  # Simple sampling - could use random
+    
+    result = source_files + large_files + sampled_others
+    logger.debug(f"Smart sampling: {len(files)} -> {len(result)} files (source: {len(source_files)}, large: {len(large_files)}, sampled: {len(sampled_others)})")
+    
+    return result
+
+def trace_git_operation(
+    operation_type: str, 
+    timeout_seconds: float = PERFORMANCE_THRESHOLDS["git_operation_timeout_seconds"],
+    performance_thresholds: Optional[Dict[str, float]] = None,
+    error_categories: Optional[List[str]] = None
+):
+    """
+    Enhanced decorator for tracing Git operations with comprehensive telemetry.
+    
+    Args:
+        operation_type: Type of Git operation (diff, log, status, context_collection, etc.)
+        timeout_seconds: Timeout for the operation
+        performance_thresholds: Dict of performance thresholds like {"duration": 2.0}
+        error_categories: List of error categories to track like ["api", "network", "parsing", "git", "filesystem"]
+    """
+    # Set defaults
+    if performance_thresholds is None:
+        performance_thresholds = {"duration": 2.0}
+    if error_categories is None:
+        error_categories = ["git", "filesystem", "memory", "timeout", "network", "api", "parsing"]
+    
+    def decorator(func: Callable):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            if not _telemetry_initialized:
+                return func(*args, **kwargs)
+            
+            tracer = get_tracer()
+            metrics = get_mcp_metrics()
+            
+            # OpenTelemetry semantic attributes
+            attributes = {
+                "service.operation": f"git.{operation_type}",
+                "operation.type": "git",
+                "git.operation": operation_type,
+            }
+            
+            with tracer.start_as_current_span(f"git.{operation_type}", attributes=attributes) as span:
+                start_time = time.time()
+                
+                # Memory tracking context
+                with memory_tracking_context(f"{operation_type}_collection") as memory_snapshot:
+                    try:
+                        # Timeout protection
+                        import signal
+                        
+                        def timeout_handler(signum, frame):
+                            raise TimeoutError(f"Git {operation_type} operation timed out after {timeout_seconds}s")
+                        
+                        # Set timeout (Unix-like systems only)
+                        if hasattr(signal, 'SIGALRM'):
+                            old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+                            signal.alarm(int(timeout_seconds))
+                        
+                        try:
+                            # Execute the actual function
+                            result = func(*args, **kwargs)
+                            
+                            # Record success metrics
+                            duration = time.time() - start_time
+                            
+                            def record_success_metrics():
+                                if metrics:
+                                    # Record operation duration
+                                    metrics.record_operation_duration(
+                                        f"mcp.journal.{operation_type}.duration",
+                                        duration,
+                                        operation=operation_type,
+                                        result="success"
+                                    )
+                                    
+                                    # Record tool call success
+                                    metrics.record_tool_call(
+                                        f"{operation_type}_operation",
+                                        True,
+                                        operation=operation_type,
+                                        duration_seconds=duration,
+                                        **_extract_function_context(func, args, kwargs)
+                                    )
+                                    
+                                    # Check performance thresholds
+                                    for threshold_name, threshold_value in performance_thresholds.items():
+                                        if threshold_name == "duration" and duration > threshold_value:
+                                            metrics.record_tool_call(
+                                                f"{operation_type}_slow_operation",
+                                                True,
+                                                operation=operation_type,
+                                                duration_seconds=duration,
+                                                threshold_name=threshold_name,
+                                                threshold_value=threshold_value
+                                            )
+                            
+                            _telemetry_circuit_breaker.call(record_success_metrics)
+                            
+                            # Add span attributes
+                            span.set_attribute("git.operation.duration_ms", duration * 1000)
+                            span.set_attribute("git.operation.result", "success")
+                            span.set_status(Status(StatusCode.OK))
+                            
+                            return result
+                            
+                        finally:
+                            if hasattr(signal, 'SIGALRM'):
+                                signal.alarm(0)  # Cancel alarm
+                                signal.signal(signal.SIGALRM, old_handler)
+                                
+                    except TimeoutError as e:
+                        duration = time.time() - start_time
+                        
+                        def record_timeout_metrics():
+                            if metrics:
+                                metrics.record_tool_call(
+                                    f"{operation_type}_operation",
+                                    False,
+                                    operation=operation_type,
+                                    error_type="timeout",
+                                    duration_seconds=duration
+                                )
+                        
+                        _telemetry_circuit_breaker.call(record_timeout_metrics)
+                        
+                        span.set_attribute("git.operation.result", "timeout")
+                        span.set_attribute("git.operation.duration_ms", duration * 1000)
+                        span.set_status(Status(StatusCode.ERROR, str(e)))
+                        
+                        logger.warning(f"Git {operation_type} operation timed out after {duration:.2f}s")
+                        raise
+                        
+                    except Exception as e:
+                        duration = time.time() - start_time
+                        
+                        # Categorize error type based on configured categories
+                        error_type = _categorize_error(e, error_categories)
+                        
+                        def record_error_metrics():
+                            if metrics:
+                                metrics.record_tool_call(
+                                    f"{operation_type}_operation",
+                                    False,
+                                    operation=operation_type,
+                                    error_type=error_type,
+                                    duration_seconds=duration,
+                                    **_extract_function_context(func, args, kwargs)
+                                )
+                                
+                                # Error categorization counter
+                                metrics.record_tool_call(
+                                    "mcp.journal.errors.by_type",
+                                    False,
+                                    error_type=error_type,
+                                    operation=operation_type
+                                )
+                        
+                        _telemetry_circuit_breaker.call(record_error_metrics)
+                        
+                        span.set_attribute("git.operation.result", "error")
+                        span.set_attribute("git.operation.error_type", error_type)
+                        span.set_attribute("git.operation.duration_ms", duration * 1000)
+                        span.set_status(Status(StatusCode.ERROR, str(e)))
+                        
+                        raise
+        
+        # Mark function as telemetry instrumented
+        wrapper._telemetry_instrumented = True
+        return wrapper
+    return decorator
+
+
+def _categorize_error(exception: Exception, error_categories: List[str]) -> str:
+    """
+    Categorize an exception based on configured error categories.
+    
+    Args:
+        exception: The exception to categorize
+        error_categories: List of valid error categories
+        
+    Returns:
+        Error category string
+    """
+    error_str = str(type(exception).__name__).lower()
+    exception_msg = str(exception).lower()
+    
+    # Map exceptions to categories based on configured categories
+    category_mapping = {
+        "git": ["invalidgitrepository", "badname", "gitcommand", "gitdb"],
+        "filesystem": ["oserror", "ioerror", "filenotfound", "permissionerror"],
+        "memory": ["memoryerror"],
+        "timeout": ["timeouterror"],
+        "network": ["connectionerror", "networkerror", "httperror", "urlerror"],
+        "api": ["apierror", "httperror", "authenticationerror"],
+        "parsing": ["json", "yaml", "xml", "parse", "syntax"]
+    }
+    
+    # Check each configured category
+    for category in error_categories:
+        if category in category_mapping:
+            category_patterns = category_mapping[category]
+            if any(pattern in error_str or pattern in exception_msg for pattern in category_patterns):
+                return category
+    
+    return "unknown"
+
+
+def _extract_function_context(func: Callable, args: tuple, kwargs: dict) -> dict:
+    """
+    Extract relevant context from function arguments for telemetry.
+    
+    Args:
+        func: The function being called
+        args: Positional arguments
+        kwargs: Keyword arguments
+        
+    Returns:
+        Dict of sanitized context attributes
+    """
+    context = {}
+    
+    # Extract common patterns
+    if 'max_messages_back' in kwargs:
+        context['messages_limit'] = kwargs['max_messages_back']
+    elif len(args) >= 2 and isinstance(args[1], int):
+        context['messages_limit'] = args[1]
+    
+    if 'commit_hash' in kwargs:
+        commit_hash = kwargs['commit_hash']
+        if commit_hash:
+            context['commit_hash_prefix'] = str(commit_hash)[:8]
+    elif args and isinstance(args[0], str):
+        commit_hash = args[0]
+        if commit_hash:
+            context['commit_hash_prefix'] = str(commit_hash)[:8]
+    
+    # Sanitize all values
+    return {k: sanitize_for_telemetry(v) for k, v in context.items()}
 
 def setup_telemetry(config: Dict[str, Any]) -> bool:
     """

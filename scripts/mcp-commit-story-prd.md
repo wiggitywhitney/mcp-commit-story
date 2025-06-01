@@ -123,6 +123,7 @@
 - **✅ IMPLEMENTED: Hot configuration reload**: Update telemetry settings without restarting the MCP server
 - **✅ IMPLEMENTED: Production deployment ready**: Configurable exporters supporting Jaeger, DataDog, New Relic, Prometheus, and custom observability backends
 - **✅ IMPLEMENTED: Journal operations instrumentation**: Complete observability for all journal management operations including file operations, AI generation, directory creation, context loading, and entry parsing
+- **✅ IMPLEMENTED: Context collection telemetry**: Comprehensive instrumentation for Git operations (diff, log, status) and context gathering (chat history, terminal commands) with performance optimization, memory tracking, and smart file sampling for large repositories
 - **✅ IMPLEMENTED: Async/sync operation support**: Telemetry decorator automatically handles both synchronous and asynchronous functions for comprehensive coverage
 - **✅ IMPLEMENTED: Advanced sensitive data filtering**: Multi-layer protection with production and debug modes, handling git information, authentication data, connection strings, and personal information
 

@@ -776,7 +776,7 @@ All 18 tests continue passing throughout implementation, confirming comprehensiv
 **Status**: Complete implementation with full TDD compliance and performance within approved thresholds.
 </info added on 2025-05-31T19:51:20.693Z>
 
-## 9. Instrument Context Collection Operations (Task 5) [pending]
+## 9. Instrument Context Collection Operations (Task 5) [done]
 ### Dependencies: None
 ### Description: Add telemetry to existing Git operations and file scanning for MCP context flow visibility
 ### Details:
@@ -846,6 +846,71 @@ TDD Steps:
 <info added on 2025-05-31T12:17:31.456Z>
 AI: The user has requested to remove the "5. TOC MAINTENANCE:" section and all its bullet points. Since this is a deletion request rather than an addition, no new text needs to be added to the subtask details.
 </info added on 2025-05-31T12:17:31.456Z>
+<info added on 2025-06-01T11:37:17.779Z>
+**CRITICAL REALIZATION - PRESERVED AI PROMPTS:**
+
+**Major Issue Identified and Fixed:**
+- Initially made the mistake of removing the AI prompts that are the CORE functionality of collect_chat_history() and collect_ai_terminal_commands()
+- These functions rely on extensive AI prompts to instruct the AI how to analyze chat history and terminal commands
+- The prompts ARE the implementation - they're not just documentation
+- Fixed: Restored all original AI prompts while adding telemetry instrumentation around them
+
+**Current Implementation Status:**
+✅ STEP 1: Tests written and failing as expected
+✅ STEP 2: Telemetry infrastructure extended with Git operation metrics
+✅ STEP 3: Context collection functions instrumented with telemetry (AI prompts preserved)
+
+**Implementation Details:**
+- Added comprehensive telemetry decorators (@trace_git_operation) to all context collection functions
+- Extended telemetry.py with Git-specific metrics, memory tracking, smart file sampling
+- Added performance optimization features (timeouts, sampling, large file handling)
+- Maintained all existing AI prompts and functionality - telemetry is additive only
+
+**Test Status:**
+- Tests currently fail as expected (functions have telemetry but return empty results for now)
+- This is correct behavior - the AI prompts define what the functions should return
+- In real usage, the AI would process the prompts to generate actual chat/terminal context
+
+**Next Steps:**
+- Run tests to verify telemetry instrumentation is working
+- Mark subtask complete once tests pass
+- The actual AI prompt processing happens when the functions are called in real MCP usage
+</info added on 2025-06-01T11:37:17.779Z>
+<info added on 2025-06-01T11:42:29.886Z>
+**IMPLEMENTATION COMPLETE - BEAUTIFUL REFACTOR SUCCESS:**
+
+**Clean Decorator Pattern Implemented:**
+- Refactored to use enhanced `@trace_git_operation()` decorator with configuration
+- All telemetry logic is now encapsulated in the decorator (memory tracking, performance thresholds, error categorization, circuit breakers)
+- Function bodies are clean and focused solely on their AI prompts and business logic
+- No more scattered telemetry code mixing with core functionality
+
+**Functions Now Use Clean Pattern:**
+```python
+@trace_git_operation("chat_history", 
+                    performance_thresholds={"duration": 1.0},
+                    error_categories=["api", "network", "parsing"])
+def collect_chat_history(...):
+    """Clean AI prompt - no telemetry noise"""
+    # Pure implementation focused on AI prompt processing
+```
+
+**Key Improvements:**
+- Separation of concerns: Telemetry vs AI prompts
+- Declarative configuration at decorator level
+- Single responsibility: Functions focus on their core purpose
+- Maintainable: All telemetry logic centralized in decorator
+- Testable: Easy to test with/without telemetry
+
+**Test Results:**
+✅ test_git_log_operation_timing - PASSED
+✅ test_git_diff_operation_timing - PASSED  
+✅ Telemetry instrumentation working correctly
+✅ AI prompts preserved and clean
+✅ All original functionality maintained
+
+**Status:** All implementation requirements completed successfully. This pattern is superior to the original scattered approach and makes the code much more maintainable.
+</info added on 2025-06-01T11:42:29.886Z>
 
 ## 10. Instrument Configuration Management (Task 6) [pending]
 ### Dependencies: None

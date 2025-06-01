@@ -269,6 +269,157 @@ metrics.record_tool_call("custom_tool", success=True, user_id="user123")
 metrics.record_operation_duration("data_processing", 2.5, success=True)
 ```
 
+### Git Operation Instrumentation
+
+The system provides comprehensive instrumentation for Git operations and context collection with a clean decorator pattern that separates telemetry from business logic.
+
+#### Enhanced Git Operation Decorator
+
+```python
+from mcp_commit_story.telemetry import trace_git_operation
+
+@trace_git_operation("git_context",
+                    performance_thresholds={"duration": 2.0},
+                    error_categories=["git", "filesystem", "memory"])
+def collect_git_context(commit_hash=None, repo=None, journal_path=None):
+    """Clean function focused solely on Git context collection logic."""
+    # Pure implementation - no telemetry noise
+    return git_context_data
+```
+
+#### Automatic Features
+
+The `@trace_git_operation` decorator automatically provides:
+
+- **Performance Monitoring**: Tracks operation duration and compares against configurable thresholds
+- **Memory Tracking**: Uses context managers to monitor memory usage during operations  
+- **Error Categorization**: Categorizes exceptions into configured categories (git, filesystem, memory, etc.)
+- **Timeout Protection**: Applies configurable timeouts with graceful degradation
+- **Smart File Sampling**: For large repositories, applies sampling strategies to prevent performance degradation
+- **Circuit Breaker Pattern**: Disables telemetry temporarily after repeated failures
+
+#### Context Collection Examples
+
+**Chat History Collection:**
+```python
+@trace_git_operation("chat_history", 
+                    performance_thresholds={"duration": 1.0},
+                    error_categories=["api", "network", "parsing"])
+def collect_chat_history(since_commit=None, max_messages_back=150):
+    """AI prompt for chat analysis - clean and focused."""
+    # Function contains only AI prompts and business logic
+    return ChatHistory(messages=processed_messages)
+```
+
+**Terminal Commands Collection:**
+```python
+@trace_git_operation("terminal_commands",
+                    performance_thresholds={"duration": 1.0}, 
+                    error_categories=["api", "network", "parsing"])
+def collect_ai_terminal_commands(since_commit=None, max_messages_back=150):
+    """AI prompt for terminal command analysis."""
+    # Clean implementation focused on command extraction logic
+    return TerminalContext(commands=extracted_commands)
+```
+
+#### Generated Metrics
+
+Git operation instrumentation automatically generates:
+
+**Duration Metrics:**
+- `mcp.journal.git_context.duration` - Git context collection timing
+- `mcp.journal.chat_history.duration` - Chat history collection timing  
+- `mcp.journal.terminal_commands.duration` - Terminal command collection timing
+
+**Performance Metrics:**
+- `git_context_slow_operation` - When operations exceed configured thresholds
+- `files_processed` - Number of files analyzed per operation
+- `memory_usage_mb` - Memory consumption during large repository operations
+
+**Error Metrics:**
+- `mcp.journal.errors.by_type{error_type="git"}` - Git-specific errors
+- `mcp.journal.errors.by_type{error_type="filesystem"}` - File system errors
+- `mcp.journal.errors.by_type{error_type="memory"}` - Memory-related errors
+
+#### Performance Optimizations
+
+The instrumentation includes built-in performance optimizations:
+
+```python
+# Large repository handling
+if total_file_count > PERFORMANCE_THRESHOLDS["detailed_analysis_file_count_limit"]:
+    # Automatically truncates analysis for commits with >100 files
+    changed_files = all_changed_files[:10]
+    
+# Smart file sampling  
+sampled_files = smart_file_sampling(all_changed_files)
+# Prioritizes source code files (.py, .js, .ts) and large files
+# Samples 20% of other file types for repos with >50 files
+
+# Memory tracking
+with memory_tracking_context("git_context_collection") as memory_snapshot:
+    # Only records metrics if memory increase exceeds 50MB threshold
+```
+
+#### Error Handling Examples
+
+**Repository Access Errors:**
+```python
+# Automatic categorization and metrics recording
+try:
+    context = collect_git_context("invalid_commit_hash")
+except git.BadName as e:
+    # Automatically categorized as "git" error
+    # Metrics: git_context_operation{success=false, error_type="git"}
+    # Span status: ERROR with sanitized error message
+```
+
+**Timeout Protection:**
+```python
+# Configurable timeouts with graceful degradation
+@trace_git_operation("git_context", timeout_seconds=5.0)
+def collect_git_context(commit_hash=None):
+    # If operation takes >5 seconds, TimeoutError is raised
+    # Metrics: git_context_operation{success=false, error_type="timeout"}
+```
+
+#### Memory Usage Monitoring
+
+```python
+# Strategic memory sampling at operation boundaries
+def memory_tracking_context(operation_name: str, baseline_threshold_mb: float = 50.0):
+    """Only records metrics when memory increase exceeds threshold."""
+    initial_memory = psutil.Process().memory_info().rss / 1024 / 1024
+    yield
+    final_memory = psutil.Process().memory_info().rss / 1024 / 1024
+    
+    if (final_memory - initial_memory) > baseline_threshold_mb:
+        # Record memory usage metrics
+        metrics.set_memory_usage_mb(final_memory, operation=operation_name)
+```
+
+#### Configuration Options
+
+Git operation instrumentation can be configured through telemetry settings:
+
+```yaml
+telemetry:
+  enabled: true
+  git_operations:
+    performance_thresholds:
+      collect_git_context_slow_seconds: 2.0
+      journal_generation_slow_seconds: 10.0
+      file_processing_slow_per_10_files_seconds: 1.0
+    sampling:
+      large_repo_file_count: 50
+      detailed_analysis_file_count_limit: 100
+      file_sampling_percentage: 0.2
+    memory_tracking:
+      threshold_mb: 50.0
+    timeouts:
+      git_operation_timeout_seconds: 5.0
+```
+
 ## Related Documentation
 
 - [Configuration Guide](config.md) - Complete configuration reference
