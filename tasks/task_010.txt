@@ -16,229 +16,7 @@ Key implementation requirements:
 5. Ensure all file operations use the ensure_journal_directory utility before writing
 6. Maintain MCP-first architecture with no CLI commands for operational functions
 
-Detailed implementation plans from .cursor/subtask-planning/task_10_manual_reflections_plan.txt:
-
-```
-# Manual Reflection Addition Implementation Plan
-
-This document outlines the detailed implementation plan for adding manual reflections to journal entries through the MCP server and AI agent.
-
-## Core Architecture Principles
-
-1. Follow on-demand directory creation pattern (create directories only when needed)
-2. Maintain MCP-first architecture (no CLI commands for operational functions)
-3. Ensure all file operations use the ensure_journal_directory utility before writing
-4. Implement comprehensive testing following TDD methodology
-
-## Implementation Details by Subtask
-
-### Subtask 10.1: Research & Design Decision
-
-#### WRITE TESTS FIRST
-- Create test file: `tests/test_reflection_design_decision.py`
-- Test cases:
-  - Test UX flow for MCP prompt approach
-  - Test UX flow for MCP tool approach
-  - Test AI agent integration for both approaches
-
-#### GET APPROVAL FOR DESIGN CHOICES
-- Document pros/cons of MCP prompt vs. tool approaches
-- Create UX flow diagrams for both approaches
-- Get approval on selected approach from team lead
-
-#### IMPLEMENT FUNCTIONALITY
-- Document decision matrix with following criteria:
-  - User experience simplicity
-  - Technical implementation complexity
-  - AI agent integration ease
-  - Future extensibility
-- Create prototype of selected approach
-
-#### DOCUMENT AND COMPLETE
-- Update design documentation with decision rationale
-- Document UX flow in user documentation
-- Add technical implementation notes to developer documentation
-
-### Subtask 10.2: Core Reflection Implementation
-
-#### WRITE TESTS FIRST
-- Create test file: `tests/test_reflection_core.py`
-- Test cases:
-  - Test ensure_journal_directory utility
-  - Test format_reflection function with various inputs
-  - Test add_reflection_to_journal with new and existing files
-  - Test on-demand directory creation compliance
-
-#### GET APPROVAL FOR DESIGN CHOICES
-- Get approval for reflection format structure
-- Confirm timestamp format standard
-- Verify file appending approach
-
-#### IMPLEMENT FUNCTIONALITY
-- Implement ensure_journal_directory utility:
-  ```python
-  def ensure_journal_directory(file_path):
-      """Ensure the directory for the journal file exists."""
-      directory = os.path.dirname(file_path)
-      if directory and not os.path.exists(directory):
-          os.makedirs(directory)
-  ```
-
-- Implement format_reflection function:
-  ```python
-  def format_reflection(reflection_text):
-      """Format a reflection with timestamp and proper structure."""
-      timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-      return f"\n\n## Reflection ({timestamp})\n\n{reflection_text}"
-  ```
-
-- Implement add_reflection_to_journal function:
-  ```python
-  def add_reflection_to_journal(journal_path, reflection_text):
-      """Add a reflection to a journal entry file."""
-      ensure_journal_directory(journal_path)
-      formatted_reflection = format_reflection(reflection_text)
-      
-      with open(journal_path, 'a', encoding='utf-8') as f:
-          f.write(formatted_reflection)
-      
-      return True
-  ```
-
-#### DOCUMENT AND COMPLETE
-- Add docstrings to all functions
-- Update developer documentation with function usage examples
-- Create user documentation for reflection format
-
-### Subtask 10.3: MCP Handler Implementation
-
-#### WRITE TESTS FIRST
-- Create test file: `tests/test_reflection_mcp_handler.py`
-- Test cases:
-  - Test MCP handler with valid inputs
-  - Test MCP handler with invalid inputs
-  - Test error handling scenarios
-  - Test telemetry integration
-
-#### GET APPROVAL FOR DESIGN CHOICES
-- Confirm MCP handler interface design
-- Verify error handling approach
-- Approve telemetry integration points
-
-#### IMPLEMENT FUNCTIONALITY
-- Implement MCP handler based on research decision:
-  ```python
-  @mcp_server.handler("add_reflection")
-  async def handle_add_reflection(request):
-      """Handle adding a reflection to a journal entry."""
-      try:
-          journal_path = request.get("journal_path")
-          reflection_text = request.get("reflection_text")
-          
-          if not journal_path or not reflection_text:
-              return {"success": False, "error": "Missing required parameters"}
-          
-          result = add_reflection_to_journal(journal_path, reflection_text)
-          
-          # Log telemetry
-          telemetry.log_event("reflection_added", {"journal_path": journal_path})
-          
-          return {"success": result}
-      except Exception as e:
-          telemetry.log_error("reflection_error", str(e))
-          return {"success": False, "error": str(e)}
-  ```
-
-#### DOCUMENT AND COMPLETE
-- Document MCP handler in API documentation
-- Add examples to developer documentation
-- Update user documentation with reflection capabilities
-
-### Subtask 10.4: Comprehensive Testing & Integration
-
-#### WRITE TESTS FIRST
-- Create test file: `tests/test_reflection_integration.py`
-- Test cases:
-  - End-to-end MCP server tests
-  - AI agent integration tests
-  - On-demand directory creation compliance tests
-  - Edge case handling tests
-
-#### GET APPROVAL FOR DESIGN CHOICES
-- Verify test coverage approach
-- Confirm integration test methodology
-- Approve AI agent test scenarios
-
-#### IMPLEMENT FUNCTIONALITY
-- Implement end-to-end tests for MCP server
-- Create AI agent integration tests
-- Implement directory creation compliance tests
-- Add edge case tests for error handling
-
-#### DOCUMENT AND COMPLETE
-- Document test coverage in test documentation
-- Add test examples to developer documentation
-- Update CI/CD pipeline with new tests
-
-### Subtask 10.5: CLI Verification & Limitations
-
-#### WRITE TESTS FIRST
-- Create test file: `tests/test_reflection_cli_limitations.py`
-- Test cases:
-  - Verify CLI has no operational reflection commands
-  - Test CLI setup commands still function properly
-  - Verify MCP-first architecture compliance
-
-#### GET APPROVAL FOR DESIGN CHOICES
-- Confirm CLI limitation approach
-- Verify CLI documentation updates
-- Approve MCP-first architecture verification methodology
-
-#### IMPLEMENT FUNCTIONALITY
-- Verify CLI command structure excludes reflection operations
-- Ensure CLI is limited to setup commands only
-- Implement tests to verify MCP-first architecture compliance
-
-#### DOCUMENT AND COMPLETE
-- Update CLI documentation to clarify limitations
-- Document MCP-first architecture in developer guidelines
-- Add user documentation for reflection operations via MCP
-
-### Subtask 10.6: Documentation Updates & Code Review
-
-#### WRITE TESTS FIRST
-- Create test file: `tests/test_reflection_documentation.py`
-- Test cases:
-  - Verify documentation examples work as expected
-  - Test code snippets in documentation
-  - Verify on-demand directory pattern compliance
-
-#### GET APPROVAL FOR DESIGN CHOICES
-- Get approval for documentation structure
-- Verify code review checklist
-- Confirm documentation coverage
-
-#### IMPLEMENT FUNCTIONALITY
-- Update all relevant documentation:
-  - User documentation for reflections
-  - Developer documentation for implementation details
-  - API documentation for MCP handlers
-- Perform comprehensive code review for pattern compliance
-
-#### DOCUMENT AND COMPLETE
-- Finalize all documentation updates
-- Complete code review checklist
-- Verify three-place documentation rule compliance (user docs, developer docs, code comments)
-```
-
-## Acceptance Criteria
-- Research phase completed with clear decisions on implementation approach
-- All file-writing functions must call ensure_journal_directory(file_path) before writing
-- No code should create directories upfront
-- Implementation must follow the on-demand directory creation pattern as documented in docs/on-demand-directory-pattern.md
-- Reflection addition is available as an MCP operation only, not a CLI command
-- Manual reflection addition is handled exclusively by the MCP server and AI agent
-- CLI functionality is limited to setup commands (journal-init, install-hook) as per updated documentation
+Refer to individual subtasks for detailed implementation plans.
 
 # Test Strategy:
 Implement comprehensive testing following TDD methodology:
@@ -253,7 +31,7 @@ Implement comprehensive testing following TDD methodology:
 All tests should verify compliance with the on-demand directory creation pattern and MCP-first architecture principles as documented in project guidelines.
 
 # Subtasks:
-## 1. Research & Design Decision [pending]
+## 1. Research & Design Decision [done]
 ### Dependencies: None
 ### Description: Research and decide between MCP prompt vs tool approaches for manual reflection addition, documenting UX analysis, technical complexity, and AI agent integration considerations
 ### Details:
@@ -310,6 +88,57 @@ All tests should verify compliance with the on-demand directory creation pattern
 - Document tool usage in user documentation
 - Add technical implementation notes to developer documentation
 </info added on 2025-06-02T19:55:28.752Z>
+<info added on 2025-06-02T20:00:30.933Z>
+#### WRITE TESTS FIRST
+- Create test file: `tests/test_reflection_tool.py`
+- Test cases:
+  - Test MCP tool interface for add_reflection
+  - Test parameter validation and error handling
+  - Test AI agent integration with tool approach
+
+#### IMPLEMENT FUNCTIONALITY
+- Document tool approach decision rationale:
+  - Capture key reasons for selecting tool approach
+  - Note any constraints or requirements that drove this decision
+- Design the MCP tool interface for add_reflection:
+  - Define tool name and description
+  - Outline parameter structure
+  - Document expected responses
+- Define tool parameters and expected behavior:
+  - Required vs optional parameters
+  - Parameter validation rules
+  - Error handling approach
+- Create tool specification for the MCP server:
+  - JSON schema definition
+  - Integration points with existing MCP architecture
+  - Authentication and permission requirements
+
+#### DOCUMENT AND COMPLETE
+- Update design documentation with tool approach rationale
+- Document tool usage in user documentation
+- Add technical implementation notes to developer documentation
+</info added on 2025-06-02T20:00:30.933Z>
+<info added on 2025-06-02T20:00:41.994Z>
+#### Tool Interface Design & Specification
+
+Design and document the MCP tool interface for add_reflection, including parameter specification and integration points.
+
+- Define tool name, description and purpose
+- Specify required and optional parameters:
+  - Reflection content
+  - Associated task ID
+  - Reflection type/category
+  - Timestamp handling
+- Document parameter validation rules and constraints
+- Define error handling and edge cases
+- Create JSON schema for the tool specification
+- Document integration points with existing MCP architecture:
+  - Authentication requirements
+  - Permission model
+  - API endpoints
+- Specify expected response format and status codes
+- Create interface documentation for AI agent consumption
+</info added on 2025-06-02T20:00:41.994Z>
 
 ## 2. Core Reflection Implementation [pending]
 ### Dependencies: None

@@ -67,6 +67,7 @@
 - **Weekly summaries**: Patterns, progress themes, key achievements  
 - **Monthly summaries**: Major milestones, growth areas, significant learnings
 - **Yearly summaries**: Career development, skill evolution, major projects
+- **Manual reflections**: Support for adding manual reflections to journal entries that are prioritized in summaries for enhanced context and developer insights
 
 #### **Content Quality Standards**
 - **No hallucination**: All content must be grounded in actual data (commits, chat, commands)
