@@ -140,7 +140,7 @@ Design and document the MCP tool interface for add_reflection, including paramet
 - Create interface documentation for AI agent consumption
 </info added on 2025-06-02T20:00:41.994Z>
 
-## 2. Core Reflection Implementation [pending]
+## 2. Core Reflection Implementation [done]
 ### Dependencies: None
 ### Description: Implement core reflection functionality including ensure_journal_directory utility, format_reflection function, and add_reflection_to_journal with on-demand directory creation
 ### Details:
@@ -192,6 +192,40 @@ Design and document the MCP tool interface for add_reflection, including paramet
 - Add docstrings to all functions
 - Update developer documentation with function usage examples
 - Create user documentation for reflection format
+<info added on 2025-06-02T21:44:19.720Z>
+#### IMPLEMENTATION STATUS
+- ✅ **IMPLEMENTATION COMPLETE**
+- Successfully implemented all core reflection functionality following TDD methodology
+
+#### TESTS WRITTEN AND PASSING
+- Created comprehensive test suite in `tests/test_reflection_core.py` with 13 tests
+- Full coverage of directory creation, reflection formatting, file operations, unicode handling, and error scenarios
+- All tests initially failed (as expected in TDD)
+- 13/13 tests now passing including comprehensive integration tests
+- Edge cases covered: unicode support, existing files, error handling
+
+#### DESIGN CHOICES CONFIRMED
+- Reflection format: `## Reflection (YYYY-MM-DD HH:MM:SS)` with double newlines
+- Timestamp format: ISO 8601 compatible `%Y-%m-%d %H:%M:%S`
+- File operations: UTF-8 encoding with `\n\n` section separators (following existing codebase patterns)
+- Leveraging existing `ensure_journal_directory` utility from journal.py
+
+#### IMPLEMENTATION DETAILS
+- Created `src/mcp_commit_story/reflection_core.py` with two core functions:
+  - `format_reflection()`: Handles timestamp and H2 header formatting
+  - `add_reflection_to_journal()`: File operations with proper directory creation and UTF-8 encoding
+- Used existing `ensure_journal_directory` from journal.py for on-demand directory creation
+- Proper error handling with meaningful exceptions
+
+#### DOCUMENTATION COMPLETED
+- Comprehensive module docstring explaining purpose and patterns
+- Detailed function docstrings with args, returns, raises, and format examples
+- Integration with existing codebase patterns documented
+
+#### NEXT STEPS
+- Ready for MCP Handler Implementation (10.3)
+- The core reflection functionality is complete and tested, providing the foundation for MCP server integration in the next subtask
+</info added on 2025-06-02T21:44:19.720Z>
 
 ## 3. MCP Handler Implementation [pending]
 ### Dependencies: 10.1, 10.2
