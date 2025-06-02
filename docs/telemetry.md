@@ -200,13 +200,290 @@ telemetry:
       enabled: false  # Disable console output
     otlp:
       enabled: true
-      endpoint: 'https://your-otlp-collector:4317'
+      endpoint: 'https://api.datadog.com:443'
       headers:
-        authorization: 'Bearer your-token'
+        DD-API-KEY: '${DD_API_KEY}'
   auto_instrumentation:
     enabled: true
     preset: 'minimal'  # Reduced overhead
 ```
+
+## Integration Test Telemetry Validation
+
+The MCP Commit Story project includes a comprehensive integration test framework specifically designed to validate telemetry functionality across the complete MCP tool execution pipeline. This ensures that observability works correctly in production scenarios.
+
+### Test Framework Architecture
+
+The integration test framework provides:
+
+- **Isolated Telemetry Collection**: Custom `TelemetryCollector` captures spans and metrics without external dependencies
+- **Custom Assertion Helpers**: Production-ready validation API for trace and metric validation
+- **AI-Specific Testing**: Validates context size correlation and AI generation pipeline telemetry
+- **Performance Impact Validation**: Ensures telemetry overhead remains within acceptable bounds
+- **Circuit Breaker Testing**: Validates graceful degradation when telemetry systems fail
+
+### Core Test Infrastructure
+
+#### TelemetryCollector
+
+The `TelemetryCollector` provides isolated, controllable telemetry collection:
+
+```python
+from tests.integration.test_telemetry_validation_integration import TelemetryCollector
+
+# Create isolated collector for testing
+collector = TelemetryCollector()
+
+# Test spans are automatically captured
+with tracer.start_as_current_span("test_operation") as span:
+    span.set_attribute("test.operation", "example")
+    # ... perform operations
+
+# Validate captured spans
+spans = collector.get_spans_by_name("test_operation")
+assert len(spans) == 1
+assert spans[0].attributes["test.operation"] == "example"
+```
+
+#### Custom Assertion Helpers
+
+The framework provides production-ready assertion helpers:
+
+```python
+from tests.integration.test_telemetry_validation_integration import (
+    assert_operation_traced,
+    assert_trace_continuity,
+    assert_ai_context_tracked,
+    assert_performance_within_bounds
+)
+
+# Validate operation was properly traced
+assert_operation_traced(collector, "journal.generate_summary", {
+    "section_type": "summary",
+    "journal.context_size": 1024
+})
+
+# Validate trace continuity across operations
+assert_trace_continuity(collector, "parent_operation", ["child_operation_1", "child_operation_2"])
+
+# Validate AI-specific context tracking
+assert_ai_context_tracked(collector, "journal.generate_summary",
+                         expected_context_size=1024,
+                         expected_generation_type="summary")
+
+# Validate performance is within bounds
+assert_performance_within_bounds(collector, "journal.generate_summary", max_duration_ms=2000)
+```
+
+### Test Categories
+
+#### 1. MCP Tool Chain Integration Tests
+
+These tests validate telemetry across complete MCP tool execution chains:
+
+```python
+def test_journal_new_entry_generates_expected_spans(patch_telemetry_for_testing):
+    """Test that journal new-entry generates expected telemetry spans."""
+    collector = patch_telemetry_for_testing
+    
+    # Execute MCP tool chain
+    result = await handle_journal_new_entry(test_request)
+    
+    # Validate telemetry was captured
+    assert_operation_traced(collector, "journal.new_entry")
+    assert_trace_continuity(collector, "journal.new_entry", [
+        "git.context_collection",
+        "ai.journal_generation",
+        "file.journal_write"
+    ])
+```
+
+#### 2. AI-Specific Performance Tests
+
+These tests validate AI generation pipeline telemetry and context correlation:
+
+```python
+def test_context_size_impact_tracking(patch_telemetry_for_testing):
+    """Test context size performance correlation tracking."""
+    collector = patch_telemetry_for_testing
+    
+    # Test with different context sizes
+    for size in [10, 100, 1000]:
+        context = create_test_context(size=size)
+        generate_summary_section(context)
+    
+    # Validate performance correlation
+    spans = collector.get_spans_by_name("journal.generate_summary")
+    spans_by_size = sorted(spans, key=lambda s: s.attributes["journal.context_size"])
+    
+    # Verify duration increases with context size
+    for i in range(1, len(spans_by_size)):
+        assert spans_by_size[i].duration_ms >= spans_by_size[i-1].duration_ms
+```
+
+#### 3. Circuit Breaker Integration Tests
+
+These tests validate graceful degradation when telemetry fails:
+
+```python
+def test_telemetry_circuit_breaker_integration(patch_telemetry_for_testing):
+    """Test circuit breaker behavior during telemetry failures."""
+    collector = patch_telemetry_for_testing
+    
+    # Simulate telemetry failures
+    with patch.object(collector, 'record_metric', side_effect=Exception("Telemetry failure")):
+        # Critical operations should continue despite telemetry failures
+        results = []
+        for i in range(10):
+            result = critical_mcp_operation()
+            results.append(result)
+    
+    # Verify operations completed successfully
+    assert len(results) == 10
+    assert all(r == "operation_completed" for r in results)
+```
+
+#### 4. Performance Impact Validation
+
+These tests ensure telemetry overhead remains minimal:
+
+```python
+def test_telemetry_overhead_measurement(patch_telemetry_for_testing):
+    """Test that telemetry adds minimal overhead to operations."""
+    
+    # Measure baseline performance
+    baseline_times = measure_operation_times(baseline_operation, iterations=10)
+    
+    # Measure instrumented performance  
+    instrumented_times = measure_operation_times(instrumented_operation, iterations=10)
+    
+    # Calculate and validate overhead
+    overhead_percentage = calculate_overhead(baseline_times, instrumented_times)
+    assert overhead_percentage < 50, f"Telemetry overhead too high: {overhead_percentage:.1f}%"
+```
+
+### Running Integration Tests
+
+Execute the telemetry validation tests:
+
+```bash
+# Run all telemetry integration tests
+python -m pytest tests/integration/test_telemetry_validation_integration.py -v
+
+# Run specific test categories
+python -m pytest tests/integration/test_telemetry_validation_integration.py::TestAIGenerationTelemetry -v
+python -m pytest tests/integration/test_telemetry_validation_integration.py::TestPerformanceImpactValidation -v
+
+# Run with detailed output
+python -m pytest tests/integration/test_telemetry_validation_integration.py -v -s
+```
+
+### Best Practices for Telemetry Testing
+
+#### 1. Use Isolated Telemetry Environment
+
+Use the `isolated_telemetry_environment` fixture for clean, fast test isolation:
+
+```python
+def test_operation_telemetry(isolated_telemetry_environment):
+    """Test telemetry with isolated environment - no manual flush needed."""
+    collector = isolated_telemetry_environment
+    
+    # Get tracer from isolated environment
+    tracer = collector.get_tracer("test_tracer")
+    
+    with tracer.start_as_current_span("test_operation") as span:
+        span.set_attribute("test.key", "test_value")
+        # Perform operation
+    
+    # Spans are processed immediately - no delays needed!
+    spans = collector.get_spans_by_name("test_operation")
+    assert len(spans) == 1
+```
+
+#### 2. Validate Trace Relationships
+
+Test parent-child span relationships to ensure proper trace continuity:
+
+```python
+# Validate trace continuity
+assert_trace_continuity(collector, "parent_operation", ["child_operation"])
+
+# Verify span attributes
+parent_spans = collector.get_spans_by_name("parent_operation")
+child_spans = collector.get_child_spans(parent_spans[0].span_id)
+assert len(child_spans) > 0
+```
+
+#### 3. Test Error Scenarios
+
+Validate that error scenarios are properly captured:
+
+```python
+# Test error telemetry
+with pytest.raises(Exception):
+    problematic_operation()
+
+assert_error_telemetry(collector, "problematic_operation",
+                      expected_error_type="ValidationError",
+                      expected_error_category="input_validation")
+```
+
+#### 4. Performance Correlation Testing
+
+Test that telemetry captures performance correlations:
+
+```python
+# Test with varying loads
+for load_factor in [1, 5, 10]:
+    operation_with_load(load_factor)
+
+# Validate duration correlation
+spans = collector.get_spans_by_name("load_test_operation")
+assert spans[2].duration_ms > spans[1].duration_ms > spans[0].duration_ms
+```
+
+### Integration with CI/CD
+
+The telemetry integration tests are designed to run in CI/CD pipelines:
+
+```yaml
+# .github/workflows/test.yml
+- name: Run Telemetry Integration Tests
+  run: |
+    python -m pytest tests/integration/test_telemetry_validation_integration.py \
+      --junitxml=reports/telemetry-integration-tests.xml \
+      --cov=src/mcp_commit_story/telemetry \
+      --cov-report=xml:reports/telemetry-coverage.xml
+```
+
+### Troubleshooting Integration Tests
+
+#### Common Issues
+
+**Spans Not Captured**
+```python
+# With isolated telemetry, check collector directly
+print(f"Captured {len(collector.spans)} spans:")
+for span in collector.spans:
+    print(f"  {span.span_name}: {span.attributes}")
+
+# Ensure you're using the isolated tracer
+tracer = collector.get_tracer("test_tracer")  # Use collector's tracer
+# NOT: tracer = trace.get_tracer("test_tracer")  # Global tracer won't work
+```
+
+**Test Performance Issues**
+- Use `isolated_telemetry_environment` fixture for fast, synchronous processing
+- Minimize `time.sleep()` calls in tests - spans process immediately
+- Use small test data sizes for performance correlation tests
+
+**Test Isolation Problems**
+- Each test gets a completely isolated telemetry environment
+- No global state conflicts between tests
+- Reset is automatic with the fixture
+
+The integration test framework ensures that telemetry functionality works correctly across the entire MCP tool execution pipeline, providing confidence that observability will function properly in production environments.
 
 ## Architecture
 
@@ -708,7 +985,6 @@ markdown = entry.to_markdown()
 - `journal.context_size`: Size of context provided to AI generation
 - `journal.content_length`: Length of content being processed
 - `journal.output_length`: Length of generated output
-- `journal.sections_parsed`: Number of sections successfully parsed
 
 #### Privacy-Conscious Attributes
 - `file.name`: Filename only (not full path) for privacy

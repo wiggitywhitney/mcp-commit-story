@@ -916,7 +916,7 @@ def trace_mcp_operation(operation_name: str, attributes: Optional[Dict[str, Any]
                         span.set_attribute("error.type", sanitize_for_telemetry(type(e).__name__))
                         span.set_attribute("error.message", sanitize_for_telemetry(str(e)))
                         raise
-                return wrapper
+            return wrapper
     return decorator
 
 

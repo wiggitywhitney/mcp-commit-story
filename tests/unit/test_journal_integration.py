@@ -49,8 +49,8 @@ def test_journal_entry_full_round_trip():
     assert parsed.terminal_commands == entry.terminal_commands
     assert parsed.commit_metadata == entry.commit_metadata
 
-@pytest.mark.xfail(reason="Integration pipeline not fully implemented yet")
 def test_journal_entry_partial_context():
+    """Test integration pipeline with partial context - functions return empty data structures gracefully."""
     # Partial context: only summary and technical_synopsis
     ctx = JournalContext(
         summary="Partial entry.",
@@ -88,8 +88,8 @@ def test_journal_entry_partial_context():
     assert parsed.terminal_commands == []
     assert parsed.commit_metadata == {}
 
-@pytest.mark.xfail(reason="Integration pipeline not fully implemented yet")
 def test_journal_entry_empty_context():
+    """Test integration pipeline with empty context - functions return empty data structures gracefully."""
     # Empty context: all fields missing
     ctx = JournalContext()
     summary = journal.generate_summary_section(ctx)
