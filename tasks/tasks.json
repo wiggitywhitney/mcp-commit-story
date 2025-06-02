@@ -50,116 +50,74 @@
       "status": "pending",
       "dependencies": [],
       "priority": "high",
-      "details": "Before implementation, conduct research to determine whether manual reflections would be better implemented as an MCP prompt, an MCP tool, or both.\n\nResearch considerations:\n1. UX/ease of use differences between prompts vs tools for manual reflection addition\n2. Technical implementation complexity for each approach\n3. Whether both options should be available or just one\n4. Integration with AI agents and workflow patterns\n5. Alignment with MCP-first architecture principles\n\nAfter research is complete and decisions are made, implement manual reflection addition in the MCP server with the following features:\n\n1. Reflection formatting:\n```python\ndef format_reflection(text):\n    \"\"\"Format a manual reflection with timestamp\"\"\"\n    timestamp = datetime.now().strftime(\"%I:%M %p\")\n    return f\"## {timestamp} \u2014 Manual Reflection\\n\\n{text}\\n\"\n```\n\n2. File appending (using ensure_journal_directory utility):\n```python\ndef add_reflection_to_journal(text, config):\n    \"\"\"Add a reflection to today's journal\"\"\"\n    date = datetime.now().strftime(\"%Y-%m-%d\")\n    journal_path = Path(config[\"journal\"][\"path\"])\n    \n    file_path = journal_path / \"daily\" / f\"{date}.md\"\n    \n    # Use ensure_journal_directory utility to create directories if needed\n    ensure_journal_directory(file_path)\n    \n    # Create file if needed\n    if not file_path.exists():\n        with open(file_path, \"w\") as f:\n            f.write(f\"# Journal for {date}\\n\")\n    \n    # Format and append reflection\n    reflection = format_reflection(text)\n    with open(file_path, \"a\") as f:\n        f.write(\"\\n\\n\" + reflection)\n    \n    return file_path\n```\n\n3. MCP handler implementation:\n```python\n@trace_operation(\"journal_add_reflection\")\nasync def handle_add_reflection(request):\n    \"\"\"Handle journal/add-reflection operation\"\"\"\n    text = request.get(\"text\")\n    if not text:\n        return {\"status\": \"error\", \"error\": \"No reflection text provided\"}\n    \n    # Load config\n    config = load_config()\n    \n    # Add reflection\n    file_path = add_reflection_to_journal(text, config)\n    \n    return {\n        \"status\": \"success\",\n        \"file_path\": str(file_path),\n        \"reflection\": text\n    }\n```\n\n4. Ensure journal directory utility:\n```python\ndef ensure_journal_directory(file_path):\n    \"\"\"Ensure directories exist for the given file path, creating them on-demand if needed\"\"\"\n    directory = file_path.parent\n    directory.mkdir(parents=True, exist_ok=True)\n    return directory\n```\n\n## Acceptance Criteria\n- Research phase completed with clear decisions on implementation approach\n- All file-writing functions (including add_reflection_to_journal) must call ensure_journal_directory(file_path) before writing\n- No code should create directories upfront\n- Implementation must follow the on-demand directory creation pattern as documented in docs/on-demand-directory-pattern.md\n- Reflection addition is available as an MCP operation only, not a CLI command\n- Manual reflection addition is handled exclusively by the MCP server and AI agent\n- CLI functionality is limited to setup commands (journal-init, install-hook) as per updated documentation",
-      "testStrategy": "1. Unit tests for reflection formatting\n2. Tests for file appending\n3. Tests for MCP handler implementation\n4. Tests for creating new journal file if needed\n5. Tests for appending to existing journal file\n6. Integration tests for full reflection addition flow\n7. Tests for ensure_journal_directory utility\n8. Tests for on-demand directory creation when directories don't exist\n9. Tests to verify proper directory structure is created\n10. Tests to verify compliance with on-demand directory creation pattern\n11. Tests to ensure no directories are created until file operations are performed\n12. Tests to verify ensure_journal_directory is called before any file writing operations\n13. Tests following patterns documented in docs/on-demand-directory-pattern.md\n14. Tests to verify reflection addition is properly exposed as an MCP operation\n15. Tests to verify AI agent can successfully add reflections via the MCP operation\n16. Tests to verify no CLI commands exist for operational functions like adding reflections\n17. Tests to verify CLI is limited to setup commands (journal-init, install-hook) as specified\n18. Tests for the chosen implementation approach (prompt vs. tool) based on research findings",
+      "details": "Implement manual reflection addition in the MCP server following TDD methodology and on-demand directory creation patterns. The implementation should prioritize MCP-first architecture principles.\n\nKey implementation requirements:\n\n1. Research and decide on the optimal approach (MCP prompt vs. tool) for manual reflection addition\n2. Implement core reflection functionality with proper timestamp formatting and file appending\n3. Create MCP handler for reflection operations with appropriate error handling\n4. Follow on-demand directory creation pattern (create directories only when needed)\n5. Ensure all file operations use the ensure_journal_directory utility before writing\n6. Maintain MCP-first architecture with no CLI commands for operational functions\n\nDetailed implementation plans from .cursor/subtask-planning/task_10_manual_reflections_plan.txt:\n\n```\n# Manual Reflection Addition Implementation Plan\n\nThis document outlines the detailed implementation plan for adding manual reflections to journal entries through the MCP server and AI agent.\n\n## Core Architecture Principles\n\n1. Follow on-demand directory creation pattern (create directories only when needed)\n2. Maintain MCP-first architecture (no CLI commands for operational functions)\n3. Ensure all file operations use the ensure_journal_directory utility before writing\n4. Implement comprehensive testing following TDD methodology\n\n## Implementation Details by Subtask\n\n### Subtask 10.1: Research & Design Decision\n\n#### WRITE TESTS FIRST\n- Create test file: `tests/test_reflection_design_decision.py`\n- Test cases:\n  - Test UX flow for MCP prompt approach\n  - Test UX flow for MCP tool approach\n  - Test AI agent integration for both approaches\n\n#### GET APPROVAL FOR DESIGN CHOICES\n- Document pros/cons of MCP prompt vs. tool approaches\n- Create UX flow diagrams for both approaches\n- Get approval on selected approach from team lead\n\n#### IMPLEMENT FUNCTIONALITY\n- Document decision matrix with following criteria:\n  - User experience simplicity\n  - Technical implementation complexity\n  - AI agent integration ease\n  - Future extensibility\n- Create prototype of selected approach\n\n#### DOCUMENT AND COMPLETE\n- Update design documentation with decision rationale\n- Document UX flow in user documentation\n- Add technical implementation notes to developer documentation\n\n### Subtask 10.2: Core Reflection Implementation\n\n#### WRITE TESTS FIRST\n- Create test file: `tests/test_reflection_core.py`\n- Test cases:\n  - Test ensure_journal_directory utility\n  - Test format_reflection function with various inputs\n  - Test add_reflection_to_journal with new and existing files\n  - Test on-demand directory creation compliance\n\n#### GET APPROVAL FOR DESIGN CHOICES\n- Get approval for reflection format structure\n- Confirm timestamp format standard\n- Verify file appending approach\n\n#### IMPLEMENT FUNCTIONALITY\n- Implement ensure_journal_directory utility:\n  ```python\n  def ensure_journal_directory(file_path):\n      \"\"\"Ensure the directory for the journal file exists.\"\"\"\n      directory = os.path.dirname(file_path)\n      if directory and not os.path.exists(directory):\n          os.makedirs(directory)\n  ```\n\n- Implement format_reflection function:\n  ```python\n  def format_reflection(reflection_text):\n      \"\"\"Format a reflection with timestamp and proper structure.\"\"\"\n      timestamp = datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")\n      return f\"\\n\\n## Reflection ({timestamp})\\n\\n{reflection_text}\"\n  ```\n\n- Implement add_reflection_to_journal function:\n  ```python\n  def add_reflection_to_journal(journal_path, reflection_text):\n      \"\"\"Add a reflection to a journal entry file.\"\"\"\n      ensure_journal_directory(journal_path)\n      formatted_reflection = format_reflection(reflection_text)\n      \n      with open(journal_path, 'a', encoding='utf-8') as f:\n          f.write(formatted_reflection)\n      \n      return True\n  ```\n\n#### DOCUMENT AND COMPLETE\n- Add docstrings to all functions\n- Update developer documentation with function usage examples\n- Create user documentation for reflection format\n\n### Subtask 10.3: MCP Handler Implementation\n\n#### WRITE TESTS FIRST\n- Create test file: `tests/test_reflection_mcp_handler.py`\n- Test cases:\n  - Test MCP handler with valid inputs\n  - Test MCP handler with invalid inputs\n  - Test error handling scenarios\n  - Test telemetry integration\n\n#### GET APPROVAL FOR DESIGN CHOICES\n- Confirm MCP handler interface design\n- Verify error handling approach\n- Approve telemetry integration points\n\n#### IMPLEMENT FUNCTIONALITY\n- Implement MCP handler based on research decision:\n  ```python\n  @mcp_server.handler(\"add_reflection\")\n  async def handle_add_reflection(request):\n      \"\"\"Handle adding a reflection to a journal entry.\"\"\"\n      try:\n          journal_path = request.get(\"journal_path\")\n          reflection_text = request.get(\"reflection_text\")\n          \n          if not journal_path or not reflection_text:\n              return {\"success\": False, \"error\": \"Missing required parameters\"}\n          \n          result = add_reflection_to_journal(journal_path, reflection_text)\n          \n          # Log telemetry\n          telemetry.log_event(\"reflection_added\", {\"journal_path\": journal_path})\n          \n          return {\"success\": result}\n      except Exception as e:\n          telemetry.log_error(\"reflection_error\", str(e))\n          return {\"success\": False, \"error\": str(e)}\n  ```\n\n#### DOCUMENT AND COMPLETE\n- Document MCP handler in API documentation\n- Add examples to developer documentation\n- Update user documentation with reflection capabilities\n\n### Subtask 10.4: Comprehensive Testing & Integration\n\n#### WRITE TESTS FIRST\n- Create test file: `tests/test_reflection_integration.py`\n- Test cases:\n  - End-to-end MCP server tests\n  - AI agent integration tests\n  - On-demand directory creation compliance tests\n  - Edge case handling tests\n\n#### GET APPROVAL FOR DESIGN CHOICES\n- Verify test coverage approach\n- Confirm integration test methodology\n- Approve AI agent test scenarios\n\n#### IMPLEMENT FUNCTIONALITY\n- Implement end-to-end tests for MCP server\n- Create AI agent integration tests\n- Implement directory creation compliance tests\n- Add edge case tests for error handling\n\n#### DOCUMENT AND COMPLETE\n- Document test coverage in test documentation\n- Add test examples to developer documentation\n- Update CI/CD pipeline with new tests\n\n### Subtask 10.5: CLI Verification & Limitations\n\n#### WRITE TESTS FIRST\n- Create test file: `tests/test_reflection_cli_limitations.py`\n- Test cases:\n  - Verify CLI has no operational reflection commands\n  - Test CLI setup commands still function properly\n  - Verify MCP-first architecture compliance\n\n#### GET APPROVAL FOR DESIGN CHOICES\n- Confirm CLI limitation approach\n- Verify CLI documentation updates\n- Approve MCP-first architecture verification methodology\n\n#### IMPLEMENT FUNCTIONALITY\n- Verify CLI command structure excludes reflection operations\n- Ensure CLI is limited to setup commands only\n- Implement tests to verify MCP-first architecture compliance\n\n#### DOCUMENT AND COMPLETE\n- Update CLI documentation to clarify limitations\n- Document MCP-first architecture in developer guidelines\n- Add user documentation for reflection operations via MCP\n\n### Subtask 10.6: Documentation Updates & Code Review\n\n#### WRITE TESTS FIRST\n- Create test file: `tests/test_reflection_documentation.py`\n- Test cases:\n  - Verify documentation examples work as expected\n  - Test code snippets in documentation\n  - Verify on-demand directory pattern compliance\n\n#### GET APPROVAL FOR DESIGN CHOICES\n- Get approval for documentation structure\n- Verify code review checklist\n- Confirm documentation coverage\n\n#### IMPLEMENT FUNCTIONALITY\n- Update all relevant documentation:\n  - User documentation for reflections\n  - Developer documentation for implementation details\n  - API documentation for MCP handlers\n- Perform comprehensive code review for pattern compliance\n\n#### DOCUMENT AND COMPLETE\n- Finalize all documentation updates\n- Complete code review checklist\n- Verify three-place documentation rule compliance (user docs, developer docs, code comments)\n```\n\n## Acceptance Criteria\n- Research phase completed with clear decisions on implementation approach\n- All file-writing functions must call ensure_journal_directory(file_path) before writing\n- No code should create directories upfront\n- Implementation must follow the on-demand directory creation pattern as documented in docs/on-demand-directory-pattern.md\n- Reflection addition is available as an MCP operation only, not a CLI command\n- Manual reflection addition is handled exclusively by the MCP server and AI agent\n- CLI functionality is limited to setup commands (journal-init, install-hook) as per updated documentation",
+      "testStrategy": "Implement comprehensive testing following TDD methodology:\n\n1. Unit tests for core reflection functionality (formatting, file operations)\n2. Integration tests for MCP handler implementation\n3. Tests for on-demand directory creation compliance\n4. Tests for proper file handling (new and existing journal files)\n5. End-to-end tests for AI agent integration\n6. Verification tests for CLI limitations (no operational commands)\n\nAll tests should verify compliance with the on-demand directory creation pattern and MCP-first architecture principles as documented in project guidelines.",
       "subtasks": [
         {
-          "id": "10.1",
-          "title": "Create ensure_journal_directory utility function",
+          "id": 1,
+          "title": "Research & Design Decision",
+          "description": "Research and decide between MCP prompt vs tool approaches for manual reflection addition, documenting UX analysis, technical complexity, and AI agent integration considerations",
+          "details": "#### WRITE TESTS FIRST\n- Create test file: `tests/test_reflection_design_decision.py`\n- Test cases:\n  - Test UX flow for MCP prompt approach\n  - Test UX flow for MCP tool approach\n  - Test AI agent integration for both approaches\n\n#### GET APPROVAL FOR DESIGN CHOICES\n- Document pros/cons of MCP prompt vs. tool approaches\n- Create UX flow diagrams for both approaches\n- Get approval on selected approach from team lead\n\n#### IMPLEMENT FUNCTIONALITY\n- Document decision matrix with following criteria:\n  - User experience simplicity\n  - Technical implementation complexity\n  - AI agent integration ease\n  - Future extensibility\n- Create prototype of selected approach\n\n#### DOCUMENT AND COMPLETE\n- Update design documentation with decision rationale\n- Document UX flow in user documentation\n- Add technical implementation notes to developer documentation\n<info added on 2025-06-02T19:55:28.752Z>\n#### WRITE TESTS FIRST\n- Create test file: `tests/test_reflection_design_decision.py`\n- Test cases:\n  - Test UX flow for MCP tool approach\n  - Test AI agent integration with tool approach\n\n#### IMPLEMENT FUNCTIONALITY\n- Document tool approach decision rationale:\n  - Capture key reasons for selecting tool approach\n  - Note any constraints or requirements that drove this decision\n- Design the MCP tool interface for add_reflection:\n  - Define tool name and description\n  - Outline parameter structure\n  - Document expected responses\n- Define tool parameters and expected behavior:\n  - Required vs optional parameters\n  - Parameter validation rules\n  - Error handling approach\n- Create tool specification for the MCP server:\n  - JSON schema definition\n  - Integration points with existing MCP architecture\n  - Authentication and permission requirements\n\n#### DOCUMENT AND COMPLETE\n- Update design documentation with tool approach rationale\n- Document tool usage in user documentation\n- Add technical implementation notes to developer documentation\n</info added on 2025-06-02T19:55:28.752Z>",
           "status": "pending",
-          "description": "Implement the ensure_journal_directory utility function that creates journal directories on-demand following the new pattern."
+          "dependencies": [],
+          "parentTaskId": 10
         },
         {
-          "id": "10.2",
-          "title": "Update add_reflection_to_journal to use ensure_journal_directory",
+          "id": 2,
+          "title": "Core Reflection Implementation",
+          "description": "Implement core reflection functionality including ensure_journal_directory utility, format_reflection function, and add_reflection_to_journal with on-demand directory creation",
+          "details": "#### WRITE TESTS FIRST\n- Create test file: `tests/test_reflection_core.py`\n- Test cases:\n  - Test ensure_journal_directory utility\n  - Test format_reflection function with various inputs\n  - Test add_reflection_to_journal with new and existing files\n  - Test on-demand directory creation compliance\n\n#### GET APPROVAL FOR DESIGN CHOICES\n- Get approval for reflection format structure\n- Confirm timestamp format standard\n- Verify file appending approach\n\n#### IMPLEMENT FUNCTIONALITY\n- Implement ensure_journal_directory utility:\n  ```python\n  def ensure_journal_directory(file_path):\n      \"\"\"Ensure the directory for the journal file exists.\"\"\"\n      directory = os.path.dirname(file_path)\n      if directory and not os.path.exists(directory):\n          os.makedirs(directory)\n  ```\n\n- Implement format_reflection function:\n  ```python\n  def format_reflection(reflection_text):\n      \"\"\"Format a reflection with timestamp and proper structure.\"\"\"\n      timestamp = datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")\n      return f\"\\n\\n## Reflection ({timestamp})\\n\\n{reflection_text}\"\n  ```\n\n- Implement add_reflection_to_journal function:\n  ```python\n  def add_reflection_to_journal(journal_path, reflection_text):\n      \"\"\"Add a reflection to a journal entry file.\"\"\"\n      ensure_journal_directory(journal_path)\n      formatted_reflection = format_reflection(reflection_text)\n      \n      with open(journal_path, 'a', encoding='utf-8') as f:\n          f.write(formatted_reflection)\n      \n      return True\n  ```\n\n#### DOCUMENT AND COMPLETE\n- Add docstrings to all functions\n- Update developer documentation with function usage examples\n- Create user documentation for reflection format",
           "status": "pending",
-          "description": "Modify the add_reflection_to_journal function to use the ensure_journal_directory utility instead of directly creating directories."
+          "dependencies": [],
+          "parentTaskId": 10
         },
         {
-          "id": "10.3",
-          "title": "Add tests for ensure_journal_directory utility",
+          "id": 3,
+          "title": "MCP Handler Implementation",
+          "description": "Implement MCP server handler for reflection operations based on research decision, including proper telemetry integration and error handling",
+          "details": "#### WRITE TESTS FIRST\n- Create test file: `tests/test_reflection_mcp_handler.py`\n- Test cases:\n  - Test MCP handler with valid inputs\n  - Test MCP handler with invalid inputs\n  - Test error handling scenarios\n  - Test telemetry integration\n\n#### GET APPROVAL FOR DESIGN CHOICES\n- Confirm MCP handler interface design\n- Verify error handling approach\n- Approve telemetry integration points\n\n#### IMPLEMENT FUNCTIONALITY\n- Implement MCP handler based on research decision:\n  ```python\n  @mcp_server.handler(\"add_reflection\")\n  async def handle_add_reflection(request):\n      \"\"\"Handle adding a reflection to a journal entry.\"\"\"\n      try:\n          journal_path = request.get(\"journal_path\")\n          reflection_text = request.get(\"reflection_text\")\n          \n          if not journal_path or not reflection_text:\n              return {\"success\": False, \"error\": \"Missing required parameters\"}\n          \n          result = add_reflection_to_journal(journal_path, reflection_text)\n          \n          # Log telemetry\n          telemetry.log_event(\"reflection_added\", {\"journal_path\": journal_path})\n          \n          return {\"success\": result}\n      except Exception as e:\n          telemetry.log_error(\"reflection_error\", str(e))\n          return {\"success\": False, \"error\": str(e)}\n  ```\n\n#### DOCUMENT AND COMPLETE\n- Document MCP handler in API documentation\n- Add examples to developer documentation\n- Update user documentation with reflection capabilities",
           "status": "pending",
-          "description": "Create unit tests to verify the ensure_journal_directory utility correctly creates directories when they don't exist and handles existing directories properly."
+          "dependencies": [
+            "10.1",
+            "10.2"
+          ],
+          "parentTaskId": 10
         },
         {
-          "id": "10.4",
-          "title": "Update existing tests for on-demand directory creation",
+          "id": 4,
+          "title": "Comprehensive Testing & Integration",
+          "description": "Create comprehensive test suite for reflection functionality including end-to-end MCP server tests, AI agent integration tests, and on-demand directory creation compliance",
+          "details": "#### WRITE TESTS FIRST\n- Create test file: `tests/test_reflection_integration.py`\n- Test cases:\n  - End-to-end MCP server tests\n  - AI agent integration tests\n  - On-demand directory creation compliance tests\n  - Edge case handling tests\n\n#### GET APPROVAL FOR DESIGN CHOICES\n- Verify test coverage approach\n- Confirm integration test methodology\n- Approve AI agent test scenarios\n\n#### IMPLEMENT FUNCTIONALITY\n- Implement end-to-end tests for MCP server\n- Create AI agent integration tests\n- Implement directory creation compliance tests\n- Add edge case tests for error handling\n\n#### DOCUMENT AND COMPLETE\n- Document test coverage in test documentation\n- Add test examples to developer documentation\n- Update CI/CD pipeline with new tests",
           "status": "pending",
-          "description": "Modify existing tests to verify that the reflection addition process correctly creates directories on-demand when needed."
+          "dependencies": [
+            "10.2",
+            "10.3"
+          ],
+          "parentTaskId": 10
         },
         {
-          "id": "10.5",
-          "title": "Update ensure_journal_directory to accept file paths",
+          "id": 5,
+          "title": "CLI Verification & Limitations",
+          "description": "Verify CLI is limited to setup commands only and has no operational reflection commands, ensuring MCP-first architecture compliance",
+          "details": "#### WRITE TESTS FIRST\n- Create test file: `tests/test_reflection_cli_limitations.py`\n- Test cases:\n  - Verify CLI has no operational reflection commands\n  - Test CLI setup commands still function properly\n  - Verify MCP-first architecture compliance\n\n#### GET APPROVAL FOR DESIGN CHOICES\n- Confirm CLI limitation approach\n- Verify CLI documentation updates\n- Approve MCP-first architecture verification methodology\n\n#### IMPLEMENT FUNCTIONALITY\n- Verify CLI command structure excludes reflection operations\n- Ensure CLI is limited to setup commands only\n- Implement tests to verify MCP-first architecture compliance\n\n#### DOCUMENT AND COMPLETE\n- Update CLI documentation to clarify limitations\n- Document MCP-first architecture in developer guidelines\n- Add user documentation for reflection operations via MCP",
           "status": "pending",
-          "description": "Modify the ensure_journal_directory function to accept a file path and create the parent directory structure, following the on-demand directory creation pattern."
+          "dependencies": [],
+          "parentTaskId": 10
         },
         {
-          "id": "10.6",
-          "title": "Add tests for on-demand directory creation compliance",
+          "id": 6,
+          "title": "Documentation Updates & Code Review",
+          "description": "Complete final documentation updates and review all file operations for on-demand directory creation pattern compliance",
+          "details": "#### WRITE TESTS FIRST\n- Create test file: `tests/test_reflection_documentation.py`\n- Test cases:\n  - Verify documentation examples work as expected\n  - Test code snippets in documentation\n  - Verify on-demand directory pattern compliance\n\n#### GET APPROVAL FOR DESIGN CHOICES\n- Get approval for documentation structure\n- Verify code review checklist\n- Confirm documentation coverage\n\n#### IMPLEMENT FUNCTIONALITY\n- Update all relevant documentation:\n  - User documentation for reflections\n  - Developer documentation for implementation details\n  - API documentation for MCP handlers\n- Perform comprehensive code review for pattern compliance\n\n#### DOCUMENT AND COMPLETE\n- Finalize all documentation updates\n- Complete code review checklist\n- Verify three-place documentation rule compliance (user docs, developer docs, code comments)",
           "status": "pending",
-          "description": "Create tests that verify all file-writing operations follow the on-demand directory creation pattern as documented in docs/on-demand-directory-pattern.md."
-        },
-        {
-          "id": "10.7",
-          "title": "Review and update all file operations",
-          "status": "pending",
-          "description": "Review all file operations in the codebase to ensure they call ensure_journal_directory before writing and don't create directories upfront."
-        },
-        {
-          "id": "10.8",
-          "title": "Verify no CLI implementation for reflection addition",
-          "status": "pending",
-          "description": "Verify that no CLI command implementation exists for adding reflections, as this functionality will only be available through the MCP server."
-        },
-        {
-          "id": "10.9",
-          "title": "Add tests for AI agent reflection addition",
-          "status": "pending",
-          "description": "Create tests to verify that the AI agent can successfully add reflections through the MCP operation."
-        },
-        {
-          "id": "10.10",
-          "title": "Update documentation to reflect MCP-only implementation",
-          "status": "pending",
-          "description": "Update relevant documentation (including README.md) to clarify that manual reflection addition is handled by the MCP server and AI agent, not through CLI commands, in accordance with the updated engineering spec."
-        },
-        {
-          "id": "10.11",
-          "title": "Verify CLI is limited to setup commands only",
-          "status": "pending",
-          "description": "Review the CLI implementation to ensure it only includes setup commands (journal-init, install-hook) and no operational commands like add-reflection."
-        },
-        {
-          "id": "10.12",
-          "title": "Add tests to verify CLI command limitations",
-          "status": "pending",
-          "description": "Create tests to verify that the CLI only provides setup commands and does not include any operational commands for journal manipulation."
-        },
-        {
-          "id": "10.13",
-          "title": "Research UX differences between MCP prompts vs tools for reflections",
-          "status": "pending",
-          "description": "Evaluate the user experience differences between implementing manual reflections as an MCP prompt versus an MCP tool, considering ease of use, discoverability, and natural workflow integration."
-        },
-        {
-          "id": "10.14",
-          "title": "Analyze technical implementation complexity",
-          "status": "pending",
-          "description": "Compare the technical implementation complexity of MCP prompts versus MCP tools for manual reflection addition, including development effort, maintenance considerations, and potential limitations."
-        },
-        {
-          "id": "10.15",
-          "title": "Evaluate dual implementation approach",
-          "status": "pending",
-          "description": "Assess whether both MCP prompt and MCP tool implementations should be available for manual reflections, or if one approach is clearly superior for this use case."
-        },
-        {
-          "id": "10.16",
-          "title": "Document AI agent integration considerations",
-          "status": "pending",
-          "description": "Document how each approach (prompt vs. tool) would integrate with AI agents and existing workflow patterns, identifying any advantages or limitations."
-        },
-        {
-          "id": "10.17",
-          "title": "Verify alignment with MCP-first architecture",
-          "status": "pending",
-          "description": "Ensure the chosen approach aligns with MCP-first architecture principles and document the rationale for the implementation decision."
-        },
-        {
-          "id": "10.18",
-          "title": "Create implementation decision document",
-          "status": "pending",
-          "description": "Compile research findings into a decision document that clearly outlines the chosen implementation approach (prompt, tool, or both) with supporting rationale before proceeding with implementation."
+          "dependencies": [
+            "10.1",
+            "10.2",
+            "10.3",
+            "10.4",
+            "10.5"
+          ],
+          "parentTaskId": 10
         }
       ]
     },
@@ -292,11 +250,8 @@
       "id": 15,
       "title": "Create Comprehensive Tests and Documentation",
       "description": "Develop comprehensive tests for all components and create documentation for the project.",
-      "details": "Create comprehensive tests and documentation with the following features:\n\n1. Test fixtures:\n```python\n@pytest.fixture\ndef mock_git_repo():\n    \"\"\"Create temporary git repo with test commits\"\"\"\n    # Implementation\n\n@pytest.fixture\ndef sample_journal_entries():\n    \"\"\"Load sample journal files\"\"\"\n    # Implementation\n\n@pytest.fixture\ndef mock_terminal_history():\n    \"\"\"Provide test terminal command history\"\"\"\n    # Implementation\n\n@pytest.fixture\ndef mock_chat_history():\n    \"\"\"Provide test chat history\"\"\"\n    # Implementation\n\n@pytest.fixture\ndef mock_telemetry_exporter():\n    \"\"\"Provide a test exporter that captures telemetry events\"\"\"\n    # Implementation\n```\n\n2. Unit tests:\n```python\ndef test_config_loading():\n    \"\"\"Test configuration loading\"\"\"\n    # Implementation\n\ndef test_git_utils():\n    \"\"\"Test git utilities\"\"\"\n    # Implementation\n\ndef test_journal_entry_generation():\n    \"\"\"Test journal entry generation\"\"\"\n    # Implementation\n\ndef test_telemetry():\n    \"\"\"Test telemetry integration\"\"\"\n    # Implementation\n\n# Additional unit tests for all components\n```\n\n3. Integration tests:\n```python\ndef test_cli_init():\n    \"\"\"Test CLI init command\"\"\"\n    # Implementation\n\ndef test_cli_new_entry():\n    \"\"\"Test CLI new-entry command\"\"\"\n    # Implementation\n\ndef test_mcp_server():\n    \"\"\"Test MCP server operations\"\"\"\n    # Implementation\n\n# Additional integration tests for all workflows\n```\n\n4. Documentation:\n   - README.md with project overview, installation, and usage\n   - Configuration documentation\n   - CLI command reference\n   - MCP server API reference\n   - Development guide\n   - Examples and tutorials\n\n5. Test coverage:\n   - Configure pytest-cov for coverage reporting\n   - Ensure >90% test coverage\n   - Add coverage reporting to CI pipeline\n\n6. Documentation structure:\n```\nREADME.md\ndocs/\n\u251c\u2500\u2500 configuration.md\n\u251c\u2500\u2500 cli.md\n\u251c\u2500\u2500 mcp-server.md\n\u251c\u2500\u2500 development.md\n\u2514\u2500\u2500 examples/\n    \u251c\u2500\u2500 basic-usage.md\n    \u251c\u2500\u2500 custom-configuration.md\n    \u2514\u2500\u2500 integration-examples.md\n```",
-      "testStrategy": "1. Verify test coverage meets >90% threshold\n2. Ensure all components have unit tests\n3. Verify integration tests cover all workflows\n4. Test documentation for accuracy and completeness\n5. Verify examples work as documented\n6. Test installation and usage instructions\n7. Verify CI pipeline runs all tests",
-      "priority": "high",
+      "status": "pending",
       "dependencies": [
-        4,
         7,
         9,
         10,
@@ -304,8 +259,25 @@
         12,
         13
       ],
-      "status": "pending",
-      "subtasks": []
+      "priority": "high",
+      "details": "Create comprehensive tests and documentation with the following features:\n\n1. Test fixtures:\n```python\n@pytest.fixture\ndef mock_git_repo():\n    \"\"\"Create temporary git repo with test commits\"\"\"\n    # Implementation\n\n@pytest.fixture\ndef sample_journal_entries():\n    \"\"\"Load sample journal files\"\"\"\n    # Implementation\n\n@pytest.fixture\ndef mock_terminal_history():\n    \"\"\"Provide test terminal command history\"\"\"\n    # Implementation\n\n@pytest.fixture\ndef mock_chat_history():\n    \"\"\"Provide test chat history\"\"\"\n    # Implementation\n\n@pytest.fixture\ndef mock_telemetry_exporter():\n    \"\"\"Provide a test exporter that captures telemetry events\"\"\"\n    # Implementation\n```\n\n2. Unit tests:\n```python\ndef test_config_loading():\n    \"\"\"Test configuration loading\"\"\"\n    # Implementation\n\ndef test_git_utils():\n    \"\"\"Test git utilities\"\"\"\n    # Implementation\n\ndef test_journal_entry_generation():\n    \"\"\"Test journal entry generation\"\"\"\n    # Implementation\n\ndef test_telemetry():\n    \"\"\"Test telemetry integration\"\"\"\n    # Implementation\n\n# Additional unit tests for all components\n```\n\n3. Integration tests:\n```python\ndef test_cli_init():\n    \"\"\"Test CLI init command\"\"\"\n    # Implementation\n\ndef test_cli_new_entry():\n    \"\"\"Test CLI new-entry command\"\"\"\n    # Implementation\n\ndef test_mcp_server():\n    \"\"\"Test MCP server operations\"\"\"\n    # Implementation\n\n# Additional integration tests for all workflows\n```\n\n4. Documentation:\n   - README.md with project overview, installation, and usage\n   - Configuration documentation\n   - CLI command reference\n   - MCP server API reference\n   - Development guide\n   - Examples and tutorials\n\n5. Test coverage:\n   - Configure pytest-cov for coverage reporting\n   - Ensure >90% test coverage\n   - Add coverage reporting to CI pipeline\n\n6. Documentation structure:\n```\nREADME.md\ndocs/\n├── configuration.md\n├── cli.md\n├── mcp-server.md\n├── development.md\n└── examples/\n    ├── basic-usage.md\n    ├── custom-configuration.md\n    └── integration-examples.md\n```",
+      "testStrategy": "1. Verify test coverage meets >90% threshold\n2. Ensure all components have unit tests\n3. Verify integration tests cover all workflows\n4. Test documentation for accuracy and completeness\n5. Verify examples work as documented\n6. Test installation and usage instructions\n7. Verify CI pipeline runs all tests\n8. Ensure telemetry system is thoroughly tested with both unit and integration tests",
+      "subtasks": [
+        {
+          "id": "15.1",
+          "title": "Implement telemetry-specific tests",
+          "description": "Create comprehensive tests for the telemetry system implemented in task 4",
+          "status": "pending",
+          "details": "Develop unit and integration tests for the telemetry infrastructure including:\n1. Test telemetry event generation\n2. Test telemetry data collection\n3. Test telemetry exporters\n4. Test telemetry configuration options\n5. Test telemetry integration with other components"
+        },
+        {
+          "id": "15.2",
+          "title": "Document telemetry system",
+          "description": "Create documentation for the telemetry system",
+          "status": "pending",
+          "details": "Add telemetry documentation including:\n1. Overview of telemetry capabilities\n2. Configuration options for telemetry\n3. How to extend telemetry with custom exporters\n4. Privacy considerations\n5. Add a telemetry.md file to the docs directory"
+        }
+      ]
     },
     {
       "id": 17,

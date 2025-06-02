@@ -1,7 +1,7 @@
 # Task ID: 15
 # Title: Create Comprehensive Tests and Documentation
 # Status: pending
-# Dependencies: 4, 7, 9, 10, 11, 12, 13
+# Dependencies: 7, 9, 10, 11, 12, 13
 # Priority: high
 # Description: Develop comprehensive tests for all components and create documentation for the project.
 # Details:
@@ -108,3 +108,28 @@ docs/
 5. Verify examples work as documented
 6. Test installation and usage instructions
 7. Verify CI pipeline runs all tests
+8. Ensure telemetry system is thoroughly tested with both unit and integration tests
+
+# Subtasks:
+## 15.1. Implement telemetry-specific tests [pending]
+### Dependencies: None
+### Description: Create comprehensive tests for the telemetry system implemented in task 4
+### Details:
+Develop unit and integration tests for the telemetry infrastructure including:
+1. Test telemetry event generation
+2. Test telemetry data collection
+3. Test telemetry exporters
+4. Test telemetry configuration options
+5. Test telemetry integration with other components
+
+## 15.2. Document telemetry system [pending]
+### Dependencies: None
+### Description: Create documentation for the telemetry system
+### Details:
+Add telemetry documentation including:
+1. Overview of telemetry capabilities
+2. Configuration options for telemetry
+3. How to extend telemetry with custom exporters
+4. Privacy considerations
+5. Add a telemetry.md file to the docs directory
+
