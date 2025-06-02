@@ -42,6 +42,14 @@ try:
 except ImportError:
     PROMETHEUS_AVAILABLE = False
 
+# Import version function for Datadog enhancement
+try:
+    from .server import get_version_from_pyproject
+except ImportError:
+    # Fallback if server module is not available
+    def get_version_from_pyproject() -> str:
+        return "unknown"
+
 
 # Global state tracking
 _telemetry_initialized = False
@@ -302,136 +310,177 @@ def trace_git_operation(
             start_time = time.time()
             operation_name = f"{operation_type}_operation"
             
-            try:
-                with memory_tracking_context(f"{operation_type}_collection") as memory_snapshot:
-                    # Execute the function with timeout
-                    try:
-                        result = func(*args, **kwargs)
-                        success = True
-                        error_type = None
-                        
-                    except Exception as e:
-                        success = False
-                        error_type = _categorize_error(e, error_categories)
-                        
-                        # Record error metrics
-                        if metrics:
-                            def record_error():
-                                metrics.record_counter(
-                                    f"mcp.journal.{operation_type}.errors",
-                                    1,
-                                    attributes={"error_type": error_type, "operation": operation_type}
-                                )
-                            record_error()
-                        
-                        # Re-raise the original exception (this was missing!)
-                        raise
+            # Create span for the Git operation
+            tracer = trace.get_tracer(__name__)
+            with tracer.start_as_current_span(f"git.{operation_type}") as span:
+                try:
+                    # Add basic span attributes
+                    span.set_attribute("git.operation_type", operation_type)
+                    span.set_attribute("operation.name", operation_name)
                     
-                    # Record success metrics
-                    duration = time.time() - start_time
-                    if metrics:
-                        def record_metrics():
-                            # Record basic operation metrics
-                            metrics.record_tool_call(
-                                operation_name,
-                                success,
-                                operation=operation_type,
-                                duration=duration
-                            )
+                    # Extract function context for additional attributes
+                    function_context = _extract_function_context(func, args, kwargs)
+                    for key, value in function_context.items():
+                        span.set_attribute(f"git.{key}", sanitize_for_telemetry(value))
+                    
+                    # Apply Datadog enhancements if detected
+                    enhance_for_datadog(span)
+                    
+                    with memory_tracking_context(f"{operation_type}_collection") as memory_snapshot:
+                        # Execute the function with timeout
+                        try:
+                            result = func(*args, **kwargs)
+                            success = True
+                            error_type = None
                             
-                            # Record duration histogram
-                            metrics.record_histogram(
-                                f"mcp.journal.{operation_type}.duration",
-                                duration,
-                                attributes={"operation": operation_type, "success": str(success)}
-                            )
+                        except Exception as e:
+                            success = False
+                            error_type = _categorize_error(e, error_categories)
                             
-                            # Record operation counters
-                            counter_name = f"{operation_type}_collection" if "collection" in operation_type else f"{operation_type}_operation"
-                            metrics.record_counter(
-                                f"mcp.journal.{counter_name}",
-                                1,
-                                attributes={"success": str(success), "operation": operation_type}
-                            )
+                            # Record error in span
+                            span.set_status(Status(StatusCode.ERROR, sanitize_for_telemetry(str(e))))
+                            span.set_attribute("error.type", sanitize_for_telemetry(type(e).__name__))
+                            span.set_attribute("error.message", sanitize_for_telemetry(str(e)))
+                            span.set_attribute("error.category", error_type)
                             
-                            # Context-specific metrics
-                            if operation_type == "git_context":
-                                metrics.record_counter(
-                                    "context_collection_success",
-                                    1,
-                                    attributes={"operation": "git_context"}
-                                )
-                                metrics.record_histogram(
-                                    "context_scan_duration", 
-                                    duration,
-                                    attributes={"operation": "git_context"}
-                                )
-                                # Record files processed metric
-                                if hasattr(result, 'changed_files') and isinstance(result.get('changed_files'), list):
+                            # Record error metrics
+                            if metrics:
+                                def record_error():
                                     metrics.record_counter(
-                                        "files_processed",
-                                        len(result['changed_files']),
-                                        attributes={"operation": "git_context"}
+                                        f"mcp.journal.{operation_type}.errors",
+                                        1,
+                                        attributes={"error_type": error_type, "operation": operation_type}
                                     )
+                                record_error()
                             
-                            elif operation_type == "chat_history":
-                                metrics.record_counter(
-                                    "chat_history_collection",
-                                    1,
-                                    attributes={"operation": "chat_history"}
+                            # Re-raise the original exception (this was missing!)
+                            raise
+                        
+                        # Record success metrics and span
+                        duration = time.time() - start_time
+                        span.set_attribute("operation.duration_seconds", duration)
+                        span.set_status(Status(StatusCode.OK))
+                        
+                        if metrics:
+                            def record_metrics():
+                                # Record basic operation metrics
+                                metrics.record_tool_call(
+                                    operation_name,
+                                    success,
+                                    operation=operation_type,
+                                    duration=duration
                                 )
                                 
-                            elif operation_type == "terminal_commands":
-                                metrics.record_counter(
-                                    "terminal_commands_collection",
-                                    1,
-                                    attributes={"operation": "terminal_commands"}
+                                # Record duration histogram
+                                metrics.record_histogram(
+                                    f"mcp.journal.{operation_type}.duration",
+                                    duration,
+                                    attributes={"operation": operation_type, "success": str(success)}
                                 )
+                                
+                                # Record operation counters
+                                counter_name = f"{operation_type}_collection" if "collection" in operation_type else f"{operation_type}_operation"
+                                metrics.record_counter(
+                                    f"mcp.journal.{counter_name}",
+                                    1,
+                                    attributes={"success": str(success), "operation": operation_type}
+                                )
+                                
+                                # Context-specific metrics
+                                if operation_type == "git_context":
+                                    metrics.record_counter(
+                                        "context_collection_success",
+                                        1,
+                                        attributes={"operation": "git_context"}
+                                    )
+                                    metrics.record_histogram(
+                                        "context_scan_duration", 
+                                        duration,
+                                        attributes={"operation": "git_context"}
+                                    )
+                                    # Record files processed metric
+                                    if hasattr(result, 'changed_files') and isinstance(result.get('changed_files'), list):
+                                        metrics.record_counter(
+                                            "files_processed",
+                                            len(result['changed_files']),
+                                            attributes={"operation": "git_context"}
+                                        )
+                                        # Add to span as well
+                                        span.set_attribute("git.files_processed", len(result['changed_files']))
+                                
+                                elif operation_type == "chat_history":
+                                    metrics.record_counter(
+                                        "chat_history_collection",
+                                        1,
+                                        attributes={"operation": "chat_history"}
+                                    )
+                                    
+                                elif operation_type == "terminal_commands":
+                                    metrics.record_counter(
+                                        "terminal_commands_collection",
+                                        1,
+                                        attributes={"operation": "terminal_commands"}
+                                    )
+                                
+                                # Performance threshold warnings
+                                duration_threshold = performance_thresholds.get("duration", 2.0)
+                                if duration > duration_threshold:
+                                    logger.warning(f"{operation_type} operation exceeded threshold: {duration:.2f}s > {duration_threshold}s")
+                                    span.set_attribute("performance.threshold_exceeded", True)
+                                    span.set_attribute("performance.threshold_seconds", duration_threshold)
                             
-                            # Performance threshold warnings
-                            duration_threshold = performance_thresholds.get("duration", 2.0)
-                            if duration > duration_threshold:
-                                logger.warning(f"{operation_type} operation exceeded threshold: {duration:.2f}s > {duration_threshold}s")
+                            record_metrics()
+                            _telemetry_circuit_breaker.record_success()
                         
-                        record_metrics()
-                        _telemetry_circuit_breaker.record_success()
+                        return result
+                        
+                except TimeoutError as e:
+                    # Handle timeout specifically
+                    duration = time.time() - start_time
+                    logger.warning(f"Git {operation_type} operation timed out after {duration:.2f}s")
                     
-                    return result
+                    # Record timeout in span
+                    span.set_status(Status(StatusCode.ERROR, "Operation timed out"))
+                    span.set_attribute("error.type", "TimeoutError")
+                    span.set_attribute("error.timeout_seconds", duration)
                     
-            except TimeoutError as e:
-                # Handle timeout specifically
-                duration = time.time() - start_time
-                logger.warning(f"Git {operation_type} operation timed out after {duration:.2f}s")
-                if metrics:
-                    def record_timeout():
-                        metrics.record_counter(
-                            f"mcp.journal.{operation_type}.timeouts",
-                            1,
-                            attributes={"operation": operation_type}
-                        )
-                    record_timeout()
-                raise
-                
-            except Exception as e:
-                duration = time.time() - start_time
-                error_type = _categorize_error(e, error_categories)
-                
-                # Record error metrics
-                if metrics:
-                    def record_error():
-                        metrics.record_counter(
-                            f"mcp.journal.{operation_type}.errors",
-                            1,
-                            attributes={"error_type": error_type, "operation": operation_type}
-                        )
+                    if metrics:
+                        def record_timeout():
+                            metrics.record_counter(
+                                f"mcp.journal.{operation_type}.timeouts",
+                                1,
+                                attributes={"operation": operation_type}
+                            )
+                        record_timeout()
+                    raise
                     
-                    record_error()
-                
-                _telemetry_circuit_breaker.record_failure()
-                logger.error(f"Git {operation_type} operation failed after {duration:.2f}s: {e}")
-                
-                # Re-raise the original exception
-                raise
+                except Exception as e:
+                    duration = time.time() - start_time
+                    error_type = _categorize_error(e, error_categories)
+                    
+                    # Record error in span
+                    span.set_status(Status(StatusCode.ERROR, sanitize_for_telemetry(str(e))))
+                    span.set_attribute("error.type", sanitize_for_telemetry(type(e).__name__))
+                    span.set_attribute("error.message", sanitize_for_telemetry(str(e)))
+                    span.set_attribute("error.category", error_type)
+                    span.set_attribute("operation.duration_seconds", duration)
+                    
+                    # Record error metrics
+                    if metrics:
+                        def record_error():
+                            metrics.record_counter(
+                                f"mcp.journal.{operation_type}.errors",
+                                1,
+                                attributes={"error_type": error_type, "operation": operation_type}
+                            )
+                        
+                        record_error()
+                    
+                    _telemetry_circuit_breaker.record_failure()
+                    logger.error(f"Git {operation_type} operation failed after {duration:.2f}s: {e}")
+                    
+                    # Re-raise the original exception
+                    raise
         
         return wrapper
     return decorator
@@ -535,11 +584,26 @@ def setup_telemetry(config: Dict[str, Any]) -> bool:
         service_version = telemetry_config.get("service_version", "1.0.0")
         deployment_env = telemetry_config.get("deployment_environment", "development")
         
-        resource = Resource.create({
+        # Start with base resource attributes
+        resource_attributes = {
             SERVICE_NAME: service_name,
             SERVICE_VERSION: service_version,
             "deployment.environment": deployment_env,
-        })
+        }
+        
+        # Add Datadog-specific resource attributes if detected
+        datadog_attributes = get_datadog_resource_attributes()
+        if datadog_attributes:
+            # Don't override the explicitly configured service name
+            if "service.name" in datadog_attributes and SERVICE_NAME in resource_attributes:
+                # Only use Datadog service name if no explicit service name was configured
+                # Since we always have a service name, prefer the configured one
+                del datadog_attributes["service.name"]
+            
+            resource_attributes.update(datadog_attributes)
+            logger.info("Datadog environment detected - enhanced telemetry with Datadog-specific attributes")
+        
+        resource = Resource.create(resource_attributes)
         
         # Create fresh TracerProvider
         _tracer_provider = TracerProvider(resource=resource)
@@ -782,7 +846,7 @@ def get_meter(name: str = "mcp_commit_story") -> metrics.Meter:
 def trace_mcp_operation(operation_name: str, attributes: Optional[Dict[str, Any]] = None):
     """
     Decorator to trace MCP operations with OpenTelemetry using enhanced sensitive data filtering.
-    Supports both sync and async functions.
+    Supports both sync and async functions. Includes Datadog enhancements when detected.
     
     Args:
         operation_name: Name of the operation for the span
@@ -803,6 +867,9 @@ def trace_mcp_operation(operation_name: str, attributes: Optional[Dict[str, Any]
                         if attributes:
                             for key, value in attributes.items():
                                 span.set_attribute(key, sanitize_for_telemetry(value))
+                        
+                        # Apply Datadog enhancements if detected
+                        enhance_for_datadog(span)
                         
                         # Execute the async function
                         result = await func(*args, **kwargs)
@@ -833,6 +900,9 @@ def trace_mcp_operation(operation_name: str, attributes: Optional[Dict[str, Any]
                             for key, value in attributes.items():
                                 span.set_attribute(key, sanitize_for_telemetry(value))
                         
+                        # Apply Datadog enhancements if detected
+                        enhance_for_datadog(span)
+                        
                         # Execute the function
                         result = func(*args, **kwargs)
                         
@@ -846,7 +916,7 @@ def trace_mcp_operation(operation_name: str, attributes: Optional[Dict[str, Any]
                         span.set_attribute("error.type", sanitize_for_telemetry(type(e).__name__))
                         span.set_attribute("error.message", sanitize_for_telemetry(str(e)))
                         raise
-            return wrapper
+                return wrapper
     return decorator
 
 
@@ -1732,3 +1802,121 @@ def _categorize_config_error(exception: Exception, error_categories: List[str]) 
     
     # Fallback to generic error
     return 'unknown_error' 
+
+# Datadog auto-detection and enhancement
+def detect_datadog_environment() -> bool:
+    """
+    Auto-detect Datadog environment by checking for Datadog-specific indicators.
+    
+    Returns:
+        bool: True if Datadog environment is detected, False otherwise
+    """
+    # Check for Datadog API key
+    if os.getenv('DD_API_KEY'):
+        return True
+    
+    # Check for Datadog endpoint in OTLP configuration
+    otlp_endpoint = os.getenv('MCP_OTLP_ENDPOINT', '')
+    if 'datadoghq.com' in otlp_endpoint:
+        return True
+    
+    # Check for Datadog-specific environment variables
+    if os.getenv('DD_SITE') or os.getenv('DD_SERVICE'):
+        return True
+    
+    return False
+
+
+def enhance_for_datadog(span: trace.Span, datadog_detected: Optional[bool] = None) -> None:
+    """
+    Add Datadog-specific attributes to a span when Datadog environment is detected.
+    
+    These attributes enhance the Datadog experience without breaking other vendors:
+    - service.name: Only if DD_SERVICE is set (for service mapping in Datadog APM)
+    - service.version: For deployment tracking
+    - env: For environment-based filtering
+    
+    Args:
+        span: The OpenTelemetry span to enhance
+        datadog_detected: Optional override for detection. If None, auto-detects.
+    """
+    if datadog_detected is None:
+        datadog_detected = detect_datadog_environment()
+    
+    if not datadog_detected:
+        return
+    
+    try:
+        # Only add service.name if it's from Datadog env var
+        # Don't override the service name from resource attributes
+        dd_service = os.getenv('DD_SERVICE')
+        if dd_service:
+            span.set_attribute("service.name", dd_service)
+        
+        # Add version for deployment tracking
+        try:
+            version = get_version_from_pyproject()
+            span.set_attribute("service.version", version)
+        except Exception:
+            # Fallback if version detection fails
+            span.set_attribute("service.version", "unknown")
+        
+        # Add environment information
+        env = os.getenv('DD_ENV', os.getenv('ENVIRONMENT', 'development'))
+        span.set_attribute("env", env)
+        
+        # Add Datadog-specific trace tags if available
+        dd_version = os.getenv('DD_VERSION')
+        if dd_version:
+            span.set_attribute("version", dd_version)
+        
+        # Add operation type for better span categorization in Datadog
+        operation_name = span.name
+        if operation_name:
+            span.set_attribute("operation.name", operation_name)
+        
+    except Exception as e:
+        # Never let Datadog enhancement break the application
+        logger.debug(f"Failed to add Datadog enhancements to span: {e}")
+
+
+def get_datadog_resource_attributes() -> Dict[str, str]:
+    """
+    Get Datadog-specific resource attributes for telemetry setup.
+    
+    Returns:
+        Dict[str, str]: Resource attributes enhanced for Datadog
+    """
+    if not detect_datadog_environment():
+        return {}
+    
+    attributes = {}
+    
+    try:
+        # Only add service.name if it's from Datadog env var
+        # If service name is configured elsewhere, don't override it
+        dd_service = os.getenv('DD_SERVICE')
+        if dd_service:
+            attributes["service.name"] = dd_service
+        # Don't set a default service.name here - let the setup function handle it
+        
+        # Add version information
+        version = get_version_from_pyproject()
+        attributes["service.version"] = version
+        
+        # Environment attributes
+        env = os.getenv('DD_ENV', os.getenv('ENVIRONMENT', 'development'))
+        attributes["env"] = env
+        
+        # Additional Datadog-specific attributes if available
+        dd_version = os.getenv('DD_VERSION')
+        if dd_version:
+            attributes["version"] = dd_version
+            
+        # Add deployment attributes for Datadog
+        attributes["deployment.environment"] = env
+        
+    except Exception as e:
+        logger.debug(f"Failed to generate Datadog resource attributes: {e}")
+    
+    return attributes 
