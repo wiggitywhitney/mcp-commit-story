@@ -1,0 +1,380 @@
+# Task ID: 27
+# Title: Implement Daily Summary Git Hook Trigger
+# Status: pending
+# Dependencies: 9
+# Priority: high
+# Description: Create functionality that automatically generates a daily summary of journal entries from the previous day, triggered by a Git hook when the date changes.
+# Details:
+This task involves implementing an automated daily summary generation system triggered by Git hooks:
+
+1. **Git Hook Implementation**:
+   ```bash
+   #!/bin/bash
+   # post-commit hook to check for date change
+   
+   # Get current date
+   CURRENT_DATE=$(date +%Y-%m-%d)
+   
+   # Get previous date from state file
+   STATE_FILE=".commit-story-state"
+   if [ -f "$STATE_FILE" ]; then
+     PREV_DATE=$(cat "$STATE_FILE")
+   else
+     PREV_DATE=""
+   fi
+   
+   # Update state file with current date
+   echo "$CURRENT_DATE" > "$STATE_FILE"
+   
+   # If date changed, trigger summary generation
+   if [ "$PREV_DATE" != "" ] && [ "$PREV_DATE" != "$CURRENT_DATE" ]; then
+     # Call the summary generator for previous day
+     commit-story generate-summary --period day --date "$PREV_DATE"
+   fi
+   ```
+
+2. **Daily Summary Generation Function**:
+   ```python
+   def generate_daily_summary(date=None):
+       """Generate summary for the specified date (defaults to yesterday)"""
+       if date is None:
+           # Default to yesterday
+           date = (datetime.now() - timedelta(days=1)).date()
+       elif isinstance(date, str):
+           date = datetime.strptime(date, "%Y-%m-%d").date()
+           
+       # Get all journal entries for the specified date
+       entries = get_journal_entries_for_date(date)
+       
+       if not entries:
+           logger.info(f"No journal entries found for {date}")
+           return None
+           
+       # Generate summary using existing summary generation logic
+       summary = synthesize_entries(entries, date)
+       
+       # Save summary to appropriate location
+       save_daily_summary(summary, date)
+       
+       return summary
+   ```
+
+3. **Entry Collection and Parsing**:
+   ```python
+   def get_journal_entries_for_date(date):
+       """Retrieve all journal entries for the specified date"""
+       journal_path = get_journal_path()
+       date_str = date.strftime("%Y-%m-%d")
+       
+       # Find all journal files for the date
+       entry_pattern = f"{date_str}-*.md"
+       entry_files = list(journal_path.glob(entry_pattern))
+       
+       entries = []
+       for file_path in entry_files:
+           with open(file_path, "r") as f:
+               content = f.read()
+               entries.append(parse_journal_entry(content, file_path))
+               
+       return entries
+   ```
+
+4. **Summary Synthesis**:
+   ```python
+   def synthesize_entries(entries, date):
+       """Create a cohesive summary from multiple journal entries"""
+       # Sort entries by timestamp
+       entries.sort(key=lambda e: e.get('timestamp'))
+       
+       # Extract key information
+       commits = [e.get('commit_message') for e in entries if e.get('commit_message')]
+       reflections = [e.get('reflection') for e in entries if e.get('reflection')]
+       
+       # Prioritize manual reflections as a core requirement
+       manual_reflections = [r for r in reflections if r.get('is_manual', False)]
+       
+       # Generate summary template
+       summary = {
+           "date": date.strftime("%Y-%m-%d"),
+           "title": f"Daily Summary for {date.strftime('%B %d, %Y')}",
+           "manual_reflections": manual_reflections,
+           "commit_count": len(commits),
+           "commit_summary": summarize_commits(commits),
+           "key_achievements": extract_key_achievements(entries),
+           "challenges": extract_challenges(entries),
+           "next_steps": suggest_next_steps(entries)
+       }
+       
+       return summary
+   ```
+
+5. **Summary Storage**:
+   ```python
+   def save_daily_summary(summary, date):
+       """Save the generated summary to the appropriate location"""
+       journal_path = get_journal_path()
+       summaries_dir = journal_path / "summaries" / "daily"
+       
+       # Create directories if they don't exist
+       summaries_dir.mkdir(parents=True, exist_ok=True)
+       
+       # Create filename
+       filename = f"{date.strftime('%Y-%m-%d')}-daily-summary.md"
+       file_path = summaries_dir / filename
+       
+       # Format summary as markdown
+       content = format_summary_as_markdown(summary)
+       
+       # Save to file
+       with open(file_path, "w") as f:
+           f.write(content)
+           
+       logger.info(f"Daily summary saved to {file_path}")
+       return file_path
+   ```
+
+6. **Format Summary with Prioritized Manual Reflections**:
+   ```python
+   def format_summary_as_markdown(summary):
+       """Format the summary as a markdown document with prioritized manual reflections"""
+       md_content = []
+       
+       # Add title
+       md_content.append(f"# {summary['title']}\n")
+       
+       # Prominently display manual reflections at the beginning with visual distinction
+       if summary.get('manual_reflections'):
+           md_content.append("## 💭 Manual Reflections\n")
+           md_content.append("<div class='manual-reflections'>\n")
+           
+           for reflection in summary['manual_reflections']:
+               md_content.append(f"### {reflection.get('title', 'Reflection')}\n")
+               md_content.append(f"{reflection.get('content', '')}\n\n")
+           
+           md_content.append("</div>\n")
+       
+       # Add commit summary
+       md_content.append(f"## Commit Activity\n")
+       md_content.append(f"Total commits: {summary['commit_count']}\n\n")
+       md_content.append(f"{summary['commit_summary']}\n")
+       
+       # Add key achievements
+       md_content.append(f"## Key Achievements\n")
+       for achievement in summary['key_achievements']:
+           md_content.append(f"- {achievement}\n")
+       md_content.append("\n")
+       
+       # Add challenges
+       if summary.get('challenges'):
+           md_content.append(f"## Challenges\n")
+           for challenge in summary['challenges']:
+               md_content.append(f"- {challenge}\n")
+           md_content.append("\n")
+       
+       # Add next steps
+       md_content.append(f"## Next Steps\n")
+       for step in summary['next_steps']:
+           md_content.append(f"- {step}\n")
+       
+       return ''.join(md_content)
+   ```
+
+7. **CLI Integration**:
+   ```python
+   @click.command()
+   @click.option("--date", help="Date to generate summary for (YYYY-MM-DD)")
+   def generate_summary_command(date=None):
+       """Generate a daily summary for the specified date"""
+       summary = generate_daily_summary(date)
+       if summary:
+           click.echo(f"Summary generated for {summary['date']}")
+       else:
+           click.echo("No entries found for the specified date")
+   ```
+
+8. **Git Hook Installation**:
+   ```python
+   def install_git_hooks():
+       """Install the necessary git hooks for commit-story"""
+       repo_path = get_git_repo_path()
+       hooks_dir = repo_path / ".git" / "hooks"
+       
+       # Create post-commit hook
+       post_commit_path = hooks_dir / "post-commit"
+       
+       # Write hook content
+       with open(post_commit_path, "w") as f:
+           f.write(POST_COMMIT_HOOK_CONTENT)
+           
+       # Make hook executable
+       os.chmod(post_commit_path, 0o755)
+       
+       logger.info(f"Installed post-commit hook at {post_commit_path}")
+   ```
+
+9. **Configuration Integration**:
+   - Add configuration options for daily summary generation
+   - Allow customization of summary format and content
+   - Provide options to disable automatic triggering
+   - Include options for manual reflection styling and positioning
+
+10. **Error Handling and Logging**:
+   - Implement robust error handling for the Git hook
+   - Ensure failures don't disrupt normal Git operations
+   - Log summary generation attempts and results
+
+# Test Strategy:
+To verify the correct implementation of the daily summary Git hook trigger:
+
+1. **Unit Tests for Summary Generation**:
+   ```python
+   def test_daily_summary_generation():
+       # Create mock journal entries for a specific date
+       mock_date = datetime.strptime("2023-05-15", "%Y-%m-%d").date()
+       mock_entries = create_mock_journal_entries(mock_date, count=3)
+       
+       # Test summary generation
+       summary = synthesize_entries(mock_entries, mock_date)
+       
+       # Verify summary structure
+       assert summary["date"] == "2023-05-15"
+       assert summary["commit_count"] == 3
+       assert "commit_summary" in summary
+       assert "key_achievements" in summary
+   
+   def test_entry_collection():
+       # Create mock journal files for a specific date
+       mock_date = datetime.strptime("2023-05-16", "%Y-%m-%d").date()
+       create_mock_journal_files(mock_date, count=4)
+       
+       # Test entry collection
+       entries = get_journal_entries_for_date(mock_date)
+       
+       # Verify entries were collected correctly
+       assert len(entries) == 4
+       for entry in entries:
+           assert "timestamp" in entry
+           assert "content" in entry
+   ```
+
+2. **Integration Test for Git Hook**:
+   ```python
+   def test_git_hook_trigger():
+       # Set up a test repository
+       repo_dir = setup_test_repo()
+       
+       # Install the git hook
+       install_git_hooks()
+       
+       # Create mock state file with yesterday's date
+       yesterday = (datetime.now() - timedelta(days=1)).date().strftime("%Y-%m-%d")
+       with open(os.path.join(repo_dir, ".commit-story-state"), "w") as f:
+           f.write(yesterday)
+       
+       # Create mock journal entries for yesterday
+       create_mock_journal_files(yesterday, count=2)
+       
+       # Make a commit to trigger the hook
+       make_test_commit(repo_dir, "Test commit")
+       
+       # Check if summary was generated
+       summary_path = get_expected_summary_path(yesterday)
+       assert os.path.exists(summary_path)
+       
+       # Verify summary content
+       with open(summary_path, "r") as f:
+           content = f.read()
+           assert yesterday in content
+           assert "Daily Summary" in content
+   ```
+
+3. **Test Manual Reflection Prioritization**:
+   ```python
+   def test_manual_reflection_prioritization():
+       # Create mock journal entries including manual reflections
+       mock_date = datetime.strptime("2023-05-18", "%Y-%m-%d").date()
+       mock_entries = create_mock_journal_entries(mock_date, count=3)
+       
+       # Add manual reflections to one entry
+       mock_entries[1]["reflection"] = {
+           "is_manual": True,
+           "title": "Test Reflection",
+           "content": "This is a manual reflection."
+       }
+       
+       # Generate summary
+       summary = synthesize_entries(mock_entries, mock_date)
+       
+       # Verify manual reflections are included and prioritized
+       assert "manual_reflections" in summary
+       assert len(summary["manual_reflections"]) == 1
+       assert summary["manual_reflections"][0]["title"] == "Test Reflection"
+       
+       # Test markdown formatting
+       markdown = format_summary_as_markdown(summary)
+       
+       # Verify manual reflections appear at the beginning with visual distinction
+       assert "## 💭 Manual Reflections" in markdown
+       assert "<div class='manual-reflections'>" in markdown
+       assert "### Test Reflection" in markdown
+       
+       # Verify manual reflections appear before other sections
+       manual_reflection_pos = markdown.find("## 💭 Manual Reflections")
+       commit_activity_pos = markdown.find("## Commit Activity")
+       assert manual_reflection_pos < commit_activity_pos
+   ```
+
+4. **Manual Testing Procedure**:
+   1. Install the application with the Git hook feature
+   2. Create several journal entries for "yesterday" (can be simulated by changing system date)
+   3. Include at least one manual reflection in the entries
+   4. Change the system date to "today"
+   5. Make a Git commit
+   6. Verify that a daily summary was generated for "yesterday"
+   7. Check that manual reflections are prominently displayed at the beginning
+   8. Verify the visual distinction of manual reflections
+   9. Check the summary content for accuracy and completeness
+
+5. **Edge Case Testing**:
+   ```python
+   def test_empty_day_handling():
+       # Test with a date that has no entries
+       empty_date = datetime.strptime("2000-01-01", "%Y-%m-%d").date()
+       summary = generate_daily_summary(empty_date)
+       assert summary is None
+   
+   def test_malformed_entries():
+       # Create malformed journal entries
+       mock_date = datetime.strptime("2023-05-17", "%Y-%m-%d").date()
+       create_malformed_journal_files(mock_date)
+       
+       # Test that the system handles malformed entries gracefully
+       try:
+           summary = generate_daily_summary(mock_date)
+           # Should either return a partial summary or None
+           if summary:
+               assert "date" in summary
+       except Exception as e:
+           assert False, f"Should handle malformed entries without exception: {e}"
+   ```
+
+6. **Performance Testing**:
+   - Test with a large number of journal entries (50+) for a single day
+   - Measure execution time and memory usage
+   - Ensure performance remains acceptable
+
+7. **Configuration Testing**:
+   - Test with different configuration settings
+   - Verify that customization options work as expected
+   - Test disabling the automatic trigger
+   - Test different styling options for manual reflections
+
+8. **Verification Checklist**:
+   - [ ] Git hook is properly installed during setup
+   - [ ] Hook correctly detects date changes
+   - [ ] Summary is generated for the correct date (previous day)
+   - [ ] Summary includes all journal entries from the target date
+   - [ ] Manual reflections are prioritized and displayed prominently at the beginning
+   - [ ] Manual reflections have visual distinction in the output
+   - [ ] Summary is saved to the expected location
+   - [ ] Error handling prevents Git operation disruption

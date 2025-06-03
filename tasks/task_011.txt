@@ -1,9 +1,9 @@
 # Task ID: 11
 # Title: Implement Summary Generation
 # Status: pending
-# Dependencies: 7, 17
+# Dependencies: 7
 # Priority: medium
-# Description: Create the functionality to generate daily, weekly, monthly, and yearly summaries of journal entries.
+# Description: Create the functionality to generate daily, weekly, monthly, and yearly summaries of journal entries, with special emphasis on manual reflections.
 # Details:
 Implement summary generation in the MCP server with the following features:
 
@@ -51,7 +51,7 @@ def get_journal_files_in_range(start_date, end_date, config):
     return files
 ```
 
-3. Summary generation:
+3. Summary generation with manual reflection prioritization:
 ```python
 def generate_summary(files, period, config):
     """Generate summary from journal files"""
@@ -63,6 +63,11 @@ def generate_summary(files, period, config):
         with open(file_path, "r") as f:
             content = f.read()
             # Extract entries and reflections
+            # Extract manual reflections from special sections
+            reflection_sections = extract_manual_reflections(content, file_path.stem)
+            if reflection_sections:
+                manual_reflections.extend(reflection_sections)
+            # Extract regular entries
             # Implementation
     
     # Analyze entries for significance/complexity
@@ -82,10 +87,14 @@ def generate_summary(files, period, config):
     # Generate summary sections
     summary = []
     
-    # Add manual reflections section if any
+    # Add manual reflections section first - always prioritized
     if manual_reflections:
-        summary.append("# Manual Reflections\n")
-        summary.append("\n".join(manual_reflections))
+        summary.append("# 📝 Manual Reflections\n")
+        summary.append("*These are your own reflections from the period, presented verbatim.*\n")
+        formatted_reflections = []
+        for date, reflection in manual_reflections:
+            formatted_reflections.append(f"## {date}\n\n{reflection}\n")
+        summary.append("\n".join(formatted_reflections))
     
     # Add other sections
     summary.append("# Summary\n")
@@ -101,6 +110,31 @@ def generate_summary(files, period, config):
     # Extract decisions, highlighting important architectural choices
     
     return "\n\n".join(summary)
+
+def extract_manual_reflections(content, date_str):
+    """Extract manual reflections from journal content"""
+    reflections = []
+    
+    # Look for reflection sections with patterns like:
+    # ## Reflection
+    # ## Daily Reflection
+    # ## Personal Reflection
+    # etc.
+    
+    reflection_patterns = [
+        r"#+\s*(?:Daily\s*)?Reflection[s]?\s*\n([\s\S]*?)(?:\n#+\s|$)",
+        r"#+\s*(?:Personal\s*)?Thought[s]?\s*\n([\s\S]*?)(?:\n#+\s|$)",
+        r"#+\s*(?:Manual\s*)?Note[s]?\s*\n([\s\S]*?)(?:\n#+\s|$)"
+    ]
+    
+    for pattern in reflection_patterns:
+        matches = re.finditer(pattern, content, re.MULTILINE)
+        for match in matches:
+            reflection_text = match.group(1).strip()
+            if reflection_text:  # Only add non-empty reflections
+                reflections.append((date_str, reflection_text))
+    
+    return reflections
 
 def calculate_entry_significance(entry):
     """Calculate significance score for an entry to prioritize substantial work"""
@@ -230,6 +264,14 @@ def ensure_journal_directory(dir_path):
 - All summary-writing functions (including save_summary) must call ensure_journal_directory(file_path) before writing
 - See docs/on-demand-directory-pattern.md for implementation details and test patterns
 
+8. Manual reflection prioritization:
+- Manual reflections must be prominently displayed at the beginning of summaries
+- Use visual distinction (emoji, formatting) to highlight manual reflections
+- Include date context for each reflection
+- Preserve the original wording of manual reflections
+- Implement reflection extraction from common section patterns
+- Ensure manual reflections are always prioritized over inferred content
+
 Note: This implementation focuses solely on MCP/AI agent operations for summary generation. CLI functionality is limited to setup commands (journal-init, install-hook) only. Refer to updated documentation for details.
 
 # Test Strategy:
@@ -257,6 +299,20 @@ Note: This implementation focuses solely on MCP/AI agent operations for summary 
 15. Tests to verify that the AI agent can properly interact with the summarization functionality
 16. Verify that summary generation works correctly through the MCP interface only (not CLI)
 17. Test that the AI agent can request summaries for different time periods and date ranges
+18. Tests for manual reflection extraction:
+    - Test extraction from various section formats (## Reflection, ## Daily Reflection, etc.)
+    - Test with multiple reflection sections in a single file
+    - Test with reflection sections containing various formatting (lists, code blocks, etc.)
+    - Test with empty reflection sections
+    - Test with reflection sections at different positions in the file
+19. Tests for manual reflection prioritization:
+    - Verify that manual reflections appear at the beginning of summaries
+    - Verify that manual reflections are visually distinguished
+    - Verify that date context is included for each reflection
+    - Verify that original wording is preserved
+    - Test with mixed content (manual reflections and regular entries)
+    - Test with only manual reflections
+    - Test with no manual reflections
 
 # Subtasks:
 ## 11.1. Implement entry significance calculation [pending]
@@ -340,6 +396,30 @@ Note: This implementation focuses solely on MCP/AI agent operations for summary 
 ## 11.14. Update documentation to reflect MCP-only approach [pending]
 ### Dependencies: None
 ### Description: Update relevant documentation to clarify that summary generation is only available through the MCP/AI agent interface, not through CLI commands.
+### Details:
+
+
+## 11.15. Implement manual reflection extraction [pending]
+### Dependencies: None
+### Description: Create functionality to extract manual reflections from journal entries using pattern matching for common section headers.
+### Details:
+
+
+## 11.16. Implement manual reflection prioritization in summaries [pending]
+### Dependencies: None
+### Description: Update summary generation to display manual reflections prominently at the beginning with visual distinction and date context.
+### Details:
+
+
+## 11.17. Add tests for manual reflection extraction [pending]
+### Dependencies: None
+### Description: Create tests to verify that manual reflections are correctly extracted from various section formats and positions.
+### Details:
+
+
+## 11.18. Add tests for manual reflection prioritization [pending]
+### Dependencies: None
+### Description: Create tests to verify that manual reflections appear at the beginning of summaries with proper visual distinction and preserved wording.
 ### Details:
 
 
