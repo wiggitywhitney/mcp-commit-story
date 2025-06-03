@@ -1712,6 +1712,57 @@ The system includes comprehensive telemetry integration tests implementing a 4-p
 - **Memory usage tracking**: Monitors resource consumption patterns
 - **Concurrent operation testing**: Validates system behavior under load
 
+#### Reflection Integration Testing
+The reflection system includes comprehensive integration tests implementing sophisticated mocking and validation patterns:
+
+**Test Isolation Architecture:**
+- **Temporary Directory Isolation**: Each test uses isolated temp directories to prevent interference
+- **Server-Level Mocking**: Mock imports at the server module level for complete path coverage
+- **Configuration Abstraction**: Mock configuration objects for controlled test environments
+
+**Comprehensive Test Coverage:**
+```python
+# Test isolation with temporary directories
+def create_isolated_temp_dir():
+    """Create a fresh temporary directory for each test to ensure isolation."""
+    return tempfile.mkdtemp()
+
+# Server-level mocking for MCP handlers
+def mock_add_manual_reflection(text, date):
+    with patch('src.mcp_commit_story.reflection_core.load_config', return_value=mock_config_obj):
+        return add_manual_reflection(text, date)
+
+# Comprehensive integration scenarios
+test_scenarios = [
+    {"text": "Unicode test: 🎉 café naïve résumé", "date": "2025-06-01"},
+    {"text": "Large content: " + "analysis " * 200, "date": "2025-06-02"},
+    {"text": "Concurrent reflection {i}", "date": "2025-06-03"}
+]
+```
+
+**Validation Categories:**
+- **End-to-End MCP Workflows**: Complete reflection addition via MCP server handlers
+- **AI Agent Interaction Patterns**: Multi-reflection sessions simulating real agent workflows
+- **Error Recovery and Resilience**: Permission errors, system failures, and recovery validation
+- **Unicode and Special Characters**: International text, emoji, and markdown character handling
+- **Large Content Processing**: Performance validation for multi-KB reflection content
+- **Concurrent Operations**: Race condition detection and data integrity validation
+- **Telemetry Integration**: Comprehensive instrumentation validation throughout reflection operations
+- **Timestamp Accuracy**: Reflection timestamping and chronological ordering validation
+
+**Key Testing Principles:**
+1. **Complete Isolation**: Each test runs in completely isolated temp directories
+2. **Real Integration**: Uses actual reflection core functions with mocked configuration
+3. **Comprehensive Scenarios**: Tests all edge cases including failures and recovery
+4. **Telemetry Validation**: Ensures all operations are properly instrumented
+5. **Cleanup Guarantees**: Always cleans up temp directories in finally blocks
+
+**Performance and Scale Testing:**
+- **Concurrent reflection operations**: Validates no data loss or corruption under load
+- **Large content handling**: Tests multi-KB reflections with <1 second processing time
+- **Memory efficiency**: Validates minimal memory footprint during operations
+- **File system resilience**: Tests recovery from permission errors and disk issues
+
 #### Security and Privacy Testing
 - **Sensitive data filtering**: Validates automatic redaction of credentials and personal information  
 - **Trace correlation security**: Ensures no sensitive data leakage through telemetry

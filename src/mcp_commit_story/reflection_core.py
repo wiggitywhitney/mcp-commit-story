@@ -262,6 +262,12 @@ def add_manual_reflection(reflection_text: str, date: str) -> Dict[str, Any]:
         
         # Use existing get_journal_file_path function (as per implementation notes)
         relative_file_path = get_journal_file_path(date, "daily")
+        
+        # Fix double "journal/" prefix bug: get_journal_file_path returns "journal/daily/..."
+        # but config.journal_path is also "journal", so we need to remove the prefix
+        if relative_file_path.startswith("journal/"):
+            relative_file_path = relative_file_path[8:]  # Remove "journal/" prefix
+        
         journal_path = Path(config.journal_path) / relative_file_path
         
         # Add reflection to journal using existing infrastructure

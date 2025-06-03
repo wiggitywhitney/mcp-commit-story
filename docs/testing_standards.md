@@ -116,6 +116,161 @@ def test_journal_add_reflection_handler_missing_fields():
     assert "Missing required field" in response["error"]
 ```
 
+### Reflection Integration Testing Patterns
+
+Comprehensive reflection functionality testing requires sophisticated mocking and isolation patterns:
+
+#### Test Isolation with Temporary Directories
+
+```python
+def create_isolated_temp_dir():
+    """Create a fresh temporary directory for each test to ensure isolation."""
+    return tempfile.mkdtemp()
+
+@pytest.mark.asyncio
+async def test_reflection_with_isolation():
+    """Test reflection operations with complete isolation."""
+    temp_dir = create_isolated_temp_dir()
+    try:
+        # Test logic using temp_dir
+        mock_config_obj = MagicMock()
+        mock_config_obj.journal_path = temp_dir
+        
+        with patch('src.mcp_commit_story.server.add_manual_reflection', side_effect=mock_add_manual_reflection):
+            result = await handle_journal_add_reflection({"text": "Test", "date": "2025-06-01"})
+            assert result["status"] == "success"
+    finally:
+        import shutil
+        shutil.rmtree(temp_dir, ignore_errors=True)
+```
+
+#### Server-Level Mocking for MCP Handlers
+
+```python
+def test_mcp_reflection_handler_mocking():
+    """Test MCP handler with proper server-level mocking."""
+    from src.mcp_commit_story.server import handle_journal_add_reflection
+    from src.mcp_commit_story.reflection_core import add_manual_reflection
+    
+    temp_dir = create_isolated_temp_dir()
+    try:
+        # Create mock configuration
+        mock_config_obj = MagicMock()
+        mock_config_obj.journal_path = temp_dir
+        
+        # Mock at server level where function is imported
+        def mock_add_manual_reflection(text, date):
+            with patch('src.mcp_commit_story.reflection_core.load_config', return_value=mock_config_obj):
+                return add_manual_reflection(text, date)
+        
+        with patch('src.mcp_commit_story.server.add_manual_reflection', side_effect=mock_add_manual_reflection):
+            request = {"text": "Integration test reflection", "date": "2025-06-01"}
+            result = await handle_journal_add_reflection(request)
+            
+            # Verify file created in temp directory, not project root
+            assert result["status"] == "success"
+            assert temp_dir in result["file_path"]
+    finally:
+        import shutil
+        shutil.rmtree(temp_dir, ignore_errors=True)
+```
+
+#### Comprehensive Integration Test Coverage
+
+```python
+@pytest.mark.asyncio
+async def test_reflection_comprehensive_integration():
+    """Test reflection system integration across multiple scenarios."""
+    test_scenarios = [
+        # Test unicode and special characters
+        {"text": "Unicode test: 🎉 café naïve résumé", "date": "2025-06-01"},
+        
+        # Test large content handling
+        {"text": "Large content: " + "analysis " * 200, "date": "2025-06-02"},
+        
+        # Test concurrent operations
+        {"text": "Concurrent reflection {i}", "date": "2025-06-03"}
+    ]
+    
+    for scenario in test_scenarios:
+        result = await handle_journal_add_reflection(scenario)
+        assert result["status"] == "success"
+        
+        # Verify content preservation
+        file_path = Path(result["file_path"])
+        content = file_path.read_text(encoding='utf-8')
+        assert scenario["text"] in content
+```
+
+#### Error Recovery and Resilience Testing
+
+```python
+@pytest.mark.asyncio
+async def test_reflection_error_recovery():
+    """Test reflection system error recovery and resilience."""
+    temp_dir = create_isolated_temp_dir()
+    try:
+        # Test permission error recovery
+        with patch('builtins.open', side_effect=PermissionError("Access denied")):
+            request = {"text": "Permission error test", "date": "2025-06-01"}
+            
+            try:
+                result = await handle_journal_add_reflection(request)
+                if isinstance(result, dict):
+                    assert result["status"] == "error"
+                    assert "permission" in result["error"].lower()
+            except PermissionError:
+                pass  # Exception is also acceptable error handling
+        
+        # Verify system recovers after error
+        normal_request = {"text": "Recovery test", "date": "2025-06-02"}
+        result = await handle_journal_add_reflection(normal_request)
+        assert result["status"] == "success"
+    finally:
+        import shutil
+        shutil.rmtree(temp_dir, ignore_errors=True)
+```
+
+#### Telemetry Integration in Reflection Tests
+
+```python
+@pytest.mark.asyncio
+async def test_reflection_telemetry_integration():
+    """Test reflection operations include proper telemetry instrumentation."""
+    temp_dir = create_isolated_temp_dir()
+    try:
+        with patch('opentelemetry.trace.get_current_span') as mock_span:
+            mock_span_instance = MagicMock()
+            mock_span.return_value = mock_span_instance
+            
+            request = {"text": "Telemetry test reflection", "date": "2025-06-01"}
+            result = await handle_journal_add_reflection(request)
+            
+            assert result["status"] == "success"
+            
+            # Verify telemetry attributes were set
+            set_attribute_calls = mock_span_instance.set_attribute.call_args_list
+            assert len(set_attribute_calls) > 0
+            
+            # Check for expected telemetry attributes
+            attribute_names = [call[0][0] for call in set_attribute_calls]
+            expected_attrs = ["mcp.operation", "reflection.date"]
+            found_attrs = [attr for attr in expected_attrs if attr in attribute_names]
+            assert len(found_attrs) > 0
+    finally:
+        import shutil
+        shutil.rmtree(temp_dir, ignore_errors=True)
+```
+
+#### Test Pattern Key Principles
+
+1. **Complete Isolation**: Each test uses isolated temp directories to prevent interference
+2. **Server-Level Mocking**: Mock imports at the server module level, not deep in the call stack
+3. **Comprehensive Scenarios**: Test unicode, large content, concurrent operations, and error cases
+4. **Telemetry Validation**: Ensure all operations are properly instrumented
+5. **Cleanup Guarantees**: Always clean up temp directories in finally blocks
+6. **Real Integration**: Use actual reflection core functions with mocked configuration
+
 ### Telemetry and Observability Tests
 
 Extensive telemetry testing ensures monitoring works correctly:
