@@ -144,11 +144,13 @@ class TestConfigurationLoadingTelemetry:
             mock_metrics.record_counter.assert_called()
             
             counter_calls = mock_metrics.record_counter.call_args_list
-            operations_call = next((call for call in counter_calls 
-                                  if 'mcp.config.operations_total' in call[0][0]), None)
+            # Look specifically for load operation, not just any operations_total call
+            load_operations_call = next((call for call in counter_calls 
+                                  if 'mcp.config.operations_total' in call[0][0] and
+                                     call[1]['attributes']['operation'] == 'load'), None)
             
-            assert operations_call is not None
-            attributes = operations_call[1]['attributes']
+            assert load_operations_call is not None
+            attributes = load_operations_call[1]['attributes']
             assert attributes['operation'] == 'load'
             assert attributes['result'] == 'success'
             assert attributes['config_source'] == 'defaults'
