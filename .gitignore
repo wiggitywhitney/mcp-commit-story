@@ -16,6 +16,9 @@ dev-debug.log
 # Dependency directories
 node_modules/
 
+# Journal directory - test artifacts
+journal/
+
 # Environment variables
 
 # Editor directories and files
