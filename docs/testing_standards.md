@@ -122,12 +122,12 @@ All tests must pass in the CI environment before merging changes:
 - PRs cannot be merged if tests fail
 - Code coverage is reported in the CI pipeline
 
-## Task Completion Criteria
+## Feature Completion Criteria
 
-A task is only considered complete when:
+A feature is only considered complete when:
 
-1. All tests for the task are written
-2. All tests for the task pass
+1. All tests for the feature are written
+2. All tests for the feature pass
 3. The code has been reviewed
 4. All edge cases are covered
 5. Documentation is updated

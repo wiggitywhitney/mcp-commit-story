@@ -51,65 +51,62 @@ MCP Commit Story follows an **MCP-first architecture** with a minimal setup-only
 
 **Post-Commit Hook**: Automatically triggers `journal/new-entry` via MCP after each commit, enabling fully automated journaling without human intervention.
 
-## Migration from CLI-First
-
-### What Changed
-
-1. **Removed Commands**: `mcp-commit-story new-entry` and `mcp-commit-story add-reflection` 
-2. **Renamed Entry Point**: `mcp-commit-story` → `mcp-commit-story-setup`
-3. **Enhanced MCP**: All operational functionality moved to MCP server with proper tool registration
-
-### What Stayed
-
-1. **Setup Commands**: `journal-init` and `install-hook` remain in CLI for human setup
-2. **All Functionality**: No features were removed, only relocated to appropriate interfaces
-3. **Backward Compatibility**: MCP operations maintain same contracts and behavior
-
-## Benefits
-
-1. **Clearer Value Proposition**: Obvious separation between setup and operations
-2. **Better Integration**: AI agents can use MCP operations without CLI complexity
-3. **Reduced Confusion**: No ambiguity about which interface to use for what purpose
-4. **Simplified Maintenance**: Smaller CLI surface area with focused responsibilities
-
 ## Usage Patterns
 
 ### Initial Setup (Human)
 ```bash
-# One-time setup
+# One-time setup in a repository
 mcp-commit-story-setup journal-init
 mcp-commit-story-setup install-hook
 ```
 
 ### Operational Usage (AI/Automated)
 ```python
-# AI agent via MCP
-await mcp.call("journal/new-entry", {
+# Via MCP operations (AI agents, editors)
+await mcp_client.call_tool("journal/new-entry", {
     "git": git_context,
-    "chat": chat_history,
-    "terminal": terminal_commands
+    "chat": chat_context,
+    "terminal": terminal_context
+})
+
+await mcp_client.call_tool("journal/add-reflection", {
+    "reflection": "Today I learned about...",
+    "date": "2025-01-15"
 })
 ```
 
 ### Automated Journaling (Git Hook)
 ```bash
-# Happens automatically after each commit
-git commit -m "feat: implement new feature"
-# → post-commit hook → MCP journal/new-entry → automated journal entry
+# Automatically triggered after each commit
+git commit -m "Implement user authentication"
+# → Triggers journal/new-entry via MCP
+# → Creates journal/daily/2025-01-15.md entry
 ```
 
-This architecture ensures that:
-- Humans handle setup once
-- AI handles operations ongoing  
-- Automation works seamlessly
-- Integration is straightforward
+## Benefits
 
----
+### For Development Teams
+- **Automated Documentation**: No manual effort required for basic journaling
+- **Rich Context**: Captures git, chat, and terminal context automatically
+- **Consistent Format**: Standardized journal entries across all developers
+- **Retrospective Ready**: Weekly/monthly summaries for sprint reviews
+
+### For AI Integration
+- **Native MCP Support**: Seamless integration with AI agents and IDEs
+- **Structured Data**: Clear contracts for all operations
+- **Telemetry Built-in**: Performance and usage analytics
+- **Extensible**: Easy to add new journal operations
+
+### For Individual Developers
+- **Zero Friction**: Set once, works automatically
+- **Rich Storytelling**: Transform technical entries into blog posts
+- **Pattern Recognition**: Identify development patterns and blockers
+- **Career Documentation**: Long-term record of accomplishments
 
 ## Related Documentation
 
-- **[MCP API Specification](mcp-api-specification.md)** - Detailed MCP operations, data formats, and integration patterns
-- **[Journal Behavior](journal-behavior.md)** - How journal entries are generated, structured, and configured
-- **[Implementation Guide](implementation-guide.md)** - Technical implementation details, patterns, and development workflow
-- **[Testing Standards](testing_standards.md)** - Testing approaches and quality standards
-- **[On-Demand Directory Pattern](on-demand-directory-pattern.md)** - File system organization patterns 
+- **[MCP API Specification](mcp-api-specification.md)** - Complete API reference
+- **[Implementation Guide](implementation-guide.md)** - Technical implementation details
+- **[Journal Behavior](journal-behavior.md)** - Content generation rules
+- **[Server Setup](server_setup.md)** - Deployment and configuration
+- **[Testing Standards](testing_standards.md)** - Quality assurance

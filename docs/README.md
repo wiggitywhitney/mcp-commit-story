@@ -9,6 +9,12 @@ This directory contains the complete technical documentation for the MCP Commit 
 
 ### 🔧 Technical References
 - **[MCP API Specification](mcp-api-specification.md)** - Complete reference for MCP operations, data formats, and client integration
+- **[Journal Core](journal-core.md)** - Core journal functionality, classes, and AI generation system
+- **[Context Collection](context-collection.md)** - Context gathering system and type definitions for AI generation
+- **[Reflection Core](reflection-core.md)** - Manual reflection addition system with validation and telemetry
+- **[Telemetry](telemetry.md)** - Comprehensive telemetry, monitoring, and observability system
+- **[Structured Logging](structured-logging.md)** - JSON logging with trace correlation and sensitive data protection
+- **[Multi-Exporter](multi-exporter.md)** - OpenTelemetry exporter configuration with environment precedence
 - **[Journal Behavior](journal-behavior.md)** - How journal entries are generated, structured, and configured
 - **[Implementation Guide](implementation-guide.md)** - Detailed development guidance, patterns, and technical implementation
 
@@ -36,12 +42,23 @@ This directory contains the complete technical documentation for the MCP Commit 
 2. Check [Journal Init](journal_init.md) for setup process
 3. Reference [On-Demand Directory Pattern](on-demand-directory-pattern.md) for file organization
 
+### For Core System Understanding
+1. Review [Journal Core](journal-core.md) for entry generation system
+2. Check [Context Collection](context-collection.md) for data gathering
+3. See [Reflection Core](reflection-core.md) for manual reflection features
+
+### For Monitoring and Observability
+1. Start with [Telemetry](telemetry.md) for comprehensive monitoring
+2. Review [Structured Logging](structured-logging.md) for logging capabilities
+3. Check [Multi-Exporter](multi-exporter.md) for exporter configuration
+
 ## Document Status
 
-All documentation reflects the current MCP-first architecture as of Task 25, where operational commands moved from CLI to MCP server operations.
+All documentation reflects the current MCP-first architecture where operational commands are handled by the MCP server rather than CLI.
 
 ### Recent Updates
 - ✅ Created comprehensive API specification
+- ✅ Documented all core system modules (journal, context, reflection, telemetry, logging, multi-exporter)
 - ✅ Organized journal behavior documentation
 - ✅ Consolidated implementation guidance
 - ✅ Added table of contents to engineering spec
@@ -52,5 +69,8 @@ All documentation reflects the current MCP-first architecture as of Task 25, whe
 When updating code, please also update the relevant documentation:
 - **Architecture changes** → Update [Architecture](architecture.md)
 - **API changes** → Update [MCP API Specification](mcp-api-specification.md)
-- **Journal behavior changes** → Update [Journal Behavior](journal-behavior.md)
+- **Journal behavior changes** → Update [Journal Behavior](journal-behavior.md) and [Journal Core](journal-core.md)
+- **Context collection changes** → Update [Context Collection](context-collection.md)
+- **Reflection system changes** → Update [Reflection Core](reflection-core.md)
+- **Telemetry changes** → Update [Telemetry](telemetry.md), [Structured Logging](structured-logging.md), or [Multi-Exporter](multi-exporter.md)
 - **Implementation patterns** → Update [Implementation Guide](implementation-guide.md) 

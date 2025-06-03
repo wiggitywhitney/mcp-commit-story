@@ -25,20 +25,20 @@ with open(file_path, "a") as f:
 - [ ] Tests cover directory creation on-demand (not upfront)
 - [ ] Docstrings mention on-demand pattern where relevant
 
-## Task-Specific Guidance
-### Task 10: Manual Reflection Addition
-- Update `add_reflection_to_journal()` to call `ensure_journal_directory(file_path)` before writing the reflection.
-- Do not create directories at init; rely on on-demand pattern.
-- Add/Update tests to verify reflections work when parent directories do not exist.
+## Development Guidelines
 
-### Task 11: Summary Generation
-- Update `save_summary()` to call `ensure_journal_directory(file_path)` for all summary types (daily, weekly, monthly, yearly).
-- Do not create summary directories at init; rely on on-demand pattern.
-- Add/Update tests to verify summaries are saved correctly when directories do not exist.
+### For New File-Writing Features
+- Always call `ensure_journal_directory(file_path)` before writing to any journal file.
+- Do not create directories at initialization; rely on on-demand pattern.
+- Add tests to verify operations work when parent directories do not exist.
 
-### Task 22: Remaining MCP Server Handlers
+### For Summary Generation Features
+- Use `ensure_journal_directory(file_path)` for all summary types (daily, weekly, monthly, yearly).
+- Add tests to verify summaries are saved correctly when directories do not exist.
+
+### For MCP Server Handlers
 - Ensure all MCP server handlers that write files use `ensure_journal_directory` before writing.
-- Add/Update tests to verify handlers work when directories do not exist.
+- Add tests to verify handlers work when directories do not exist.
 
 ## References
 - See the engineering spec (engineering-mcp-journal-spec-final.md) for rationale and requirements.

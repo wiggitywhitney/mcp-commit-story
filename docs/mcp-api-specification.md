@@ -49,13 +49,10 @@ Clients (such as editors or agents) should be able to connect using a configurat
 
 The server exposes these operations for journal management:
 
-1. **`journal/new-entry`** - Create a new journal entry from current git state
-2. **`journal/summarize`** - Generate weekly/monthly summaries  
-3. **`journal/blogify`** - Convert journal entry(s) to blog post format
-4. **`journal/backfill`** - Check for missed commits and create entries
-5. **`journal/install-hook`** - Install git post-commit hook
-6. **`journal/add-reflection`** - Add a manual reflection to today's journal
-7. **`journal/init`** - Initialize journal in current repository
+1. **`journal/new-entry`** - Create a new journal entry from git, chat, and terminal context
+2. **`journal/add-reflection`** - Add a manual reflection to a specific date's journal
+3. **`journal/init`** - Initialize journal in current repository  
+4. **`journal/install-hook`** - Install git post-commit hook
 
 Each operation is instrumented with appropriate traces to monitor performance and error rates.
 
@@ -66,51 +63,53 @@ Each operation is instrumented with appropriate traces to monitor performance an
 ### journal/new-entry
 **Purpose**: Create a journal entry for the current commit
 
+**Parameters**:
+- `git: Dict[str, Any]` (required) - Git context information including commit hash, message, files changed, etc.
+- `chat: Optional[Any]` (optional) - Chat history context from development session
+- `terminal: Optional[Any]` (optional) - Terminal command history context
+
 **Behavior**:
 - Check for missed commits and backfill if needed
-- Generate entry for current commit
+- Generate entry for current commit using provided context
 - Return path to updated file
 
-**Parameters**: None (uses current git state)
-
 **Returns**:
 ```json
 {
-  "success": true,
+  "status": "success",
   "file_path": "journal/daily/2025-01-15.md",
-  "entries_created": 1,
-  "backfilled": 0
+  "error": null
 }
 ```
 
-### journal/summarize
-**Purpose**: Generate summaries for specified time periods
-
-**Parameters**:
-- `period`: One of "day", "week", "month", "year"
-- `date`: Specific date (optional, defaults to most recent)
-- `range`: Arbitrary range in format "YYYY-MM-DD:YYYY-MM-DD" (optional)
-
-**Behavior**:
-- Daily summaries for quick recaps of previous day's work
-- Weekly summaries for sprint retrospectives and short-term trends
-- Monthly summaries for broader patterns and accomplishments
-- Yearly summaries for major milestones and career progression
-- Prioritize manually added reflections in summaries
-- Prioritize substantial/complex work over routine changes
-
-**Returns**:
+**Example Request**:
 ```json
 {
-  "success": true,
-  "file_path": "journal/summaries/weekly/2025-01-week3.md",
-  "period": "week",
-  "date_range": "2025-01-13 to 2025-01-19"
+  "git": {
+    "commit_hash": "abc123",
+    "commit_message": "Implement user authentication",
+    "files_changed": ["src/auth.py", "tests/test_auth.py"],
+    "insertions": 45,
+    "deletions": 12
+  },
+  "chat": {
+    "messages": [
+      {"speaker": "Human", "text": "Let's implement JWT authentication"},
+      {"speaker": "Agent", "text": "I'll help you set up JWT tokens..."}
+    ]
+  },
+  "terminal": {
+    "commands": ["npm test", "git add .", "git commit -m 'Implement user authentication'"]
+  }
 }
-```
 
 ### journal/init
 **Purpose**: Initialize journal in current repository
+
+**Parameters**:
+- `repo_path: str` (optional) - Path to the git repository (defaults to current directory)
+- `config_path: str` (optional) - Path for the config file (defaults to .mcp-commit-storyrc.yaml in repo root)
+- `journal_path: str` (optional) - Path for the journal directory (defaults to journal/ in repo root)
 
 **Behavior**:
 - Create initial journal directory structure
@@ -121,73 +120,58 @@ Each operation is instrumented with appropriate traces to monitor performance an
 **Returns**:
 ```json
 {
-  "success": true,
-  "config_created": true,
-  "hook_installed": true,
-  "directories_created": ["journal/daily", "journal/summaries"]
+  "status": "success",
+  "paths": {
+    "config": "/path/to/.mcp-commit-storyrc.yaml",
+    "journal": "/path/to/journal"
+  },
+  "message": "Journal initialized successfully"
+}
+```
+
+**Example Request**:
+```json
+{
+  "repo_path": "/path/to/my-project",
+  "config_path": "/path/to/my-project/.mcp-commit-storyrc.yaml",
+  "journal_path": "/path/to/my-project/journal"
 }
 ```
 
 ### journal/add-reflection
-**Purpose**: Add manual reflection to today's journal
+**Purpose**: Add manual reflection to a specific date's journal
 
 **Parameters**:
-- `text`: Reflection content (supports markdown)
+- `reflection: str` (required) - Reflection content (supports markdown)
+- `date: str` (required) - ISO date string (YYYY-MM-DD)
 
 **Behavior**:
-- Append to today's journal file with timestamp
+- Append to the specified date's journal file with timestamp
 - Support markdown formatting in reflection
 - Return path to updated file
 
 **Returns**:
 ```json
 {
-  "success": true,
+  "status": "success",
   "file_path": "journal/daily/2025-01-15.md",
-  "reflection_added": true
+  "error": null
 }
 ```
 
-### journal/blogify
-**Purpose**: Transform journal entries into cohesive narrative content
-
-**Parameters**:
-- `files`: Array of journal file paths (single or multiple)
-
-**Behavior**:
-- Creates natural, readable blog post from technical entries
-- Removes structural elements (headers, timestamps, metadata)
-- Preserves key decisions and insights
-
-**Returns**:
+**Example Request**:
 ```json
 {
-  "success": true,
-  "content": "<markdown blog post content>",
-  "source_files": ["journal/daily/2025-01-15.md"]
-}
-```
-
-### journal/backfill
-**Purpose**: Check for missed commits and create entries
-
-**Behavior**:
-- Detection: Check commits since last journal entry in any file
-- Order: Add missed entries in chronological order
-- Context: Skip terminal/chat history for backfilled entries
-- Annotation: Mark entries as backfilled with timestamp
-
-**Returns**:
-```json
-{
-  "success": true,
-  "entries_created": 3,
-  "date_range": "2025-01-10 to 2025-01-12"
+  "reflection": "Today I learned about JWT token validation and how to properly handle refresh tokens. The key insight was understanding the difference between access and refresh token lifespans.",
+  "date": "2025-01-15"
 }
 ```
 
 ### journal/install-hook
 **Purpose**: Install git post-commit hook
+
+**Parameters**:
+- `repo_path: str` (optional) - Path to git repository (defaults to current directory)
 
 **Behavior**:
 - Check for existing hooks and handle conflicts
@@ -197,9 +181,17 @@ Each operation is instrumented with appropriate traces to monitor performance an
 **Returns**:
 ```json
 {
-  "success": true,
-  "hook_installed": true,
-  "backup_created": ".git/hooks/post-commit.backup.20250115-143022"
+  "status": "success",
+  "message": "Post-commit hook installed successfully.",
+  "backup_path": "/path/to/.git/hooks/post-commit.backup.20250115-143022",
+  "hook_path": "/path/to/.git/hooks/post-commit"
+}
+```
+
+**Example Request**:
+```json
+{
+  "repo_path": "/path/to/my-project"
 }
 ```
 
@@ -209,22 +201,23 @@ Each operation is instrumented with appropriate traces to monitor performance an
 
 ### Success Response Format
 All successful operations return structured data with:
-- `success: true`
-- `file_path`: Path to created/modified file (when applicable)
-- Operation-specific metadata
+- `status: "success"`
+- Operation-specific data (e.g., `file_path`, `paths`, `message`)
+- `error: null` (for operations that include error field)
 
 ### Error Response Format
 Failed operations return:
 ```json
 {
-  "success": false,
-  "error": "Brief error description",
-  "details": "Additional context (optional)"
+  "status": "error",
+  "error": "Brief error description"
 }
 ```
 
+**Note**: Some operations may use custom status values (e.g., `"bad-request"`) for specific error types.
+
 ### Journal Entry Content
-- All operations return pre-formatted markdown strings
+- All operations return pre-formatted markdown strings when applicable
 - Structured according to canonical journal entry format
 - Include metadata for file paths and operation status
 

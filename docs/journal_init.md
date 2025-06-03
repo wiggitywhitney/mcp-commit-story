@@ -197,7 +197,7 @@ See `tests/integration/test_git_hook_integration.py` for implementation details.
 
 ### Hook Execution Testing
 
-Integration tests for hook execution (subtask 14.6) directly write a debug post-commit hook to `.git/hooks/post-commit` and verify that it is executed:
+Integration tests for hook execution directly write a debug post-commit hook to `.git/hooks/post-commit` and verify that it is executed:
 - After a commit (git triggers the hook)
 - When run directly as an executable
 - When run with `sh post-commit`
