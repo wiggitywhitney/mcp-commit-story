@@ -1,28 +1,50 @@
 # Journal Core Module Documentation
 
-This document describes the core journal functionality implemented in `src/mcp_commit_story/journal.py`. This module provides the foundational classes and functions for creating, parsing, and managing journal entries.
+This document describes the core journal functionality implemented in `src/mcp_commit_story/journal.py` and the workflow orchestration in `src/mcp_commit_story/journal_workflow.py`. These modules provide the foundational classes and functions for creating, parsing, and managing journal entries.
 
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Core Classes](#core-classes)
-3. [Entry Generation Functions](#entry-generation-functions)
-4. [File Operations](#file-operations)
-5. [AI Generation Sections](#ai-generation-sections)
-6. [Utilities](#utilities)
-7. [Content Quality Guidelines](#content-quality-guidelines)
+2. [Architecture](#architecture)
+3. [Core Classes](#core-classes)
+4. [Journal Workflow Module](#journal-workflow-module)
+5. [Entry Generation Functions](#entry-generation-functions)
+6. [File Operations](#file-operations)
+7. [AI Generation Sections](#ai-generation-sections)
+8. [Utilities](#utilities)
+9. [Content Quality Guidelines](#content-quality-guidelines)
 
 ---
 
 ## Overview
 
-The journal core module implements the MCP Commit Story's journaling system with these key principles:
+The journal core system implements the MCP Commit Story's journaling system with these key principles:
 
 - **AI-Driven Content Generation**: All journal sections are generated using AI with specific prompts and context
 - **Telemetry Integration**: Comprehensive tracing and metrics for all operations
 - **Signal over Noise**: Content focuses on unique insights rather than routine procedures
 - **Markdown-First**: All content is structured as Markdown for readability and portability
 - **On-Demand Directory Creation**: Directories are created only when needed
+- **Modular Architecture**: Separated workflow orchestration from core journal functionality
+
+## Architecture
+
+The journal system is organized into two main modules:
+
+### `journal.py` - Core Functions and Classes
+- **JournalEntry** class for structured journal representation
+- **JournalParser** for parsing Markdown back to structured data
+- **Section generator functions** for AI-powered content creation
+- **File operations** for reading/writing journal files
+- **Utilities** for configuration and telemetry
+
+### `journal_workflow.py` - Workflow Orchestration
+- **Workflow functions** that orchestrate the complete journal entry generation process
+- **Context collection integration** to gather all necessary data
+- **Section generation coordination** to call all AI generation functions
+- **Error handling and graceful degradation** for robust operation
+
+This separation follows the single responsibility principle and makes the codebase easier to maintain and test.
 
 ## Core Classes
 
@@ -80,6 +102,145 @@ class JournalParser:
 - **Robust Parsing**: Handles various Markdown formatting variations
 - **Section Extraction**: Intelligently extracts content by section headers
 - **Error Handling**: Raises `JournalParseError` for malformed content
+
+## Journal Workflow Module
+
+The `journal_workflow.py` module provides high-level orchestration functions that coordinate the entire journal entry generation process. This module was created to separate workflow concerns from core journal functionality.
+
+### Primary Workflow Functions
+
+#### `generate_journal_entry(commit, config, debug=False)`
+
+```python
+def generate_journal_entry(commit, config, debug=False) -> Optional[JournalEntry]:
+    """Generate a complete journal entry by orchestrating all context collection and section generation."""
+```
+
+**Core Workflow Function Features:**
+- **GitPython Integration**: Expects and handles GitPython commit objects correctly
+- **Complete Context Collection**: Automatically collects all available context types
+- **Section Generation Orchestration**: Calls all eight section generator functions
+- **Graceful Degradation**: Continues processing even if individual sections fail
+- **Journal-Only Commit Detection**: Skips processing to prevent infinite loops
+- **Cross-Platform Timestamp**: Uses Windows/macOS compatible timestamp format
+- **Proper TypedDict Integration**: Correctly extracts content from TypedDict returns
+
+**Context Collection Integration:**
+- `collect_chat_history(since_commit, max_messages_back)` - Chat conversation context
+- `collect_ai_terminal_commands(since_commit, max_messages_back)` - AI terminal commands
+- `collect_git_context(commit_hash, journal_path)` - Git diff and metadata
+
+**Section Generation Integration:**
+All eight section generators are called with proper error handling:
+- `generate_summary_section()` → Extracts `summary` field
+- `generate_technical_synopsis_section()` → Extracts `technical_synopsis` field  
+- `generate_accomplishments_section()` → Extracts `accomplishments` list
+- `generate_frustrations_section()` → Extracts `frustrations` list
+- `generate_tone_mood_section()` → Extracts `mood` and `indicators` fields
+- `generate_discussion_notes_section()` → Extracts `discussion_notes` list
+- `generate_terminal_commands_section()` → Extracts `terminal_commands` list
+- `generate_commit_metadata_section()` → Extracts `commit_metadata` dict
+
+**Process Flow:**
+1. **Journal-Only Check**: Skip if commit only modifies journal files
+2. **Context Collection**: Gather all three context types with error handling
+3. **JournalContext Assembly**: Build proper 3-field structure: `{chat, terminal, git}`
+4. **Section Generation**: Generate all sections with graceful degradation
+5. **Content Extraction**: Use correct TypedDict field names for each section
+6. **Entry Assembly**: Create JournalEntry with cross-platform timestamp
+7. **Error Handling**: Log failures but continue with partial content
+
+#### `save_journal_entry(journal_entry, config, debug=False)`
+
+```python
+def save_journal_entry(journal_entry, config, debug=False) -> str:
+    """Save journal entry to daily file with automatic header generation."""
+```
+
+**File Management Features:**
+- **Daily Header Logic**: Automatically adds date headers to new daily files  
+- **Path Construction**: Handles file paths correctly to avoid duplication
+- **Configuration Compatibility**: Works with both Config objects and dict configs
+- **Append Logic**: Properly handles new files vs existing files to avoid separator conflicts
+
+**Daily Header Format:**
+```markdown
+# Daily Journal Entries - June 3, 2025
+
+### 2:34 PM — Commit [abc123]
+[journal entry content...]
+```
+
+#### `handle_journal_entry_creation(commit, config, debug=False)`
+
+```python
+def handle_journal_entry_creation(commit, config, debug=False) -> dict:
+    """Complete workflow combining generation and saving for MCP tools."""
+```
+
+**Complete Workflow Features:**
+- **End-to-End Processing**: Combines generation and saving in one call
+- **MCP Tool Integration**: Returns structured result for MCP server tools
+- **Skip Detection**: Handles journal-only commits gracefully
+- **Success Metrics**: Reports number of successful sections generated
+
+**Return Structure:**
+```python
+{
+    'success': bool,
+    'skipped': bool,           # True if journal-only commit
+    'reason': str,             # Skip reason if applicable  
+    'file_path': str,          # Path to saved file
+    'entry_sections': int      # Number of sections successfully generated
+}
+```
+
+### Journal-Only Commit Detection
+
+```python
+def is_journal_only_commit(commit, journal_path) -> bool:
+    """Prevent infinite loops by detecting journal-only commits."""
+```
+
+**GitPython Integration:**
+- **Diff Analysis**: Uses GitPython commit.diff() to get changed files
+- **Parent Handling**: Correctly handles commits with/without parents
+- **Initial Commit Support**: Uses NULL_TREE for initial commit diffs
+- **Error Resilience**: Defaults to processing on analysis errors
+
+**Implementation Details:**
+- Extracts file paths from GitPython diff objects (`item.a_path or item.b_path`)
+- Checks if all changed files start with the journal path
+- Returns `False` for mixed commits (journal + code files)
+- Returns `True` only when all files are within journal directory
+
+### Error Handling Strategy
+
+**Multi-Level Graceful Degradation:**
+- **Context Collection**: Continue with minimal git context if chat/terminal fail
+- **Section Generation**: Skip failed sections, continue with successful ones
+- **File Operations**: Log errors but don't crash the entire process
+- **Configuration**: Handle both Config objects and dict configurations
+
+**Logging and Telemetry:**
+- **Debug Mode**: Comprehensive logging for troubleshooting workflow steps
+- **Error Tracking**: All failures logged with context for debugging
+- **Telemetry Integration**: Operations traced for monitoring and metrics
+- **Partial Success Reporting**: Always report what was successfully completed
+
+### Integration Points
+
+**Upstream Dependencies:**
+- **Context Collection Module** (`context_collection.py`): All three context collectors
+- **Core Journal Module** (`journal.py`): All eight section generators  
+- **Context Types Module** (`context_types.py`): JournalContext TypedDict structure
+- **Configuration System**: Journal path and settings
+- **Git Utilities**: NULL_TREE constant for initial commits
+
+**Downstream Integration:**
+- **MCP Server Tools**: Called by journal entry creation tools
+- **CLI Commands**: Used by manual journal generation commands
+- **Git Hooks**: Integrated into commit-triggered journal generation
 
 ## Entry Generation Functions
 

@@ -144,12 +144,13 @@ mcp-commit-story/
 ├── src/
 │   └── mcp_commit_story/
 │       ├── __init__.py
-│       ├── cli.py        # Click commands
-│       ├── server.py     # MCP server implementation
-│       ├── journal.py    # Journal entry generation
-│       ├── git_utils.py  # Git operations
-│       ├── telemetry.py  # OpenTelemetry setup and utilities
-│       └── config.py     # Configuration handling
+│       ├── cli.py              # Click commands
+│       ├── server.py           # MCP server implementation  
+│       ├── journal.py          # Core journal functions and classes
+│       ├── journal_workflow.py # Journal entry workflow orchestration
+│       ├── git_utils.py        # Git operations
+│       ├── telemetry.py        # OpenTelemetry setup and utilities
+│       └── config.py           # Configuration handling
 ├── tests/
 │   ├── unit/
 │   ├── integration/
@@ -203,13 +204,37 @@ mypy = "^1.0.0"
 ```
 src/mcp_commit_story/
 ├── __init__.py
-├── cli.py        # Click commands
-├── server.py     # MCP server implementation  
-├── journal.py    # Journal entry generation
-├── git_utils.py  # Git operations
-├── telemetry.py  # OpenTelemetry setup and utilities
-└── config.py     # Configuration handling
+├── cli.py              # Click commands
+├── server.py           # MCP server implementation  
+├── journal.py          # Core journal functions and classes
+├── journal_workflow.py # Journal entry workflow orchestration
+├── git_utils.py        # Git operations
+├── telemetry.py        # OpenTelemetry setup and utilities
+└── config.py           # Configuration handling
 ```
+
+#### Module Architecture
+
+The journal system follows a modular architecture with clear separation of concerns:
+
+**journal.py** - Core journal functionality:
+- `JournalEntry` class for structured representation
+- `JournalParser` for parsing Markdown back to structured data
+- Section generator functions for AI-powered content creation
+- File operations for reading/writing journal files
+- Utilities for configuration and telemetry
+
+**journal_workflow.py** - Workflow orchestration:
+- `generate_journal_entry()` - Main workflow function that orchestrates complete journal entry generation
+- `save_journal_entry()` - Saves generated journal entries to daily files with proper header formatting
+- `handle_journal_entry_creation()` - End-to-end workflow combining generation and saving for MCP tools
+- `is_journal_only_commit()` - Detects commits that only modify journal files to prevent infinite loops
+- Context collection integration to gather all necessary data
+- Section generation coordination to call all AI generation functions
+- Error handling and graceful degradation for robust operation
+- Cross-platform timestamp formatting and file path handling
+
+This separation follows the single responsibility principle and makes the codebase easier to maintain and test.
 
 ### File Structure
 ```

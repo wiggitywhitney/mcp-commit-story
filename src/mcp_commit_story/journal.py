@@ -1587,3 +1587,4 @@ def load_journal_context(config_path: str) -> dict:
             current_span.set_attribute("error.category", "config_load_failed")
         
         raise JournalError(f"Failed to load configuration: {e}")
+
