@@ -1,7 +1,7 @@
 # Task ID: 9
 # Title: Implement Journal Entry Creation
 # Status: pending
-# Dependencies: 10
+# Dependencies: None
 # Priority: high
 # Description: Create the functionality to generate and save journal entries for Git commits, including context collection and formatting.
 # Details:
@@ -103,26 +103,138 @@ Note: All operational journal entry and reflection tasks are handled by the MCP 
 7. Tests for post-commit hook functionality
 
 # Subtasks:
-## 1. Install Simple Post-Commit Hook [pending]
+## 1. Implement Journal Entry Generation Workflow [pending]
 ### Dependencies: None
-### Description: Install a basic post-commit hook that automatically triggers journal entry creation after each commit.
+### Description: Create generate_journal_entry() function that orchestrates all context collection and section generation functions
 ### Details:
-Create a simple post-commit hook installation function that:
-1. Writes a basic shell script to .git/hooks/post-commit
-2. Makes the hook executable
-3. Hook content: calls the MCP server endpoint for journal entry creation
-4. No backup/restore logic (keep it simple for MVP)
-5. No auto-summarization triggers
-6. Basic error handling for missing .git directory
+# Task 9: Implement Journal Entry Creation - Detailed Subtask Plan
 
-## 2. Implement Journal Initialization CLI Command [pending]
+## Subtask 9.1: Implement Journal Entry Generation Workflow
+**Objective**: Create generate_journal_entry() function that orchestrates all context collection and section generation functions to build complete journal entries from commit data.
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_journal_entry_generation.py`
+   - Test `generate_journal_entry(commit, config, debug=False)` function
+   - Test cases: successful entry generation with all sections, journal-only commit detection and skipping, context collection integration (collect_chat_history, collect_ai_terminal_commands, collect_git_context), section generation integration (all 8 generate_*_section functions), graceful degradation when individual functions fail, configuration-driven section inclusion/exclusion, debug mode output validation
+   - Test `is_journal_only_commit(commit, journal_path)` helper function
+   - Test integration with existing JournalEntry and JournalContext classes
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: Header format consistency (match reflection headers or create new format)
+   - **PAUSE FOR MANUAL APPROVAL**: Section ordering and organization in final journal entry
+   - **PAUSE FOR MANUAL APPROVAL**: Configuration schema for enabling/disabling individual sections
+   - **PAUSE FOR MANUAL APPROVAL**: Graceful degradation strategy (skip failed sections vs include error placeholder)
+   - **PAUSE FOR MANUAL APPROVAL**: Journal-only commit detection criteria
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Implement `generate_journal_entry()` in `src/mcp_commit_story/journal.py`
+   - Create `is_journal_only_commit()` helper function
+   - Integrate ALL context collection functions: collect_chat_history(), collect_ai_terminal_commands(), collect_git_context()
+   - Orchestrate ALL section generators: generate_summary_section(), generate_technical_synopsis_section(), generate_accomplishments_section(), generate_frustrations_section(), generate_tone_mood_section(), generate_discussion_notes_section(), generate_terminal_commands_section(), generate_commit_metadata_section()
+   - Implement graceful degradation: catch individual function errors, log them, continue with other sections
+   - Build complete JournalContext from all collected context
+   - Ensure compatibility with existing JournalEntry class
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update journal entry generation workflow documentation
+     2. **PRD**: Update automated journal creation features
+     3. **Engineering Spec**: Update workflow implementation details and make sure TOC is current
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
+   - **MARK COMPLETE**
+
+## 2. Implement Journal Entry File Operations [pending]
 ### Dependencies: None
-### Description: Create the journal-init CLI command to set up the initial journal structure and configuration.
+### Description: Create save_journal_entry() function for writing journal entries to daily files using existing utilities
 ### Details:
-Implement the journal-init command that:
-1. Creates the necessary directory structure for the journal
-2. Sets up initial configuration values
-3. Validates the journal path
-4. Provides helpful output to the user
-5. Includes appropriate error handling
+## Subtask 9.2: Implement Journal Entry File Operations
+**Objective**: Create save_journal_entry() function that handles writing journal entries to daily journal files using existing utilities.
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_journal_file_operations.py`
+   - Test `save_journal_entry(entry, config)` function
+   - Test cases: successful save to daily file, file creation when doesn't exist, proper entry formatting and separation, integration with existing append_to_journal_file() utility, error handling for file permission issues, directory creation when needed
+   - Test daily file naming convention (YYYY-MM-DD.md format)
+   - Test entry separation and formatting consistency
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: File naming convention consistency with existing journal files
+   - **PAUSE FOR MANUAL APPROVAL**: Entry separation format (newlines, headers, dividers)
+   - **PAUSE FOR MANUAL APPROVAL**: Directory structure and organization
+   - **PAUSE FOR MANUAL APPROVAL**: Integration approach with existing append_to_journal_file() function
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Implement `save_journal_entry()` in `src/mcp_commit_story/journal.py`
+   - Use existing `append_to_journal_file()` utility from journal.py
+   - Handle daily file management with proper formatting
+   - Ensure consistent entry separation and structure
+   - Add proper error handling for file operations
+   - Create directories as needed
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update journal file operations documentation
+     2. **PRD**: Update file management features
+     3. **Engineering Spec**: Update file operation implementation details and make sure TOC is current
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
+   - **MARK COMPLETE**
+
+## 3. Implement MCP Journal Entry Creation Handler [pending]
+### Dependencies: 9.1, 9.2
+### Description: Create handle_journal_entry_creation() MCP function that integrates generation and file operations
+### Details:
+## Subtask 9.3: Implement MCP Journal Entry Creation Handler
+**Objective**: Create handle_journal_entry_creation() function that integrates journal entry generation and file operations into the MCP server.
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_mcp_journal_handler.py`
+   - Test `handle_journal_entry_creation(request)` function with @trace_operation decorator
+   - Test cases: successful journal entry creation end-to-end, MCP request schema validation, git operations integration, auto-summarize integration when configured, error handling for missing commits, telemetry integration with proper span creation
+   - Test MCP response format compliance
+   - Test integration with existing git utilities
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: MCP request schema structure (commit_hash, config overrides, etc.)
+   - **PAUSE FOR MANUAL APPROVAL**: MCP response format (success/error structure, included data)
+   - **PAUSE FOR MANUAL APPROVAL**: Auto-summarize integration approach and configuration
+   - **PAUSE FOR MANUAL APPROVAL**: Telemetry span naming and attribute structure
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Implement `handle_journal_entry_creation()` in appropriate MCP handler module
+   - Add @trace_operation decorator for telemetry integration
+   - Integrate with generate_journal_entry() from subtask 9.1
+   - Integrate with save_journal_entry() from subtask 9.2
+   - Add proper MCP request/response handling
+   - Implement git operations integration
+   - Add auto-summarize integration when configured
+   - Ensure proper error handling and status reporting
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update MCP integration documentation
+     2. **PRD**: Update journal creation workflow features
+     3. **Engineering Spec**: Update MCP handler implementation details and make sure TOC is current
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
+   - **MARK COMPLETE**
 
