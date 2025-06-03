@@ -136,9 +136,9 @@ And contains various thoughts."""
 class TestAddReflectionToJournal:
     """Test the add_reflection_to_journal function."""
     
-    @patch('src.mcp_commit_story.reflection_core.ensure_journal_directory')
+    @patch('src.mcp_commit_story.reflection_core.append_to_journal_file')
     @patch('src.mcp_commit_story.reflection_core.format_reflection')
-    def test_add_reflection_creates_new_file(self, mock_format, mock_ensure_dir):
+    def test_add_reflection_creates_new_file(self, mock_format, mock_append):
         """Test adding reflection to a new journal file."""
         mock_format.return_value = "\n\n## Reflection (2025-06-02 15:30:45)\n\nTest reflection"
         
@@ -147,51 +147,40 @@ class TestAddReflectionToJournal:
             
             result = add_reflection_to_journal(journal_path, "Test reflection")
             
-            # Verify directory creation was called
-            mock_ensure_dir.assert_called_once_with(journal_path)
+            # Verify append_to_journal_file was called (which handles directory creation)
+            mock_append.assert_called_once_with(
+                "\n\n## Reflection (2025-06-02 15:30:45)\n\nTest reflection",
+                journal_path
+            )
             
             # Verify formatting was called
             mock_format.assert_called_once_with("Test reflection")
             
-            # Verify file was created with content
-            assert os.path.exists(journal_path)
-            with open(journal_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-            assert "## Reflection (2025-06-02 15:30:45)" in content
-            assert "Test reflection" in content
-            
             # Verify return value
             assert result is True
     
-    @patch('src.mcp_commit_story.reflection_core.ensure_journal_directory')
+    @patch('src.mcp_commit_story.reflection_core.append_to_journal_file')
     @patch('src.mcp_commit_story.reflection_core.format_reflection')
-    def test_add_reflection_appends_to_existing_file(self, mock_format, mock_ensure_dir):
+    def test_add_reflection_appends_to_existing_file(self, mock_format, mock_append):
         """Test adding reflection to an existing journal file."""
         mock_format.return_value = "\n\n## Reflection (2025-06-02 15:30:45)\n\nNew reflection"
         
         with tempfile.TemporaryDirectory() as temp_dir:
             journal_path = os.path.join(temp_dir, "existing-journal.md")
             
-            # Create existing file with content
-            existing_content = "# Existing Journal Entry\n\nSome existing content."
-            with open(journal_path, 'w', encoding='utf-8') as f:
-                f.write(existing_content)
-            
             result = add_reflection_to_journal(journal_path, "New reflection")
             
-            # Verify file contains both old and new content
-            with open(journal_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-            assert "Existing Journal Entry" in content
-            assert "Some existing content." in content
-            assert "## Reflection (2025-06-02 15:30:45)" in content
-            assert "New reflection" in content
+            # Verify append_to_journal_file was called
+            mock_append.assert_called_once_with(
+                "\n\n## Reflection (2025-06-02 15:30:45)\n\nNew reflection",
+                journal_path
+            )
             
             assert result is True
     
-    @patch('src.mcp_commit_story.reflection_core.ensure_journal_directory')
+    @patch('src.mcp_commit_story.reflection_core.append_to_journal_file')
     @patch('src.mcp_commit_story.reflection_core.format_reflection')
-    def test_add_reflection_handles_unicode(self, mock_format, mock_ensure_dir):
+    def test_add_reflection_handles_unicode(self, mock_format, mock_append):
         """Test adding reflection with unicode characters."""
         mock_format.return_value = "\n\n## Reflection (2025-06-02 15:30:45)\n\nUnicode: 🎉 café naïve"
         
@@ -200,21 +189,20 @@ class TestAddReflectionToJournal:
             
             result = add_reflection_to_journal(journal_path, "Unicode: 🎉 café naïve")
             
-            # Verify unicode was handled correctly
-            with open(journal_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-            assert "🎉" in content
-            assert "café" in content
-            assert "naïve" in content
+            # Verify append_to_journal_file was called
+            mock_append.assert_called_once_with(
+                "\n\n## Reflection (2025-06-02 15:30:45)\n\nUnicode: 🎉 café naïve",
+                journal_path
+            )
             
             assert result is True
     
-    @patch('src.mcp_commit_story.reflection_core.ensure_journal_directory')
+    @patch('src.mcp_commit_story.reflection_core.append_to_journal_file')
     @patch('src.mcp_commit_story.reflection_core.format_reflection')
-    def test_add_reflection_error_handling(self, mock_format, mock_ensure_dir):
+    def test_add_reflection_error_handling(self, mock_format, mock_append):
         """Test error handling in add_reflection_to_journal."""
         mock_format.return_value = "\n\n## Reflection\n\nTest"
-        mock_ensure_dir.side_effect = OSError("Permission denied")
+        mock_append.side_effect = OSError("Permission denied")
         
         with pytest.raises(OSError):
             add_reflection_to_journal("/invalid/path/journal.md", "Test reflection")

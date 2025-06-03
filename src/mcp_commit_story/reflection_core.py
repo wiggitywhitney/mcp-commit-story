@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Union, Dict, Any
 
 # Import existing directory utility and telemetry
-from .journal import ensure_journal_directory, get_journal_file_path
+from .journal import ensure_journal_directory, get_journal_file_path, append_to_journal_file
 from .config import load_config
 from .telemetry import trace_mcp_operation, get_mcp_metrics
 
@@ -176,15 +176,11 @@ def add_reflection_to_journal(journal_path: Union[str, Path], reflection_text: s
             current_span.set_attribute("file.extension", Path(journal_path).suffix)
             current_span.set_attribute("reflection.content_length", len(reflection_text))
         
-        # Ensure parent directory exists using existing utility
-        ensure_journal_directory(journal_path)
-        
         # Format the reflection
         formatted_reflection = format_reflection(reflection_text)
         
-        # Append to file with UTF-8 encoding
-        with open(journal_path, 'a', encoding='utf-8') as f:
-            f.write(formatted_reflection)
+        # Use the standard append_to_journal_file function which calls ensure_journal_directory
+        append_to_journal_file(formatted_reflection, journal_path)
         
         # Record success metrics
         duration = time.time() - start_time

@@ -64,11 +64,21 @@ def add_reflection_to_journal(journal_path: Union[str, Path], reflection_text: s
 **Purpose**: Adds a formatted reflection to a journal file with comprehensive telemetry.
 
 **Key Features**:
-- **On-Demand Directory Creation**: Uses `ensure_journal_directory()` utility
+- **Uses Standard File Operations**: Leverages `append_to_journal_file()` utility for consistent file handling
+- **On-Demand Directory Creation**: Directory creation handled automatically by `append_to_journal_file()`
 - **Telemetry Instrumented**: Full OpenTelemetry tracing with span attributes
-- **UTF-8 Encoding**: Proper text encoding for file operations
+- **Formatted Output**: Automatically formats reflection with timestamp using `format_reflection()`
 - **Error Handling**: Comprehensive exception handling with categorization
 - **Performance Monitoring**: Duration tracking and threshold warnings
+
+**Implementation Pattern**:
+```python
+# Format the reflection with timestamp
+formatted_reflection = format_reflection(reflection_text)
+
+# Use standard append utility (which handles directory creation)
+append_to_journal_file(formatted_reflection, journal_path)
+```
 
 **Span Attributes**:
 - `file.path`: Journal filename (privacy-conscious)
@@ -76,6 +86,9 @@ def add_reflection_to_journal(journal_path: Union[str, Path], reflection_text: s
 - `reflection.content_length`: Reflection text length
 
 **Returns**: `True` on success, raises exceptions on failure.
+
+**File Operation Compliance**: 
+This function follows the on-demand directory creation pattern by using `append_to_journal_file()`, which internally calls `ensure_journal_directory()` before writing files. This ensures consistent behavior across all file operations in the system.
 
 ### add_manual_reflection()
 
