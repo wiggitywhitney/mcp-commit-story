@@ -304,32 +304,24 @@ All arguments are optional and default to the current directory and standard loc
 - [src/mcp_commit_story/git_utils.py](../src/mcp_commit_story/git_utils.py)
 - [scripts/mcp-commit-story-prd.md](../scripts/mcp-commit-story-prd.md)
 
-## CLI Commands: new-entry and add-reflection
+## Operational Commands: MCP Server Only
 
-The MCP Commit Story CLI provides commands to create new journal entries and add manual reflections:
+**Important**: The MCP Commit Story follows an **MCP-first architecture**. Operational commands like creating journal entries, adding reflections, and generating summaries are **only available via the MCP server**, not through CLI commands.
 
-### `new-entry`
+### Available via MCP Server:
+- `journal/new-entry`: Create new journal entries  
+- `journal/add-reflection`: Add manual reflections
+- `journal/summarize`: Generate summaries
+- `journal/blogify`: Create blog-style content
 
-Create a new journal entry for today:
+### Setup CLI Commands:
+The CLI provides focused setup commands for human-friendly configuration:
+- `journal-init`: Initialize journal configuration
+- `install-hook`: Install git post-commit hooks
 
-```bash
-mcp-commit-story new-entry --repo-path <path> --summary "Entry summary text"
-```
-- `--repo-path`: Path to the git repository (default: current directory)
-- `--summary`: Required. The summary text for the new journal entry.
+This design delivers the best experience for each use case - simple setup commands for humans, and rich structured operations for AI automation. For operational features, use:
+- AI agents with MCP client integration (recommended)
+- Direct MCP server integration  
+- Automated git hooks (installed via `install-hook`)
 
-This command creates or appends to the daily journal file in `journal/daily/YYYY-MM-DD-journal.md`.
-
-### `add-reflection`
-
-Add a manual reflection to today's journal entry:
-
-```bash
-mcp-commit-story add-reflection --repo-path <path> --reflection "Reflection text"
-```
-- `--repo-path`: Path to the git repository (default: current directory)
-- `--reflection`: Required. The reflection text to add.
-
-This command appends a new 'Reflection' section to today's journal file. The file must already exist (created by `new-entry`).
-
-These commands are fully integrated with the MCP workflow and are covered by integration tests. 
+See [architecture.md](architecture.md) and [setup-cli.md](setup-cli.md) for complete details on this architecture. 

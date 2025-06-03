@@ -140,3 +140,7 @@ def install_hook(repo_path):
 
 if __name__ == "__main__":
     cli()
+
+def main():
+    """Main entry point for console scripts."""
+    cli()

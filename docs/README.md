@@ -9,6 +9,7 @@ This directory contains the complete technical documentation for the MCP Commit 
 
 ### 🔧 Technical References
 - **[MCP API Specification](mcp-api-specification.md)** - Complete reference for MCP operations, data formats, and client integration
+- **[Setup CLI Reference](setup-cli.md)** - Human-friendly setup commands and architecture philosophy
 - **[Journal Core](journal-core.md)** - Core journal functionality, classes, and AI generation system
 - **[Context Collection](context-collection.md)** - Context gathering system and type definitions for AI generation
 - **[Reflection Core](reflection-core.md)** - Manual reflection addition system with validation and telemetry
@@ -34,8 +35,9 @@ This directory contains the complete technical documentation for the MCP Commit 
 
 ### For API Integration
 1. Start with [MCP API Specification](mcp-api-specification.md)
-2. Reference [Journal Behavior](journal-behavior.md) for content structure
-3. Review [Architecture](architecture.md) for integration patterns
+2. Reference [Setup CLI Reference](setup-cli.md) for setup vs operational command boundaries
+3. Review [Journal Behavior](journal-behavior.md) for content structure
+4. Check [Architecture](architecture.md) for integration patterns
 
 ### For Journal Configuration
 1. See [Journal Behavior](journal-behavior.md) for configuration options
@@ -69,6 +71,7 @@ All documentation reflects the current MCP-first architecture where operational 
 When updating code, please also update the relevant documentation:
 - **Architecture changes** → Update [Architecture](architecture.md)
 - **API changes** → Update [MCP API Specification](mcp-api-specification.md)
+- **CLI changes** → Update [Setup CLI Reference](setup-cli.md)
 - **Journal behavior changes** → Update [Journal Behavior](journal-behavior.md) and [Journal Core](journal-core.md)
 - **Context collection changes** → Update [Context Collection](context-collection.md)
 - **Reflection system changes** → Update [Reflection Core](reflection-core.md)
