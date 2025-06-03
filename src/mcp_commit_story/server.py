@@ -27,6 +27,7 @@ from mcp_commit_story.journal_init import initialize_journal
 import inspect
 from mcp_commit_story.git_utils import install_post_commit_hook
 from mcp_commit_story.journal import append_to_journal_file
+from mcp_commit_story.reflection_core import add_manual_reflection
 
 # Type alias for an async tool handler
 ToolHandler = Callable[..., Awaitable[Any]]
@@ -268,33 +269,79 @@ async def handle_journal_new_entry(request: JournalNewEntryRequest) -> JournalNe
         raise MCPError("Missing required field: git")
     return await generate_journal_entry(request)
 
-async def add_reflection_to_journal(request: AddReflectionRequest) -> AddReflectionResponse:
-    """
-    Stub for adding a reflection to the journal. Returns a dummy success response.
-    """
-    return {"status": "success", "file_path": "journal/daily/2025-05-26-journal.md", "error": None}
-
 @handle_mcp_error
-async def handle_journal_add_reflection(request):
+@trace_mcp_operation("reflection.handle_add_reflection", attributes={
+    "operation_type": "mcp_handler",
+    "content_type": "reflection"
+})
+async def handle_journal_add_reflection(request: AddReflectionRequest) -> AddReflectionResponse:
     """
     MCP operation: Add a manual reflection to the journal for a given date.
+    
+    This handler provides comprehensive error handling, telemetry instrumentation,
+    and integrates with the reflection_core module for consistent behavior.
+    
     Args:
-        request (dict): Must contain 'text' (or 'reflection') and 'date' (YYYY-MM-DD)
+        request: Must contain 'reflection' (or 'text') and 'date' (YYYY-MM-DD)
     Returns:
-        dict: {"status": "success", "file_path": ...} or error dict
+        AddReflectionResponse: {"status": "success", "file_path": ...} or error dict
     """
+    import time
+    from opentelemetry import trace
+    
+    start_time = time.time()
+    
+    # Add span attributes for MCP operation telemetry
+    current_span = trace.get_current_span()
+    if current_span:
+        current_span.set_attribute("mcp.operation", "add_reflection")
+        current_span.set_attribute("mcp.handler", "handle_journal_add_reflection")
+    
+    # Extract and validate request fields (support both field names)
     text = request.get("text") or request.get("reflection")
     date = request.get("date")
+    
     if not text:
-        return {"status": "error", "error": "Missing required field: reflection/text"}
+        raise MCPError("Missing required field: reflection/text")
+    
     if not date:
-        return {"status": "error", "error": "Missing required field: date"}
-    # Determine file path (assume journal/daily/YYYY-MM-DD-journal.md)
-    journal_dir = "journal/daily"
-    os.makedirs(journal_dir, exist_ok=True)
-    file_path = os.path.join(journal_dir, f"{date}-journal.md")
-    append_to_journal_file(text + "\n", file_path)
-    return {"status": "success", "file_path": file_path}
+        raise MCPError("Missing required field: date")
+    
+    # Add content attributes to span
+    if current_span:
+        current_span.set_attribute("reflection.date", date)
+        current_span.set_attribute("reflection.content_length", len(text))
+    
+    # Call the reflection core function - it handles all telemetry internally
+    result = add_manual_reflection(text, date)
+    
+    # Record success metrics for MCP handler layer
+    duration = time.time() - start_time
+    metrics = get_mcp_metrics()
+    if metrics:
+        metrics.record_counter(
+            'mcp.handler.operations_total',
+            operation='add_reflection',
+            handler='handle_journal_add_reflection',
+            status='success'
+        )
+        metrics.record_operation_duration(
+            'mcp.handler.duration_seconds',
+            duration,
+            operation='add_reflection',
+            handler='handle_journal_add_reflection'
+        )
+    
+    # Convert result to proper response format
+    if result["status"] == "success":
+        return {
+            "status": "success",
+            "file_path": result["file_path"],
+            "error": None
+        }
+    else:
+        # This shouldn't happen due to @handle_mcp_error, but just in case
+        raise MCPError(result.get("error", "Unknown error occurred"))
 
 @handle_mcp_error
 async def handle_journal_init(request: dict) -> dict:
@@ -361,3 +408,6 @@ async def handle_journal_install_hook(request: dict) -> dict:
             "message": "Post-commit hook installed successfully.",
             "backup_path": result
         }
+
+# Create alias for test compatibility
+handle_add_reflection = handle_journal_add_reflection
