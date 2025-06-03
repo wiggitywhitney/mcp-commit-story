@@ -199,9 +199,9 @@ MIT
 - **[Server Setup](docs/server_setup.md)** - MCP server configuration and deployment guide
 - **[On-Demand Directory Pattern](docs/on-demand-directory-pattern.md)** - File system organization patterns
 
-#### 🏗️ **Implementation Patterns**
+#### **Implementation Patterns**
 - **[AI Function Pattern](docs/ai_function_pattern.md)** - Patterns for AI-powered functionality integration
 - **[Journal Initialization](docs/journal_init.md)** - Setup process and configuration management
 
-#### 📖 **Complete Documentation Hub**
+#### **Complete Documentation Hub**
 - **[Full Technical Documentation](docs/)** - All documentation organized by category and use case
