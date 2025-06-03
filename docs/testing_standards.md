@@ -1,6 +1,10 @@
-# Testing Standards for MCP Journal
+# Testing Standards for MCP Commit Story
 
-This document outlines the testing standards and best practices for the MCP Journal project.
+This document outlines the testing standards and best practices for the MCP Commit Story project.
+
+## Current Testing Overview
+
+The project currently has **532 tests** across **43 test files** with **80% test coverage**. The testing strategy emphasizes comprehensive coverage of MCP operations, telemetry integration, and core journal functionality.
 
 ## Core Testing Principles
 
@@ -10,22 +14,45 @@ This document outlines the testing standards and best practices for the MCP Jour
    - Implement the minimum code to make tests pass
    - Refactor while maintaining passing tests
 
-2. **Test Coverage**
-   - Aim for 90%+ test coverage for all code
+2. **Test Coverage Standards**
+   - Current coverage: **80%** (Target: 90%+)
    - All public API methods must have tests
+   - All MCP operation handlers must be fully covered
    - Edge cases and error conditions must be tested
    - Test both happy paths and error paths
 
 3. **Test Organization**
-   - Unit tests in `tests/unit/`
-   - Integration tests in `tests/integration/`
-   - Test fixtures in `tests/fixtures/`
-   - Name test files with `test_` prefix
-   - Name test functions with `test_` prefix
+   - **Unit tests**: `tests/unit/` (26 files) - Fast, isolated component tests
+   - **Integration tests**: `tests/integration/` (6 files) - Cross-component tests
+   - **Main test directory**: Core system tests (telemetry, journal, structured logging)
+   - **Test fixtures**: `tests/fixtures/` - Shared test data and utilities
+   - **Configuration**: `tests/conftest.py` - Pytest configuration and fixtures
+
+## Test Directory Structure
+
+```
+tests/
+├── unit/                          # Unit tests (26 files)
+│   ├── test_server.py            # MCP server operations
+│   ├── test_config*.py           # Configuration system
+│   ├── test_journal*.py          # Journal functionality
+│   ├── test_git_utils.py         # Git operations
+│   ├── test_reflection_mcp.py    # Reflection operations
+│   └── ...                       # Other component tests
+├── integration/                   # Integration tests (6 files)
+│   ├── test_mcp_server_integration.py
+│   ├── test_telemetry_validation_integration.py
+│   └── ...
+├── fixtures/                     # Test data and utilities
+├── test_telemetry.py             # Core telemetry testing (937 lines)
+├── test_structured_logging.py   # Logging system tests (775 lines)
+├── test_journal_telemetry.py    # Journal telemetry integration
+└── conftest.py                   # Pytest configuration
+```
 
 ## Running Tests
 
-To run tests, use the provided scripts:
+### Standard Test Commands
 
 ```bash
 # Setup test environment (first time only)
@@ -34,112 +61,233 @@ To run tests, use the provided scripts:
 # Run all tests
 ./scripts/run_tests.sh
 
-# Run specific tests
-./scripts/run_tests.sh tests/unit/test_config.py
+# Run specific test files
+./scripts/run_tests.sh tests/unit/test_server.py
 
-# Run tests with coverage
-./scripts/run_tests.sh --cov=src
+# Run tests with coverage report
+./scripts/run_tests.sh --cov=src --cov-report=term-missing
+
+# Run only unit tests (fast)
+./scripts/run_tests.sh tests/unit/
+
+# Run only integration tests
+./scripts/run_tests.sh tests/integration/
+
+# Run tests quietly (summary only)
+./scripts/run_tests.sh -q
+
+# Run specific test patterns
+./scripts/run_tests.sh -k "telemetry"
+./scripts/run_tests.sh -k "server and mcp"
 ```
 
-## Writing Tests
+### Test Environment
 
-### Unit Tests
+The test environment uses:
+- **Python 3.9+** requirement
+- **Virtual environment** in `.venv/`
+- **pytest** as the test runner
+- **coverage.py** for coverage analysis
+- **Git repository fixture** for git-dependent tests
 
-Unit tests should test individual components in isolation:
+## Testing Patterns and Standards
 
-- All MCP operation handlers (such as `handle_journal_init`) must be fully covered by TDD-first unit tests, including all success and error paths. See `tests/unit/test_server.py` for examples.
+### MCP Operation Handler Tests
+
+All MCP operation handlers must have comprehensive test coverage:
 
 ```python
-# Example unit test
-def test_config_defaults():
-    """Test config object has correct defaults"""
-    config = Config()
-    assert config.journal_path == 'journal/'
-    assert isinstance(config.git_exclude_patterns, list)
-    assert config.telemetry_enabled is False
+# Example: MCP handler testing pattern
+@pytest.mark.asyncio
+async def test_journal_add_reflection_handler_success():
+    """Test successful reflection addition via MCP."""
+    request = {"text": "Test reflection", "date": "2025-06-03"}
+    result = await handle_journal_add_reflection(request)
+    
+    assert result["status"] == "success"
+    assert "file_path" in result
+
+def test_journal_add_reflection_handler_missing_fields():
+    """Test error handling for missing required fields."""
+    request = {"date": "2025-06-03"}  # Missing text
+    response = asyncio.run(handle_journal_add_reflection(request))
+    
+    assert response["status"] == "error"
+    assert "Missing required field" in response["error"]
 ```
 
-### Integration Tests
+### Telemetry and Observability Tests
 
-Integration tests should test components working together:
+Extensive telemetry testing ensures monitoring works correctly:
 
 ```python
-# Example integration test
-def test_config_loading_from_file():
-    """Test loading configuration from a file"""
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        # Create a test config file
-        config_path = Path(tmp_dir) / '.mcp-commit-storyrc.yaml'
-        with open(config_path, 'w') as f:
-            f.write('journal:\n  path: test/\n')
+def test_trace_mcp_operation_decorator():
+    """Test MCP operation tracing decorator functionality."""
+    @trace_mcp_operation("test_operation")
+    def traced_function(x, y):
+        return x + y
+    
+    result = traced_function(1, 2)
+    assert result == 3
+    
+    # Verify telemetry spans were created
+    # (Additional span verification logic)
+```
+
+### Configuration and Error Handling Tests
+
+Comprehensive testing of configuration loading and error scenarios:
+
+```python
+def test_config_loading_with_telemetry_sampling():
+    """Test config loading includes both validate and load operations."""
+    with patch('random.random', return_value=0.0):  # Force sampling
+        config = load_config()
         
-        # Load the config and verify it works with the journal system
-        config = load_config(config_path)
-        journal = Journal(config)
-        assert journal.path == 'test/'
+        # Should record both validation and loading telemetry
+        metrics = get_collected_metrics()
+        operations = [m for m in metrics if 'mcp.config.operations_total' in str(m)]
+        assert len(operations) >= 2  # validate + load
 ```
 
-### Mocking and Fixtures
+### Test Fixtures and Mocking
 
-Use pytest fixtures for shared setup and teardown:
+Standard fixtures for common test scenarios:
 
 ```python
 @pytest.fixture
-def sample_config():
-    """Sample configuration for testing"""
-    return {
-        'journal': {'path': 'test_journal/'},
-        'git': {'exclude_patterns': ['*.log']},
-        'telemetry': {'enabled': False}
-    }
+def git_repo():
+    """Create temporary git repository for testing."""
+    temp_dir = tempfile.mkdtemp()
+    try:
+        repo = git.Repo.init(temp_dir)
+        yield repo
+    finally:
+        shutil.rmtree(temp_dir)
 
-def test_config_validation(sample_config):
-    """Test config validation with fixture"""
-    config = Config(sample_config)
-    assert config.journal_path == 'test_journal/'
+def test_git_operations_with_fixture(git_repo):
+    """Test using the git repository fixture."""
+    # Test logic using git_repo
+    assert git_repo.working_tree_dir is not None
 ```
 
-Use mocking for testing components that depend on external systems:
+### Async Function Testing
+
+Pattern for testing async MCP operations:
 
 ```python
-def test_git_operations():
-    """Test Git operations with mocking"""
-    with patch('mcp_commit_story.git_utils.git.Repo') as mock_repo:
-        # Setup mock
-        mock_instance = mock_repo.return_value
-        mock_instance.head.commit.hexsha = 'abcdef'
-        
-        # Test function
-        result = get_current_commit_hash()
-        assert result == 'abcdef'
+@pytest.mark.asyncio
+async def test_async_mcp_operation():
+    """Test async MCP operation handler."""
+    request = {"param": "value"}
+    result = await async_handler(request)
+    assert result is not None
+
+# Alternative pattern for sync test of async function
+def test_async_operation_sync():
+    """Test async operation using asyncio.run."""
+    result = asyncio.run(async_handler({"param": "value"}))
+    assert result["status"] == "success"
 ```
 
-## Continuous Integration
+## Key Testing Areas
 
-All tests must pass in the CI environment before merging changes:
+### 1. MCP Server Operations
+- **Files**: `tests/unit/test_server.py`, `tests/integration/test_mcp_server_integration.py`
+- **Coverage**: All handler functions, error scenarios, configuration loading
+- **Focus**: Request validation, response formatting, error handling
 
-- The CI pipeline runs all tests automatically
-- PRs cannot be merged if tests fail
-- Code coverage is reported in the CI pipeline
+### 2. Journal Generation System
+- **Files**: `tests/unit/test_journal.py`, `tests/test_journal_entry.py`, `tests/test_journal_telemetry.py`
+- **Coverage**: Entry creation, markdown serialization, AI generation placeholders
+- **Focus**: Content formatting, telemetry integration, file operations
 
-## Feature Completion Criteria
+### 3. Telemetry and Observability
+- **Files**: `tests/test_telemetry.py` (937 lines), `tests/test_structured_logging.py`, integration tests
+- **Coverage**: OpenTelemetry setup, decorators, metrics collection, structured logging
+- **Focus**: Trace correlation, performance monitoring, error categorization
 
-A feature is only considered complete when:
+### 4. Configuration Management
+- **Files**: `tests/unit/test_config.py`, `tests/unit/test_config_telemetry.py`
+- **Coverage**: Config loading, validation, telemetry integration, error handling
+- **Focus**: YAML parsing, default values, environment variables
 
-1. All tests for the feature are written
-2. All tests for the feature pass
-3. The code has been reviewed
-4. All edge cases are covered
-5. Documentation is updated
+### 5. Git Integration
+- **Files**: `tests/unit/test_git_utils.py` (608 lines), `tests/integration/test_git_hook_integration.py`
+- **Coverage**: Repository operations, commit analysis, hook installation
+- **Focus**: File change detection, commit metadata, performance optimization
 
-## Running Specific Task Tests
+### 6. Context Collection
+- **Files**: `tests/unit/test_context_collection.py`, `tests/unit/test_context_types.py`
+- **Coverage**: Git context gathering, type definitions, performance limits
+- **Focus**: Data collection, structured types, error handling
 
-For Task 1 verification:
-```bash
-./scripts/run_tests.sh tests/unit/test_structure.py tests/unit/test_imports.py
-```
+## Test Execution Strategy
 
-For Task 2 verification:
-```bash
-./scripts/run_tests.sh tests/unit/test_config.py
-``` 
+### Continuous Integration
+
+All tests run automatically in CI:
+- **Total tests**: 532 tests collected
+- **Success criteria**: All tests must pass for merge
+- **Coverage reporting**: 80% current coverage displayed
+- **Performance**: Fast unit tests prioritized for quick feedback
+
+### Test Categories
+
+1. **Fast Unit Tests** (`tests/unit/`): Component isolation, mocking external dependencies
+2. **Integration Tests** (`tests/integration/`): Cross-component testing, real integrations
+3. **Telemetry Tests**: Comprehensive observability verification
+4. **System Tests**: End-to-end journal generation and MCP operations
+
+### Quality Gates
+
+A feature is considered complete when:
+
+1. **All tests written and passing**: Comprehensive test coverage for new functionality
+2. **Error scenarios covered**: Both success and failure paths tested
+3. **Telemetry instrumented**: Monitoring and observability included
+4. **Integration verified**: Works with existing MCP operations
+5. **Documentation updated**: Code and API documentation current
+
+## Special Test Considerations
+
+### Telemetry Testing Challenges
+
+Telemetry tests handle OpenTelemetry global state:
+- Use `setup_method`/`teardown_method` for test isolation
+- Mock external exporters to avoid network dependencies
+- Test both enabled and disabled telemetry configurations
+- Verify span attributes and metric collection without brittle assertions
+
+### Git Repository Testing
+
+Git-dependent tests use temporary repositories:
+- `git_repo` fixture provides isolated test environments
+- Tests avoid dependency on real repository state
+- File operations use temporary directories for isolation
+
+### Async Operation Testing
+
+MCP handlers are async and require special handling:
+- Use `@pytest.mark.asyncio` for native async testing
+- Use `asyncio.run()` for sync test execution of async functions
+- Mock async dependencies appropriately
+
+## Performance Testing
+
+### Coverage Analysis
+Current coverage breakdown shows strong testing foundation:
+- **Lines of code**: 2,596 total
+- **Uncovered lines**: 512
+- **Coverage percentage**: 80%
+
+### Test Performance
+- **Unit tests**: Fast execution for quick feedback
+- **Integration tests**: Longer-running but comprehensive
+- **Telemetry tests**: Include performance threshold validation
+
+## See Also
+
+- **[MCP API Specification](mcp-api-specification.md)** - API contracts tested by integration tests
+- **[Telemetry](telemetry.md)** - Comprehensive telemetry system being tested
+- **[Implementation Guide](implementation-guide.md)** - Development patterns and practices 

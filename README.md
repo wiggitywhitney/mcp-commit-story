@@ -175,7 +175,33 @@ MIT
 
 ### For Developers & Integrators
 
-- **[Full Technical Documentation](docs/)** - Organized technical guides
+#### 📋 **Start Here**
+- **[Architecture Overview](docs/architecture.md)** - System design, architectural decisions, and component relationships
 - **[Complete Engineering Spec](engineering-mcp-journal-spec-final.md)** - Comprehensive reference (900+ lines)
-- **[Architecture Decisions](docs/architecture.md)** - Why we built it this way
-- **[API Reference](docs/mcp-api-specification.md)** - Integration guide for MCP clients
+
+#### 🔧 **API & Integration**
+- **[MCP API Specification](docs/mcp-api-specification.md)** - Complete MCP operations, data formats, and client integration guide
+- **[Implementation Guide](docs/implementation-guide.md)** - Development patterns, technical implementation, and best practices
+
+#### 📚 **Core System Documentation** 
+- **[Journal Core](docs/journal-core.md)** - Journal entry generation system, AI integration, and content guidelines
+- **[Context Collection](docs/context-collection.md)** - Data gathering system, type definitions, and performance optimization
+- **[Reflection Core](docs/reflection-core.md)** - Manual reflection addition with validation and telemetry
+- **[Journal Behavior](docs/journal-behavior.md)** - Entry structure, configuration options, and generation workflow
+
+#### 🔬 **Observability & Monitoring**
+- **[Telemetry](docs/telemetry.md)** - Comprehensive OpenTelemetry integration and monitoring
+- **[Structured Logging](docs/structured-logging.md)** - JSON logging with trace correlation and sensitive data protection
+- **[Multi-Exporter](docs/multi-exporter.md)** - OpenTelemetry exporter configuration with environment precedence
+
+#### 🧪 **Development & Testing**
+- **[Testing Standards](docs/testing_standards.md)** - Complete testing strategy (532 tests, 80% coverage, TDD patterns)
+- **[Server Setup](docs/server_setup.md)** - MCP server configuration and deployment guide
+- **[On-Demand Directory Pattern](docs/on-demand-directory-pattern.md)** - File system organization patterns
+
+#### 🏗️ **Implementation Patterns**
+- **[AI Function Pattern](docs/ai_function_pattern.md)** - Patterns for AI-powered functionality integration
+- **[Journal Initialization](docs/journal_init.md)** - Setup process and configuration management
+
+#### 📖 **Complete Documentation Hub**
+- **[Full Technical Documentation](docs/)** - All documentation organized by category and use case
