@@ -254,35 +254,118 @@ def create_mcp_server(config_path: str = None) -> FastMCP:
 
 async def generate_journal_entry(request: JournalNewEntryRequest) -> JournalNewEntryResponse:
     """
-    AI-Orchestrated journal entry generation.
+    ⚠️  CRITICAL: SLOW DOWN AND READ CAREFULLY ⚠️
     
-    When this function is called via MCP, the AI agent will:
-    1. Read the docstring prompts from each AI Function Pattern function
-    2. Execute those prompts using the provided context
-    3. Generate rich, contextual journal content
-    4. Assemble and save the complete journal entry
+    PURPOSE: Generate thoughtful, rich journal entries that capture the complete story 
+    of development work - including technical decisions, problem-solving journeys, 
+    emotions, and authentic developer experience.
     
-    This bypasses the stub functions and enables actual AI content generation.
+    DO NOT SKIM ANYWHERE ALONG THE WAY! Each prompt contains detailed guidelines 
+    for extracting meaningful content. Rushing or skipping details results in 
+    shallow entries that miss the rich context that makes journal entries valuable.
+    
+    CONTEXT COLLECTION PHASE:
+    AI Agent - First, collect all necessary context by executing these functions:
+    
+    1. collect_chat_history() in context_collection.py
+       - Read the full docstring and execute the AI prompt
+       - Extract technical discussions, debugging sessions, decisions
+       - Focus on content explaining how commits came about
+    
+    2. collect_ai_terminal_commands() in context_collection.py  
+       - Read the full docstring and execute the AI prompt
+       - Extract development workflow commands, both successful and failed
+       - Include command sequences that tell a development story
+    
+    3. collect_git_context() - this is already collected in request.git
+       - Use the provided git context directly
+    
+    CONTENT GENERATION PHASE:
+    Execute each section generator with the collected context:
+    
+    4. generate_summary_section() in journal.py
+       - Creates narrative summary of what changed and why
+       - Returns: {"summary": "string content"}
+    
+    5. generate_technical_synopsis_section() in journal.py
+       - Provides code-focused analysis of implementation details
+       - Returns: {"technical_synopsis": "string content"}
+    
+    6. generate_accomplishments_section() in journal.py
+       - Lists specific achievements and completed work
+       - Returns: {"accomplishments": ["achievement1", "achievement2"]}
+    
+    7. generate_frustrations_section() in journal.py
+       - Documents obstacles, challenges, and lessons learned
+       - Returns: {"frustrations": ["frustration1", "frustration2"]}
+    
+    8. generate_tone_mood_section() in journal.py
+       - Analyzes emotional context and developer state
+       - Returns: {"mood": "mood description", "indicators": "supporting evidence"}
+    
+    9. generate_discussion_notes_section() in journal.py
+       - Extracts key conversation excerpts with speaker attribution
+       - Returns: {"discussion_notes": [str_or_dict_entries]}
+    
+    10. generate_terminal_commands_section() in journal.py
+        - Lists relevant commands executed during development
+        - Returns: {"terminal_commands": ["command1", "command2"]}
+    
+    11. generate_commit_metadata_section() in journal.py
+        - Provides commit statistics and technical metadata
+        - Returns: {"commit_metadata": {"key": "value", ...}}
+    
+    ASSEMBLY AND SAVE PHASE:
+    After executing all generators, assemble and save:
+    
+    ```python
+    from mcp_commit_story.journal import JournalEntry, get_journal_file_path, append_to_journal_file
+    from datetime import datetime
+    
+    # Use proper cross-platform timestamp format
+    timestamp = datetime.now().strftime("%I:%M %p").lstrip('0')  # e.g., "2:34 PM"
+    
+    # Extract git metadata
+    git_metadata = request["git"]["metadata"]
+    commit_hash = git_metadata["hash"]
+    
+    # Create journal entry with all generated content
+    entry = JournalEntry(
+        timestamp=timestamp,
+        commit_hash=commit_hash,
+        summary=summary_result.get("summary"),
+        technical_synopsis=technical_synopsis_result.get("technical_synopsis"), 
+        accomplishments=accomplishments_result.get("accomplishments", []),
+        frustrations=frustrations_result.get("frustrations", []),
+        tone_mood=tone_mood_result if tone_mood_result.get("mood") else None,
+        discussion_notes=discussion_notes_result.get("discussion_notes", []),
+        terminal_commands=terminal_commands_result.get("terminal_commands", []),
+        commit_metadata=commit_metadata_result.get("commit_metadata", {})
+    )
+    
+    # Save using established file path system
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    file_path = get_journal_file_path(date_str, "daily")
+    append_to_journal_file(entry.to_markdown(), file_path)
+    
+    return {
+        "status": "success", 
+        "file_path": file_path, 
+        "error": None
+    }
+    ```
+    
+    QUALITY REQUIREMENTS:
+    - Follow all anti-hallucination rules in each prompt
+    - Extract verbatim quotes for discussion notes - do not paraphrase
+    - Only include content with explicit evidence from context
+    - Complete all checklists at the end of each prompt
+    - Ensure rich, thoughtful content that captures the development story
+    
+    ERROR HANDLING:
+    If any step fails, still attempt to create an entry with available content.
+    Empty sections are better than no entry at all.
     """
-    
-    # TODO: AI Agent - When you see this function called via MCP:
-    # 1. Read docstrings from these functions and execute their prompts:
-    #    - collect_chat_history() in context_collection.py
-    #    - collect_ai_terminal_commands() in context_collection.py  
-    #    - collect_git_context() in context_collection.py
-    #    - generate_summary_section() in journal.py
-    #    - generate_technical_synopsis_section() in journal.py
-    #    - generate_accomplishments_section() in journal.py
-    #    - generate_frustrations_section() in journal.py
-    #    - generate_tone_mood_section() in journal.py
-    #    - generate_discussion_notes_section() in journal.py
-    #    - generate_terminal_commands_section() in journal.py
-    #    - generate_commit_metadata_section() in journal.py
-    #
-    # 2. Use the git context from the request to execute the prompts
-    # 3. Generate a complete JournalEntry object with rich content
-    # 4. Save it using the existing save infrastructure
-    # 5. Return success response with file path
     
     # For now, return a clear indicator that AI orchestration is needed
     return {
