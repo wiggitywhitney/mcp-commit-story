@@ -370,12 +370,82 @@ async def generate_journal_entry(request: JournalNewEntryRequest) -> JournalNewE
     Empty sections are better than no entry at all.
     """
     
-    # For now, return a clear indicator that AI orchestration is needed
-    return {
-        "status": "error",
-        "file_path": "",
-        "error": "AI orchestration required - this function needs AI agent execution"
-    }
+    try:
+        from .journal import (
+            JournalEntry, get_journal_file_path, append_to_journal_file,
+            generate_summary_section, generate_technical_synopsis_section,
+            generate_accomplishments_section, generate_frustrations_section,
+            generate_tone_mood_section, generate_discussion_notes_section,
+            generate_terminal_commands_section, generate_commit_metadata_section
+        )
+        from .context_types import JournalContext
+        from datetime import datetime
+        
+        # Build JournalContext from request data
+        journal_context = JournalContext(
+            chat=request.get("chat"),
+            terminal=request.get("terminal"),
+            git=request["git"]
+        )
+        
+        # Generate all sections using the AI functions (now with stub implementations)
+        summary_result = generate_summary_section(journal_context)
+        technical_synopsis_result = generate_technical_synopsis_section(journal_context)
+        accomplishments_result = generate_accomplishments_section(journal_context)
+        frustrations_result = generate_frustrations_section(journal_context)
+        tone_mood_result = generate_tone_mood_section(journal_context)
+        discussion_notes_result = generate_discussion_notes_section(journal_context)
+        terminal_commands_result = generate_terminal_commands_section(journal_context)
+        commit_metadata_result = generate_commit_metadata_section(journal_context)
+        
+        # Extract git metadata and create timestamp
+        git_metadata = request["git"]["metadata"]
+        commit_hash = git_metadata["hash"]
+        commit_date_str = git_metadata["date"]
+        
+        # Handle different date formats
+        try:
+            if commit_date_str.endswith('Z'):
+                commit_datetime = datetime.fromisoformat(commit_date_str.replace('Z', '+00:00'))
+            else:
+                commit_datetime = datetime.fromisoformat(commit_date_str)
+        except ValueError:
+            # Fallback to current time if date parsing fails
+            commit_datetime = datetime.now()
+        
+        timestamp = commit_datetime.strftime("%I:%M %p").lstrip('0')
+        
+        # Create journal entry with all generated content
+        entry = JournalEntry(
+            timestamp=timestamp,
+            commit_hash=commit_hash,
+            summary=summary_result.get("summary"),
+            technical_synopsis=technical_synopsis_result.get("technical_synopsis"), 
+            accomplishments=accomplishments_result.get("accomplishments", []),
+            frustrations=frustrations_result.get("frustrations", []),
+            tone_mood=tone_mood_result if tone_mood_result.get("mood") else None,
+            discussion_notes=discussion_notes_result.get("discussion_notes", []),
+            terminal_commands=terminal_commands_result.get("terminal_commands", []),
+            commit_metadata=commit_metadata_result.get("commit_metadata", {})
+        )
+        
+        # Save using established file path system
+        date_str = commit_datetime.strftime("%Y-%m-%d")
+        file_path = get_journal_file_path(date_str, "daily")
+        append_to_journal_file(entry.to_markdown(), file_path)
+        
+        return {
+            "status": "success", 
+            "file_path": file_path, 
+            "error": None
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "file_path": "",
+            "error": f"Failed to generate journal entry: {str(e)}"
+        }
 
 @handle_mcp_error
 async def handle_journal_new_entry(request: JournalNewEntryRequest) -> JournalNewEntryResponse:

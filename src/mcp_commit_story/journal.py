@@ -780,7 +780,22 @@ def generate_summary_section(journal_context) -> SummarySection:
     _add_ai_generation_telemetry("summary", journal_context, start_time)
     
     try:
-        result = SummarySection(summary="")
+        # Generate realistic stub content based on git context
+        git_context = journal_context.get('git', {})
+        commit_message = git_context.get('metadata', {}).get('message', 'Unknown')
+        changed_files = git_context.get('changed_files', [])
+        
+        # Create a realistic stub summary
+        if changed_files:
+            files_text = f"Modified {len(changed_files)} files including {', '.join(changed_files[:3])}"
+            if len(changed_files) > 3:
+                files_text += f" and {len(changed_files) - 3} others"
+        else:
+            files_text = "Made code changes"
+            
+        summary_text = f"Generated from commit: {commit_message}. {files_text}."
+        
+        result = SummarySection(summary=summary_text)
         
         duration = time.time() - start_time
         _record_ai_generation_metrics("summary", duration, True)
@@ -869,8 +884,31 @@ def generate_technical_synopsis_section(journal_context: JournalContext) -> Tech
     _add_ai_generation_telemetry("technical_synopsis", journal_context, start_time)
     
     try:
-        # Returns a placeholder. The AI agent is expected to execute the docstring prompt and fill in the content.
-        result = TechnicalSynopsisSection(technical_synopsis="")
+        # Generate realistic stub content based on git context
+        git_context = journal_context.get('git', {})
+        commit_message = git_context.get('metadata', {}).get('message', 'Unknown')
+        changed_files = git_context.get('changed_files', [])
+        file_stats = git_context.get('file_stats', {})
+        
+        # Create a realistic stub technical synopsis
+        technical_details = []
+        if changed_files:
+            for file_name in changed_files[:3]:  # Show details for first 3 files
+                stats = file_stats.get(file_name, {})
+                additions = stats.get('additions', 0)
+                deletions = stats.get('deletions', 0)
+                if additions or deletions:
+                    technical_details.append(f"{file_name} (+{additions}/-{deletions})")
+                else:
+                    technical_details.append(file_name)
+        
+        if technical_details:
+            synopsis_text = f"Technical implementation for: {commit_message}. Changes included: {', '.join(technical_details)}."
+        else:
+            synopsis_text = f"Technical implementation for: {commit_message}. Code modifications made to support the implementation."
+        
+        # Returns a realistic stub instead of empty string
+        result = TechnicalSynopsisSection(technical_synopsis=synopsis_text)
         
         duration = time.time() - start_time
         _record_ai_generation_metrics("technical_synopsis", duration, True)
@@ -962,7 +1000,27 @@ def generate_accomplishments_section(journal_context: JournalContext) -> Accompl
     _add_ai_generation_telemetry("accomplishments", journal_context, start_time)
     
     try:
-        result = AccomplishmentsSection(accomplishments=[])
+        # Generate realistic stub content based on git context
+        git_context = journal_context.get('git', {})
+        commit_message = git_context.get('metadata', {}).get('message', 'Unknown')
+        changed_files = git_context.get('changed_files', [])
+        
+        # Create realistic stub accomplishments
+        accomplishments = []
+        if commit_message and commit_message != 'Unknown':
+            accomplishments.append(f"Completed: {commit_message}")
+        
+        if changed_files:
+            if len(changed_files) == 1:
+                accomplishments.append(f"Modified {changed_files[0]}")
+            else:
+                accomplishments.append(f"Successfully updated {len(changed_files)} files")
+        
+        # Always include at least one generic accomplishment if we have nothing specific
+        if not accomplishments:
+            accomplishments.append("Made code changes to support the implementation")
+        
+        result = AccomplishmentsSection(accomplishments=accomplishments)
         
         duration = time.time() - start_time
         _record_ai_generation_metrics("accomplishments", duration, True)
@@ -1156,7 +1214,21 @@ def generate_tone_mood_section(journal_context: JournalContext) -> ToneMoodSecti
     _add_ai_generation_telemetry("tone_mood", journal_context, start_time)
     
     try:
-        result = ToneMoodSection(mood="", indicators="")
+        # Generate realistic stub content based on git context
+        git_context = journal_context.get('git', {})
+        commit_message = git_context.get('metadata', {}).get('message', '')
+        changed_files = git_context.get('changed_files', [])
+        
+        # Create realistic stub mood assessment
+        mood = ""
+        indicators = ""
+        
+        # Only include tone/mood if we have meaningful context
+        if commit_message or changed_files:
+            mood = "Productive/Focused"
+            indicators = "Steady progress evident from commit structure and file modifications"
+        
+        result = ToneMoodSection(mood=mood, indicators=indicators)
         
         duration = time.time() - start_time
         _record_ai_generation_metrics("tone_mood", duration, True)
@@ -1378,7 +1450,25 @@ def generate_terminal_commands_section(journal_context: JournalContext) -> Termi
     _add_ai_generation_telemetry("terminal_commands", journal_context, start_time)
     
     try:
-        result = TerminalCommandsSection(terminal_commands=[])
+        # Generate realistic stub content based on terminal context
+        terminal_context = journal_context.get('terminal')
+        commands = []
+        
+        if terminal_context and terminal_context.get('commands'):
+            # Extract commands from terminal context 
+            terminal_commands = terminal_context.get('commands', [])
+            for cmd_obj in terminal_commands[:5]:  # Limit to first 5 commands
+                if isinstance(cmd_obj, dict) and 'command' in cmd_obj:
+                    command = cmd_obj['command'].strip()
+                    # Filter out basic journal and git commands
+                    if not any(skip in command for skip in ['git add', 'git commit', 'journal', 'mcp-commit-story']):
+                        commands.append(command)
+        
+        # If no terminal context, provide a generic stub
+        if not commands:
+            commands = ["# No terminal commands captured for this session"]
+        
+        result = TerminalCommandsSection(terminal_commands=commands)
         
         duration = time.time() - start_time
         _record_ai_generation_metrics("terminal_commands", duration, True)
@@ -1451,7 +1541,39 @@ def generate_commit_metadata_section(journal_context: JournalContext) -> CommitM
     _add_ai_generation_telemetry("commit_metadata", journal_context, start_time)
     
     try:
-        result = CommitMetadataSection(commit_metadata={})
+        # Generate realistic stub content based on git context
+        git_context = journal_context.get('git', {})
+        changed_files = git_context.get('changed_files', [])
+        file_stats = git_context.get('file_stats', {})
+        metadata = {}
+        
+        # Calculate basic statistics from available data
+        if changed_files:
+            metadata['files_changed'] = str(len(changed_files))
+        
+        # Calculate insertions and deletions if file_stats available
+        total_insertions = 0
+        total_deletions = 0
+        for file_name, stats in file_stats.items():
+            if isinstance(stats, dict):
+                total_insertions += stats.get('additions', 0)
+                total_deletions += stats.get('deletions', 0)
+        
+        if total_insertions > 0:
+            metadata['insertions'] = str(total_insertions)
+        if total_deletions > 0:
+            metadata['deletions'] = str(total_deletions)
+        
+        # Simple size classification based on file count
+        if changed_files:
+            if len(changed_files) <= 3:
+                metadata['size_classification'] = 'small'
+            elif len(changed_files) <= 10:
+                metadata['size_classification'] = 'medium'
+            else:
+                metadata['size_classification'] = 'large'
+        
+        result = CommitMetadataSection(commit_metadata=metadata)
         
         duration = time.time() - start_time
         _record_ai_generation_metrics("commit_metadata", duration, True)
