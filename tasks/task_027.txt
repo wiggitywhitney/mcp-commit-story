@@ -378,3 +378,291 @@ To verify the correct implementation of the daily summary Git hook trigger:
    - [ ] Manual reflections have visual distinction in the output
    - [ ] Summary is saved to the expected location
    - [ ] Error handling prevents Git operation disruption
+
+# Subtasks:
+## 1. Implement Date Change Detection and State Management [pending]
+### Dependencies: None
+### Description: Create the core logic to detect when the date changes between commits and manage the state file that tracks the last processed date.
+### Details:
+Create `get_current_date()` and `get_last_processed_date()` functions. Implement `update_state_file()` to write current date to `.commit-story-state`. Add `has_date_changed()` logic to compare current vs. last processed date. Handle edge cases: missing state file, corrupted state file, first run. Add proper error handling and logging. Location: `src/mcp_commit_story/daily_summary.py` (new module)
+<info added on 2025-06-04T17:59:13.844Z>
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_daily_summary.py`
+   - Test `get_current_date()` function returns today's date in YYYY-MM-DD format
+   - Test `get_last_processed_date(state_file_path)` function:
+     - Success case: reads valid date from existing state file
+     - Error case: handles missing state file (returns None)
+     - Error case: handles corrupted state file with invalid date format
+     - Error case: handles permission errors when reading state file
+   - Test `update_state_file(date, state_file_path)` function:
+     - Success case: writes date to state file in correct format
+     - Success case: creates state file if it doesn't exist
+     - Error case: handles permission errors when writing
+     - Error case: handles invalid date input
+   - Test `has_date_changed(current_date, last_date)` function:
+     - Returns True when dates differ
+     - Returns False when dates are same
+     - Returns True when last_date is None (first run)
+     - Handles edge cases with date string formats
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: State file location - should it be `.commit-story-state` in repo root, or in a subdirectory like `.mcp-commit-story/`?
+   - **PAUSE FOR MANUAL APPROVAL**: Date format standardization - use ISO format YYYY-MM-DD or allow different formats?
+   - **PAUSE FOR MANUAL APPROVAL**: Error handling strategy - fail silently vs. log warnings vs. raise exceptions for state file issues?
+   - **PAUSE FOR MANUAL APPROVAL**: Concurrent access handling - use file locking or simple read/write (git hooks typically run sequentially)?
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Create `src/mcp_commit_story/daily_summary.py` module
+   - Implement `get_current_date() -> str` that returns datetime.now().strftime("%Y-%m-%d")
+   - Implement `get_last_processed_date(state_file_path: str) -> Optional[str]` with proper error handling
+   - Implement `update_state_file(date: str, state_file_path: str) -> bool` with directory creation if needed
+   - Implement `has_date_changed(current_date: str, last_date: Optional[str]) -> bool` with validation
+   - Add proper logging using existing structured logging patterns
+   - Add input validation for date format consistency
+   - Handle all error cases identified in tests (file permissions, invalid formats, missing files)
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update implementation-guide.md with date change detection workflow and state file management
+     2. **PRD**: Update if this adds user-facing behavior (likely minimal since this is internal infrastructure)
+     3. **Engineering Spec**: Add technical details about state file format, location, and date change detection algorithm, and make sure TOC is current
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed** (no new dependencies expected for this subtask)
+   - Double check all subtask requirements are met: date detection, state management, error handling, logging
+   - **MARK COMPLETE**
+</info added on 2025-06-04T17:59:13.844Z>
+
+## 2. Create Daily Summary MCP Tool [pending]
+### Dependencies: 27.1
+### Description: Add an MCP tool to trigger daily summary generation, which will also be called by the git hook through the MCP server.
+### Details:
+Add `handle_generate_daily_summary()` function to `server.py`. Create appropriate request/response types in `journal_workflow_types.py`. Support both manual date specification and "yesterday" default. Include proper error handling and telemetry integration. The git hook will need to interact with the MCP server rather than a CLI command. Location: `src/mcp_commit_story/server.py` and `src/mcp_commit_story/journal_workflow_types.py`
+<info added on 2025-06-04T17:59:36.884Z>
+### TDD Implementation Plan
+
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_daily_summary_mcp.py`
+   - Test `handle_generate_daily_summary()` MCP handler function
+   - Test cases: 
+     - Success case: generate summary for specific date with existing journal entries
+     - Success case: generate summary for "yesterday" default when no date provided
+     - Error case: invalid date format in request
+     - Error case: no journal entries found for specified date
+     - Error case: file system errors during summary generation
+   - Test request/response type validation for `GenerateDailySummaryRequest` and `GenerateDailySummaryResponse`
+   - Test MCP tool registration in server.py
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: Request schema design - should date be required or optional with yesterday default?
+   - **PAUSE FOR MANUAL APPROVAL**: Response format - return summary content, file path, or both?
+   - **PAUSE FOR MANUAL APPROVAL**: Error response strategy - detailed error messages vs. generic messages for security?
+   - **PAUSE FOR MANUAL APPROVAL**: Integration with existing daily summary from Task 18 vs. creating new implementation?
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Add `GenerateDailySummaryRequest` and `GenerateDailySummaryResponse` types to `src/mcp_commit_story/journal_workflow_types.py`
+   - Implement `handle_generate_daily_summary()` function in `src/mcp_commit_story/server.py`
+   - Register the new MCP tool with appropriate decorator and metadata
+   - Integrate with date change detection functions from subtask 27.1
+   - Add proper error handling and telemetry integration following existing patterns
+   - Support both explicit date and "yesterday" default behavior
+   - Return appropriate success/error responses with consistent formatting
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update MCP API documentation with new daily summary tool
+     2. **PRD**: Update with daily summary generation capability available via MCP
+     3. **Engineering Spec**: Add MCP tool implementation details and request/response schemas, and make sure TOC is current
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met: MCP tool registration, request/response handling, error cases, telemetry
+</info added on 2025-06-04T17:59:36.884Z>
+
+## 3. Enhance Git Hook with Daily Summary Triggering [pending]
+### Dependencies: 27.1, 27.2
+### Description: Modify the existing git hook generation to include date change detection and daily summary triggering logic.
+### Details:
+Update `generate_hook_content()` in `git_utils.py` to include date change detection. Add bash script logic to read/write `.commit-story-state` file. Call the MCP server to trigger daily summary generation when date changes. Ensure hook remains lightweight and doesn't break git operations on failure. Handle concurrent access to state file (multiple rapid commits). Location: `src/mcp_commit_story/git_utils.py`
+<info added on 2025-06-04T18:01:36.075Z>
+### TDD Implementation Plan
+
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_git_hook_daily_summary.py`
+   - Test `generate_hook_content()` updated function:
+     - Verify generated hook script includes date change detection logic
+     - Verify hook script includes state file read/write operations
+     - Verify hook script calls MCP server for daily summary generation
+     - Test hook script handles missing state file on first run
+     - Test hook script handles state file read/write errors gracefully
+   - Create `tests/integration/test_git_hook_integration.py`
+   - Test full git hook execution in temporary repository:
+     - Test hook execution with same-day commits (no summary triggered)
+     - Test hook execution with date change (summary triggered)
+     - Test hook execution with missing/corrupted state file
+     - Test hook failure doesn't break git commit operation
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: Hook communication method - should git hook call MCP server directly, use CLI wrapper, or use HTTP endpoint?
+   - **PAUSE FOR MANUAL APPROVAL**: Error handling in hook - silent failure vs. warning messages vs. hook failure on summary generation errors?
+   - **PAUSE FOR MANUAL APPROVAL**: State file location relative to git repo - repo root vs. .git directory vs. configurable path?
+   - **PAUSE FOR MANUAL APPROVAL**: Concurrent commit handling - file locking vs. atomic operations vs. allow race conditions?
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Update `generate_hook_content()` function in `src/mcp_commit_story/git_utils.py`
+   - Add bash script logic for date change detection using the state file pattern
+   - Add bash script logic to read current date and compare with state file content
+   - Add MCP server communication logic (likely through Python subprocess call)
+   - Ensure hook script remains lightweight and handles errors gracefully
+   - Test hook script generation produces valid, executable bash
+   - Add proper logging and error handling that doesn't disrupt git operations
+   - Handle edge cases: first run, corrupted state file, permission errors
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update git-hooks.md or implementation-guide.md with daily summary hook behavior
+     2. **PRD**: Update with automatic daily summary generation feature
+     3. **Engineering Spec**: Add git hook enhancement details and bash script logic, and make sure TOC is current
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met: hook enhancement, date detection, MCP integration, error handling
+</info added on 2025-06-04T18:01:36.075Z>
+
+## 4. Implement Daily Summary Generation Function [pending]
+### Dependencies: 27.1, 27.2
+### Description: Create the core daily summary generation function that collects journal entries for a specific date and generates a comprehensive summary.
+### Details:
+Create `generate_daily_summary(date)` function in new `daily_summary.py` module. Implement `get_journal_entries_for_date(date)` to collect all entries for a specific date. Add `synthesize_entries(entries, date)` to create cohesive summary. Implement `save_daily_summary(summary, date)` with proper directory creation. Follow on-demand directory creation pattern for `summaries/daily/`. Integrate manual reflection prioritization from existing summary logic. Location: `src/mcp_commit_story/daily_summary.py`
+<info added on 2025-06-04T18:02:11.248Z>
+### TDD Implementation Plan
+
+#### 1. WRITE TESTS FIRST
+- Create `tests/unit/test_daily_summary_generation.py`
+- Test `generate_daily_summary(date: str, config: dict) -> Optional[dict]` function:
+  - Success case: generate summary for date with multiple journal entries
+  - Success case: generate summary for date with single journal entry
+  - Success case: handle manual reflections prioritization correctly
+  - Edge case: return None for date with no journal entries
+  - Error case: handle invalid date format
+  - Error case: handle file system errors when reading journal files
+- Test `get_journal_entries_for_date(date: str, config: dict) -> List[dict]` function:
+  - Success case: collect all journal files for specific date
+  - Edge case: return empty list for date with no entries
+  - Test correct file pattern matching (YYYY-MM-DD-*.md)
+- Test `synthesize_entries(entries: List[dict], date: str) -> dict` function:
+  - Test summary structure includes required fields
+  - Test manual reflection extraction and prioritization
+  - Test commit count and activity summarization
+- Test `save_daily_summary(summary: dict, date: str, config: dict) -> str` function:
+  - Test file saving to correct location (summaries/daily/)
+  - Test on-demand directory creation
+  - Test markdown formatting of summary content
+- RUN TESTS - VERIFY THEY FAIL
+
+#### 2. GET APPROVAL FOR DESIGN CHOICES
+- PAUSE FOR MANUAL APPROVAL: Summary content structure - which fields to include (commits, reflections, achievements, challenges)?
+- PAUSE FOR MANUAL APPROVAL: Manual reflection extraction strategy - parse from specific sections vs. detect by patterns?
+- PAUSE FOR MANUAL APPROVAL: File naming convention - date-only vs. date-with-timestamp vs. configurable format?
+- PAUSE FOR MANUAL APPROVAL: Integration approach - reuse existing Task 18 daily summary logic vs. create new implementation?
+
+#### 3. IMPLEMENT FUNCTIONALITY
+- Implement `generate_daily_summary(date, config)` as main orchestration function in `src/mcp_commit_story/daily_summary.py`
+- Implement `get_journal_entries_for_date(date, config)` with proper file pattern matching
+- Implement `synthesize_entries(entries, date)` with manual reflection prioritization logic
+- Implement `save_daily_summary(summary, date, config)` following on-demand directory creation pattern
+- Add `format_summary_as_markdown(summary)` for consistent markdown output
+- Integrate with existing journal parsing utilities where appropriate
+- Ensure proper error handling and logging throughout
+- Follow existing code patterns and conventions from journal.py
+- RUN TESTS - VERIFY THEY PASS
+
+#### 4. DOCUMENT AND COMPLETE
+- Add documentation IF NEEDED in three places:
+  1. Docs directory: Update implementation-guide.md with daily summary generation workflow and file structure
+  2. PRD: Update with daily summary generation feature description and user benefits
+  3. Engineering Spec: Add daily summary generation algorithm details and file organization, and make sure TOC is current
+- Do not remove existing information unless it's incorrect
+- No approval needed - make documentation edits directly
+- Run the entire test suite and make sure all tests are passing
+- Make sure pyproject.toml is updated as needed
+- Double check all subtask requirements are met: summary generation, entry collection, synthesis, file saving, directory creation
+- MARK COMPLETE
+</info added on 2025-06-04T18:02:11.248Z>
+
+## 5. Integration Testing and Documentation [pending]
+### Dependencies: 27.3, 27.4
+### Description: Create comprehensive end-to-end tests and update all documentation for the daily summary git hook feature.
+### Details:
+Create end-to-end test simulating full workflow: commits → date change → summary generation. Test across multiple days with various journal entry patterns. Update docs/implementation-guide.md with daily summary workflow. Update PRD and engineering spec with completed functionality. Add troubleshooting guide for common hook issues. Test manual vs. automatic triggering scenarios.
+<info added on 2025-06-04T18:02:38.668Z>
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/integration/test_daily_summary_end_to_end.py`
+   - Test complete workflow in temporary git repository:
+     - Setup: create repo, install hook, create journal entries for "yesterday"
+     - Action: make commit with today's date (simulating date change)
+     - Verify: daily summary file created for yesterday with correct content
+     - Verify: state file updated with today's date
+   - Test multi-day scenario:
+     - Create journal entries across multiple days
+     - Simulate commits with date changes
+     - Verify summary generation for each day transition
+   - Test edge cases:
+     - First commit ever (no previous state)
+     - Multiple commits on same day (no duplicate summaries)
+     - Commits on days with no journal entries
+     - Hook execution with file system errors
+   - Test manual vs automatic triggering:
+     - Test MCP tool direct invocation
+     - Test git hook automatic triggering
+     - Verify both produce identical results
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: Integration test scope - how comprehensive should the end-to-end testing be?
+   - **PAUSE FOR MANUAL APPROVAL**: Documentation update scope - which docs need updates vs. which are already sufficient?
+   - **PAUSE FOR MANUAL APPROVAL**: Troubleshooting guide detail level - basic vs. comprehensive diagnostic information?
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Implement comprehensive integration tests covering full workflow
+   - Create test fixtures for multi-day journal entry scenarios
+   - Add test utilities for git repository setup and hook installation
+   - Verify integration between all subtasks 27.1-27.4 works correctly
+   - Test error recovery and graceful degradation scenarios
+   - Ensure tests can run in CI environment without external dependencies
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: 
+        - Update implementation-guide.md with complete daily summary workflow
+        - Add troubleshooting-guide.md section for git hook issues
+        - Update user documentation with automatic daily summary feature
+     2. **PRD**: 
+        - Update with completed daily summary automation feature
+        - Add user benefits and workflow description
+        - Update MVP completion status for Task 27
+     3. **Engineering Spec**: 
+        - Update with complete system architecture including daily summary workflow
+        - Add integration testing documentation
+        - Document troubleshooting procedures and common issues
+        - Make sure TOC is current with all new sections
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met: end-to-end testing, multi-day scenarios, manual/automatic testing, comprehensive documentation
+   - **MARK COMPLETE**
+</info added on 2025-06-04T18:02:38.668Z>
+
