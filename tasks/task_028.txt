@@ -1,7 +1,7 @@
 # Task ID: 28
 # Title: Implement File-Based Logging System
 # Status: pending
-# Dependencies: 7, 19, 22
+# Dependencies: 19, 22
 # Priority: high
 # Description: Replace Python standard logging with file-based JSON logging to prevent stdout interference with MCP clients.
 # Details:

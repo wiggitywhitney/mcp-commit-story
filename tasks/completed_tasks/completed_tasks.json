@@ -1313,6 +1313,19 @@
       "subtasks": [],
       "completed_date": "2025-05-28",
       "archived_from_main": true
+    },
+    {
+      "id": 7,
+      "title": "Implement CLI Interface",
+      "description": "Create the command-line interface using Click to provide setup functionality for the journal. This is a necessary foundation component for the MVP and other tasks.",
+      "status": "done",
+      "dependencies": [],
+      "priority": "medium",
+      "details": "Implement the CLI interface in `src/mcp_journal/cli.py` with the following features:\n\n1. CLI setup:\n```python\nimport click\n\n@click.group()\ndef cli():\n    \"\"\"MCP Journal - Engineering journal for Git repositories\"\"\"\n    pass\n```\n\n2. Setup command implementations:\n```python\n@cli.command()\n@click.option(\"--debug\", is_flag=True, help=\"Show debug information\")\ndef journal_init(debug):\n    \"\"\"Initialize journal in current repository\"\"\"\n    # Implementation\n\n@cli.command()\n@click.option(\"--debug\", is_flag=True, help=\"Show debug information\")\ndef install_hook(debug):\n    \"\"\"Install Git hook to connect with MCP server\"\"\"\n    # Implementation\n```\n\n3. Global options:\n```python\n@click.option(\"--config\", help=\"Override config file location\")\n@click.option(\"--dry-run\", is_flag=True, help=\"Preview operations without writing files\")\n@click.option(\"--verbose\", is_flag=True, help=\"Detailed output for debugging\")\n```\n\n4. Main entry point:\n```python\ndef main():\n    \"\"\"Main entry point for CLI\"\"\"\n    try:\n        cli()\n    except Exception as e:\n        click.echo(f\"Error: {e}\", err=True)\n        sys.exit(1)\n\nif __name__ == \"__main__\":\n    main()\n```\n\nNote: This CLI is focused primarily on setup commands (journal-init, install-hook), but is a necessary foundation for the MVP as it's a blocking dependency for tasks 11, 12, 13, and 15, and has subtasks from MVP Task 9 that require CLI functionality. Most operational tasks (journal entry creation, reflection addition, summarization, etc.) are handled by the MCP server and AI agents, not through this CLI.",
+      "testStrategy": "1. Unit tests for setup CLI commands (journal-init, install-hook)\n2. Tests for command options and arguments\n3. Tests for error handling\n4. Tests for global options\n5. Integration tests for setup commands\n6. Tests for exit codes and error messages",
+      "subtasks": [],
+      "completed_date": "2025-06-04",
+      "archived_from_main": true
     }
   ]
 }
