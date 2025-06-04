@@ -277,12 +277,10 @@ class ChatMessage(TypedDict):
 ### SummaryContext
 ```python
 class SummaryContext(TypedDict):
-    period: str  # "day", "week", "month", "year"
+    period: str  # "day", "week", "month", "quarter", "year"
     start_date: datetime
     end_date: datetime
     journal_entries: List[str]
     major_accomplishments: List[str]
     patterns: List[str]
 ```
-
-These structures ensure consistent data handling across all MCP operations and provide clear contracts for client integration. 

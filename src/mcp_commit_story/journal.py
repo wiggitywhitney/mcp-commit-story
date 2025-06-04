@@ -569,6 +569,18 @@ def get_journal_file_path(date: str, entry_type: str) -> str:
         elif entry_type == "yearly_summary":
             filename = f"{date}-yearly.md"
             file_path = f"journal/summaries/yearly/{filename}"
+        elif entry_type == "quarterly_summary":
+            # Parse date to determine quarter
+            from datetime import datetime
+            date_obj = datetime.strptime(date, "%Y-%m-%d") if isinstance(date, str) else date
+            year = date_obj.year
+            month = date_obj.month
+            
+            # Determine quarter: Q1 (Jan-Mar), Q2 (Apr-Jun), Q3 (Jul-Sep), Q4 (Oct-Dec)
+            quarter = ((month - 1) // 3) + 1
+            
+            filename = f"{year}-Q{quarter}.md"
+            file_path = f"journal/summaries/quarterly/{filename}"
         else:
             # Default pattern for unknown entry types
             filename = f"{entry_type}_{date}.md"

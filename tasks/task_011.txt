@@ -3,7 +3,7 @@
 # Status: pending
 # Dependencies: 7
 # Priority: medium
-# Description: Create the functionality to generate daily, weekly, monthly, and yearly summaries of journal entries, with special emphasis on manual reflections.
+# Description: Create the functionality to generate daily, weekly, monthly, quarterly, and yearly summaries of journal entries, with special emphasis on manual reflections.
 # Details:
 Implement summary generation in the MCP server with the following features:
 
@@ -28,6 +28,19 @@ def get_date_range(period, date=None):
         # Last day of month
         next_month = date.replace(day=28) + timedelta(days=4)
         end = next_month - timedelta(days=next_month.day)
+        return start, end
+    elif period == "quarter":
+        # Determine which quarter the date falls in
+        quarter = (date.month - 1) // 3 + 1
+        # Start of quarter (first day of first month in quarter)
+        start_month = (quarter - 1) * 3 + 1
+        start = date.replace(month=start_month, day=1)
+        # End of quarter (last day of last month in quarter)
+        end_month = quarter * 3
+        end_day = 31 if end_month in [3, 12] else 30 if end_month in [6, 9] else 28
+        if end_month == 2 and (date.year % 4 == 0 and (date.year % 100 != 0 or date.year % 400 == 0)):
+            end_day = 29  # Leap year
+        end = date.replace(month=end_month, day=end_day)
         return start, end
     elif period == "year":
         start = date.replace(month=1, day=1)
@@ -190,6 +203,11 @@ def save_summary(content, period, date, config):
     elif period == "month":
         file_name = f"{date.strftime('%Y-%m')}.md"
         dir_path = Path(config["journal"]["path"]) / "summaries" / "monthly"
+    elif period == "quarter":
+        # Determine which quarter the date falls in
+        quarter = (date.month - 1) // 3 + 1
+        file_name = f"{date.strftime('%Y')}-Q{quarter}.md"
+        dir_path = Path(config["journal"]["path"]) / "summaries" / "quarterly"
     elif period == "year":
         file_name = f"{date.strftime('%Y')}.md"
         dir_path = Path(config["journal"]["path"]) / "summaries" / "yearly"
@@ -276,11 +294,16 @@ Note: This implementation focuses solely on MCP/AI agent operations for summary 
 
 # Test Strategy:
 1. Unit tests for date range utilities
+   - Test all periods (day, week, month, quarter, year)
+   - Test edge cases like quarter boundaries
+   - Test leap year handling for February in quarterly calculations
 2. Tests for journal file collection
 3. Tests for summary generation
 4. Tests for summary file saving
+   - Test saving for all periods (daily, weekly, monthly, quarterly, yearly)
+   - Test correct file naming for quarterly summaries (YYYY-Q1, YYYY-Q2, etc.)
 5. Tests for MCP handler implementation
-6. Tests for handling different periods (day, week, month, year)
+6. Tests for handling different periods (day, week, month, quarter, year)
 7. Tests for handling date ranges
 8. Integration tests for full summary generation flow
 9. Tests for entry significance calculation
@@ -289,7 +312,7 @@ Note: This implementation focuses solely on MCP/AI agent operations for summary 
 12. Tests with mixed entry types to ensure proper weighting in the final summary
 13. Tests for on-demand directory creation:
     - Test that summary directories are created automatically when they don't exist
-    - Test that ensure_journal_directory() is called for all summary types (daily, weekly, monthly, yearly)
+    - Test that ensure_journal_directory() is called for all summary types (daily, weekly, monthly, quarterly, yearly)
     - Test that directory creation works with nested paths
     - Test that no errors occur when directories already exist
     - Test that directories are only created when needed, not upfront
@@ -313,6 +336,11 @@ Note: This implementation focuses solely on MCP/AI agent operations for summary 
     - Test with mixed content (manual reflections and regular entries)
     - Test with only manual reflections
     - Test with no manual reflections
+20. Tests for quarterly summary generation:
+    - Test correct date range calculation for each quarter
+    - Test correct file naming (YYYY-Q1, YYYY-Q2, etc.)
+    - Test with entries spanning multiple months within a quarter
+    - Test with entries at quarter boundaries
 
 # Subtasks:
 ## 11.1. Implement entry significance calculation [pending]
@@ -420,6 +448,24 @@ Note: This implementation focuses solely on MCP/AI agent operations for summary 
 ## 11.18. Add tests for manual reflection prioritization [pending]
 ### Dependencies: None
 ### Description: Create tests to verify that manual reflections appear at the beginning of summaries with proper visual distinction and preserved wording.
+### Details:
+
+
+## 11.19. Implement quarterly summary support [pending]
+### Dependencies: None
+### Description: Add support for generating quarterly summaries, including date range calculation and file naming conventions.
+### Details:
+
+
+## 11.20. Create tests for quarterly summary generation [pending]
+### Dependencies: None
+### Description: Develop tests to verify correct date range calculation, file naming, and content generation for quarterly summaries.
+### Details:
+
+
+## 11.21. Update documentation to include quarterly summaries [pending]
+### Dependencies: None
+### Description: Update relevant documentation to include information about quarterly summary generation and usage.
 ### Details:
 
 

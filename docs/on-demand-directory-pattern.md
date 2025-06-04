@@ -33,7 +33,7 @@ with open(file_path, "a") as f:
 - Add tests to verify operations work when parent directories do not exist.
 
 ### For Summary Generation Features
-- Use `ensure_journal_directory(file_path)` for all summary types (daily, weekly, monthly, yearly).
+- Use `ensure_journal_directory(file_path)` for all summary types (daily, weekly, monthly, quarterly, yearly).
 - Add tests to verify summaries are saved correctly when directories do not exist.
 
 ### For MCP Server Handlers

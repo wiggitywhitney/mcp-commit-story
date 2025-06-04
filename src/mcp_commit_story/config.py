@@ -26,6 +26,7 @@ DEFAULT_CONFIG = {
             'daily': True,
             'weekly': True,
             'monthly': True,
+            'quarterly': True,
             'yearly': True
         }
     },

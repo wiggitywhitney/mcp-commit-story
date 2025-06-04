@@ -987,7 +987,7 @@ def load_journal_context(config_path: str) -> dict:
 *Privacy-Conscious Attributes:*
 - `file.path`: Filename only (no full paths)
 - `directory.path`: Directory name only (no full paths)  
-- `journal.entry_type`: daily, weekly, monthly, yearly
+- `journal.entry_type`: daily, weekly, monthly, quarterly, yearly
 - `journal.entry_id`: Unique identifier for correlation
 
 *Context Correlation:*
