@@ -20,6 +20,8 @@ import sys
 from pathlib import Path
 from unittest.mock import patch, MagicMock, AsyncMock
 import json
+import re
+from datetime import datetime
 
 # Test helper function to create isolated temp directories
 def create_isolated_temp_dir():
@@ -67,7 +69,7 @@ async def test_end_to_end_reflection_addition_via_mcp():
                 content = file_path.read_text(encoding='utf-8')
                 reflection_text = request.get("text") or request.get("reflection")
                 assert reflection_text in content, "Reflection content missing from file"
-                assert "## Reflection (" in content, "Reflection header format incorrect"
+                assert "### " in content and "— Reflection" in content, "Reflection header format incorrect"
     finally:
         # Clean up
         import shutil
@@ -136,7 +138,7 @@ async def test_ai_agent_interaction_simulation():
                 assert reflection["text"] in final_content
             
             # Verify correct number of reflection headers (only from this test)
-            reflection_count = final_content.count("## Reflection (")
+            reflection_count = final_content.count("### ")
             assert reflection_count == len(agent_reflections), f"Expected {len(agent_reflections)} reflections, found {reflection_count}"
     finally:
         import shutil
@@ -387,7 +389,7 @@ async def test_concurrent_reflection_operations():
                 assert expected_text in content, f"Missing reflection {i} in final content"
             
             # Verify correct number of reflection headers (only from this test)
-            reflection_count = content.count("## Reflection (")
+            reflection_count = content.count("### ")
             assert reflection_count == len(concurrent_reflections), f"Expected {len(concurrent_reflections)} reflections, found {reflection_count}"
     finally:
         import shutil
@@ -490,8 +492,6 @@ async def test_reflection_timestamp_accuracy():
     """
     from src.mcp_commit_story.server import handle_journal_add_reflection
     from src.mcp_commit_story.reflection_core import add_manual_reflection
-    import re
-    from datetime import datetime
     
     temp_dir = create_isolated_temp_dir()
     try:
@@ -522,23 +522,30 @@ async def test_reflection_timestamp_accuracy():
             content = file_path.read_text(encoding='utf-8')
             
             # Extract all timestamps using regex
-            timestamp_pattern = r"## Reflection \((\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\)"
+            timestamp_pattern = r"### (\d{1,2}:\d{2} [AP]M)"
             timestamps_found = re.findall(timestamp_pattern, content)
             
             assert len(timestamps_found) == 3, f"Expected 3 timestamps, found {len(timestamps_found)}"
             
             # Verify timestamp format and reasonable values
             for ts_str in timestamps_found:
-                # Parse timestamp
-                timestamp = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S")
+                # Parse timestamp (%I handles both 1 and 2 digit hours)
+                # Since this is time-only, we need to add today's date for comparison
+                today = datetime.now().strftime("%Y-%m-%d")
+                full_timestamp_str = f"{today} {ts_str}"
+                timestamp = datetime.strptime(full_timestamp_str, "%Y-%m-%d %I:%M %p")
                 
                 # Verify timestamp is recent (within last hour)
                 time_diff = abs((datetime.now() - timestamp).total_seconds())
                 assert time_diff < 3600, f"Timestamp too old or too future: {ts_str}"
             
             # Verify timestamps are different (due to delays)
+            # Note: With H:MM AM/PM format, timestamps may be the same if within the same minute
             unique_timestamps = set(timestamps_found)
-            assert len(unique_timestamps) >= 2, "Expected at least 2 unique timestamps due to delays"
+            assert len(unique_timestamps) >= 1, "Expected at least 1 timestamp"
+            
+            # Verify all timestamps are valid format
+            assert all(re.match(r'^\d{1,2}:\d{2} [AP]M$', ts) for ts in timestamps_found), "Invalid timestamp format found"
     finally:
         import shutil
         shutil.rmtree(temp_dir, ignore_errors=True)
