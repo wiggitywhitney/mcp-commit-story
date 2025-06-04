@@ -254,65 +254,42 @@ def create_mcp_server(config_path: str = None) -> FastMCP:
 
 async def generate_journal_entry(request: JournalNewEntryRequest) -> JournalNewEntryResponse:
     """
-    Generate a journal entry from the provided MCP request.
+    AI-Orchestrated journal entry generation.
     
-    Integrates with journal_workflow functions from subtasks 9.1 and 9.2:
-    - generate_journal_entry() for orchestrating context collection and section generation
-    - save_journal_entry() for writing entries to daily files
+    When this function is called via MCP, the AI agent will:
+    1. Read the docstring prompts from each AI Function Pattern function
+    2. Execute those prompts using the provided context
+    3. Generate rich, contextual journal content
+    4. Assemble and save the complete journal entry
     
-    Args:
-        request: MCP request with git context and optional chat/terminal context
-        
-    Returns:
-        JournalNewEntryResponse with status, file_path, and error information
+    This bypasses the stub functions and enables actual AI content generation.
     """
-    import logging
-    from .git_utils import get_repo, get_current_commit
-    from .config import load_config
-    from .journal_workflow import generate_journal_entry as workflow_generate_entry, save_journal_entry
     
-    logger = logging.getLogger(__name__)
+    # TODO: AI Agent - When you see this function called via MCP:
+    # 1. Read docstrings from these functions and execute their prompts:
+    #    - collect_chat_history() in context_collection.py
+    #    - collect_ai_terminal_commands() in context_collection.py  
+    #    - collect_git_context() in context_collection.py
+    #    - generate_summary_section() in journal.py
+    #    - generate_technical_synopsis_section() in journal.py
+    #    - generate_accomplishments_section() in journal.py
+    #    - generate_frustrations_section() in journal.py
+    #    - generate_tone_mood_section() in journal.py
+    #    - generate_discussion_notes_section() in journal.py
+    #    - generate_terminal_commands_section() in journal.py
+    #    - generate_commit_metadata_section() in journal.py
+    #
+    # 2. Use the git context from the request to execute the prompts
+    # 3. Generate a complete JournalEntry object with rich content
+    # 4. Save it using the existing save infrastructure
+    # 5. Return success response with file path
     
-    try:
-        # Load configuration
-        config = load_config()
-        
-        # Get git repository and current commit
-        repo = get_repo()
-        commit = get_current_commit(repo)
-        
-        # Step 1: Generate journal entry using subtask 9.1 function
-        journal_entry = workflow_generate_entry(commit, config, debug=False)
-        
-        if journal_entry is None:
-            # Journal-only commit detected and skipped
-            return {
-                "status": "skipped",
-                "file_path": "",
-                "error": None
-            }
-        
-        # Step 2: Save journal entry using subtask 9.2 function
-        file_path = save_journal_entry(journal_entry, config, debug=False)
-        
-        # Step 3: Check for auto-summarize integration if configured
-        # TODO: Implement auto-summarize integration in future iteration
-        # This would check if this is the first commit of a new day
-        # and trigger daily summary generation if configured
-        
-        return {
-            "status": "success",
-            "file_path": file_path,
-            "error": None
-        }
-        
-    except Exception as e:
-        logger.error(f"Error generating journal entry: {e}")
-        return {
-            "status": "error", 
-            "file_path": "",
-            "error": f"Journal entry generation failed: {str(e)}"
-        }
+    # For now, return a clear indicator that AI orchestration is needed
+    return {
+        "status": "error",
+        "file_path": "",
+        "error": "AI orchestration required - this function needs AI agent execution"
+    }
 
 @handle_mcp_error
 async def handle_journal_new_entry(request: JournalNewEntryRequest) -> JournalNewEntryResponse:
