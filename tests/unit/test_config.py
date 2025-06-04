@@ -376,9 +376,9 @@ def test_unexpected_data_type(tmp_path):
 def test_deeply_nested_config_access(tmp_path):
     """Test access to deeply nested config keys."""
     config_path = tmp_path / ".mcp-commit-storyrc.yaml"
-    config_path.write_text("journal:\n  auto_summarize:\n    yearly: false\n")
+    config_path.write_text("journal:\n  include_mood: false\n")
     config = load_config(str(config_path))
-    assert get_config_value(config, "journal.auto_summarize.yearly") is False
+    assert get_config_value(config, "journal.include_mood") is False
 
 def test_empty_config_file(tmp_path):
     """Test that an empty config file loads as a valid config object."""

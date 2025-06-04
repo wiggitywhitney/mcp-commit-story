@@ -266,20 +266,7 @@ journal:
   include_terminal: true
   include_chat: true
   include_mood: true
-  auto_summarize:
-    daily: true
-    weekly: true
-    monthly: true
-    quarterly: true
-    yearly: true
 ```
-
-### Auto-Summarization Options
-- `daily`: Generate daily summary on first commit of new day
-- `weekly`: Generate weekly summary on first commit of week (Monday)
-- `monthly`: Generate monthly summary on first commit of month
-- `quarterly`: Generate quarterly summary on first commit of quarter
-- `yearly`: Generate yearly summary on first commit of year
 
 ### Content Inclusion Toggles
 - `include_terminal`: Whether to attempt terminal command collection

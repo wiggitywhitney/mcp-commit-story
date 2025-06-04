@@ -21,14 +21,7 @@ DEFAULT_CONFIG = {
         'auto_generate': True,
         'include_terminal': True,
         'include_chat': True,
-        'include_mood': True,
-        'auto_summarize': {
-            'daily': True,
-            'weekly': True,
-            'monthly': True,
-            'quarterly': True,
-            'yearly': True
-        }
+        'include_mood': True
     },
     'git': {
         'exclude_patterns': ['journal/**', '.mcp-commit-storyrc.yaml']

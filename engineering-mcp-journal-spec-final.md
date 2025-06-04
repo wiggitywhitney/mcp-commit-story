@@ -280,11 +280,6 @@ journal:
   include_terminal: true
   include_chat: true
   include_mood: true
-  auto_summarize:
-    daily: true     # Generate daily summary on first commit of new day
-    weekly: true    # Generate weekly summary on first commit of week (Monday)
-    monthly: true   # Generate monthly summary on first commit of month
-    yearly: true    # Generate yearly summary on first commit of year
 
 # Minimal telemetry configuration
 telemetry:
@@ -314,11 +309,6 @@ journal:
   include_terminal: true
   include_chat: true
   include_mood: true
-  auto_summarize:
-    daily: true
-    weekly: true
-    monthly: true
-    yearly: true
 ```
 
 #### Journal Entry Structure Note
@@ -2010,11 +2000,6 @@ journal:
   include_terminal: true
   include_chat: true
   include_mood: true
-  auto_summarize:
-    daily: true
-    weekly: true
-    monthly: true
-    yearly: true
 ```
 
 #### Example Values for `ai_tone`:
