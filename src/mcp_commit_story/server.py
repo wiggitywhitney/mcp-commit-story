@@ -28,6 +28,7 @@ import inspect
 from mcp_commit_story.git_utils import install_post_commit_hook
 from mcp_commit_story.journal import append_to_journal_file
 from mcp_commit_story.reflection_core import add_manual_reflection
+from datetime import datetime
 
 # Type alias for an async tool handler
 ToolHandler = Callable[..., Awaitable[Any]]
@@ -322,8 +323,10 @@ async def generate_journal_entry(request: JournalNewEntryRequest) -> JournalNewE
     from mcp_commit_story.journal import JournalEntry, get_journal_file_path, append_to_journal_file
     from datetime import datetime
     
-    # Use proper cross-platform timestamp format
-    timestamp = datetime.now().strftime("%I:%M %p").lstrip('0')  # e.g., "2:34 PM"
+    # Use proper cross-platform timestamp format - EXTRACT FROM COMMIT DATE
+    commit_date_str = request["git"]["metadata"]["date"]  # e.g. "2025-06-04T14:21:24-05:00"
+    commit_datetime = datetime.fromisoformat(commit_date_str.replace('Z', '+00:00'))
+    timestamp = commit_datetime.strftime("%I:%M %p").lstrip('0')  # e.g., "2:21 PM"
     
     # Extract git metadata
     git_metadata = request["git"]["metadata"]
@@ -344,7 +347,7 @@ async def generate_journal_entry(request: JournalNewEntryRequest) -> JournalNewE
     )
     
     # Save using established file path system
-    date_str = datetime.now().strftime("%Y-%m-%d")
+    date_str = commit_datetime.strftime("%Y-%m-%d")  # Use commit date, not current date
     file_path = get_journal_file_path(date_str, "daily")
     append_to_journal_file(entry.to_markdown(), file_path)
     

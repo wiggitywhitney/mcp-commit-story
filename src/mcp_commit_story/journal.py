@@ -1179,6 +1179,13 @@ def generate_discussion_notes_section(journal_context: JournalContext) -> Discus
     Purpose: Extract and curate relevant discussion points from chat history that provide insight into the thinking process, technical reasoning, decisions, and key exchanges, filtering out routine conversation.
 
     Instructions: Extract meaningful conversation excerpts from chat history to preserve important technical reasoning, decision-making discussions, and insights. Focus on content that reveals thought processes, technical considerations, and valuable exchanges while excluding routine conversation.
+    
+    CRITICAL: AVOID RECENCY BIAS
+    - Start your analysis from the BEGINNING of the chat history (oldest messages first)
+    - Work chronologically forward to ensure older context isn't overlooked
+    - Give equal weight to conversations regardless of when they occurred
+    
+    VERBATIM QUOTES REQUIRED: Extract actual quotes from the conversation with speaker attribution. DO NOT paraphrase, summarize, or rewrite. The goal is to preserve the authentic voice and tone of the development process.
 
     Priority for Content Sources:
     1. Chat history from journal_context.chat_history - the only source for discussion content
@@ -1207,13 +1214,13 @@ def generate_discussion_notes_section(journal_context: JournalContext) -> Discus
     - Routine status updates without insight ("working on X now")
     - Basic commands or requests without reasoning
     - Off-topic conversations unrelated to the technical work
+    - Ignore purely administrative chat (like "please wait" or "let me check"), but include discussions about tooling, environment, or workflow
 
     Length and Excerpting Guidelines:
     - **Preserve full quotes** when they're concise and meaningful (under ~50 words)
     - **Use excerpts** for longer discussions: include key parts with `[...]` notation
     - **Group related exchanges** chronologically when they form a coherent discussion
     - **Separate distinct topics** with blank lines between different conversation threads
-    - **Prioritize recent discussions** when space is limited, but include earlier context if it's crucial
 
     Length Target Guidelines:
     - **Rich discussion context**: Include 5-10 meaningful exchanges or excerpts
@@ -1226,7 +1233,9 @@ def generate_discussion_notes_section(journal_context: JournalContext) -> Discus
     - Focus on parts that match priority types and explicit reasoning keywords ("because", "since", "the tradeoff is")
 
     Speaker Attribution and Formatting:
-    - Always try to attribute to speaker when possible, fall back to plain string if unclear
+    - ALWAYS present as VERBATIM QUOTES with speaker attribution:
+      > **Human:** "exact quote here"
+      > **AI:** "exact response here"
     - Present in chronological order, grouping messages by topic with blank lines between different topics
     - Trust AI judgment to recognize natural topic boundaries and appropriate granularity
     - Preserve natural conversation flow and connections between related messages when length permits
@@ -1246,7 +1255,7 @@ def generate_discussion_notes_section(journal_context: JournalContext) -> Discus
     ANTI-HALLUCINATION RULES:
     - Do NOT invent, infer, or summarize discussion points not explicitly present in the chat history
     - Only include discussion content directly supported by the chat transcript
-    - Do not paraphrase or rewrite quotes - extract actual conversation content
+    - MUST extract VERBATIM QUOTES - do not paraphrase or rewrite quotes
     - If no relevant discussion is found, return an empty list and omit the section
     - Never combine separate conversations or create composite quotes
 
@@ -1255,10 +1264,12 @@ def generate_discussion_notes_section(journal_context: JournalContext) -> Discus
     - Return empty list if no relevant discussion notes are found and omit the section
     - Maintain chronological order grouped by topic
     - Include `[...]` notation when content has been shortened
+    - MUST present as VERBATIM QUOTES with speaker attribution
 
     CHECKLIST:
+    - [ ] Started analysis from oldest messages in chat history and worked chronologically forward
     - [ ] Searched chat history for content matching priority criteria (emotions, decisions, problem-solving, questions, technical discussion)
-    - [ ] Extracted actual conversation content without paraphrasing or invention
+    - [ ] Extracted actual conversation content as VERBATIM QUOTES without paraphrasing or invention
     - [ ] Applied appropriate length limits with excerpt notation when needed
     - [ ] Included sufficient context to make quotes meaningful
     - [ ] Preserved conversational flow and speaker attribution when possible
@@ -1267,6 +1278,7 @@ def generate_discussion_notes_section(journal_context: JournalContext) -> Discus
     - [ ] Used only content directly supported by chat transcript
     - [ ] Returned empty list and omitted section if no relevant discussion was found
     - [ ] Did NOT invent, combine, or composite any discussion content
+    - [ ] ENFORCED VERBATIM QUOTES REQUIREMENT - no summaries or paraphrases
     """
     import time
     

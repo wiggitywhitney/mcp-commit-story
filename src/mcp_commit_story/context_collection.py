@@ -37,17 +37,16 @@ def collect_chat_history(since_commit=None, max_messages_back=150) -> ChatHistor
     Collect relevant chat history for journal entry.
 
     AI Prompt:
-    Please analyze our ENTIRE chat history within the specified boundary and extract ALL relevant discussion points for the journal entry.
-    - Search backward through the current conversation for the last time you invoked the mcp-commit-story new-entry command.
-    - Analyze every message from that point forward to the current moment, capturing the full picture.
-    - Extract all technical discussions, debugging sessions, feature decisions, challenges overcome, and lessons learned.
-    - Look for any mention of specific files, functions, or code changes that provide context.
-    - Record moments of frustration, breakthrough, relief, or other emotions.
-    - Include any external research, documentation reviews, or stack overflow searches mentioned.
-    - Capture questions asked, problems solved, and workarounds discovered.
-    - Focus on content that would help someone understand how this commit came about and what the developer experienced.
-    - Ignore purely administrative chat (like "please wait" or "let me check"), but include discussions about tooling, environment, or workflow.
-    - Return ONLY the messages that contain meaningful context about the development process leading to this commit.
+    Collect ALL chat messages within the specified boundary for journal entry generation.
+
+    BOUNDARY DEFINITION:
+    - Search backward through the current conversation for the last time you invoked the mcp-commit-story new-entry command
+    - Collect EVERY message from that point forward to the current moment
+    - Do not filter or exclude any messages - return the complete raw chat history within the boundary
+
+    PURPOSE: Provide complete raw data for downstream processing. The filtering and intelligent extraction will be handled by generate_discussion_notes_section().
+
+    Return ALL messages within the boundary as ChatHistory with complete speaker attribution and content.
     """
     # Validate that required parameters are provided
     if since_commit is None or max_messages_back is None:
