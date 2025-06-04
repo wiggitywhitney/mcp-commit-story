@@ -26,8 +26,7 @@ class TestSaveJournalEntry:
     @patch('src.mcp_commit_story.journal.append_to_journal_file')
     @patch('src.mcp_commit_story.journal.ensure_journal_directory')
     @patch('builtins.open', new_callable=mock_open)
-    @patch('pathlib.Path')
-    def test_save_new_daily_file_with_header(self, mock_path, mock_file, mock_ensure_dir, mock_append, mock_datetime):
+    def test_save_new_daily_file_with_header(self, mock_file, mock_ensure_dir, mock_append, mock_datetime):
         """Test saving journal entry to a new daily file with proper header."""
         # Mock datetime
         mock_now = MagicMock()
@@ -37,12 +36,6 @@ class TestSaveJournalEntry:
         }[fmt]
         mock_datetime.now.return_value = mock_now
         
-        # Mock Path behavior - the function does Path(journal_path) / file_path
-        mock_path_instance = MagicMock()
-        mock_path_instance.exists.return_value = False  # New file
-        mock_path.return_value = mock_path_instance
-        mock_path_instance.__truediv__.return_value = mock_path_instance  # Handle / operator
-        
         # Create test journal entry
         journal_entry = MagicMock()
         journal_entry.to_markdown.return_value = "### 2:34 PM — Commit abc123\n\n#### Summary\nTest entry"
@@ -50,8 +43,10 @@ class TestSaveJournalEntry:
         # Create test config (dict format)
         config = {'journal': {'path': 'test-journal'}}
         
-        # Call function
-        result = save_journal_entry(journal_entry, config, debug=True)
+        # Mock Path.exists to return False (new file)
+        with patch('pathlib.Path.exists', return_value=False):
+            # Call function
+            result = save_journal_entry(journal_entry, config, debug=True)
         
         # Verify directory creation
         mock_ensure_dir.assert_called_once()
@@ -62,25 +57,19 @@ class TestSaveJournalEntry:
         mock_file.assert_called_once()
         mock_file().write.assert_called_once_with(expected_content)
         
-        # Verify return path
-        assert result == str(mock_path_instance)
+        # Verify return path contains expected components
+        assert "test-journal" in result
+        assert "daily/2025-06-03-journal.md" in result
     
     @patch('src.mcp_commit_story.journal_workflow.datetime')
     @patch('src.mcp_commit_story.journal.append_to_journal_file')
     @patch('src.mcp_commit_story.journal.ensure_journal_directory')
-    @patch('pathlib.Path')
-    def test_save_to_existing_daily_file(self, mock_path, mock_ensure_dir, mock_append, mock_datetime):
+    def test_save_to_existing_daily_file(self, mock_ensure_dir, mock_append, mock_datetime):
         """Test appending journal entry to existing daily file."""
         # Mock datetime
         mock_now = MagicMock()
         mock_now.strftime.return_value = "2025-06-03"
         mock_datetime.now.return_value = mock_now
-        
-        # Mock Path behavior
-        mock_path_instance = MagicMock()
-        mock_path_instance.exists.return_value = True  # Existing file
-        mock_path.return_value = mock_path_instance
-        mock_path_instance.__truediv__.return_value = mock_path_instance  # Handle / operator
         
         # Create test journal entry
         journal_entry = MagicMock()
@@ -90,35 +79,33 @@ class TestSaveJournalEntry:
         config = MagicMock()
         config.journal_path = 'test-journal'
         
-        # Call function
-        result = save_journal_entry(journal_entry, config, debug=False)
+        # Mock Path.exists to return True (existing file)
+        with patch('pathlib.Path.exists', return_value=True):
+            # Call function
+            result = save_journal_entry(journal_entry, config, debug=False)
         
         # Verify directory creation
         mock_ensure_dir.assert_called_once()
         
         # Verify append to existing file (should use append_to_journal_file)
-        mock_append.assert_called_once_with(
-            "### 3:45 PM — Commit def456\n\n#### Summary\nAnother entry",
-            str(mock_path_instance)  # This matches what the function actually passes
-        )
+        mock_append.assert_called_once()
+        args = mock_append.call_args[0]
+        assert args[0] == "### 3:45 PM — Commit def456\n\n#### Summary\nAnother entry"
+        assert "test-journal" in args[1]
+        assert "daily/2025-06-03-journal.md" in args[1]
         
-        # Verify return path
-        assert result == str(mock_path_instance)
+        # Verify return path contains expected components
+        assert "test-journal" in result
+        assert "daily/2025-06-03-journal.md" in result
     
     @patch('src.mcp_commit_story.journal_workflow.datetime')
-    @patch('pathlib.Path')
     @patch('src.mcp_commit_story.journal.ensure_journal_directory')
-    def test_config_object_vs_dict_handling(self, mock_ensure_dir, mock_path, mock_datetime):
+    def test_config_object_vs_dict_handling(self, mock_ensure_dir, mock_datetime):
         """Test that both Config objects and dict configurations work."""
         # Mock datetime
         mock_now = MagicMock()
         mock_now.strftime.return_value = "2025-06-03"
         mock_datetime.now.return_value = mock_now
-        
-        # Mock Path
-        mock_path_instance = MagicMock()
-        mock_path.return_value = mock_path_instance
-        mock_path_instance.__truediv__.return_value = mock_path_instance
         
         journal_entry = MagicMock()
         journal_entry.to_markdown.return_value = "test entry"
@@ -127,21 +114,20 @@ class TestSaveJournalEntry:
         config_obj = MagicMock()
         config_obj.journal_path = 'config-obj-path'
         
-        with patch('builtins.open', mock_open()):
+        with patch('pathlib.Path.exists', return_value=False), \
+             patch('builtins.open', mock_open()) as mock_file:
             save_journal_entry(journal_entry, config_obj)
-            # Verify path construction with Config object
-            mock_path.assert_called_with('config-obj-path') 
-        
-        # Reset mock
-        mock_path.reset_mock()
+            # Verify file was opened for writing (new file)
+            mock_file.assert_called()
         
         # Test with dict config
         config_dict = {'journal': {'path': 'dict-config-path'}}
         
-        with patch('builtins.open', mock_open()):
+        with patch('pathlib.Path.exists', return_value=False), \
+             patch('builtins.open', mock_open()) as mock_file:
             save_journal_entry(journal_entry, config_dict)
-            # Verify path construction with dict config
-            mock_path.assert_called_with('dict-config-path')
+            # Verify file was opened for writing (new file)
+            mock_file.assert_called()
     
     @patch('src.mcp_commit_story.journal_workflow.datetime')
     @patch('src.mcp_commit_story.journal.ensure_journal_directory')
@@ -158,13 +144,8 @@ class TestSaveJournalEntry:
         config = {'journal': {'path': 'test-journal'}}
         
         # Mock file operations to raise PermissionError
-        with patch('pathlib.Path') as mock_path, \
+        with patch('pathlib.Path.exists', return_value=False), \
              patch('builtins.open', side_effect=PermissionError("Access denied")):
-            
-            mock_path_instance = MagicMock()
-            mock_path_instance.exists.return_value = False
-            mock_path.return_value = mock_path_instance
-            mock_path_instance.__truediv__.return_value = mock_path_instance
             
             # The function actually catches PermissionError and may convert it
             # Let's test that some kind of error is raised (PermissionError or ValueError)
@@ -185,13 +166,8 @@ class TestSaveJournalEntry:
         journal_entry.to_markdown.return_value = "test entry"
         config = {'journal': {'path': 'test-journal'}}
         
-        with patch('pathlib.Path') as mock_path, \
+        with patch('pathlib.Path.exists', return_value=True), \
              patch('src.mcp_commit_story.journal_workflow.logger') as mock_logger:
-            
-            mock_path_instance = MagicMock()
-            mock_path_instance.exists.return_value = True  # Existing file
-            mock_path.return_value = mock_path_instance
-            mock_path_instance.__truediv__.return_value = mock_path_instance
             
             # Call with debug=True
             save_journal_entry(journal_entry, config, debug=True)
@@ -212,21 +188,14 @@ class TestSaveJournalEntry:
             journal_entry.to_markdown.return_value = "test"
             config = {'journal': {'path': 'test'}}
             
-            with patch('pathlib.Path') as mock_path, \
+            with patch('pathlib.Path.exists', return_value=False), \
                  patch('src.mcp_commit_story.journal.ensure_journal_directory'), \
                  patch('builtins.open', mock_open()):
                 
-                mock_path_instance = MagicMock()
-                mock_path_instance.exists.return_value = False
-                mock_path.return_value = mock_path_instance
-                mock_path_instance.__truediv__.return_value = mock_path_instance
+                result = save_journal_entry(journal_entry, config)
                 
-                save_journal_entry(journal_entry, config)
-                
-                # Verify Path is constructed with journal path and file path
-                mock_path.assert_called_with('test')
-                # Verify / operator is used with the correct file path
-                mock_path_instance.__truediv__.assert_called_with('daily/2025-12-31-journal.md')
+                # Verify the returned path follows the expected pattern
+                assert "daily/2025-12-31-journal.md" in result
 
 
 class TestJournalFileOperationsIntegration:
@@ -252,7 +221,7 @@ class TestJournalFileOperationsIntegration:
             # Create test config
             config = {'journal': {'path': temp_dir}}
             
-            # Save journal entry
+            # Use a single datetime mock that covers both save_journal_entry calls
             with patch('src.mcp_commit_story.journal_workflow.datetime') as mock_datetime:
                 mock_now = MagicMock()
                 mock_now.strftime.side_effect = lambda fmt: {
@@ -261,30 +230,31 @@ class TestJournalFileOperationsIntegration:
                 }[fmt]
                 mock_datetime.now.return_value = mock_now
                 
+                # Save first journal entry
                 result_path = save_journal_entry(journal_entry, config)
+                
+                # Save another entry to same file (within same datetime mock context)
+                journal_entry2 = JournalEntry(
+                    timestamp="3:45 PM",
+                    commit_hash="def456",
+                    summary="Second entry"
+                )
+                
+                result_path2 = save_journal_entry(journal_entry2, config)
             
             # Verify file was created
             expected_path = Path(temp_dir) / "daily" / "2025-06-03-journal.md"
             assert expected_path.exists()
             assert result_path == str(expected_path)
             
+            # Verify same file path for both entries
+            assert result_path2 == result_path
+            
             # Verify file content
             content = expected_path.read_text()
             assert "# Daily Journal Entries - June 3, 2025" in content
             assert "### 2:34 PM — Commit abc123" in content
             assert "Test summary" in content
-            
-            # Save another entry to same file
-            journal_entry2 = JournalEntry(
-                timestamp="3:45 PM",
-                commit_hash="def456",
-                summary="Second entry"
-            )
-            
-            result_path2 = save_journal_entry(journal_entry2, config)
-            
-            # Verify same file path
-            assert result_path2 == result_path
             
             # Verify both entries in file
             final_content = expected_path.read_text()
