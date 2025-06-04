@@ -254,9 +254,65 @@ def create_mcp_server(config_path: str = None) -> FastMCP:
 
 async def generate_journal_entry(request: JournalNewEntryRequest) -> JournalNewEntryResponse:
     """
-    Stub for journal entry generation logic. Returns a dummy success response.
+    Generate a journal entry from the provided MCP request.
+    
+    Integrates with journal_workflow functions from subtasks 9.1 and 9.2:
+    - generate_journal_entry() for orchestrating context collection and section generation
+    - save_journal_entry() for writing entries to daily files
+    
+    Args:
+        request: MCP request with git context and optional chat/terminal context
+        
+    Returns:
+        JournalNewEntryResponse with status, file_path, and error information
     """
-    return {"status": "success", "file_path": "journal/daily/2025-05-26-journal.md", "error": None}
+    import logging
+    from .git_utils import get_repo, get_current_commit
+    from .config import load_config
+    from .journal_workflow import generate_journal_entry as workflow_generate_entry, save_journal_entry
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Load configuration
+        config = load_config()
+        
+        # Get git repository and current commit
+        repo = get_repo()
+        commit = get_current_commit(repo)
+        
+        # Step 1: Generate journal entry using subtask 9.1 function
+        journal_entry = workflow_generate_entry(commit, config, debug=False)
+        
+        if journal_entry is None:
+            # Journal-only commit detected and skipped
+            return {
+                "status": "skipped",
+                "file_path": "",
+                "error": None
+            }
+        
+        # Step 2: Save journal entry using subtask 9.2 function
+        file_path = save_journal_entry(journal_entry, config, debug=False)
+        
+        # Step 3: Check for auto-summarize integration if configured
+        # TODO: Implement auto-summarize integration in future iteration
+        # This would check if this is the first commit of a new day
+        # and trigger daily summary generation if configured
+        
+        return {
+            "status": "success",
+            "file_path": file_path,
+            "error": None
+        }
+        
+    except Exception as e:
+        logger.error(f"Error generating journal entry: {e}")
+        return {
+            "status": "error", 
+            "file_path": "",
+            "error": f"Journal entry generation failed: {str(e)}"
+        }
 
 @handle_mcp_error
 async def handle_journal_new_entry(request: JournalNewEntryRequest) -> JournalNewEntryResponse:

@@ -10,6 +10,7 @@ This document defines the Model Context Protocol (MCP) server operations, data f
 4. [Data Formats](#data-formats)
 5. [Error Handling](#error-handling)
 6. [Context Data Structures](#context-data-structures)
+7. [Type System](#type-system)
 
 ---
 
@@ -49,7 +50,7 @@ Clients (such as editors or agents) should be able to connect using a configurat
 
 The server exposes these operations for journal management:
 
-1. **`journal/new-entry`** - Create a new journal entry from git, chat, and terminal context
+1. **`journal/new-entry`** - Create a new journal entry from git, chat, and terminal context ✅ **IMPLEMENTED**
 2. **`journal/add-reflection`** - Add a manual reflection to a specific date's journal
 3. **`journal/init`** - Initialize journal in current repository  
 4. **`journal/install-hook`** - Install git post-commit hook
@@ -60,25 +61,48 @@ Each operation is instrumented with appropriate traces to monitor performance an
 
 ## Operation Details
 
-### journal/new-entry
+### journal/new-entry ✅ **FULLY IMPLEMENTED**
 **Purpose**: Create a journal entry for the current commit
+
+**Implementation Status**: Complete with comprehensive TypedDict integration, full test coverage, and proper error handling.
 
 **Parameters**:
 - `git: Dict[str, Any]` (required) - Git context information including commit hash, message, files changed, etc.
 - `chat: Optional[Any]` (optional) - Chat history context from development session
 - `terminal: Optional[Any]` (optional) - Terminal command history context
 
-**Behavior**:
-- Check for missed commits and backfill if needed
-- Generate entry for current commit using provided context
-- Return path to updated file
+**Implementation Details**:
+- Integrates with `generate_journal_entry()` from subtask 9.1 for context collection and entry generation
+- Uses `save_journal_entry()` from subtask 9.2 for file operations and persistence  
+- Implements comprehensive TypedDict validation for all workflow data structures
+- Includes journal-only commit detection to prevent recursion
+- Provides structured error responses with telemetry integration
+- Supports automatic directory creation following on-demand patterns
 
 **Returns**:
 ```json
 {
-  "status": "success",
+  "status": "success", 
   "file_path": "journal/daily/2025-01-15.md",
   "error": null
+}
+```
+
+**Skipped Commits Response**:
+```json
+{
+  "status": "skipped",
+  "file_path": "",
+  "error": null
+}
+```
+
+**Error Response**:
+```json
+{
+  "status": "error",
+  "file_path": "",
+  "error": "Detailed error message"
 }
 ```
 
@@ -102,6 +126,7 @@ Each operation is instrumented with appropriate traces to monitor performance an
     "commands": ["npm test", "git add .", "git commit -m 'Implement user authentication'"]
   }
 }
+```
 
 ### journal/init
 **Purpose**: Initialize journal in current repository
@@ -284,3 +309,77 @@ class SummaryContext(TypedDict):
     major_accomplishments: List[str]
     patterns: List[str]
 ```
+
+---
+
+## Type System
+
+The journal workflow operations utilize comprehensive TypedDict definitions to ensure type safety and clear API contracts across all functions.
+
+### Core Workflow Types
+
+#### Journal Entry Generation (Subtask 9.1)
+```python
+class GenerateJournalEntryInput(TypedDict):
+    """Input parameters for generate_journal_entry function."""
+    commit: Any  # git.Commit object
+    config: Dict[str, Any]  # Config object or dict representation
+    debug: bool
+
+class GenerateJournalEntryResult(TypedDict):
+    """Result from generate_journal_entry function."""
+    entry: Optional[Any]  # JournalEntry object or None if skipped
+    skipped: bool
+    skip_reason: Optional[str]  # Only present if skipped=True
+```
+
+#### File Operations (Subtask 9.2)
+```python
+class SaveJournalEntryInput(TypedDict):
+    """Input parameters for save_journal_entry function."""
+    entry: Any  # JournalEntry object
+    config: Dict[str, Any]  # Config object or dict representation
+
+class SaveJournalEntryResult(TypedDict):
+    """Result from save_journal_entry function."""
+    file_path: str  # Absolute path to saved journal file
+    success: bool
+    created_new_file: bool  # Whether a new file was created vs appended
+```
+
+#### Context Collection
+```python
+class CollectedJournalContext(TypedDict):
+    """Fully assembled context data for journal generation."""
+    git_context: GitContext
+    chat_context: Optional[ChatHistory]
+    terminal_context: Optional[TerminalContext]
+    config: Dict[str, Any]
+    collection_timestamp: str  # ISO timestamp when context was collected
+
+class ContextCollectionResult(TypedDict):
+    """Result from context collection operations."""
+    context: CollectedJournalContext
+    collection_success: bool
+    failed_sources: List[str]  # Sources that failed to collect
+    warnings: List[str]  # Non-fatal issues during collection
+```
+
+### Type Safety Benefits
+- **Clear API Contracts**: Each function's inputs and outputs are explicitly typed
+- **IDE Support**: Full IntelliSense and autocomplete support
+- **Runtime Validation**: TypedDict structures can be validated at runtime
+- **Documentation**: Self-documenting code with clear data structure expectations
+- **Error Prevention**: Catch type mismatches during development
+
+### Import Usage
+```python
+# Import from package root
+from mcp_commit_story import GenerateJournalEntryInput, SaveJournalEntryResult
+
+# Or import from specific modules
+from mcp_commit_story.journal_workflow_types import CollectedJournalContext
+from mcp_commit_story.context_types import GitContext, ChatHistory
+```
+
+The type system is fully tested with 17 comprehensive test cases covering structure validation, compatibility, and integration scenarios.

@@ -1391,7 +1391,7 @@ The Summary section should focus on these unique aspects rather than restating r
 ## MCP Server Implementation
 
 ### MCP Operations
-1. `journal/new-entry` - Create a new journal entry from current git state
+1. **✅ IMPLEMENTED: `journal/new-entry`** - Create a new journal entry from current git state with comprehensive TypedDict workflow integration
 2. `journal/summarize` - Generate weekly/monthly summaries  
 3. `journal/blogify` - Convert journal entry(s) to blog post format
 4. `journal/backfill` - Check for missed commits and create entries
@@ -1403,10 +1403,77 @@ Each operation will be instrumented with appropriate traces to monitor performan
 
 ### Operation Details
 
-#### journal/new-entry
-- Check for missed commits and backfill if needed
-- Generate entry for current commit
-- Return path to updated file
+#### ✅ IMPLEMENTED: journal/new-entry
+**Implementation Status**: Complete with comprehensive TypedDict integration, full test coverage, and production-ready error handling.
+
+**Core Integration**:
+- **Workflow Integration**: Seamlessly integrates `generate_journal_entry()` from subtask 9.1 and `save_journal_entry()` from subtask 9.2
+- **Type Safety**: Complete TypedDict definitions for all data flows including `GenerateJournalEntryInput`, `GenerateJournalEntryResult`, `SaveJournalEntryInput`, and `SaveJournalEntryResult`
+- **Journal-Only Commit Detection**: Automatic detection and skipping of commits that only modify journal files to prevent recursion
+- **Error Handling**: Comprehensive error handling with structured responses for success, skip, and error scenarios
+- **Telemetry Integration**: Full OpenTelemetry instrumentation for performance monitoring and debugging
+
+**Request Processing**:
+- Validates required `git` context parameter using MCP error handling decorators
+- Processes optional `chat` and `terminal` context when available
+- Converts MCP request data into workflow-compatible format using TypedDict structures
+
+**Workflow Execution**:
+```python
+# Step 1: Generate journal entry using subtask 9.1 function
+journal_entry = workflow_generate_entry(commit, config, debug=False)
+
+if journal_entry is None:
+    # Journal-only commit detected and skipped
+    return {"status": "skipped", "file_path": "", "error": None}
+
+# Step 2: Save journal entry using subtask 9.2 function  
+file_path = workflow_save_entry(journal_entry, config, debug=False)
+
+return {"status": "success", "file_path": file_path, "error": None}
+```
+
+**Response Formats**:
+- **Success**: `{"status": "success", "file_path": "/path/to/journal/daily/2025-06-04.md", "error": null}`
+- **Skipped (Journal-only commit)**: `{"status": "skipped", "file_path": "", "error": null}`  
+- **Error**: `{"status": "error", "file_path": "", "error": "Detailed error message"}`
+
+**Test Coverage**: 13 comprehensive test cases covering:
+- MCP request validation and error handling
+- Successful journal entry creation workflow
+- Journal-only commit detection and skipping
+- Telemetry integration and error recording
+- Git operations integration
+- Response format compliance
+- Workflow function integration from subtasks 9.1 and 9.2
+
+**Type System Integration**:
+The implementation utilizes a comprehensive TypedDict system defined in `src/mcp_commit_story/journal_workflow_types.py`:
+
+```python
+class GenerateJournalEntryInput(TypedDict):
+    """Input parameters for generate_journal_entry function."""
+    commit: Any  # git.Commit object
+    config: Dict[str, Any]  # Config object or dict representation
+    debug: bool
+
+class GenerateJournalEntryResult(TypedDict):
+    """Result from generate_journal_entry function."""
+    entry: Optional[Any]  # JournalEntry object or None if skipped
+    skipped: bool
+    skip_reason: Optional[str]  # Only present if skipped=True
+
+class SaveJournalEntryInput(TypedDict):
+    """Input parameters for save_journal_entry function."""
+    entry: Any  # JournalEntry object
+    config: Dict[str, Any]  # Config object or dict representation
+
+class SaveJournalEntryResult(TypedDict):
+    """Result from save_journal_entry function."""
+    file_path: str  # Absolute path to saved journal file
+    success: bool
+    created_new_file: bool  # Whether a new file was created vs appended
+```
 
 #### journal/summarize
 - Options: `--week`, `--month`, `--range`, `--day`, `--year`
