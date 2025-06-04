@@ -781,21 +781,37 @@ def generate_summary_section(journal_context) -> SummarySection:
     
     try:
         # Generate realistic stub content based on git context
-        git_context = journal_context.get('git', {})
-        commit_message = git_context.get('metadata', {}).get('message', 'Unknown')
-        changed_files = git_context.get('changed_files', [])
+        # Handle None journal_context
+        if journal_context is None:
+            return SummarySection(summary="")
         
-        # Create a realistic stub summary
+        git_context = journal_context.get('git') if journal_context else None
+        
+        # Handle None git_context
+        if git_context is None:
+            return SummarySection(summary="")
+        
+        metadata = git_context.get('metadata') if git_context else None
+        commit_message = metadata.get('message', 'Unknown') if metadata else 'Unknown'
+        changed_files = git_context.get('changed_files', []) if git_context else []
+        
+        # Only generate stub content if we have meaningful context
+        if commit_message == 'Unknown' and not changed_files:
+            return SummarySection(summary="")
+        
+        # Create realistic stub summary
+        summary_parts = []
+        if commit_message != 'Unknown':
+            summary_parts.append(f"Generated from commit: {commit_message}")
+        
         if changed_files:
-            files_text = f"Modified {len(changed_files)} files including {', '.join(changed_files[:3])}"
-            if len(changed_files) > 3:
-                files_text += f" and {len(changed_files) - 3} others"
-        else:
-            files_text = "Made code changes"
-            
-        summary_text = f"Generated from commit: {commit_message}. {files_text}."
+            if len(changed_files) == 1:
+                summary_parts.append(f"Modified {changed_files[0]}")
+            else:
+                summary_parts.append(f"Modified {len(changed_files)} files including {changed_files[0]}")
         
-        result = SummarySection(summary=summary_text)
+        summary = ". ".join(summary_parts) + "." if summary_parts else ""
+        result = SummarySection(summary=summary)
         
         duration = time.time() - start_time
         _record_ai_generation_metrics("summary", duration, True)
@@ -885,10 +901,23 @@ def generate_technical_synopsis_section(journal_context: JournalContext) -> Tech
     
     try:
         # Generate realistic stub content based on git context
-        git_context = journal_context.get('git', {})
-        commit_message = git_context.get('metadata', {}).get('message', 'Unknown')
-        changed_files = git_context.get('changed_files', [])
-        file_stats = git_context.get('file_stats', {})
+        # Handle None journal_context
+        if journal_context is None:
+            return TechnicalSynopsisSection(technical_synopsis="")
+        
+        git_context = journal_context.get('git') if journal_context else None
+        
+        # Handle None git_context
+        if git_context is None:
+            return TechnicalSynopsisSection(technical_synopsis="")
+        
+        commit_message = git_context.get('metadata', {}).get('message', 'Unknown') if git_context.get('metadata') else 'Unknown'
+        changed_files = git_context.get('changed_files', []) if git_context else []
+        file_stats = git_context.get('file_stats', {}) if git_context else {}
+        
+        # Only generate stub content if we have meaningful context
+        if commit_message == 'Unknown' and not changed_files:
+            return TechnicalSynopsisSection(technical_synopsis="")
         
         # Create a realistic stub technical synopsis
         technical_details = []
@@ -898,17 +927,18 @@ def generate_technical_synopsis_section(journal_context: JournalContext) -> Tech
                 additions = stats.get('additions', 0)
                 deletions = stats.get('deletions', 0)
                 if additions or deletions:
-                    technical_details.append(f"{file_name} (+{additions}/-{deletions})")
+                    technical_details.append(f"{file_name}: +{additions}/-{deletions} lines")
                 else:
-                    technical_details.append(file_name)
+                    technical_details.append(f"Modified {file_name}")
         
         if technical_details:
-            synopsis_text = f"Technical implementation for: {commit_message}. Changes included: {', '.join(technical_details)}."
+            synopsis = f"Technical changes: {', '.join(technical_details)}"
+            if len(changed_files) > 3:
+                synopsis += f" and {len(changed_files) - 3} other files"
         else:
-            synopsis_text = f"Technical implementation for: {commit_message}. Code modifications made to support the implementation."
+            synopsis = ""
         
-        # Returns a realistic stub instead of empty string
-        result = TechnicalSynopsisSection(technical_synopsis=synopsis_text)
+        result = TechnicalSynopsisSection(technical_synopsis=synopsis)
         
         duration = time.time() - start_time
         _record_ai_generation_metrics("technical_synopsis", duration, True)
@@ -1001,9 +1031,22 @@ def generate_accomplishments_section(journal_context: JournalContext) -> Accompl
     
     try:
         # Generate realistic stub content based on git context
-        git_context = journal_context.get('git', {})
-        commit_message = git_context.get('metadata', {}).get('message', 'Unknown')
+        # Handle None journal_context
+        if journal_context is None:
+            return AccomplishmentsSection(accomplishments=[])
+        
+        git_context = journal_context.get('git') if journal_context else None
+        
+        # Handle None git_context or empty context
+        if git_context is None:
+            return AccomplishmentsSection(accomplishments=[])
+        
+        commit_message = git_context.get('metadata', {}).get('message', 'Unknown') if git_context.get('metadata') else 'Unknown'
         changed_files = git_context.get('changed_files', [])
+        
+        # Only generate stub content if we have meaningful context
+        if commit_message == 'Unknown' and not changed_files:
+            return AccomplishmentsSection(accomplishments=[])
         
         # Create realistic stub accomplishments
         accomplishments = []
@@ -1016,8 +1059,8 @@ def generate_accomplishments_section(journal_context: JournalContext) -> Accompl
             else:
                 accomplishments.append(f"Successfully updated {len(changed_files)} files")
         
-        # Always include at least one generic accomplishment if we have nothing specific
-        if not accomplishments:
+        # Only add generic accomplishment if we have some context but no specific accomplishments
+        if not accomplishments and (commit_message != 'Unknown' or changed_files):
             accomplishments.append("Made code changes to support the implementation")
         
         result = AccomplishmentsSection(accomplishments=accomplishments)
@@ -1215,9 +1258,18 @@ def generate_tone_mood_section(journal_context: JournalContext) -> ToneMoodSecti
     
     try:
         # Generate realistic stub content based on git context
-        git_context = journal_context.get('git', {})
-        commit_message = git_context.get('metadata', {}).get('message', '')
-        changed_files = git_context.get('changed_files', [])
+        # Handle None journal_context
+        if journal_context is None:
+            return ToneMoodSection(mood="", indicators="")
+        
+        git_context = journal_context.get('git') if journal_context else None
+        
+        # Handle None git_context
+        if git_context is None:
+            return ToneMoodSection(mood="", indicators="")
+        
+        commit_message = git_context.get('metadata', {}).get('message', '') if git_context.get('metadata') else ''
+        changed_files = git_context.get('changed_files', []) if git_context else []
         
         # Create realistic stub mood assessment
         mood = ""
@@ -1451,7 +1503,11 @@ def generate_terminal_commands_section(journal_context: JournalContext) -> Termi
     
     try:
         # Generate realistic stub content based on terminal context
-        terminal_context = journal_context.get('terminal')
+        # Handle None journal_context
+        if journal_context is None:
+            return TerminalCommandsSection(terminal_commands=[])
+        
+        terminal_context = journal_context.get('terminal') if journal_context else None
         commands = []
         
         if terminal_context and terminal_context.get('commands'):
@@ -1464,10 +1520,8 @@ def generate_terminal_commands_section(journal_context: JournalContext) -> Termi
                     if not any(skip in command for skip in ['git add', 'git commit', 'journal', 'mcp-commit-story']):
                         commands.append(command)
         
-        # If no terminal context, provide a generic stub
-        if not commands:
-            commands = ["# No terminal commands captured for this session"]
-        
+        # Don't add generic stub if we have no actual terminal context
+        # Only return empty list when no meaningful commands found
         result = TerminalCommandsSection(terminal_commands=commands)
         
         duration = time.time() - start_time
@@ -1542,9 +1596,18 @@ def generate_commit_metadata_section(journal_context: JournalContext) -> CommitM
     
     try:
         # Generate realistic stub content based on git context
-        git_context = journal_context.get('git', {})
-        changed_files = git_context.get('changed_files', [])
-        file_stats = git_context.get('file_stats', {})
+        # Handle None journal_context
+        if journal_context is None:
+            return CommitMetadataSection(commit_metadata={})
+        
+        git_context = journal_context.get('git') if journal_context else None
+        
+        # Handle None git_context
+        if git_context is None:
+            return CommitMetadataSection(commit_metadata={})
+        
+        changed_files = git_context.get('changed_files', []) if git_context else []
+        file_stats = git_context.get('file_stats', {}) if git_context else {}
         metadata = {}
         
         # Calculate basic statistics from available data
