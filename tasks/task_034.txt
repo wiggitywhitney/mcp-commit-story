@@ -1,7 +1,7 @@
 # Task ID: 34
 # Title: Performance Validation - Auto-test Journal Generation on Every Commit
 # Status: pending
-# Dependencies: 9, 27
+# Dependencies: 27
 # Priority: critical
 # Description: Create a test harness that automatically measures and validates journal generation performance on every commit, providing continuous feedback on performance metrics and alerting developers when thresholds are exceeded.
 # Details:

@@ -1,7 +1,7 @@
 # Task ID: 26
 # Title: Create Packaging Strategy and Release Process for MVP Launch
 # Status: pending
-# Dependencies: 9, 27, 28, 29, 30
+# Dependencies: 27, 28, 29, 30
 # Priority: high
 # Description: Develop a comprehensive packaging and distribution strategy for the MCP Commit Story MVP, including PyPI publishing, version management, installation methods, and release processes.
 # Details:

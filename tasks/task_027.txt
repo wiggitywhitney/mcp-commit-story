@@ -1,7 +1,7 @@
 # Task ID: 27
 # Title: Implement Daily Summary Git Hook Trigger
 # Status: pending
-# Dependencies: 9
+# Dependencies: None
 # Priority: high
 # Description: Create functionality that automatically generates a daily summary of journal entries from the previous day, triggered by a Git hook when the date changes.
 # Details:
