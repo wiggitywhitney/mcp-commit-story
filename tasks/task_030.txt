@@ -1,0 +1,192 @@
+# Task ID: 30
+# Title: Create Release Preparation Script
+# Status: pending
+# Dependencies: 15, 26
+# Priority: high
+# Description: Develop an automated release validation script that performs a series of quality checks before publishing to ensure the package meets all requirements.
+# Details:
+Implement a comprehensive release preparation script (`scripts/prepare_release.py`) that performs sequential validation checks before publishing:
+
+1. **Git Status Checks**:
+   ```python
+   def check_git_status():
+       """Verify git repository is in a clean state for release"""
+       # Check current branch is main/master
+       branch = subprocess.check_output(["git", "branch", "--show-current"]).decode().strip()
+       if branch not in ["main", "master"]:
+           return False, f"Not on main/master branch (current: {branch})"
+       
+       # Check for uncommitted changes
+       status = subprocess.check_output(["git", "status", "--porcelain"]).decode().strip()
+       if status:
+           return False, "Uncommitted changes detected"
+       
+       # Check if local is in sync with remote
+       subprocess.check_call(["git", "fetch", "origin"])
+       local = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
+       remote = subprocess.check_output(["git", "rev-parse", f"origin/{branch}"]).decode().strip()
+       if local != remote:
+           return False, f"Local {branch} is not in sync with origin/{branch}"
+       
+       return True, "Git status checks passed"
+   ```
+
+2. **Version Checks**:
+   ```python
+   def check_version():
+       """Verify version is consistent and not already published"""
+       # Get version from pyproject.toml
+       with open("pyproject.toml", "r") as f:
+           pyproject = toml.load(f)
+       version = pyproject["project"]["version"]
+       
+       # Check version format (semantic versioning)
+       if not re.match(r"^\d+\.\d+\.\d+$", version):
+           return False, f"Version {version} does not follow semantic versioning"
+       
+       # Check if version already exists on PyPI
+       try:
+           response = requests.get(f"https://pypi.org/pypi/mcp-commit-story/{version}/json")
+           if response.status_code == 200:
+               return False, f"Version {version} already exists on PyPI"
+       except Exception as e:
+           pass  # Connection error is not a failure
+       
+       # Check version consistency across files
+       # (Add checks for other files that might contain version info)
+       
+       return True, f"Version checks passed: {version}"
+   ```
+
+3. **Code Quality Checks**:
+   ```python
+   def check_code_quality():
+       """Run tests, linting, and security checks"""
+       # Run tests
+       try:
+           subprocess.check_call(["pytest", "-xvs"])
+       except subprocess.CalledProcessError:
+           return False, "Tests failed"
+       
+       # Run linting
+       try:
+           subprocess.check_call(["flake8"])
+       except subprocess.CalledProcessError:
+           return False, "Linting failed"
+       
+       # Run security audit
+       try:
+           subprocess.check_call(["bandit", "-r", "src"])
+       except subprocess.CalledProcessError:
+           return False, "Security audit failed"
+       
+       return True, "Code quality checks passed"
+   ```
+
+4. **Package Validation**:
+   ```python
+   def validate_package():
+       """Build and validate the package"""
+       # Clean previous builds
+       if os.path.exists("dist"):
+           shutil.rmtree("dist")
+       
+       # Build package
+       try:
+           subprocess.check_call(["python", "-m", "build"])
+       except subprocess.CalledProcessError:
+           return False, "Package build failed"
+       
+       # Check package size
+       wheel_file = glob.glob("dist/*.whl")[0]
+       size_mb = os.path.getsize(wheel_file) / (1024 * 1024)
+       if size_mb > 10:  # Example threshold
+           return False, f"Package too large: {size_mb:.2f}MB (max 10MB)"
+       
+       # Validate package structure
+       try:
+           subprocess.check_call(["twine", "check", "dist/*"])
+       except subprocess.CalledProcessError:
+           return False, "Package validation failed"
+       
+       return True, "Package validation passed"
+   ```
+
+5. **Main Script Structure**:
+   ```python
+   def main():
+       """Run all release preparation checks"""
+       checks = [
+           ("Git Status", check_git_status),
+           ("Version", check_version),
+           ("Code Quality", check_code_quality),
+           ("Package Validation", validate_package)
+       ]
+       
+       for name, check_func in checks:
+           print(f"Running {name} checks...")
+           success, message = check_func()
+           if not success:
+               print(f"❌ {name} check failed: {message}")
+               sys.exit(1)
+           print(f"✅ {message}")
+       
+       print("✅ All checks passed! Ready for release.")
+   
+   if __name__ == "__main__":
+       main()
+   ```
+
+6. **Add PyProject.toml Script Entry**:
+   Update `pyproject.toml` to include:
+   ```toml
+   [project.scripts]
+   prepare-release = "scripts.prepare_release:main"
+   ```
+
+The script should be designed to fail fast, stopping at the first check that fails with a clear error message. Each check should be modular and return both a success status and a message explaining the result.
+
+# Test Strategy:
+To verify the release preparation script works correctly:
+
+1. **Test Failure Scenarios**:
+   - Create a git repository with uncommitted changes and verify the script fails with the appropriate error message
+   - Create a version that already exists on PyPI and verify the script detects this
+   - Introduce a failing test and verify the script catches it
+   - Create an invalid package structure and verify the script detects it
+
+2. **Test Error Handling**:
+   - Verify the script provides clear, actionable error messages
+   - Confirm the script exits with non-zero status code on failure
+   - Ensure the script stops at the first failure without continuing
+
+3. **Test Success Path**:
+   - Set up a clean environment that meets all requirements
+   - Run the script and verify it completes successfully
+   - Confirm all checks are executed in the correct order
+
+4. **Integration Testing**:
+   - Test the script in a CI environment to ensure it works in automated contexts
+   - Verify the script can be run via the PyProject.toml entry point
+
+5. **Specific Test Cases**:
+   ```bash
+   # Test git status check failure
+   echo "test" > temp.txt
+   ./scripts/prepare_release.py  # Should fail with uncommitted changes message
+   git add temp.txt
+   git commit -m "temp commit"
+   ./scripts/prepare_release.py  # Should fail with branch sync message
+   
+   # Test version check
+   # (modify version to match existing PyPI version)
+   ./scripts/prepare_release.py  # Should fail with version exists message
+   
+   # Test successful run
+   git checkout main
+   git pull
+   # (ensure clean state and valid version)
+   ./scripts/prepare_release.py  # Should succeed
+   ```
+
+Document all test scenarios and expected outcomes to ensure comprehensive coverage of the script's functionality.

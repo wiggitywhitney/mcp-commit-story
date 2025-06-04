@@ -1,0 +1,96 @@
+# Task ID: 32
+# Title: Implement Parameter Parsing Leniency for MCP Handlers
+# Status: pending
+# Dependencies: 26
+# Priority: low
+# Description: Create a flexible parameter parsing system for MCP handlers that accepts common variations in parameter names while maintaining schema integrity.
+# Details:
+This task involves implementing a parameter normalization layer to make MCP parameter parsing more flexible:
+
+1. **Parameter Normalization Layer**:
+   - Create a middleware or wrapper function that normalizes incoming parameters before they reach handler functions
+   - Implement in the core MCP request processing pipeline
+   - Design a consistent approach that works across all handlers
+
+2. **Parameter Aliasing Configuration**:
+   - Create a configuration system for parameter aliases with mappings like:
+     ```python
+     PARAMETER_ALIASES = {
+       "path": ["project_path", "filepath", "file_path"],
+       "text": ["reflection", "content", "message"],
+       "commit_id": ["commit", "sha", "hash"],
+       # Add other common variations
+     }
+     ```
+   - Ensure the configuration is extensible and documented
+
+3. **Normalization Logic**:
+   - Implement a function that transforms incoming parameters based on the alias configuration:
+     ```python
+     def normalize_parameters(params, handler_schema):
+         """
+         Transform parameters based on aliases to match expected schema
+         while preserving original values when appropriate
+         """
+         normalized = params.copy()
+         for expected_param, aliases in PARAMETER_ALIASES.items():
+             if expected_param not in normalized:
+                 for alias in aliases:
+                     if alias in normalized:
+                         normalized[expected_param] = normalized[alias]
+                         break
+         return normalized
+     ```
+
+4. **Schema Integrity**:
+   - Maintain strict schema advertising in API documentation
+   - Add warnings in logs when non-standard parameter names are used
+   - Consider adding deprecation notices for certain aliases to encourage standard usage
+
+5. **Integration**:
+   - Apply normalization before parameter validation
+   - Update all handler functions to use the normalized parameters
+   - Ensure backward compatibility with existing clients
+
+6. **Documentation**:
+   - Document the parameter aliasing system for developers
+   - Update API documentation to note accepted variations where appropriate
+
+# Test Strategy:
+1. **Unit Tests for Normalization**:
+   - Create tests for the parameter normalization function with various input combinations
+   - Verify each alias correctly maps to its canonical parameter name
+   - Test edge cases like conflicting parameters or missing values
+
+2. **Handler Integration Tests**:
+   - For each MCP handler, create test cases that use alternative parameter names
+   - Verify the handler functions correctly with both standard and aliased parameters
+   - Example test cases:
+     ```python
+     def test_commit_handler_with_parameter_aliases():
+         # Test with standard parameters
+         result1 = commit_handler(path="/path/to/repo", message="Test commit")
+         
+         # Test with aliased parameters
+         result2 = commit_handler(project_path="/path/to/repo", reflection="Test commit")
+         
+         # Results should be equivalent
+         assert result1 == result2
+     ```
+
+3. **Backward Compatibility Tests**:
+   - Verify that existing code using standard parameter names continues to work
+   - Run the full test suite to ensure no regressions
+
+4. **MCP Inspector Tests**:
+   - Use the MCP inspector tool to verify parameter handling
+   - Test interactive parameter submission with various aliases
+   - Verify the inspector correctly shows normalized parameters
+
+5. **Error Handling Tests**:
+   - Test scenarios with invalid parameters to ensure proper error messages
+   - Verify that aliasing doesn't interfere with validation logic
+
+6. **Performance Tests**:
+   - Measure any performance impact from the additional normalization layer
+   - Ensure the overhead is minimal for standard parameter usage

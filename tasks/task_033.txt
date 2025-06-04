@@ -1,0 +1,107 @@
+# Task ID: 33
+# Title: Remove All Console Output
+# Status: pending
+# Dependencies: 28, 26
+# Priority: medium
+# Description: Audit and remove all remaining stdout/print statements, replacing them with proper logging and return values to ensure clean operation for MCP clients.
+# Details:
+This task involves a systematic audit and cleanup of all console output in the codebase:
+
+1. **Audit Phase**:
+   - Perform a comprehensive search for all `print()` statements, `sys.stdout.write()` calls, and any other direct console output
+   - Create an inventory of all console output locations with their purpose (debug, info, error, etc.)
+   - Categorize outputs as:
+     - Debug/development outputs (to be replaced with logging)
+     - CLI user feedback (to be preserved for human users)
+     - JSON/data outputs (to be converted to return values)
+
+2. **CLI Output Refactoring**:
+   - Modify `cli.py` to properly return values instead of printing JSON:
+   ```python
+   # Before:
+   def get_entries(date_range):
+       entries = journal.get_entries(date_range)
+       print(json.dumps(entries))
+   
+   # After:
+   def get_entries(date_range):
+       entries = journal.get_entries(date_range)
+       return entries  # Click will handle JSON serialization
+   ```
+   - Preserve human-readable help text and error messages in CLI interface
+   - Implement proper exit codes for CLI operations
+
+3. **Logging Implementation**:
+   - Replace all debug/info print statements with appropriate logging calls:
+   ```python
+   # Before:
+   print(f"Processing commit {commit_id}")
+   
+   # After:
+   logger.debug(f"Processing commit {commit_id}")
+   ```
+   - Ensure all logging uses the file-based logger implemented in Task 28
+   - Add appropriate log levels (DEBUG, INFO, WARNING, ERROR) based on message importance
+
+4. **Return Value Standardization**:
+   - Ensure all functions return proper values instead of printing results
+   - Implement consistent return structures (dictionaries, objects, etc.)
+   - For functions that previously printed status updates, consider adding a callback parameter for progress reporting
+
+5. **MCP Server Cleanup**:
+   - Special focus on MCP server handlers to ensure they never write to stdout
+   - Verify all handlers return proper JSON responses rather than printing them
+   - Implement proper error handling that logs errors but returns appropriate error responses
+
+6. **Exception Handling**:
+   - Review all exception handling to ensure exceptions are logged but not printed
+   - Implement structured error responses for API functions
+
+7. **Documentation Update**:
+   - Update documentation to reflect the new logging approach
+   - Document the return value structures for all public functions
+
+# Test Strategy:
+1. **Automated Output Capture Test**:
+   - Create a test that captures stdout during execution of all major functions
+   - Verify no unexpected output is produced
+   ```python
+   import io
+   import sys
+   from contextlib import redirect_stdout
+   
+   def test_no_stdout_output():
+       f = io.StringIO()
+       with redirect_stdout(f):
+           # Run various operations
+           client.create_entry(commit_id="abc123")
+           client.generate_summary(period="day")
+       
+       output = f.getvalue()
+       assert output == "", f"Unexpected stdout output: {output}"
+   ```
+
+2. **CLI Command Testing**:
+   - Test all CLI commands with various flags and options
+   - Verify help text is still displayed correctly
+   - Verify error messages are properly shown to users
+   - For commands that should return data, verify the data is correctly returned
+
+3. **Log File Verification**:
+   - Run operations that previously generated console output
+   - Verify appropriate log entries are created in the log file
+   - Check log levels are appropriate for the message content
+
+4. **MCP Client Integration Test**:
+   - Create a test MCP client that consumes the server's responses
+   - Verify the client receives proper return values and not stdout text
+   - Test error conditions to ensure they're properly communicated via return values
+
+5. **Edge Case Testing**:
+   - Test with verbose/debug flags enabled to ensure they affect logging but not stdout
+   - Test with various error conditions to verify errors are logged but not printed
+   - Test concurrent operations to ensure no race conditions in logging
+
+6. **Manual Review**:
+   - Perform a final manual code review to catch any remaining print statements
+   - Run the application with stdout redirected to a file to verify no unexpected output

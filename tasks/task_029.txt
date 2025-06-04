@@ -1,0 +1,248 @@
+# Task ID: 29
+# Title: Implement MCP Info Command for Diagnostics
+# Status: pending
+# Dependencies: 28
+# Priority: high
+# Description: Add a new 'info' tool to the MCP server that provides diagnostic information to help users troubleshoot issues, including version, telemetry status, configuration details, and dependency availability.
+# Details:
+Implement the MCP info command in `src/mcp_commit_story/server.py` with the following features:
+
+1. Create a new tool handler using the `@server.tool()` decorator:
+```python
+@server.tool()
+async def info(request):
+    """Return diagnostic information about the MCP server."""
+    try:
+        # Get version from pyproject.toml
+        version = get_version_from_pyproject()
+        
+        # Get telemetry status
+        telemetry_status = get_telemetry_status()
+        
+        # Get active configuration path
+        config_path = get_active_config_path()
+        
+        # Get log file location from the logging system
+        log_file = get_log_file_location()
+        
+        # Check dependency availability
+        dependencies = {
+            "git": check_git_availability(),
+            "opentelemetry": check_opentelemetry_availability()
+        }
+        
+        # Validate configuration
+        config_validation = validate_configuration()
+        
+        return {
+            "version": version,
+            "telemetry_status": telemetry_status,
+            "config_path": str(config_path),
+            "log_file": str(log_file),
+            "dependencies": dependencies,
+            "config_validation": config_validation
+        }
+    except Exception as e:
+        logger.error(f"Error in info command: {str(e)}")
+        return {"error": str(e)}
+```
+
+2. Implement helper functions for retrieving diagnostic information:
+
+```python
+def get_version_from_pyproject():
+    """Extract version from pyproject.toml."""
+    try:
+        import tomli
+        from pathlib import Path
+        
+        # Find the pyproject.toml file (traverse up from current file if needed)
+        current_dir = Path(__file__).parent
+        pyproject_path = None
+        
+        # Look up to 3 levels up for pyproject.toml
+        for i in range(4):
+            check_path = current_dir / ("../" * i) / "pyproject.toml"
+            if check_path.resolve().exists():
+                pyproject_path = check_path.resolve()
+                break
+        
+        if not pyproject_path:
+            return "unknown"
+        
+        with open(pyproject_path, "rb") as f:
+            pyproject_data = tomli.load(f)
+            
+        return pyproject_data.get("project", {}).get("version", "unknown")
+    except Exception as e:
+        logger.error(f"Error getting version: {str(e)}")
+        return "unknown"
+
+def get_telemetry_status():
+    """Get the current telemetry status."""
+    # Check if telemetry is enabled in configuration
+    config = get_config()
+    return {
+        "enabled": config.get("telemetry", {}).get("enabled", False),
+        "endpoint": config.get("telemetry", {}).get("endpoint", "")
+    }
+
+def get_active_config_path():
+    """Get the path to the active configuration file."""
+    # Return the path to the currently loaded config file
+    return get_config_path()
+
+def get_log_file_location():
+    """Get the path to the current log file."""
+    # This should use the logging system implemented in Task 28
+    from mcp_commit_story.logging import get_log_file_path
+    return get_log_file_path()
+
+def check_git_availability():
+    """Check if git is available and return version info."""
+    try:
+        import subprocess
+        result = subprocess.run(["git", "--version"], capture_output=True, text=True, check=True)
+        return {
+            "available": True,
+            "version": result.stdout.strip()
+        }
+    except Exception:
+        return {
+            "available": False,
+            "version": None
+        }
+
+def check_opentelemetry_availability():
+    """Check if OpenTelemetry is available."""
+    try:
+        import opentelemetry
+        return {
+            "available": True,
+            "version": getattr(opentelemetry, "__version__", "unknown")
+        }
+    except ImportError:
+        return {
+            "available": False,
+            "version": None
+        }
+
+def validate_configuration():
+    """Validate the current configuration."""
+    # Perform validation checks on the current configuration
+    config = get_config()
+    validation_results = {}
+    
+    # Check for required configuration sections
+    required_sections = ["journal", "git", "server"]
+    for section in required_sections:
+        validation_results[f"{section}_section"] = section in config
+    
+    # Check for required paths
+    if "journal" in config:
+        journal_path = Path(config["journal"].get("path", ""))
+        validation_results["journal_path_exists"] = journal_path.exists()
+    
+    return validation_results
+```
+
+3. Update the MCP server documentation to include the new info command:
+```python
+# In the server documentation string
+"""
+MCP Server Tools:
+...
+- info: Returns diagnostic information about the MCP server
+"""
+```
+
+4. Ensure the info command is properly registered with the MCP server and accessible through the standard MCP protocol.
+
+# Test Strategy:
+1. Unit tests for the info command:
+```python
+def test_info_command():
+    """Test that the info command returns all required fields."""
+    # Setup mock server
+    server = MockMCPServer()
+    
+    # Call info command
+    response = server.call_tool("info", {})
+    
+    # Verify all required fields are present
+    assert "version" in response
+    assert "telemetry_status" in response
+    assert "config_path" in response
+    assert "log_file" in response
+    assert "dependencies" in response
+    assert "config_validation" in response
+    
+    # Verify dependencies contains required checks
+    assert "git" in response["dependencies"]
+    assert "opentelemetry" in response["dependencies"]
+
+def test_version_from_pyproject():
+    """Test that version is dynamically read from pyproject.toml."""
+    # Create a temporary pyproject.toml with a known version
+    with tempfile.TemporaryDirectory() as tmpdir:
+        temp_path = Path(tmpdir) / "pyproject.toml"
+        with open(temp_path, "w") as f:
+            f.write('[project]\nversion = "1.2.3"\n')
+        
+        # Mock the file resolution to return our temporary file
+        with patch("pathlib.Path.resolve", return_value=temp_path):
+            with patch("pathlib.Path.exists", return_value=True):
+                version = get_version_from_pyproject()
+                assert version == "1.2.3"
+
+def test_info_with_various_configs():
+    """Test info command with various configuration states."""
+    # Test with missing configuration
+    with patch("mcp_commit_story.server.get_config", return_value={}):
+        response = server.call_tool("info", {})
+        assert response["config_validation"]["journal_section"] is False
+    
+    # Test with valid configuration
+    valid_config = {
+        "journal": {"path": "/tmp/journal"},
+        "git": {"repo_path": "/tmp/repo"},
+        "server": {"port": 8000}
+    }
+    with patch("mcp_commit_story.server.get_config", return_value=valid_config):
+        with patch("pathlib.Path.exists", return_value=True):
+            response = server.call_tool("info", {})
+            assert response["config_validation"]["journal_section"] is True
+            assert response["config_validation"]["journal_path_exists"] is True
+
+def test_info_through_mcp_protocol():
+    """Test that info command works through the MCP protocol."""
+    # Start a real MCP server
+    server_process = start_test_server()
+    try:
+        # Connect to the server using the MCP client
+        client = MCPClient("localhost", 8000)
+        
+        # Call the info command
+        response = client.call("info", {})
+        
+        # Verify response
+        assert "version" in response
+        assert "telemetry_status" in response
+        assert "config_path" in response
+        assert "log_file" in response
+    finally:
+        # Clean up
+        server_process.terminate()
+```
+
+2. Integration tests:
+   - Test the info command through the MCP protocol from a real client
+   - Verify that all diagnostic information is correctly reported
+   - Test with different configuration states (missing config, invalid paths, etc.)
+   - Verify that the log file location matches the actual log file being used
+
+3. Manual testing:
+   - Call the info command from the CLI client
+   - Verify that all information is displayed correctly
+   - Intentionally break dependencies (e.g., rename git executable) and verify the command correctly reports their unavailability
+   - Test with telemetry enabled and disabled to ensure correct reporting

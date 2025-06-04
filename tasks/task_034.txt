@@ -1,0 +1,97 @@
+# Task ID: 34
+# Title: Performance Validation - Auto-test Journal Generation on Every Commit
+# Status: pending
+# Dependencies: 9, 27
+# Priority: critical
+# Description: Create a test harness that automatically measures and validates journal generation performance on every commit, providing continuous feedback on performance metrics and alerting developers when thresholds are exceeded.
+# Details:
+Implement a comprehensive performance testing system with the following components:
+
+1. Create `scripts/test_performance.py` that:
+   - Retrieves current commit information using existing git utilities
+   - Implements logic to skip journal-only commits by leveraging existing recursion prevention logic
+   - Creates realistic test fixtures for GitContext, ChatHistory, and TerminalContext objects
+   - Sequentially calls all 8 `generate_*_section` functions from journal.py
+   - Times each function individually using Python's `time` module
+   - Measures memory usage before and after using `psutil` or similar library
+   - Generates a structured performance report containing:
+     - Individual function execution times
+     - Total generation time
+     - Memory usage delta
+     - Context size metrics
+     - Pass/fail status based on defined thresholds
+
+2. Install as a git post-commit hook:
+   ```bash
+   #!/bin/bash
+   # Run performance test in background
+   python scripts/test_performance.py &
+   ```
+   - Ensure the hook runs after every commit in the background
+   - Configure output to `.performance-test-results/YYYY-MM-DD-HH-MM-SS-{commit-hash}.json`
+   - Print a summary to console for immediate developer feedback
+   - Implement warning logic for total time > 15 seconds
+   - Implement error reporting for total time > 30 seconds
+
+3. Define performance thresholds:
+   ```python
+   THRESHOLDS = {
+       "total_time": {
+           "good": 15,  # seconds
+           "warning": 30  # seconds
+       },
+       "memory_increase": {
+           "warning": 100 * 1024 * 1024,  # 100MB
+           "critical": 500 * 1024 * 1024  # 500MB
+       }
+   }
+   ```
+
+4. Create visualization script `scripts/show_performance_trends.py`:
+   - Read all test results from `.performance-test-results/` directory
+   - Generate time-series plots showing performance trends
+   - Identify and highlight the slowest functions
+   - Calculate moving averages to smooth out variations
+   - Provide command-line options for filtering and analysis
+
+5. Integration with existing codebase:
+   - Import all generation functions from journal.py
+   - Use existing context collection functions
+   - Respect journal path configuration from config files
+   - Leverage git utilities for commit analysis
+
+6. Update `.gitignore` to exclude performance test results:
+   ```
+   .performance-test-results/
+   ```
+
+# Test Strategy:
+1. Manual Testing:
+   - Create commits of various sizes and verify the performance test runs automatically
+   - Confirm the script correctly identifies and skips journal-only commits
+   - Validate that performance measurements are accurate by comparing with manual timing
+   - Ensure the hook doesn't interfere with normal git operations or slow down the commit process
+
+2. Functionality Testing:
+   - Verify all 8 `generate_*_section` functions are properly timed individually
+   - Confirm memory measurements are accurate by comparing with system monitoring tools
+   - Test that performance reports are correctly written to the `.performance-test-results/` directory
+   - Validate console output provides clear and accurate performance summaries
+
+3. Threshold Testing:
+   - Artificially create performance bottlenecks to trigger warnings and errors
+   - Verify warning messages appear when total time exceeds 15 seconds
+   - Confirm error messages appear when total time exceeds 30 seconds
+   - Test memory increase warnings at 100MB and 500MB thresholds
+
+4. Visualization Testing:
+   - Generate multiple test results across different commits
+   - Run the visualization script and verify it correctly displays performance trends
+   - Confirm the script accurately identifies the slowest functions
+   - Test filtering options and ensure they work as expected
+
+5. Integration Testing:
+   - Verify the performance test correctly uses existing context collection functions
+   - Confirm it respects the journal path configuration
+   - Test that git utilities are properly used for commit analysis
+   - Ensure the system works end-to-end from commit to performance report

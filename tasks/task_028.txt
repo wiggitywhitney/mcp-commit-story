@@ -1,0 +1,179 @@
+# Task ID: 28
+# Title: Implement File-Based Logging System
+# Status: pending
+# Dependencies: 7, 19, 22
+# Priority: high
+# Description: Replace Python standard logging with file-based JSON logging to prevent stdout interference with MCP clients.
+# Details:
+Create a dedicated logging module in `src/mcp_commit_story/logging.py` with the following features:
+
+1. JSON-formatted file logging:
+```python
+import json
+import logging
+import os
+import sys
+import tempfile
+from datetime import datetime
+from pathlib import Path
+
+class JsonFileHandler(logging.FileHandler):
+    """Custom handler that writes JSON-formatted logs to a file"""
+    
+    def __init__(self, filename):
+        super().__init__(filename)
+        
+    def emit(self, record):
+        log_entry = {
+            'timestamp': datetime.fromtimestamp(record.created).isoformat(),
+            'level': record.levelname,
+            'message': record.getMessage(),
+            'module': record.module,
+            'function': record.funcName,
+            'line': record.lineno
+        }
+        
+        # Add exception info if available
+        if record.exc_info:
+            log_entry['exception'] = self.formatException(record.exc_info)
+            
+        self.stream.write(json.dumps(log_entry) + '\n')
+        self.flush()
+```
+
+2. Logger configuration function:
+```python
+def configure_logging():
+    """Configure the logging system based on environment variables"""
+    # Get log file path from environment variable or use default
+    log_file = os.environ.get(
+        'MCP_COMMIT_STORY_LOG_FILE',
+        os.path.expanduser('~/Library/Logs/mcp-commit-story.log')
+    )
+    
+    # Create parent directory if it doesn't exist
+    log_path = Path(log_file)
+    try:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+    except (PermissionError, OSError):
+        # Fallback to temp directory
+        temp_dir = tempfile.gettempdir()
+        log_file = os.path.join(temp_dir, 'mcp-commit-story.log')
+        
+    # Get log level from environment variable or use default
+    log_level_name = os.environ.get('MCP_COMMIT_STORY_LOG_LEVEL', 'INFO')
+    log_level = getattr(logging, log_level_name.upper(), logging.INFO)
+    
+    # Configure root logger
+    logger = logging.getLogger()
+    logger.setLevel(log_level)
+    
+    # Remove any existing handlers
+    for handler in logger.handlers[:]:
+        logger.removeHandler(handler)
+    
+    # Add JSON file handler
+    file_handler = JsonFileHandler(log_file)
+    logger.addHandler(file_handler)
+    
+    # Optionally add console handler for debugging
+    if os.environ.get('MCP_COMMIT_STORY_CONSOLE_LOGGING', '').lower() == 'true':
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(log_level)
+        logger.addHandler(console_handler)
+    
+    # Redirect uncaught exceptions to log
+    sys.excepthook = lambda *exc_info: logger.error(
+        "Uncaught exception", exc_info=exc_info
+    )
+    
+    return logger
+```
+
+3. Utility functions for common logging patterns:
+```python
+def get_logger(name):
+    """Get a logger with the given name"""
+    return logging.getLogger(name)
+
+def log_function_call(logger, func_name, args=None, kwargs=None):
+    """Log a function call with arguments"""
+    args_str = str(args) if args else ''
+    kwargs_str = str(kwargs) if kwargs else ''
+    logger.debug(f"Called {func_name}({args_str}{', ' if args and kwargs else ''}{kwargs_str})")
+```
+
+4. Ensure logs are flushed on exit:
+```python
+import atexit
+
+def flush_logs():
+    """Flush all logs on exit"""
+    for handler in logging.getLogger().handlers:
+        handler.flush()
+
+atexit.register(flush_logs)
+```
+
+5. Update all existing code to use the new logging system:
+   - Import the new logging module at the top of each file
+   - Replace all print statements with appropriate log calls
+   - Replace any existing logging configuration with calls to configure_logging()
+   - Add log statements for important events and error conditions
+
+6. Add logging initialization to application entry points:
+```python
+# In __main__.py or similar entry point
+from mcp_commit_story.logging import configure_logging
+
+def main():
+    logger = configure_logging()
+    logger.info("MCP Commit Story starting")
+    # Rest of application code
+    
+if __name__ == "__main__":
+    main()
+```
+
+7. Ensure no stdout/stderr output during normal operations:
+   - Review all code for print statements and replace with logging
+   - Capture and log any subprocess output instead of letting it go to stdout
+   - Use appropriate log levels (DEBUG, INFO, WARNING, ERROR) based on message importance
+
+# Test Strategy:
+1. Test log file creation:
+   - Create unit tests that verify log files are created in the expected location
+   - Test with both default and custom MCP_COMMIT_STORY_LOG_FILE paths
+   - Verify JSON format is correct and contains all required fields
+
+2. Test directory creation and fallback:
+   - Create a test that attempts to log to a non-writable directory
+   - Verify the fallback to temp directory works correctly
+   - Ensure no exceptions are raised during fallback
+
+3. Test environment variable configuration:
+   - Create tests with different MCP_COMMIT_STORY_LOG_LEVEL values
+   - Verify only appropriate messages are logged based on level
+   - Test MCP_COMMIT_STORY_CONSOLE_LOGGING=true and verify console output
+   - Test MCP_COMMIT_STORY_CONSOLE_LOGGING=false and verify no console output
+
+4. Test log content:
+   - Verify timestamps are in ISO format
+   - Ensure module, function, and line information is correct
+   - Test exception logging and verify stack traces are captured
+
+5. Test stdout/stderr isolation:
+   - Create integration tests that run MCP operations
+   - Capture stdout/stderr during test execution
+   - Verify no output is produced during normal operation
+   - Check that logs are written to the file instead
+
+6. Test log flushing:
+   - Create a test that simulates process exit
+   - Verify logs are properly flushed to disk
+   - Check that no log messages are lost
+
+7. Test with MCP server:
+   - Run the MCP server with the new logging system
+   - Verify it operates without stdout interference
+   - Check that all server operations are properly logged to file
