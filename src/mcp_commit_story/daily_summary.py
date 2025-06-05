@@ -15,11 +15,12 @@ from typing import Optional, Dict, List, Tuple
 logger = logging.getLogger(__name__)
 
 
-def extract_date_from_journal_path(file_path: Optional[str]) -> Optional[str]:
+def extract_date_from_journal_path(file_path: Optional[str], debug_context: Optional[str] = None) -> Optional[str]:
     """Extract date from journal file path.
     
     Args:
         file_path: Path to journal file (e.g., "/path/to/2025-01-06-journal.md")
+        debug_context: Optional context for debugging (e.g., "new_journal_file", "git_commit")
         
     Returns:
         Date string in YYYY-MM-DD format, or None if invalid
@@ -30,6 +31,10 @@ def extract_date_from_journal_path(file_path: Optional[str]) -> Optional[str]:
     try:
         # Extract filename from path
         filename = os.path.basename(file_path)
+        
+        # File extension validation - early exit for non-journal files
+        if not filename.endswith('-journal.md'):
+            return None  # Not a journal file, no date to extract
         
         # Match YYYY-MM-DD pattern in filename
         date_pattern = r'(\d{4}-\d{2}-\d{2})'
@@ -42,10 +47,27 @@ def extract_date_from_journal_path(file_path: Optional[str]) -> Optional[str]:
         
         # Validate date format by parsing it
         try:
-            datetime.strptime(date_str, "%Y-%m-%d")
+            parsed_date = datetime.strptime(date_str, "%Y-%m-%d")
+            
+            # Sanity checks with appropriate handling
+            if parsed_date.date() > datetime.now().date():
+                logger.info(f"Future date detected in journal filename: {date_str} (this may be normal for git operations)")
+            
+            # Check for obviously invalid historical dates  
+            if parsed_date.year < 1970:  # Unix epoch start
+                logger.warning(f"Suspiciously old date in filename: {date_str}")
+                return None
+            
+            # Debug logging with context
+            if date_str:
+                context_msg = f" (source: {debug_context})" if debug_context else ""
+                logger.debug(f"Extracted date {date_str} from {filename}{context_msg}")
+            
             return date_str
+            
         except ValueError:
             # Invalid date (e.g., 2025-13-40)
+            logger.warning(f"Invalid date in filename: {date_str}")
             return None
             
     except Exception as e:
@@ -99,7 +121,7 @@ def should_generate_daily_summary(new_file_path: Optional[str], summary_dir: str
     
     try:
         # Extract date from the new file being created
-        new_file_date = extract_date_from_journal_path(new_file_path)
+        new_file_date = extract_date_from_journal_path(new_file_path, "new_journal_file")
         if not new_file_date:
             logger.warning(f"Could not extract date from new file: {new_file_path}")
             return None
@@ -117,7 +139,7 @@ def should_generate_daily_summary(new_file_path: Optional[str], summary_dir: str
             for filename in os.listdir(journal_dir):
                 if filename.endswith('-journal.md'):
                     file_path = os.path.join(journal_dir, filename)
-                    file_date_str = extract_date_from_journal_path(file_path)
+                    file_date_str = extract_date_from_journal_path(file_path, "existing_journal_file")
                     
                     if file_date_str and file_date_str < new_file_date:
                         previous_files.append((file_date_str, file_path))

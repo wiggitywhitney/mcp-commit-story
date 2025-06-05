@@ -50,6 +50,20 @@ class TestExtractDateFromJournalPath:
             result = extract_date_from_journal_path(invalid_path)
             assert result is None, f"Should return None for: {invalid_path}"
     
+    def test_extract_date_legitimate_relative_paths(self):
+        """Test that legitimate relative paths with .. work correctly."""
+        # These should work since os.path.basename() safely extracts just the filename
+        assert extract_date_from_journal_path("../2025-01-06-journal.md") == "2025-01-06"
+        assert extract_date_from_journal_path("subdir/../2025-01-06-journal.md") == "2025-01-06"
+        assert extract_date_from_journal_path("/home/user/project/../backup/2025-01-06-journal.md") == "2025-01-06"
+    
+    def test_extract_date_non_journal_files(self):
+        """Test early exit for non-journal files."""
+        assert extract_date_from_journal_path("2025-01-06-notes.txt") is None
+        assert extract_date_from_journal_path("2025-01-06.md") is None
+        assert extract_date_from_journal_path("readme.md") is None
+        assert extract_date_from_journal_path("2025-01-06-journal.txt") is None
+    
     def test_extract_date_edge_cases(self):
         """Test edge cases in date extraction."""
         # Valid edge cases
