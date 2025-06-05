@@ -380,7 +380,7 @@ To verify the correct implementation of the daily summary Git hook trigger:
    - [ ] Error handling prevents Git operation disruption
 
 # Subtasks:
-## 1. Implement Date Change Detection and State Management [pending]
+## 1. Implement Date Change Detection and State Management [done]
 ### Dependencies: None
 ### Description: Create the core logic to detect when the date changes between commits and manage the state file that tracks the last processed date.
 ### Details:
@@ -436,6 +436,47 @@ Create `get_current_date()` and `get_last_processed_date()` functions. Implement
    - Double check all subtask requirements are met: date detection, state management, error handling, logging
    - **MARK COMPLETE**
 </info added on 2025-06-04T17:59:13.844Z>
+<info added on 2025-06-05T11:56:35.810Z>
+### Design Decision Approved: File-Creation-Based Trigger System
+
+Replacing the state-based approach with a file-creation-based trigger system:
+
+1. **REVISED TDD STEPS:**
+   - Create `tests/unit/test_daily_summary.py`
+   - Test `extract_date_from_journal_path(path)` function:
+     - Returns YYYY-MM-DD from valid journal file path
+     - Handles invalid paths gracefully
+   - Test `daily_summary_exists(date, summary_dir)` function:
+     - Returns True when summary file exists for date
+     - Returns False when no summary file exists
+   - Test `should_generate_daily_summary(new_file_path, summary_dir)` function:
+     - Returns date string when summary should be generated
+     - Returns None when summary already exists
+     - Returns None for invalid input paths
+     - Handles edge cases (permissions, missing directories)
+   - Test `should_generate_period_summaries(date)` function:
+     - Determines if weekly/monthly summaries should be triggered
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **IMPLEMENT FUNCTIONALITY:**
+   - Create `src/mcp_commit_story/daily_summary.py` module
+   - Implement `extract_date_from_journal_path(path: str) -> Optional[str]`
+   - Implement `daily_summary_exists(date: str, summary_dir: str) -> bool`
+   - Implement `should_generate_daily_summary(new_file_path: str, summary_dir: str) -> Optional[str]`
+   - Implement `should_generate_period_summaries(date: str) -> Dict[str, bool]`
+   - Add proper logging for all error conditions
+   - Ensure idempotent behavior (safe to run multiple times)
+   - Handle gaps in journal entries (days off)
+   - **RUN TESTS - VERIFY THEY PASS**
+
+3. **BENEFITS OF NEW APPROACH:**
+   - Eliminates state file and potential corruption
+   - Naturally handles gaps in journal entries
+   - Deterministic behavior based on file existence
+   - Idempotent operation (safe to run multiple times)
+   - Supports backfilling historical dates
+   - Simpler error handling (log warnings, don't break git operations)
+</info added on 2025-06-05T11:56:35.810Z>
 
 ## 2. Create Daily Summary MCP Tool [pending]
 ### Dependencies: 27.1

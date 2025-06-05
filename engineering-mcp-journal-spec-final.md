@@ -1579,6 +1579,78 @@ mcp-commit-story-setup install-hook
 - All timestamps in local timezone
 - ISO format dates in filenames (YYYY-MM-DD)
 
+### Daily Summary Trigger System
+
+#### File-Creation-Based Trigger Algorithm
+The daily summary system uses a stateless, file-creation-based approach to determine when summaries should be generated. This eliminates state file corruption issues and handles gaps naturally.
+
+**Core Algorithm** (implemented in `src/mcp_commit_story/daily_summary.py`):
+
+1. **Trigger Event**: New journal file creation (e.g., `2025-01-06-journal.md`)
+2. **Date Extraction**: Extract date from new file path using regex `(\d{4}-\d{2}-\d{2})`
+3. **Previous File Discovery**: Scan journal directory for files with dates before current date
+4. **Most Recent Selection**: Find the most recent previous date from available journal files
+5. **Existence Check**: Verify if summary already exists for that date (`{date}-summary.md`)
+6. **Generation Decision**: Return date to summarize or `None` if summary exists or no previous entries
+
+#### Implementation Functions
+
+```python
+def extract_date_from_journal_path(file_path: Optional[str]) -> Optional[str]:
+    """Extract YYYY-MM-DD date from journal file path with validation."""
+    
+def daily_summary_exists(date_str: str, summary_dir: str) -> bool:
+    """Check if summary file exists for date using standard naming."""
+    
+def should_generate_daily_summary(new_file_path: Optional[str], summary_dir: str) -> Optional[str]:
+    """Main trigger logic - returns date to summarize or None."""
+    
+def should_generate_period_summaries(date_str: Optional[str]) -> Dict[str, bool]:
+    """Determine weekly/monthly/quarterly/yearly summary triggers."""
+```
+
+#### Period Summary Trigger Logic
+
+- **Weekly Summary**: Generated on Mondays (weekday 0) for previous week (Monday-Sunday)
+- **Monthly Summary**: Generated on 1st day of month for previous calendar month
+- **Quarterly Summary**: Generated on quarter boundaries (Jan 1, Apr 1, Jul 1, Oct 1) for previous quarter
+- **Yearly Summary**: Generated on January 1st for previous year
+
+#### Error Handling Strategy
+
+**Graceful Degradation**: All error conditions return safe values and log warnings without breaking git operations:
+
+- **Invalid file paths**: Return `None` (no summary generation)
+- **Missing directories**: Return `False` for existence checks
+- **Permission errors**: Log warning, return safe default
+- **Invalid dates**: Validate using `datetime.strptime()`, return `None` for invalid
+- **Regex failures**: Handle gracefully, return `None`
+
+#### Benefits Over State-Based Approach
+
+- **Gap Handling**: Works naturally after days off (no "yesterday" logic failures)
+- **No Corruption**: No state files to corrupt or become inconsistent
+- **Idempotent**: Safe to run multiple times - always produces same result
+- **Deterministic**: Same commit always produces same behavior
+- **Backfill Friendly**: Can generate missing summaries for any historical date
+- **Race Condition Free**: No concurrent access issues with multiple git operations
+
+#### File Organization
+
+Summary files are organized by period type:
+```
+summaries/
+├── daily/
+│   ├── 2025-01-05-summary.md
+│   └── 2025-01-06-summary.md
+├── weekly/
+│   └── 2025-01-week1-summary.md
+├── monthly/
+│   └── 2025-01-summary.md
+└── quarterly/
+    └── 2025-Q1-summary.md
+```
+
 ---
 
 ## Error Handling

@@ -208,6 +208,35 @@ The function `install_post_commit_hook(repo_path)` in `src/mcp_commit_story/git_
 - Hook set to executable (0o755) for compatibility
 - Suitable for CI/CD pipelines and scripting
 
+### Daily Summary Trigger System
+
+#### File-Creation-Based Approach
+The system uses a stateless, file-creation-based trigger to determine when daily summaries should be generated:
+
+- **Trigger Logic**: When a new journal file is created, check if a summary should be generated for the most recent previous day
+- **State-Free**: No state files to maintain or corrupt - relies on file existence checks
+- **Gap Handling**: Naturally handles gaps in journal entries (works after days off)
+- **Idempotent**: Safe to run multiple times - checks file existence before generating
+
+#### Implementation Functions
+Located in `src/mcp_commit_story/daily_summary.py`:
+
+- `extract_date_from_journal_path(file_path)`: Extract YYYY-MM-DD date from journal file path
+- `daily_summary_exists(date, summary_dir)`: Check if summary file already exists for a date
+- `should_generate_daily_summary(new_file_path, summary_dir)`: Main trigger logic - returns date to summarize or None
+- `should_generate_period_summaries(date)`: Determine weekly/monthly/quarterly summary triggers
+
+#### Period Summary Triggers
+- **Weekly**: Generate on Mondays for the previous week (Monday-Sunday)
+- **Monthly**: Generate on 1st of month for the previous month
+- **Quarterly**: Generate on quarter starts (Jan 1, Apr 1, Jul 1, Oct 1) for previous quarter  
+- **Yearly**: Generate on January 1st for the previous year
+
+#### Error Handling
+- Log warnings and continue on errors (don't break git operations)
+- Return `None` for any failure cases
+- Handle missing directories, permission errors, and invalid date formats gracefully
+
 ### Backfill Mechanism
 - **Detection**: Check commits since last journal entry in any file
 - **Order**: Add missed entries in chronological order
