@@ -216,67 +216,113 @@ class TestShouldGenerateDailySummary:
 
 
 class TestShouldGeneratePeriodSummaries:
-    """Test period summary trigger logic (weekly, monthly, etc.)."""
+    """Test period summary trigger logic (lookback approach)."""
     
-    def test_should_generate_period_summaries_weekly_monday(self):
-        """Test weekly summary trigger on Monday."""
+    def test_should_generate_period_summaries_weekly_boundary_no_summary(self, tmp_path):
+        """Test weekly summary trigger on Monday when no previous weekly summary exists."""
         # Monday January 6, 2025
         monday_date = "2025-01-06"
         
-        result = should_generate_period_summaries(monday_date)
+        # Create summaries directory structure
+        summaries_dir = tmp_path / "summaries"
+        summaries_dir.mkdir()
+        (summaries_dir / "weekly").mkdir()
+        
+        result = should_generate_period_summaries(monday_date, str(summaries_dir))
         
         # Should indicate weekly summary needed
-        assert "weekly" in result
         assert result["weekly"] is True
+        assert result["monthly"] is False  # Not first of month
+        assert result["quarterly"] is False  # Not quarter boundary
+        assert result["yearly"] is False  # Not new year
     
-    def test_should_generate_period_summaries_not_monday(self):
-        """Test no weekly summary on non-Monday."""
-        # Tuesday January 7, 2025
-        tuesday_date = "2025-01-07"
+    def test_should_generate_period_summaries_weekly_boundary_summary_exists(self, tmp_path):
+        """Test no weekly summary generation when summary already exists."""
+        # Monday January 6, 2025
+        monday_date = "2025-01-06"
         
-        result = should_generate_period_summaries(tuesday_date)
+        # Create summaries directory with existing weekly summary
+        summaries_dir = tmp_path / "summaries"
+        weekly_dir = summaries_dir / "weekly"
+        weekly_dir.mkdir(parents=True)
         
-        # Should not indicate weekly summary needed
-        assert result.get("weekly", False) is False
+        # Create a weekly summary for the previous week (ending Jan 5) 
+        # Jan 5 is Sunday, previous Monday was Dec 30, 2024
+        # Use one of the expected filename formats
+        (weekly_dir / "2024-12-week1.md").write_text("Previous week summary")
+        
+        result = should_generate_period_summaries(monday_date, str(summaries_dir))
+        
+        # Should not generate weekly summary since it exists
+        assert result["weekly"] is False
     
-    def test_should_generate_period_summaries_monthly_first(self):
-        """Test monthly summary trigger on first of month."""
+    def test_should_generate_period_summaries_monthly_boundary_no_summary(self, tmp_path):
+        """Test monthly summary trigger on first of month when no previous summary exists."""
         # February 1, 2025
         first_of_month = "2025-02-01"
         
-        result = should_generate_period_summaries(first_of_month)
+        # Create summaries directory structure
+        summaries_dir = tmp_path / "summaries"
+        summaries_dir.mkdir()
+        (summaries_dir / "monthly").mkdir()
+        
+        result = should_generate_period_summaries(first_of_month, str(summaries_dir))
         
         # Should indicate monthly summary needed
-        assert "monthly" in result
         assert result["monthly"] is True
+        assert result["weekly"] is False  # Not Monday
+        assert result["quarterly"] is False  # Not quarter boundary
+        assert result["yearly"] is False  # Not new year
     
-    def test_should_generate_period_summaries_not_first(self):
-        """Test no monthly summary on non-first day."""
-        # January 15, 2025
-        mid_month = "2025-01-15"
-        
-        result = should_generate_period_summaries(mid_month)
-        
-        # Should not indicate monthly summary needed
-        assert result.get("monthly", False) is False
-    
-    def test_should_generate_period_summaries_quarterly(self):
-        """Test quarterly summary triggers."""
+    def test_should_generate_period_summaries_quarterly_boundary(self, tmp_path):
+        """Test quarterly summary trigger on quarter boundaries."""
         quarterly_dates = ["2025-01-01", "2025-04-01", "2025-07-01", "2025-10-01"]
         
         for quarter_date in quarterly_dates:
-            result = should_generate_period_summaries(quarter_date)
-            assert result.get("quarterly", False) is True, f"Failed for {quarter_date}"
+            # Create fresh summaries directory for each test
+            summaries_dir = tmp_path / f"summaries_{quarter_date.replace('-', '_')}"
+            summaries_dir.mkdir()
+            (summaries_dir / "quarterly").mkdir()
+            
+            result = should_generate_period_summaries(quarter_date, str(summaries_dir))
+            assert result["quarterly"] is True, f"Quarterly should be True for {quarter_date}"
     
-    def test_should_generate_period_summaries_yearly(self):
+    def test_should_generate_period_summaries_yearly_boundary(self, tmp_path):
         """Test yearly summary trigger on January 1st."""
         new_years = "2025-01-01"
         
-        result = should_generate_period_summaries(new_years)
+        # Create summaries directory structure
+        summaries_dir = tmp_path / "summaries"
+        summaries_dir.mkdir()
+        (summaries_dir / "yearly").mkdir()
         
-        # Should indicate yearly summary needed
-        assert "yearly" in result
+        result = should_generate_period_summaries(new_years, str(summaries_dir))
+        
+        # Should indicate yearly, quarterly, and monthly summaries needed
         assert result["yearly"] is True
+        assert result["quarterly"] is True  # Jan 1 is also quarter boundary
+        assert result["monthly"] is True   # Jan 1 is also month boundary
+        assert result["weekly"] is False   # Jan 1, 2025 is not a Monday
+    
+    def test_should_generate_period_summaries_non_boundary_dates(self, tmp_path):
+        """Test no summary generation on non-boundary dates."""
+        non_boundary_dates = [
+            "2025-01-07",  # Tuesday, not Monday
+            "2025-01-15",  # Mid-month
+            "2025-06-15",  # Mid-year, mid-month
+        ]
+        
+        summaries_dir = tmp_path / "summaries"
+        summaries_dir.mkdir()
+        
+        for date_str in non_boundary_dates:
+            result = should_generate_period_summaries(date_str, str(summaries_dir))
+            
+            # All should be False for non-boundary dates
+            assert result["weekly"] is False, f"Weekly should be False for {date_str}"
+            assert result["monthly"] is False, f"Monthly should be False for {date_str}"
+            assert result["quarterly"] is False, f"Quarterly should be False for {date_str}"
+            assert result["yearly"] is False, f"Yearly should be False for {date_str}"
     
     def test_should_generate_period_summaries_invalid_date(self):
         """Test handling invalid date input."""
@@ -284,6 +330,263 @@ class TestShouldGeneratePeriodSummaries:
         
         for invalid_date in invalid_dates:
             result = should_generate_period_summaries(invalid_date)
-            # Should return empty dict or all False values
+            
+            # Should return dict with all False values for invalid input
             assert isinstance(result, dict)
-            assert all(v is False for v in result.values()) or len(result) == 0 
+            assert result["weekly"] is False
+            assert result["monthly"] is False
+            assert result["quarterly"] is False
+            assert result["yearly"] is False
+    
+    def test_should_generate_period_summaries_structure(self):
+        """Test that the return structure is consistent."""
+        result = should_generate_period_summaries("2025-06-15")
+        
+        # Verify expected keys exist
+        expected_keys = {"weekly", "monthly", "quarterly", "yearly"}
+        assert set(result.keys()) == expected_keys
+        
+        # Verify all values are boolean
+        assert all(isinstance(v, bool) for v in result.values())
+    
+    def test_should_generate_period_summaries_default_directory(self):
+        """Test that function works with default summaries directory."""
+        # Test with None summaries_dir (should use default)
+        result = should_generate_period_summaries("2025-01-06", None)
+        
+        # Should not crash and return valid structure
+        assert isinstance(result, dict)
+        expected_keys = {"weekly", "monthly", "quarterly", "yearly"}
+        assert set(result.keys()) == expected_keys
+
+
+class TestEnhancedBoundaryDetection:
+    """Test enhanced boundary detection for delayed commits and gap scenarios."""
+    
+    def test_delayed_weekly_commit_after_monday(self, tmp_path):
+        """Test weekly summary generation when committing on Wednesday after Monday boundary."""
+        # Scenario: Last commit was Friday Jan 3, current commit is Wednesday Jan 8
+        # Monday Jan 6 boundary was missed, should generate summary for week ending Jan 5
+        
+        summaries_dir = tmp_path / "summaries"
+        summaries_dir.mkdir()
+        (summaries_dir / "weekly").mkdir()
+        
+        last_commit = "2025-01-03"  # Friday
+        current_commit = "2025-01-08"  # Wednesday
+        
+        result = should_generate_period_summaries(
+            current_commit, 
+            str(summaries_dir), 
+            last_commit_date=last_commit
+        )
+        
+        # Should detect missed Monday boundary and generate weekly summary
+        assert result["weekly"] is True
+        assert result["monthly"] is False
+        assert result["quarterly"] is False
+        assert result["yearly"] is False
+    
+    def test_delayed_weekly_commit_summary_exists(self, tmp_path):
+        """Test no weekly summary when delayed commit but summary already exists."""
+        summaries_dir = tmp_path / "summaries"
+        weekly_dir = summaries_dir / "weekly"
+        weekly_dir.mkdir(parents=True)
+        
+        # Create existing weekly summary for the week ending Jan 5 
+        # The week ending Jan 5 starts on Monday Dec 30, 2024 which is week 1
+        (weekly_dir / "2024-12-week1.md").write_text("Existing summary")
+        
+        last_commit = "2025-01-03"  # Friday
+        current_commit = "2025-01-08"  # Wednesday
+        
+        result = should_generate_period_summaries(
+            current_commit, 
+            str(summaries_dir), 
+            last_commit_date=last_commit
+        )
+        
+        # Should not generate since summary exists
+        assert result["weekly"] is False
+    
+    def test_multiple_weekly_boundaries_crossed(self, tmp_path):
+        """Test multiple weekly boundaries crossed in long gap."""
+        # Scenario: Last commit Dec 27, 2024 (Friday), current commit Jan 20, 2025 (Monday)
+        # Should detect boundaries: Jan 6 (Monday), Jan 13 (Monday), Jan 20 (Monday)
+        # Should generate summary for weeks ending Jan 5, Jan 12 (but not Jan 19 since that's current week)
+        
+        summaries_dir = tmp_path / "summaries"
+        summaries_dir.mkdir()
+        (summaries_dir / "weekly").mkdir()
+        
+        last_commit = "2024-12-27"  # Friday
+        current_commit = "2025-01-20"   # Monday
+        
+        result = should_generate_period_summaries(
+            current_commit, 
+            str(summaries_dir), 
+            last_commit_date=last_commit
+        )
+        
+        # Should detect multiple missed weekly boundaries
+        assert result["weekly"] is True
+    
+    def test_delayed_monthly_boundary(self, tmp_path):
+        """Test monthly summary generation when committing days after 1st of month."""
+        # Scenario: Last commit Jan 30, current commit Feb 5
+        # Feb 1 boundary was missed (monthly), Feb 3 was Monday (weekly)
+        
+        summaries_dir = tmp_path / "summaries"
+        summaries_dir.mkdir()
+        (summaries_dir / "monthly").mkdir()
+        (summaries_dir / "weekly").mkdir()
+        
+        last_commit = "2025-01-30"  # Thursday
+        current_commit = "2025-02-05"  # Wednesday
+        
+        result = should_generate_period_summaries(
+            current_commit, 
+            str(summaries_dir), 
+            last_commit_date=last_commit
+        )
+        
+        # Should detect missed monthly boundary (Feb 1) AND weekly boundary (Feb 3 Monday)
+        assert result["monthly"] is True
+        assert result["weekly"] is True  # Feb 3 (Monday) was crossed
+    
+    def test_multiple_period_boundaries_crossed(self, tmp_path):
+        """Test crossing multiple different period boundaries in one gap."""
+        # Scenario: Last commit Dec 20, 2024, current commit Jan 15, 2025
+        # Boundaries crossed: Dec 23 (Monday), Dec 30 (Monday), Jan 1 (yearly/quarterly/monthly), Jan 6 (Monday), Jan 13 (Monday)
+        
+        summaries_dir = tmp_path / "summaries"
+        for period in ["weekly", "monthly", "quarterly", "yearly"]:
+            (summaries_dir / period).mkdir(parents=True)
+        
+        last_commit = "2024-12-20"  # Friday
+        current_commit = "2025-01-15"   # Wednesday
+        
+        result = should_generate_period_summaries(
+            current_commit, 
+            str(summaries_dir), 
+            last_commit_date=last_commit
+        )
+        
+        # Should detect all types of boundaries
+        assert result["weekly"] is True    # Multiple Mondays crossed
+        assert result["monthly"] is True   # Jan 1 crossed
+        assert result["quarterly"] is True # Jan 1 crossed
+        assert result["yearly"] is True    # Jan 1 crossed
+    
+    def test_no_boundaries_crossed_same_period(self, tmp_path):
+        """Test no summary generation when commits are in same period."""
+        # Scenario: Both commits in same week
+        summaries_dir = tmp_path / "summaries"
+        summaries_dir.mkdir()
+        
+        last_commit = "2025-01-07"  # Tuesday
+        current_commit = "2025-01-09"  # Thursday
+        
+        result = should_generate_period_summaries(
+            current_commit, 
+            str(summaries_dir), 
+            last_commit_date=last_commit
+        )
+        
+        # No boundaries crossed
+        assert result["weekly"] is False
+        assert result["monthly"] is False
+        assert result["quarterly"] is False
+        assert result["yearly"] is False
+    
+    def test_exact_boundary_day_with_gap_detection(self, tmp_path):
+        """Test gap detection when current commit is on exact boundary day."""
+        # Scenario: Last commit Jan 3, current commit Jan 6 (Monday)
+        # Should detect the immediate boundary AND check for any missed ones
+        
+        summaries_dir = tmp_path / "summaries"
+        summaries_dir.mkdir()
+        (summaries_dir / "weekly").mkdir()
+        
+        last_commit = "2025-01-03"  # Friday
+        current_commit = "2025-01-06"  # Monday
+        
+        result = should_generate_period_summaries(
+            current_commit, 
+            str(summaries_dir), 
+            last_commit_date=last_commit
+        )
+        
+        # Should detect the Monday boundary
+        assert result["weekly"] is True
+    
+    def test_fallback_to_original_logic_without_last_commit(self, tmp_path):
+        """Test fallback to original boundary detection when last_commit_date not provided."""
+        # When last_commit_date is None, should use original logic
+        summaries_dir = tmp_path / "summaries"
+        summaries_dir.mkdir()
+        (summaries_dir / "weekly").mkdir()
+        
+        # Monday boundary
+        monday_date = "2025-01-06"
+        
+        result = should_generate_period_summaries(
+            monday_date, 
+            str(summaries_dir), 
+            last_commit_date=None  # Explicitly None
+        )
+        
+        # Should use original logic - detect Monday boundary
+        assert result["weekly"] is True
+    
+    def test_edge_case_consecutive_boundaries(self, tmp_path):
+        """Test consecutive boundary days (like Jan 1 with multiple period types)."""
+        # Jan 1 is yearly, quarterly, and monthly boundary
+        summaries_dir = tmp_path / "summaries"
+        for period in ["weekly", "monthly", "quarterly", "yearly"]:
+            (summaries_dir / period).mkdir(parents=True)
+        
+        last_commit = "2024-12-31"  # Tuesday  
+        current_commit = "2025-01-01"  # Wednesday
+        
+        result = should_generate_period_summaries(
+            current_commit, 
+            str(summaries_dir), 
+            last_commit_date=last_commit
+        )
+        
+        # Should detect all applicable boundaries
+        assert result["monthly"] is True
+        assert result["quarterly"] is True
+        assert result["yearly"] is True
+        assert result["weekly"] is False  # Jan 1, 2025 is Wednesday, not Monday
+    
+    def test_performance_large_gap(self, tmp_path):
+        """Test performance with very large gaps (should still be reasonable)."""
+        # Test 1 year gap - should not hang or be excessively slow
+        summaries_dir = tmp_path / "summaries"
+        summaries_dir.mkdir()
+        (summaries_dir / "weekly").mkdir()
+        
+        last_commit = "2024-01-01"  
+        current_commit = "2025-01-01" 
+        
+        import time
+        start_time = time.time()
+        
+        result = should_generate_period_summaries(
+            current_commit, 
+            str(summaries_dir), 
+            last_commit_date=last_commit
+        )
+        
+        duration = time.time() - start_time
+        
+        # Should complete within reasonable time (< 1 second for 1 year gap)
+        assert duration < 1.0
+        
+        # Should detect boundaries (multiple of each type in 1 year)
+        assert result["weekly"] is True
+        assert result["monthly"] is True  
+        assert result["quarterly"] is True
+        assert result["yearly"] is True 

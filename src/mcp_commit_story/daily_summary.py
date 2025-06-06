@@ -7,8 +7,9 @@ based on journal file creation events, rather than maintaining state files.
 import os
 import re
 import logging
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from typing import Optional, Dict, List
+from pathlib import Path
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -167,11 +168,17 @@ def should_generate_daily_summary(new_file_path: Optional[str], summary_dir: str
         return None
 
 
-def should_generate_period_summaries(date_str: Optional[str]) -> Dict[str, bool]:
+def should_generate_period_summaries(date_str: Optional[str], summaries_dir: Optional[str] = None, last_commit_date: Optional[str] = None) -> Dict[str, bool]:
     """Determine which period summaries should be generated based on commit date.
     
+    ENHANCED LOOKBACK APPROACH: Check if any period boundaries were crossed since
+    the last commit, regardless of when the current commit happens. This ensures
+    summaries are generated even for delayed commits after boundary dates.
+    
     Args:
-        date_str: Date string in YYYY-MM-DD format
+        date_str: Date string in YYYY-MM-DD format for current commit
+        summaries_dir: Path to summaries directory (optional, uses default if None)
+        last_commit_date: Date string for previous commit (optional, for gap detection)
         
     Returns:
         Dictionary indicating which period summaries to generate:
@@ -188,29 +195,210 @@ def should_generate_period_summaries(date_str: Optional[str]) -> Dict[str, bool]
         return result
     
     try:
-        # Parse the date string
+        from pathlib import Path
+        
+        # Parse the current commit date
         commit_date = datetime.strptime(date_str, "%Y-%m-%d").date()
         
-        # Weekly summary on Mondays (weekday() returns 0 for Monday)
-        if commit_date.weekday() == 0:
-            result['weekly'] = True
+        # Use default summaries directory if not provided
+        if summaries_dir is None:
+            # Default to journal/summaries - this will be configurable later
+            summaries_dir = "journal/summaries"
         
-        # Monthly summary on 1st of month
+        summaries_path = Path(summaries_dir)
+        
+        # Enhanced boundary detection: Check for missed boundaries
+        # If last_commit_date is provided, check for boundaries crossed in the gap
+        # Otherwise, use simplified boundary detection (current behavior)
+        
+        if last_commit_date:
+            # Gap-aware detection: Check all boundaries crossed since last commit
+            last_date = datetime.strptime(last_commit_date, "%Y-%m-%d").date()
+            
+            # Check for weekly boundaries crossed
+            if _weekly_boundaries_crossed(last_date, commit_date, summaries_path):
+                result['weekly'] = True
+                
+            # Check for monthly boundaries crossed  
+            if _monthly_boundaries_crossed(last_date, commit_date, summaries_path):
+                result['monthly'] = True
+                
+            # Check for quarterly boundaries crossed
+            if _quarterly_boundaries_crossed(last_date, commit_date, summaries_path):
+                result['quarterly'] = True
+                
+            # Check for yearly boundaries crossed
+            if _yearly_boundaries_crossed(last_date, commit_date, summaries_path):
+                result['yearly'] = True
+        else:
+            # Fallback to current logic for immediate boundary detection
+            # Weekly summary: Check if we crossed into a new week and previous week needs summary
+            if commit_date.weekday() == 0:  # Monday
+                previous_week_end = commit_date - timedelta(days=1)  # Last Sunday
+                if not _weekly_summary_exists(previous_week_end, summaries_path):
+                    result['weekly'] = True
+            
+            # Monthly summary: Check if we crossed into new month and previous month needs summary
         if commit_date.day == 1:
+                previous_month_end = commit_date - timedelta(days=1)  # Last day of previous month
+                if not _monthly_summary_exists(previous_month_end, summaries_path):
             result['monthly'] = True
         
-        # Quarterly summary on first day of quarter (Jan 1, Apr 1, Jul 1, Oct 1)
+            # Quarterly summary: Check if we crossed into new quarter and previous quarter needs summary
         if commit_date.month in [1, 4, 7, 10] and commit_date.day == 1:
+                previous_quarter_end = commit_date - timedelta(days=1)  # Last day of previous quarter
+                if not _quarterly_summary_exists(previous_quarter_end, summaries_path):
             result['quarterly'] = True
         
-        # Yearly summary on January 1st
+            # Yearly summary: Check if we crossed into new year and previous year needs summary
         if commit_date.month == 1 and commit_date.day == 1:
+                previous_year_end = commit_date - timedelta(days=1)  # Dec 31 of previous year
+                if not _yearly_summary_exists(previous_year_end, summaries_path):
             result['yearly'] = True
-            
+                
     except ValueError:
         logger.warning(f"Invalid date format for period summary determination: {date_str}")
+    except Exception as e:
+        logger.warning(f"Error checking period summaries for {date_str}: {e}")
     
     return result
+
+
+def _weekly_boundaries_crossed(last_date: date, current_date: date, summaries_path: Path) -> bool:
+    """Check if any weekly boundaries were crossed that need summaries."""
+    # Find all Mondays between last_date and current_date
+    check_date = last_date + timedelta(days=1)
+    
+    while check_date <= current_date:
+        if check_date.weekday() == 0:  # Monday - weekly boundary
+            previous_week_end = check_date - timedelta(days=1)  # Last Sunday
+            if not _weekly_summary_exists(previous_week_end, summaries_path):
+                return True
+        check_date += timedelta(days=1)
+    
+    return False
+
+
+def _monthly_boundaries_crossed(last_date: date, current_date: date, summaries_path: Path) -> bool:
+    """Check if any monthly boundaries were crossed that need summaries."""
+    # Find all 1st-of-month dates between last_date and current_date
+    check_date = last_date + timedelta(days=1)
+    
+    while check_date <= current_date:
+        if check_date.day == 1:  # Monthly boundary
+            previous_month_end = check_date - timedelta(days=1)  # Last day of previous month
+            if not _monthly_summary_exists(previous_month_end, summaries_path):
+                return True
+        check_date += timedelta(days=1)
+    
+    return False
+
+
+def _quarterly_boundaries_crossed(last_date: date, current_date: date, summaries_path: Path) -> bool:
+    """Check if any quarterly boundaries were crossed that need summaries."""
+    # Find all quarter start dates between last_date and current_date
+    check_date = last_date + timedelta(days=1)
+    
+    while check_date <= current_date:
+        if check_date.month in [1, 4, 7, 10] and check_date.day == 1:  # Quarterly boundary
+            previous_quarter_end = check_date - timedelta(days=1)  # Last day of previous quarter
+            if not _quarterly_summary_exists(previous_quarter_end, summaries_path):
+                return True
+        check_date += timedelta(days=1)
+    
+    return False
+
+
+def _yearly_boundaries_crossed(last_date: date, current_date: date, summaries_path: Path) -> bool:
+    """Check if any yearly boundaries were crossed that need summaries."""
+    # Find all January 1st dates between last_date and current_date
+    check_date = last_date + timedelta(days=1)
+    
+    while check_date <= current_date:
+        if check_date.month == 1 and check_date.day == 1:  # Yearly boundary
+            previous_year_end = check_date - timedelta(days=1)  # Dec 31 of previous year
+            if not _yearly_summary_exists(previous_year_end, summaries_path):
+                return True
+        check_date += timedelta(days=1)
+    
+    return False
+
+
+def _weekly_summary_exists(date: date, summaries_path: Path) -> bool:
+    """Check if a weekly summary exists for the week containing the given date."""
+    try:
+        # Get the Monday of the week containing this date
+        monday = date - timedelta(days=date.weekday())
+        week_num = monday.isocalendar()[1]
+        
+        # Weekly summaries are stored as YYYY-MM-weekN.md
+        weekly_dir = summaries_path / "weekly"
+        possible_filenames = [
+            f"{monday.strftime('%Y-%m')}-week{week_num}.md",
+            f"{monday.strftime('%Y')}-week{week_num:02d}.md",
+            f"{monday.strftime('%Y-W%W')}.md"  # Alternative format
+        ]
+        
+        for filename in possible_filenames:
+            if (weekly_dir / filename).exists():
+                return True
+        return False
+    except Exception:
+        return False
+
+
+def _monthly_summary_exists(date: date, summaries_path: Path) -> bool:
+    """Check if a monthly summary exists for the month containing the given date."""
+    try:
+        monthly_dir = summaries_path / "monthly"
+        possible_filenames = [
+            f"{date.strftime('%Y-%m')}.md",
+            f"{date.strftime('%Y-%m')}-monthly.md",
+            f"{date.strftime('%B-%Y').lower()}.md"  # Alternative format
+        ]
+        
+        for filename in possible_filenames:
+            if (monthly_dir / filename).exists():
+                return True
+        return False
+    except Exception:
+        return False
+
+
+def _quarterly_summary_exists(date: date, summaries_path: Path) -> bool:
+    """Check if a quarterly summary exists for the quarter containing the given date."""
+    try:
+        quarter = (date.month - 1) // 3 + 1
+        quarterly_dir = summaries_path / "quarterly"
+        possible_filenames = [
+            f"{date.strftime('%Y')}-Q{quarter}.md",
+            f"{date.strftime('%Y')}-quarter{quarter}.md"
+        ]
+        
+        for filename in possible_filenames:
+            if (quarterly_dir / filename).exists():
+                return True
+        return False
+    except Exception:
+        return False
+
+
+def _yearly_summary_exists(date: date, summaries_path: Path) -> bool:
+    """Check if a yearly summary exists for the year containing the given date."""
+    try:
+        yearly_dir = summaries_path / "yearly"
+        possible_filenames = [
+            f"{date.strftime('%Y')}.md",
+            f"{date.strftime('%Y')}-yearly.md",
+            f"{date.strftime('%Y')}-summary.md"
+        ]
+        
+        for filename in possible_filenames:
+            if (yearly_dir / filename).exists():
+                return True
+        return False
+    except Exception:
+        return False
 
 
 # =============================================================================
@@ -965,7 +1153,7 @@ def generate_daily_summary_mcp_tool(request: GenerateDailySummaryRequest) -> Gen
             content=None,
             error=error_msg
         )
-
+        
     except ValueError as e:
         error_msg = f"Invalid date format or data: {str(e)}"
         logger.error(error_msg)
