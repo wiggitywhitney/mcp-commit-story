@@ -27,6 +27,7 @@
    - [Recursion Prevention](#recursion-prevention)
    - [Journal Entry Structure](#journal-entry-structure-canonical-format)
    - [Content Quality Guidelines](#content-quality-guidelines)
+   - [Source File Linking System](#source-file-linking-system)
 7. [MCP Server Implementation](#mcp-server-implementation)
    - [MCP Operations](#mcp-operations)
    - [Operation Details](#operation-details)
@@ -287,32 +288,7 @@ telemetry:
   service_name: "mcp-commit-story"   # Service name for traces
 ```
 
-### AI Tone/Style Configuration
 
-The user can control the tone and style of AI-generated summaries in journal entries by setting the `ai_tone` field in `.mcp-commit-storyrc.yaml`.
-
-**Supported values:**
-- `neutral` (default): Objective, factual, and balanced. No strong personality.
-- `concise`: Short, direct, and minimal. Focuses on brevity and essentials.
-- `explanatory`: Clear, step-by-step, and focused on making things easy to understand.
-- `technical`: Uses precise, domain-specific language. For advanced/engineering audiences.
-- `reflective`: Thoughtful, introspective, and focused on lessons learned.
-- `friendly`: Warm, encouraging, and positive—but still professional.
-
-If an unsupported value is set, the system will fall back to `neutral` and log a warning.
-
-#### Example Configuration:
-```yaml
-journal:
-  path: journal/
-  auto_generate: true
-  include_terminal: true
-  include_chat: true
-  include_mood: true
-```
-
-#### Journal Entry Structure Note
-- The **Summary** section of each journal entry will reflect the selected `ai_tone` style.
 
 #### Technical Synopsis
 {technical details about code changes}
@@ -1708,6 +1684,119 @@ summaries/
     └── 2025-Q1-summary.md
 ```
 
+### Source File Linking System
+
+#### Overview
+The source file linking system creates a navigable hierarchy within summary generation, enabling users to trace information provenance from high-level summaries down to individual journal entries. This system is implemented through the `summary_utils.py` module and automatically integrated into all summary generation workflows.
+
+#### Core Architecture
+
+**Primary Module**: `src/mcp_commit_story/summary_utils.py` (348 lines)
+- Source file detection for all summary types
+- Automatic link generation with existence checking
+- Markdown integration for formatted output
+- Error handling for missing files and invalid formats
+
+**Integration Points**:
+- `daily_summary.py`: Enhanced to include source linking via `add_source_links_to_summary()`
+- New summary modules: `weekly_summary.py`, `monthly_summary.py`, `quarterly_summary.py`, `yearly_summary.py`
+- Markdown generation: Automatic source links sections in summary output
+
+#### Hierarchical Linking Structure
+
+```
+Yearly (2025)
+├── Quarterly (Q2 2025) → Monthly summaries (2025-04.md, 2025-05.md, 2025-06.md)
+│   └── Monthly (2025-06) → Weekly summaries (week23-27.md) 
+│       └── Weekly (week23) → Daily summaries (2025-06-02 to 2025-06-08)
+│           └── Daily (2025-06-06) → Journal entry (2025-06-06-journal.md)
+```
+
+#### Source Detection Logic
+
+**Daily Summaries**:
+- **Sources**: Journal entry files (`YYYY-MM-DD-journal.md`)
+- **Location**: `daily/` directory
+- **Implementation**: `_get_daily_summary_sources()`
+
+**Weekly Summaries**:
+- **Sources**: Daily summary files for 7 consecutive days starting from Monday
+- **Location**: `summaries/daily/` directory
+- **Implementation**: `_get_weekly_summary_sources()` with Monday calculation logic
+
+**Monthly Summaries**:
+- **Sources**: Weekly summary files for all weeks that start within the month
+- **Location**: `summaries/weekly/` directory
+- **Implementation**: `_get_monthly_summary_sources()` with complex calendar mathematics
+- **File Format Support**: Multiple naming conventions (`YYYY-MM-weekNN.md`, `YYYY-weekNN.md`, `YYYY-WWW.md`)
+
+**Quarterly Summaries**:
+- **Sources**: Monthly summary files for the 3 months in the quarter
+- **Location**: `summaries/monthly/` directory
+- **Implementation**: `_get_quarterly_summary_sources()` with quarter-to-month mapping
+
+**Yearly Summaries**:
+- **Sources**: Quarterly summary files for all 4 quarters
+- **Location**: `summaries/quarterly/` directory
+- **Implementation**: `_get_yearly_summary_sources()`
+
+#### Key Functions
+
+```python
+def determine_source_files_for_summary(summary_type: str, date_identifier: str, journal_path: str) -> List[Dict[str, Any]]:
+    """Main entry point for source file detection."""
+
+def add_source_links_to_summary(summary_obj: Any, summary_type: str, date_identifier: str, journal_path: str) -> Any:
+    """Enhance summary objects with source file metadata."""
+
+def generate_source_links_section(source_files: List[Dict[str, Any]], coverage_description: str) -> str:
+    """Generate markdown-formatted source links sections."""
+
+def enhance_summary_markdown_with_source_links(markdown_content: str, summary_type: str, date_identifier: str, journal_path: str) -> str:
+    """Add source links to existing markdown content."""
+```
+
+#### Output Format
+
+Source links are automatically formatted as markdown sections in summary files:
+
+```markdown
+#### Source Files
+
+**Coverage**: June 6, 2025
+
+**Available Files**:
+- [2025-06-06-journal.md](daily/2025-06-06-journal.md)
+
+**Missing Files**:
+- [2025-06-05-journal.md](daily/2025-06-05-journal.md) *(file not found)*
+```
+
+#### Error Handling and Edge Cases
+
+- **Invalid Date Formats**: Graceful parsing error handling with logging
+- **Missing Directories**: Robust file system error handling for missing `summaries/` subdirectories
+- **Calendar Edge Cases**: Complex logic for month boundaries, leap years, and week calculations
+- **File System Permissions**: Graceful handling of permission errors during file existence checks
+- **Unknown Summary Types**: Warning logs for unrecognized summary types with safe fallback
+
+#### Testing Coverage
+
+Comprehensive test suite in `tests/unit/test_summary_source_links.py`:
+- **9 test scenarios** covering all summary types and hierarchical relationships
+- **File existence testing** for both available and missing source files
+- **Calendar mathematics validation** for complex boundary scenarios
+- **Integration testing** with existing summary generation workflows
+- **Error condition handling** for invalid inputs and missing files
+
+#### Benefits
+
+1. **Information Traceability**: Complete provenance tracking from summaries to source data
+2. **Hierarchical Navigation**: Seamless navigation through the summary ecosystem
+3. **Content Transparency**: Clear visibility into data sources for each summary
+4. **Quality Assurance**: Users can verify summary accuracy by checking source files
+5. **Knowledge Graph Creation**: Interconnected system enabling discovery and exploration
+
 ---
 
 ## Error Handling
@@ -2181,11 +2270,31 @@ def generate_entry(debug=False):
   - Commit hash: [`cda9ef2`](https://github.com/your-org/your-repo/commit/cda9ef2)
 
 ### Configurable AI Tone/Style for Summaries
-- Allow the user to control the tone and style of AI-generated summaries in journal entries by setting the `ai_tone` field in `.mcp-commit-storyrc.yaml`.
-- The value of `ai_tone` can be any free-form string, such as a tone, style, persona, or creative instruction. This value will be passed directly to the AI to guide summary generation.
-- There is no fixed list of supported values. Users may specify anything, e.g., "concise and technical", "in the style of a pirate", "for a 10-year-old", "sarcastic", "neutral", etc.
-- If omitted, the default is "neutral and factual".
-- Results may vary depending on the AI's capabilities and the specificity of the instruction.
+
+**Overview**: Allow users to customize the tone and style of AI-generated summaries in journal entries through configuration settings.
+
+**Configuration**: Set the `ai_tone` field in `.mcp-commit-storyrc.yaml` to control summary generation style.
+
+**Implementation Approach**:
+- **Free-form values**: Accept any string value (tone, style, persona, or creative instruction)
+- **Direct AI integration**: Pass the value directly to AI prompts to guide summary generation
+- **Fallback behavior**: Default to "neutral and factual" if omitted
+- **Validation**: No fixed validation list - users can specify any instruction
+- **Result variability**: Output depends on AI capabilities and instruction specificity
+
+**Suggested Implementation Categories**:
+- `neutral` (default): Objective, factual, and balanced. No strong personality.
+- `concise`: Short, direct, and minimal. Focuses on brevity and essentials.
+- `explanatory`: Clear, step-by-step, and focused on making things easy to understand.
+- `technical`: Uses precise, domain-specific language. For advanced/engineering audiences.
+- `reflective`: Thoughtful, introspective, and focused on lessons learned.
+- `friendly`: Warm, encouraging, and positive—but still professional.
+
+**Technical Integration**:
+- Modify AI prompt generation in daily summary creation
+- The **Summary** section of journal entries will reflect the selected `ai_tone` style
+- Add fallback logic with warning logs for processing errors
+- Ensure backward compatibility with existing journal entries
 
 #### Example Configuration:
 ```yaml
@@ -2200,11 +2309,13 @@ journal:
 
 #### Example Values for `ai_tone`:
 - "concise and technical"
-- "friendly and encouraging"
+- "friendly and encouraging" 
 - "in the style of a pirate"
 - "for a 10-year-old"
 - "neutral"
 - "explanatory, as if teaching a beginner"
+- "reflective and introspective"
+- "formal and professional"
 
 ---
 

@@ -70,6 +70,7 @@
 - **✅ Manual reflection preservation**: User-written reflections are automatically extracted and prioritized in summaries, preserving authentic developer insights verbatim
 - **✅ Smart trigger system**: File-creation-based triggers automatically determine when summaries should be generated based on journal activity
 - **✅ Robust error handling**: Graceful handling of missing entries, invalid dates, and file system issues with appropriate status responses
+- **✅ Source file linking**: Hierarchical navigation system where each summary type (daily, weekly, monthly, quarterly, yearly) automatically links to its constituent source files, enabling users to trace information provenance from high-level summaries down to individual journal entries
 - **Weekly summaries**: Patterns, progress themes, key achievements (planned)
 - **Monthly summaries**: Major milestones, growth areas, significant learnings (planned)
 - **Yearly summaries**: Career development, skill evolution, major projects (planned)
