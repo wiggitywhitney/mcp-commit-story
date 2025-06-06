@@ -284,7 +284,8 @@ class TestJournalWorkflowIntegration:
             assert "2025-06-04-journal.md" in result['file_path']
             
             mock_generate.assert_called_once_with(mock_commit, sample_config, True)
-            mock_save.assert_called_once_with(mock_journal_entry, sample_config, True)
+            # The function now calls save_journal_entry with date_str parameter
+            mock_save.assert_called_once_with(mock_journal_entry, sample_config, True, date_str=mock_commit.committed_datetime.strftime("%Y-%m-%d"))
     
     def test_journal_only_commit_skipping(self, mock_commit, sample_config):
         """Test that journal-only commits are properly skipped."""

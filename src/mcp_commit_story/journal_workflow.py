@@ -250,14 +250,21 @@ def save_journal_entry(journal_entry, config, debug=False, date_str=None):
     if date_str is None:
         date_str = datetime.now().strftime("%Y-%m-%d")
     
-    # Use the established journal file path system (like server.py does)
-    full_path = get_journal_file_path(date_str, "daily")
+    # Handle both Config objects and dict configurations to get journal path
+    if hasattr(config, 'journal_path'):
+        journal_path = config.journal_path
+    else:
+        journal_path = config.get('journal', {}).get('path', 'sandbox-journal')
+    
+    # Get relative path and combine with configured journal path
+    relative_path = get_journal_file_path(date_str, "daily")
+    full_path = Path(journal_path) / relative_path
     
     # Check if this is a new daily file
-    file_exists = Path(full_path).exists()
+    file_exists = full_path.exists()
     
     # Ensure directory exists
-    ensure_journal_directory(full_path)
+    ensure_journal_directory(str(full_path))
     
     # Get entry markdown
     entry_markdown = journal_entry.to_markdown()
@@ -272,7 +279,7 @@ def save_journal_entry(journal_entry, config, debug=False, date_str=None):
         if debug:
             logger.debug(f"Adding daily header to new file: {full_path}")
         
-        with open(full_path, 'w') as f:
+        with open(str(full_path), 'w') as f:
             f.write(content)
     else:
         # File exists, use append function which handles separators correctly
