@@ -238,23 +238,23 @@ def should_generate_period_summaries(date_str: Optional[str], summaries_dir: Opt
                 if not _weekly_summary_exists(previous_week_end, summaries_path):
                     result['weekly'] = True
             
-            # Monthly summary: Check if we crossed into new month and previous month needs summary
+        # Monthly summary: Check if we crossed into new month and previous month needs summary
         if commit_date.day == 1:
-                previous_month_end = commit_date - timedelta(days=1)  # Last day of previous month
-                if not _monthly_summary_exists(previous_month_end, summaries_path):
-            result['monthly'] = True
+            previous_month_end = commit_date - timedelta(days=1)  # Last day of previous month
+            if not _monthly_summary_exists(previous_month_end, summaries_path):
+                result['monthly'] = True
         
-            # Quarterly summary: Check if we crossed into new quarter and previous quarter needs summary
+        # Quarterly summary: Check if we crossed into new quarter and previous quarter needs summary
         if commit_date.month in [1, 4, 7, 10] and commit_date.day == 1:
-                previous_quarter_end = commit_date - timedelta(days=1)  # Last day of previous quarter
-                if not _quarterly_summary_exists(previous_quarter_end, summaries_path):
-            result['quarterly'] = True
+            previous_quarter_end = commit_date - timedelta(days=1)  # Last day of previous quarter
+            if not _quarterly_summary_exists(previous_quarter_end, summaries_path):
+                result['quarterly'] = True
         
-            # Yearly summary: Check if we crossed into new year and previous year needs summary
+        # Yearly summary: Check if we crossed into new year and previous year needs summary
         if commit_date.month == 1 and commit_date.day == 1:
-                previous_year_end = commit_date - timedelta(days=1)  # Dec 31 of previous year
-                if not _yearly_summary_exists(previous_year_end, summaries_path):
-            result['yearly'] = True
+            previous_year_end = commit_date - timedelta(days=1)  # Dec 31 of previous year
+            if not _yearly_summary_exists(previous_year_end, summaries_path):
+                result['yearly'] = True
                 
     except ValueError:
         logger.warning(f"Invalid date format for period summary determination: {date_str}")
@@ -402,7 +402,7 @@ def _yearly_summary_exists(date: date, summaries_path: Path) -> bool:
 
 
 # =============================================================================
-# Daily Summary Generation Functions (Subtask 27.2)
+# Daily Summary Generation Functions
 # =============================================================================
 
 from mcp_commit_story.telemetry import trace_mcp_operation
@@ -937,7 +937,8 @@ def generate_daily_summary(journal_entries: List[JournalEntry], date_str: str, c
         }
         
         # Only include optional sections if they have content
-        reflections = manual_reflections + ai_response.get("reflections", [])
+        ai_reflections = ai_response.get("reflections", []) or []
+        reflections = manual_reflections + ai_reflections
         if reflections:
             summary_data["reflections"] = reflections
         else:
@@ -961,7 +962,12 @@ def generate_daily_summary(journal_entries: List[JournalEntry], date_str: str, c
         else:
             summary_data["tone_mood"] = None
         
-        return summary_data
+        # Add source file links
+        from mcp_commit_story.summary_utils import add_source_links_to_summary
+        journal_path = config.get("journal", {}).get("path", "")
+        summary_with_links = add_source_links_to_summary(summary_data, "daily", date_str, journal_path)
+        
+        return summary_with_links
         
     except Exception as e:
         logger.error(f"Error generating daily summary for {date_str}: {e}")
@@ -1080,11 +1086,21 @@ def _format_summary_as_markdown(summary: DailySummary) -> str:
     for key, value in summary['daily_metrics'].items():
         lines.append(f"- **{key.replace('_', ' ').title()}:** {value}")
     
+    # Add source files section if available
+    if summary.get('source_files'):
+        from mcp_commit_story.summary_utils import generate_source_links_section, generate_coverage_description
+        
+        coverage_description = generate_coverage_description("daily", summary['date'])
+        source_links_section = generate_source_links_section(summary['source_files'], coverage_description)
+        
+        if source_links_section:
+            lines.extend(["", source_links_section])
+    
     return "\n".join(lines)
 
 
 # =============================================================================
-# MCP Tool Integration (Subtask 27.2)
+# MCP Tool Integration
 # =============================================================================
 
 from mcp_commit_story.journal_workflow_types import (
