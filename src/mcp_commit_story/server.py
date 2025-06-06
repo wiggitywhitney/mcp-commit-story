@@ -9,26 +9,29 @@ This module provides the entrypoint and core setup logic for the MCP server, inc
 
 Intended for use as the main server entrypoint for the mcp-commit-story project.
 """
-import os
+import inspect
 import logging
-from typing import Callable, Awaitable, Any, Optional, Dict
 import sys
+import toml
+from datetime import datetime
+from typing import Callable, Awaitable, Any, Optional, Dict
 
 if sys.version_info >= (3, 12):
     from typing import TypedDict
 else:
     from typing_extensions import TypedDict
-from mcp.server.fastmcp import FastMCP, Context
+
+from mcp.server.fastmcp import FastMCP
 from mcp_commit_story.config import load_config, Config, ConfigError
 from mcp_commit_story import telemetry
 from mcp_commit_story.telemetry import trace_mcp_operation, get_mcp_metrics
-import toml
 from mcp_commit_story.journal_init import initialize_journal
-import inspect
 from mcp_commit_story.git_utils import install_post_commit_hook
 from mcp_commit_story.journal import append_to_journal_file
 from mcp_commit_story.reflection_core import add_manual_reflection
-from datetime import datetime
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 # Type alias for an async tool handler
 ToolHandler = Callable[..., Awaitable[Any]]
@@ -183,6 +186,14 @@ def register_tools(server: FastMCP) -> None:
     async def journal_install_hook(request: dict) -> dict:
         """Install git post-commit hook for automated journal entries."""
         return await handle_journal_install_hook(request)
+    
+    @server.tool()
+    @trace_mcp_operation("journal_generate_daily_summary")
+    async def journal_generate_daily_summary(request: dict) -> dict:
+        """Generate a comprehensive daily summary from all journal entries for a specific date."""
+        return await handle_generate_daily_summary(request)
+
+
 
 def create_mcp_server(config_path: str = None) -> FastMCP:
     """
@@ -379,7 +390,6 @@ async def generate_journal_entry(request: JournalNewEntryRequest) -> JournalNewE
             generate_terminal_commands_section, generate_commit_metadata_section
         )
         from .context_types import JournalContext
-        from datetime import datetime
         
         # Build JournalContext from request data
         journal_context = JournalContext(
@@ -600,3 +610,110 @@ async def handle_journal_install_hook(request: dict) -> dict:
 
 # Create alias for test compatibility
 handle_add_reflection = handle_journal_add_reflection
+
+
+# =============================================================================
+# Daily Summary MCP Handler (Subtask 27.2)
+# =============================================================================
+
+@handle_mcp_error
+@trace_mcp_operation("daily_summary.handle_generate", attributes={
+    "operation_type": "mcp_handler",
+    "content_type": "daily_summary"
+})
+async def handle_generate_daily_summary(request: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Handle the MCP operation 'journal/generate-daily-summary'.
+    
+    Generates a comprehensive daily summary from all journal entries for a specific date,
+    using AI to synthesize the content into a cohesive narrative.
+    
+    Args:
+        request: Must contain 'date' in YYYY-MM-DD format
+        
+    Returns:
+        GenerateDailySummaryResponse with status, file_path, content, and error fields
+    """
+    import time
+    from opentelemetry import trace
+    from mcp_commit_story.config import load_config
+    from mcp_commit_story.daily_summary import generate_daily_summary_mcp_tool
+    
+    start_time = time.time()
+    
+    # Add span attributes for telemetry
+    current_span = trace.get_current_span()
+    if current_span:
+        current_span.set_attribute("mcp.operation", "generate_daily_summary")
+        current_span.set_attribute("mcp.handler", "handle_generate_daily_summary")
+    
+    # Validate required fields
+    if "date" not in request:
+        raise MCPError("Missing required field: date")
+    
+    date_str = request["date"]
+    
+    # Validate date format
+    try:
+        datetime.strptime(date_str, "%Y-%m-%d")
+    except ValueError:
+        raise MCPError("Invalid date format. Expected YYYY-MM-DD")
+    
+    if current_span:
+        current_span.set_attribute("daily_summary.date", date_str)
+    
+    try:
+        # Call the daily summary MCP tool function directly
+        response = generate_daily_summary_mcp_tool({"date": date_str})
+        
+        # Record success metrics
+        duration = time.time() - start_time
+        metrics = get_mcp_metrics()
+        if metrics:
+            metrics.record_counter(
+                'mcp.handler.operations_total',
+                operation='generate_daily_summary',
+                handler='handle_generate_daily_summary',
+                status='success'
+            )
+            metrics.record_operation_duration(
+                'mcp.handler.duration_seconds',
+                duration,
+                operation='generate_daily_summary',
+                handler='handle_generate_daily_summary'
+            )
+        
+        if current_span and response.get("file_path"):
+            current_span.set_attribute("daily_summary.file_path", response["file_path"])
+            if response.get("content"):
+                current_span.set_attribute("daily_summary.output_length", len(response["content"]))
+        
+        return response
+        
+    except Exception as e:
+        # Log the error for debugging
+        logger.error(f"Error generating daily summary for {date_str}: {e}")
+        
+        # Record error metrics
+        duration = time.time() - start_time
+        metrics = get_mcp_metrics()
+        if metrics:
+            metrics.record_counter(
+                'mcp.handler.operations_total',
+                operation='generate_daily_summary',
+                handler='handle_generate_daily_summary',
+                status='error'
+            )
+            metrics.record_operation_duration(
+                'mcp.handler.duration_seconds',
+                duration,
+                operation='generate_daily_summary',
+                handler='handle_generate_daily_summary',
+                success=False
+            )
+        
+        if current_span:
+            current_span.set_attribute("error.category", "generation_failed")
+        
+        # Re-raise as MCPError to be handled by @handle_mcp_error decorator
+        raise MCPError(f"Failed to generate daily summary: {str(e)}")

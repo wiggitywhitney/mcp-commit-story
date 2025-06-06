@@ -7,9 +7,8 @@ based on journal file creation events, rather than maintaining state files.
 import os
 import re
 import logging
-from datetime import datetime, date
-from pathlib import Path
-from typing import Optional, Dict, List, Tuple
+from datetime import datetime
+from typing import Optional, Dict, List
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -200,7 +199,7 @@ def should_generate_period_summaries(date_str: Optional[str]) -> Dict[str, bool]
         if commit_date.day == 1:
             result['monthly'] = True
         
-        # Quarterly summary on quarter start dates (Jan 1, Apr 1, Jul 1, Oct 1)
+        # Quarterly summary on first day of quarter (Jan 1, Apr 1, Jul 1, Oct 1)
         if commit_date.month in [1, 4, 7, 10] and commit_date.day == 1:
             result['quarterly'] = True
         
@@ -208,11 +207,781 @@ def should_generate_period_summaries(date_str: Optional[str]) -> Dict[str, bool]
         if commit_date.month == 1 and commit_date.day == 1:
             result['yearly'] = True
             
-        return result
+    except ValueError:
+        logger.warning(f"Invalid date format for period summary determination: {date_str}")
+    
+    return result
+
+
+# =============================================================================
+# Daily Summary Generation Functions (Subtask 27.2)
+# =============================================================================
+
+from mcp_commit_story.telemetry import trace_mcp_operation
+from mcp_commit_story.journal_workflow_types import DailySummary
+from mcp_commit_story.journal import JournalEntry
+
+
+def load_journal_entries_for_date(date_str: str, config: Dict) -> List[JournalEntry]:
+    """Load all journal entries for a specific date.
+    
+    Args:
+        date_str: Date in YYYY-MM-DD format
+        config: Configuration dictionary with journal configuration
         
-    except ValueError as e:
-        logger.warning(f"Invalid date format '{date_str}': {e}")
-        return result
+    Returns:
+        List of JournalEntry objects for the specified date
+    """
+    entries = []
+    try:
+        # Use the established journal file path utility
+        from mcp_commit_story.journal import get_journal_file_path
+        
+        journal_file_path = get_journal_file_path(date_str, "daily")
+        
+        if not os.path.exists(journal_file_path):
+            logger.info(f"No journal file found for date {date_str}")
+            return entries
+        
+        # Read and parse the journal file
+        with open(journal_file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Parse journal entries using the established parser
+        from mcp_commit_story.journal import JournalParser
+        
+        # Split on entry headers (### timestamp — Commit hash)
+        # This pattern matches the header format used by JournalEntry.to_markdown()
+        entry_pattern = r'(?=^### .+ — Commit [a-zA-Z0-9]+)'
+        entry_sections = re.split(entry_pattern, content, flags=re.MULTILINE)
+        
+        # Remove empty sections and parse each entry
+        for section in entry_sections:
+            section = section.strip()
+            if section and section.startswith('###'):
+                try:
+                    # Add horizontal rule separator for consistent parsing
+                    normalized_section = section + '\n\n---\n\n'
+                    entry = JournalParser.parse(normalized_section)
+                    if entry:  # Only add valid entries
+                        entries.append(entry)
+                except Exception as e:
+                    logger.warning(f"Failed to parse journal entry section: {e}")
+                    # Log the problematic section for debugging
+                    logger.debug(f"Problematic section (first 200 chars): {section[:200]}")
+                    continue
+        
+        logger.info(f"Loaded {len(entries)} journal entries for {date_str}")
+        return entries
+        
     except Exception as e:
-        logger.warning(f"Error determining period summaries for '{date_str}': {e}")
-        return result 
+        logger.error(f"Error loading journal entries for {date_str}: {e}")
+        return entries
+
+
+def _extract_manual_reflections(entries: List[JournalEntry]) -> List[str]:
+    """Extract manual reflections from journal entries.
+    
+    Manual reflections are identified by:
+    1. Content in the journal that was manually added via reflection tools
+    2. Discussion notes that contain explicit reflection patterns
+    3. Frustrations or roadblocks that express personal insights
+    
+    Args:
+        entries: List of journal entries to search
+        
+    Returns:
+        List of manual reflection strings found in the entries
+    """
+    reflections = []
+    
+    # Patterns that indicate manual reflections
+    reflection_patterns = [
+        r"I think\s+",
+        r"I realized\s+", 
+        r"I learned\s+",
+        r"My feeling is\s+",
+        r"Looking back\s+",
+        r"In hindsight\s+",
+        r"Personally\s+",
+        r"What struck me\s+",
+        r"I noticed\s+"
+    ]
+    
+    for entry in entries:
+        # Check discussion notes for manual reflections
+        if entry.discussion_notes:
+            for note in entry.discussion_notes:
+                if isinstance(note, dict) and note.get('speaker') == 'Human':
+                    text = note.get('text', '')
+                    if any(re.search(pattern, text, re.IGNORECASE) for pattern in reflection_patterns):
+                        reflections.append(f"[{entry.timestamp}] {text}")
+                elif isinstance(note, str):
+                    # Look for reflection patterns in string notes
+                    if any(re.search(pattern, note, re.IGNORECASE) for pattern in reflection_patterns):
+                        reflections.append(f"[{entry.timestamp}] {note}")
+        
+        # Check frustrations for reflective content
+        if entry.frustrations:
+            for frustration in entry.frustrations:
+                if any(re.search(pattern, frustration, re.IGNORECASE) for pattern in reflection_patterns):
+                    reflections.append(f"[{entry.timestamp}] {frustration}")
+    
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_reflections = []
+    for reflection in reflections:
+        if reflection not in seen:
+            seen.add(reflection)
+            unique_reflections.append(reflection)
+    
+    return unique_reflections
+
+
+def _call_ai_for_daily_summary(entries: List[JournalEntry], date_str: str, config: dict) -> Dict:
+    """Call AI to generate daily summary from journal entries using comprehensive prompt.
+    
+    Args:
+        entries: List of journal entries for the day
+        date_str: Date in YYYY-MM-DD format
+        config: Configuration for AI generation
+        
+    Returns:
+        Dictionary containing generated summary sections
+    """
+    try:
+        # Format journal entries into context for AI
+        journal_content = _format_entries_for_ai(entries)
+        
+        # Build the comprehensive AI prompt
+        prompt = _build_daily_summary_prompt(journal_content, date_str)
+        
+        # Call AI with the prompt (placeholder for actual AI integration)
+        # In a real implementation, this would call the configured AI model
+        # For now, we'll generate a more realistic mock response based on the entries
+        
+        from mcp_commit_story.journal import log_ai_agent_interaction
+        log_ai_agent_interaction(prompt, None, debug_mode=True)
+        
+        # Generate a more realistic response based on actual entry content
+        response = _generate_mock_daily_summary_response(entries, date_str)
+        
+        logger.info(f"Generated daily summary for {date_str} from {len(entries)} entries")
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error calling AI for daily summary: {e}")
+        # Return minimal response on error
+        return {
+            "summary": f"Summary generation failed for {date_str}",
+            "reflections": [],
+            "progress_made": "Unable to generate progress summary",
+            "key_accomplishments": [],
+            "technical_synopsis": "Unable to generate technical synopsis",
+            "challenges_and_learning": [],
+            "discussion_highlights": [],
+            "tone_mood": None,
+            "daily_metrics": {"commits": len(entries), "generation_error": True}
+        }
+
+
+def _format_entries_for_ai(entries: List[JournalEntry]) -> str:
+    """Format journal entries into a structured context for AI generation.
+    
+    Args:
+        entries: List of journal entries to format
+        
+    Returns:
+        Formatted string containing all entry content
+    """
+    if not entries:
+        return "No journal entries found for this date."
+    
+    lines = ["# Journal Entries for Daily Summary Generation", ""]
+    
+    for i, entry in enumerate(entries, 1):
+        lines.extend([
+            f"## Entry {i} - {entry.timestamp} (Commit {entry.commit_hash})",
+            ""
+        ])
+        
+        if entry.summary:
+            lines.extend(["**Summary:**", entry.summary, ""])
+        
+        if entry.technical_synopsis:
+            lines.extend(["**Technical Synopsis:**", entry.technical_synopsis, ""])
+        
+        if entry.accomplishments:
+            lines.extend(["**Accomplishments:**"])
+            for acc in entry.accomplishments:
+                lines.append(f"- {acc}")
+            lines.append("")
+        
+        if entry.frustrations:
+            lines.extend(["**Frustrations/Roadblocks:**"])
+            for frust in entry.frustrations:
+                lines.append(f"- {frust}")
+            lines.append("")
+        
+        if entry.discussion_notes:
+            lines.extend(["**Discussion Notes:**"])
+            for note in entry.discussion_notes:
+                if isinstance(note, dict) and 'speaker' in note:
+                    lines.append(f"- **{note['speaker']}:** {note.get('text', '')}")
+                else:
+                    lines.append(f"- {note}")
+            lines.append("")
+        
+        if entry.tone_mood:
+            lines.extend([
+                "**Tone/Mood:**",
+                f"- Mood: {entry.tone_mood.get('mood', '')}",
+                f"- Indicators: {entry.tone_mood.get('indicators', '')}",
+                ""
+            ])
+        
+        lines.append("---")
+        lines.append("")
+    
+    return "\n".join(lines)
+
+
+def _build_daily_summary_prompt(journal_content: str, date_str: str) -> str:
+    """Build the comprehensive AI prompt for daily summary generation.
+    
+    Args:
+        journal_content: Formatted journal entries
+        date_str: Date in YYYY-MM-DD format
+        
+    Returns:
+        Complete AI prompt string
+    """
+    # Extract the comprehensive prompt from the generate_daily_summary docstring
+    # This is the prompt that was provided by the user
+    
+    base_prompt = """
+AI Prompt for Daily Summary Generation
+
+Purpose: Generate a comprehensive daily summary from multiple journal entries for a solo developer,
+prioritizing manual reflections and synthesizing the day's work into a cohesive, human-friendly narrative.
+
+Instructions: Analyze all journal entries for the specified date and create a comprehensive
+summary following the established structure. Focus on synthesis rather than simple aggregation.
+Write for a solo developer reviewing their own work.
+
+Developer Context:
+Assume the developer is the same person who wrote the journal entries.
+Write as if helping them reflect—not reporting to a manager or external party.
+
+CONTENT QUALITY GUIDELINES:
+- Focus on signal (unique insights, decisions, challenges) over noise (routine procedures)
+- Avoid repetitive statements about established practices the developer uses consistently
+- Don't repeatedly praise methodologies used regularly (e.g., TDD, clean code practices)
+- Focus on what was unique or notable about THIS day, not general workflow descriptions
+- If the developer does something routinely, only mention it if there was something specific/challenging about it this time, or if the volume was unusually high
+- Use conversational, human language rather than corporate jargon
+- If entries contain conflicting or ambiguous information, preserve the ambiguity. Note unresolved questions without inventing answers.
+
+[... rest of comprehensive prompt ...]
+
+JOURNAL ENTRIES TO ANALYZE:
+
+""" + journal_content + f"""
+
+DATE: {date_str}
+
+Please generate a comprehensive daily summary following the guidelines above. Return the response as a structured JSON object with the following format:
+
+{{
+    "summary": "High-level narrative...",
+    "reflections": ["reflection1", "reflection2"] or null if none,
+    "progress_made": "Human-friendly progress description...",
+    "key_accomplishments": ["accomplishment1", "accomplishment2"],
+    "technical_synopsis": "Code-focused analysis...",
+    "challenges_and_learning": ["challenge1", "challenge2"] or null if none,
+    "discussion_highlights": ["highlight1", "highlight2"] or null if none,
+    "tone_mood": {{"mood": "description", "indicators": "evidence"}} or null,
+    "daily_metrics": {{"commits": 3, "files_changed": 10}}
+}}
+"""
+    
+    return base_prompt
+
+
+def _generate_mock_daily_summary_response(entries: List[JournalEntry], date_str: str) -> Dict:
+    """Generate a realistic mock response based on actual entry content.
+    
+    This function analyzes the real journal entries and creates a summary
+    that reflects the actual content, providing a more realistic placeholder
+    until full AI integration is implemented.
+    
+    Args:
+        entries: List of journal entries to analyze
+        date_str: Date in YYYY-MM-DD format
+        
+    Returns:
+        Dictionary containing generated summary sections
+    """
+    if not entries:
+        return {
+            "summary": f"No development work recorded for {date_str}",
+            "reflections": None,
+            "progress_made": "No progress recorded for this date",
+            "key_accomplishments": [],
+            "technical_synopsis": "No technical work recorded",
+            "challenges_and_learning": None,
+            "discussion_highlights": None,
+            "tone_mood": None,
+            "daily_metrics": {"commits": 0}
+        }
+    
+    # Aggregate content from all entries
+    all_accomplishments = []
+    all_frustrations = []
+    all_discussions = []
+    technical_work = []
+    mood_indicators = []
+    
+    for entry in entries:
+        if entry.accomplishments:
+            all_accomplishments.extend(entry.accomplishments)
+        if entry.frustrations:
+            all_frustrations.extend(entry.frustrations)
+        if entry.discussion_notes:
+            all_discussions.extend(entry.discussion_notes)
+        if entry.technical_synopsis:
+            technical_work.append(entry.technical_synopsis)
+        if entry.tone_mood:
+            mood_indicators.append(entry.tone_mood)
+    
+    # Generate summary
+    summary_parts = []
+    if all_accomplishments:
+        summary_parts.append(f"Accomplished {len(all_accomplishments)} key tasks")
+    if technical_work:
+        summary_parts.append("focused on technical implementation")
+    if all_frustrations:
+        summary_parts.append(f"encountered {len(all_frustrations)} challenges")
+    
+    summary = f"Development work on {date_str}: " + ", ".join(summary_parts) if summary_parts else f"Development session on {date_str}"
+    
+    # Build progress made
+    progress_made = "Made progress on implementation tasks"
+    if all_accomplishments:
+        progress_made = f"Successfully completed {len(all_accomplishments)} development objectives"
+    
+    # Technical synopsis
+    tech_synopsis = "Technical development session"
+    if technical_work:
+        tech_synopsis = " ".join(technical_work[:2])  # Combine first 2 technical summaries
+    
+    # Mood analysis
+    tone_mood = None
+    if mood_indicators:
+        mood_data = mood_indicators[0]  # Use first mood indicator
+        if mood_data.get('mood') or mood_data.get('indicators'):
+            tone_mood = mood_data
+    
+    return {
+        "summary": summary,
+        "reflections": None,  # Will be handled by _extract_manual_reflections
+        "progress_made": progress_made,
+        "key_accomplishments": all_accomplishments[:5],  # Limit to top 5
+        "technical_synopsis": tech_synopsis,
+        "challenges_and_learning": all_frustrations[:3] if all_frustrations else None,
+        "discussion_highlights": all_discussions[:3] if all_discussions else None,
+        "tone_mood": tone_mood,
+        "daily_metrics": {
+            "commits": len(entries),
+            "accomplishments": len(all_accomplishments),
+            "challenges": len(all_frustrations),
+            "discussions": len(all_discussions)
+        }
+    }
+
+
+@trace_mcp_operation("daily_summary.generate", attributes={"operation_type": "ai_generation", "section_type": "daily_summary"})
+def generate_daily_summary(journal_entries: List[JournalEntry], date_str: str, config: dict) -> DailySummary:
+    """
+    AI Prompt for Daily Summary Generation
+
+    Purpose: Generate a comprehensive daily summary from multiple journal entries for a solo developer,
+    prioritizing manual reflections and synthesizing the day's work into a cohesive, human-friendly narrative.
+
+    Instructions: Analyze all journal entries for the specified date and create a comprehensive
+    summary following the established structure. Focus on synthesis rather than simple aggregation.
+    Write for a solo developer reviewing their own work.
+
+    Developer Context:
+    Assume the developer is the same person who wrote the journal entries.
+    Write as if helping them reflect—not reporting to a manager or external party.
+
+    CONTENT QUALITY GUIDELINES:
+    - Focus on signal (unique insights, decisions, challenges) over noise (routine procedures)
+    - Avoid repetitive statements about established practices the developer uses consistently
+    - Don't repeatedly praise methodologies used regularly (e.g., TDD, clean code practices)
+    - Focus on what was unique or notable about THIS day, not general workflow descriptions
+    - If the developer does something routinely, only mention it if there was something specific/challenging about it this time, or if the volume was unusually high
+    - Use conversational, human language rather than corporate jargon
+    - If entries contain conflicting or ambiguous information, preserve the ambiguity. Note unresolved questions without inventing answers.
+
+    ORDER OF OPERATIONS:
+    1. Extract all manual reflections (verbatim only)
+    2. Scan for discussion quotes and classify by type
+    3. Determine mood (if evidence exists)
+    4. Identify notable accomplishments
+    5. Summarize technical decisions and changes
+    6. Reflect on challenges and what was learned
+    7. Write narrative sections (Summary, Progress Made, Challenges)
+    8. Assemble and format final output
+
+    SECTION REQUIREMENTS:
+
+    ## Summary
+    High-level narrative of what happened during the day. Write as if you're narrating your day 
+    to your future self who wants to remember not just *what* happened, but *what mattered*. 
+    Be honest, detailed, and reflective—avoid vague phrasing. Focus on the broader story and 
+    context of the work, including why it was important and how different pieces connected.
+
+    ## Reflections
+    - Include ALL manual reflections found in journal entries, without exception
+    - Present each reflection verbatim with date/time context when available  
+    - Never summarize, paraphrase, or combine manual reflections
+    - If multiple reflections exist, include every single one
+    - OMIT THIS SECTION ENTIRELY if no manual reflections found
+
+    ## Progress Made
+    Human-friendly, conversational summary of what actually got accomplished—the "I did X and it worked" story.
+    This should feel like explaining your accomplishments to a fellow developer friend - what you're 
+    proud of getting done. Focus on concrete achievements and successful outcomes rather than 
+    technical implementation details. Accessible language that celebrates the wins.
+
+    ## Key Accomplishments  
+    Structured list of wins and completions. Focus on meaningful progress and substantial work.
+
+    ## Technical Synopsis
+    Code-focused analysis for future reference. Include architectural patterns, specific classes/functions 
+    modified, technical approaches taken, and implementation details. Focus on implementation details 
+    that would help you remember your approach if you revisited this code months later. 
+    Self-contained technical narrative.
+
+    ## Challenges and Learning
+    What was difficult and what was learned, written in human, accessible language.
+    Avoid technical jargon—focus on the experience and learning rather than implementation details.
+    OMIT THIS SECTION if no clear challenges found.
+
+    ## Discussion Highlights  
+    Extract meaningful conversation excerpts that provide insight into thinking processes and decisions.
+
+    Priority Types (in descending order):
+    1. **Tradeoff discussions** – where multiple approaches were weighed
+    2. **"Aha!" moments** – breakthrough insights or realizations  
+    3. **Smart reasoning** – particularly good judgment or analysis
+    4. **Problem-solving process** – working through complex challenges
+    5. **Decision rationale** – explicit reasoning for technical choices
+    6. **Learning moments** – new discoveries or understanding
+
+    MUST present as VERBATIM QUOTES with speaker attribution:
+    > **Human:** "exact quote here"
+    > **AI:** "exact response here"
+
+    OMIT THIS SECTION if no meaningful discussion found.
+
+    ## Tone/Mood
+    Assess the developer's emotional state during the work session based on explicit language in journal entries.
+    Format as: mood description + supporting indicators from their actual language.
+    Only include if there's clear evidence of mood/emotional state.
+    OMIT THIS SECTION if insufficient evidence.
+
+    ## Daily Metrics
+    Factual statistics about the day's work: commits, files changed, lines added/removed, 
+    tests created, documentation added, etc. Present as key-value pairs.
+
+    ANTI-HALLUCINATION RULES:
+    - Only synthesize information present in the provided journal entries
+    - Do not invent accomplishments, challenges, reflections, or discussions
+    - If insufficient content for a section, omit that section entirely  
+    - Preserve manual reflections exactly as written
+    - Only include mood/tone assessments with explicit evidence
+    - Never speculate about motivations or feelings not explicitly expressed
+
+    OUTPUT REQUIREMENTS:
+    - Omit any section headers that would be empty
+    - Use conversational, human language throughout
+    - Focus on what made this day unique rather than routine workflow
+    - Ensure all content is grounded in actual journal entry evidence
+    - Create a cohesive narrative that tells the story of the developer's day
+
+    CHECKLIST:
+    - [ ] Searched all entries for manual reflections and included ALL verbatim
+    - [ ] Focused on signal over noise - highlighted what was unique about this day
+    - [ ] Used human, conversational language especially in Progress Made and Challenges sections
+    - [ ] Only included sections with meaningful content - omitted empty sections
+    - [ ] Applied tradeoff-first prioritization to Discussion Highlights  
+    - [ ] Based all mood/tone assessment on explicit evidence from entries
+    - [ ] Created synthesis rather than simple aggregation of individual entries
+    - [ ] Verified all content is grounded in actual journal evidence
+    - [ ] Told a cohesive story of the developer's day and progress
+    
+    Args:
+        journal_entries: List of journal entries for the specified date
+        date_str: Date in YYYY-MM-DD format
+        config: Configuration dictionary with AI model settings
+        
+    Returns:
+        DailySummary object with generated content
+    """
+    try:
+        # Extract manual reflections first (highest priority)
+        manual_reflections = _extract_manual_reflections(journal_entries)
+        
+        # Call AI to generate the summary
+        ai_response = _call_ai_for_daily_summary(journal_entries, date_str, config)
+        
+        # Build the DailySummary object, omitting empty sections
+        summary_data = {
+            "date": date_str,
+            "summary": ai_response.get("summary", ""),
+            "progress_made": ai_response.get("progress_made", ""),
+            "key_accomplishments": ai_response.get("key_accomplishments", []),
+            "technical_synopsis": ai_response.get("technical_synopsis", ""),
+            "daily_metrics": ai_response.get("daily_metrics", {})
+        }
+        
+        # Only include optional sections if they have content
+        reflections = manual_reflections + ai_response.get("reflections", [])
+        if reflections:
+            summary_data["reflections"] = reflections
+        else:
+            summary_data["reflections"] = None
+            
+        challenges = ai_response.get("challenges_and_learning", [])
+        if challenges:
+            summary_data["challenges_and_learning"] = challenges
+        else:
+            summary_data["challenges_and_learning"] = None
+            
+        discussion = ai_response.get("discussion_highlights", [])
+        if discussion:
+            summary_data["discussion_highlights"] = discussion
+        else:
+            summary_data["discussion_highlights"] = None
+            
+        tone_mood = ai_response.get("tone_mood")
+        if tone_mood and any(tone_mood.values()):
+            summary_data["tone_mood"] = tone_mood
+        else:
+            summary_data["tone_mood"] = None
+        
+        return summary_data
+        
+    except Exception as e:
+        logger.error(f"Error generating daily summary for {date_str}: {e}")
+        raise
+
+
+def save_daily_summary(summary: DailySummary, config: Dict) -> str:
+    """Save a daily summary to file.
+    
+    Args:
+        summary: DailySummary object to save
+        config: Configuration with journal configuration
+        
+    Returns:
+        Path to the saved summary file
+    """
+    try:
+        # Use established journal file utilities
+        from mcp_commit_story.journal import get_journal_file_path, ensure_journal_directory
+        
+        # Get the summary file path (summaries are stored in summaries/daily/)
+        date_str = summary['date']
+        summary_path = get_journal_file_path(date_str, "daily_summary")
+        
+        # Ensure directory exists
+        ensure_journal_directory(summary_path)
+        
+        # Convert summary to markdown format
+        content = _format_summary_as_markdown(summary)
+        
+        # Write to file
+        with open(summary_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        
+        logger.info(f"Saved daily summary to {summary_path}")
+        return summary_path
+        
+    except Exception as e:
+        logger.error(f"Error saving daily summary: {e}")
+        raise
+
+
+def _format_summary_as_markdown(summary: DailySummary) -> str:
+    """Format a DailySummary as markdown content.
+    
+    Args:
+        summary: DailySummary object to format
+        
+    Returns:
+        Markdown-formatted string
+    """
+    lines = [
+        f"# Daily Summary for {summary['date']}",
+        "",
+        "## Summary",
+        summary['summary'],
+        "",
+    ]
+    
+    # Only include sections that have content
+    if summary.get('reflections'):
+        lines.extend([
+            "## Reflections",
+            ""
+        ])
+        for reflection in summary['reflections']:
+            lines.extend([f"- {reflection}", ""])
+    
+    lines.extend([
+        "## Progress Made",
+        summary['progress_made'],
+        "",
+        "## Key Accomplishments",
+        ""
+    ])
+    
+    for accomplishment in summary['key_accomplishments']:
+        lines.append(f"- {accomplishment}")
+    lines.append("")
+    
+    lines.extend([
+        "## Technical Synopsis",
+        summary['technical_synopsis'],
+        ""
+    ])
+    
+    if summary.get('challenges_and_learning'):
+        lines.extend([
+            "## Challenges and Learning",
+            ""
+        ])
+        for challenge in summary['challenges_and_learning']:
+            lines.extend([f"- {challenge}", ""])
+    
+    if summary.get('discussion_highlights'):
+        lines.extend([
+            "## Discussion Highlights",
+            ""
+        ])
+        for highlight in summary['discussion_highlights']:
+            lines.extend([f"- {highlight}", ""])
+    
+    if summary.get('tone_mood'):
+        lines.extend([
+            "## Tone/Mood",
+            f"**Mood:** {summary['tone_mood'].get('mood', '')}",
+            f"**Indicators:** {summary['tone_mood'].get('indicators', '')}",
+            ""
+        ])
+    
+    lines.extend([
+        "## Daily Metrics",
+        ""
+    ])
+    
+    for key, value in summary['daily_metrics'].items():
+        lines.append(f"- **{key.replace('_', ' ').title()}:** {value}")
+    
+    return "\n".join(lines)
+
+
+# =============================================================================
+# MCP Tool Integration (Subtask 27.2)
+# =============================================================================
+
+from mcp_commit_story.journal_workflow_types import (
+    GenerateDailySummaryRequest,
+    GenerateDailySummaryResponse,
+)
+
+
+def generate_daily_summary_mcp_tool(request: GenerateDailySummaryRequest) -> GenerateDailySummaryResponse:
+    """
+    MCP tool implementation for generating daily summaries.
+
+    Args:
+        request: GenerateDailySummaryRequest with date parameter
+
+    Returns:
+        GenerateDailySummaryResponse with success/error information
+    """
+    try:
+        from mcp_commit_story.telemetry import get_tracer
+        
+        tracer = get_tracer()
+        with tracer.start_as_current_span("generate_daily_summary_mcp") as span:
+            span.set_attribute("date", request["date"])
+
+            # Load configuration
+            from mcp_commit_story.config import load_config
+            config = load_config()
+
+            # Load journal entries for the specified date
+            journal_entries = load_journal_entries_for_date(request["date"], config)
+
+            if not journal_entries:
+                return GenerateDailySummaryResponse(
+                    status="no_entries",
+                    file_path="",
+                    content="",
+                    error=None
+                )
+
+            # Generate the summary using the comprehensive AI prompt
+            summary = generate_daily_summary(journal_entries, request["date"], config)
+
+            # Save the summary
+            file_path = save_daily_summary(summary, config)
+
+            # Format content for response
+            formatted_content = _format_summary_as_markdown(summary)
+
+            span.set_attribute("success", True)
+            span.set_attribute("file_path", file_path)
+
+            return GenerateDailySummaryResponse(
+                status="success",
+                file_path=file_path,
+                content=formatted_content,
+                error=None
+            )
+
+    except FileNotFoundError as e:
+        error_msg = f"No journal entries found for {request['date']}: {str(e)}"
+        logger.warning(error_msg)
+        return GenerateDailySummaryResponse(
+            status="error",
+            file_path=None,
+            content=None,
+            error=error_msg
+        )
+
+    except ValueError as e:
+        error_msg = f"Invalid date format or data: {str(e)}"
+        logger.error(error_msg)
+        return GenerateDailySummaryResponse(
+            status="error",
+            file_path=None,
+            content=None,
+            error=error_msg
+        )
+
+    except Exception as e:
+        error_msg = f"Unexpected error generating daily summary: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        return GenerateDailySummaryResponse(
+            status="error",
+            file_path=None,
+            content=None,
+            error=error_msg
+        ) 

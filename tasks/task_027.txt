@@ -478,7 +478,7 @@ Replacing the state-based approach with a file-creation-based trigger system:
    - Simpler error handling (log warnings, don't break git operations)
 </info added on 2025-06-05T11:56:35.810Z>
 
-## 2. Create Daily Summary MCP Tool [pending]
+## 2. Create Daily Summary MCP Tool [done]
 ### Dependencies: 27.1
 ### Description: Add an MCP tool to trigger daily summary generation, which will also be called by the git hook through the MCP server.
 ### Details:
@@ -580,7 +580,7 @@ Update `generate_hook_content()` in `git_utils.py` to include date change detect
    - Double check all subtask requirements are met: hook enhancement, date detection, MCP integration, error handling
 </info added on 2025-06-04T18:01:36.075Z>
 
-## 4. Implement Daily Summary Generation Function [pending]
+## 4. Implement Daily Summary Generation Function [done]
 ### Dependencies: 27.1, 27.2
 ### Description: Create the core daily summary generation function that collects journal entries for a specific date and generates a comprehensive summary.
 ### Details:

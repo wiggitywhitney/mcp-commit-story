@@ -161,7 +161,9 @@ def generate_journal_entry(commit, config, debug=False) -> Optional[JournalEntry
                 logger.debug(f"Skipping {section_name} section due to generation failure")
     
     # Step 4: Build the final journal entry with cross-platform timestamp format
-    timestamp = datetime.now().strftime("%I:%M %p").lstrip('0')  # Cross-platform format: "2:34 PM"
+    # Use commit time for consistency (same approach as server.py)
+    commit_datetime = commit.committed_datetime
+    timestamp = commit_datetime.strftime("%I:%M %p").lstrip('0')  # Cross-platform format: "2:34 PM"
     
     if debug:
         logger.debug(f"Creating journal entry with {len(sections)} successful sections")
@@ -225,7 +227,7 @@ def is_journal_only_commit(commit, journal_path):
         return False  # Default to processing on error
 
 
-def save_journal_entry(journal_entry, config, debug=False):
+def save_journal_entry(journal_entry, config, debug=False, date_str=None):
     """
     Save a journal entry to the appropriate daily file with header logic.
     
@@ -236,38 +238,35 @@ def save_journal_entry(journal_entry, config, debug=False):
         journal_entry: JournalEntry object to save
         config: Configuration object with journal settings (Config object or dict)
         debug: Enable debug logging
+        date_str: Optional date string (YYYY-MM-DD) to use instead of current date
         
     Returns:
         str: Path to the saved file
     """
-    from .journal import append_to_journal_file, ensure_journal_directory
+    from .journal import append_to_journal_file, ensure_journal_directory, get_journal_file_path
     from pathlib import Path
     
-    # Get journal file path for today - construct manually to avoid path duplication
-    today = datetime.now().strftime("%Y-%m-%d")
+    # Use provided date or fall back to current date
+    if date_str is None:
+        date_str = datetime.now().strftime("%Y-%m-%d")
     
-    # Handle both Config objects and dict configurations
-    if hasattr(config, 'journal_path'):
-        journal_path = config.journal_path
-    else:
-        journal_path = config.get('journal', {}).get('path', 'sandbox-journal')
-    
-    # Construct file path manually to avoid duplication from get_journal_file_path
-    file_path = f"daily/{today}-journal.md"
-    full_path = Path(journal_path) / file_path
+    # Use the established journal file path system (like server.py does)
+    full_path = get_journal_file_path(date_str, "daily")
     
     # Check if this is a new daily file
-    file_exists = full_path.exists()
+    file_exists = Path(full_path).exists()
     
     # Ensure directory exists
-    ensure_journal_directory(str(full_path))
+    ensure_journal_directory(full_path)
     
     # Get entry markdown
     entry_markdown = journal_entry.to_markdown()
     
     # Add daily header if creating new file, otherwise append to existing file
     if not file_exists:
-        date_formatted = datetime.now().strftime("%B %d, %Y")  # "June 3, 2025"
+        # Parse the date string to create a formatted header
+        date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+        date_formatted = date_obj.strftime("%B %d, %Y")  # "June 3, 2025"
         content = f"# Daily Journal Entries - {date_formatted}\n\n{entry_markdown}"
         
         if debug:
@@ -315,8 +314,9 @@ def handle_journal_entry_creation(commit, config, debug=False):
                 'file_path': None
             }
         
-        # Save journal entry
-        file_path = save_journal_entry(journal_entry, config, debug)
+        # Save journal entry using commit date for consistency
+        commit_date_str = commit.committed_datetime.strftime("%Y-%m-%d")
+        file_path = save_journal_entry(journal_entry, config, debug, date_str=commit_date_str)
         
         return {
             'success': True,

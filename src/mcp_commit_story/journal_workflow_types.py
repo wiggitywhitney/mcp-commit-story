@@ -84,4 +84,33 @@ class ContextCollectionResult(TypedDict):
     context: CollectedJournalContext
     collection_success: bool
     failed_sources: List[str]  # Sources that failed to collect (e.g., ['chat', 'terminal'])
-    warnings: List[str]  # Non-fatal issues during collection 
+    warnings: List[str]  # Non-fatal issues during collection
+
+
+# =============================================================================
+# Daily Summary Generation Types (Subtask 27.2)
+# =============================================================================
+
+class GenerateDailySummaryRequest(TypedDict):
+    """Request parameters for generate daily summary MCP tool."""
+    date: str  # YYYY-MM-DD format, required
+
+class GenerateDailySummaryResponse(TypedDict):
+    """Response from generate daily summary MCP tool."""
+    status: str  # "success", "no_entries", or "error"
+    file_path: str  # Path where summary was saved (empty on error)
+    content: str  # Generated summary content (empty on error)
+    error: Optional[str]  # Error message if status is "error"
+
+class DailySummary(TypedDict):
+    """Structured daily summary data from AI generation."""
+    date: str
+    summary: str
+    reflections: Optional[List[str]]  # Only include if non-empty
+    progress_made: str
+    key_accomplishments: List[str]
+    technical_synopsis: str
+    challenges_and_learning: Optional[List[str]]  # Only include if non-empty
+    discussion_highlights: Optional[List[str]]  # Only include if non-empty
+    tone_mood: Optional[Dict[str, str]]  # Only include if evidence found
+    daily_metrics: Dict[str, Any] 

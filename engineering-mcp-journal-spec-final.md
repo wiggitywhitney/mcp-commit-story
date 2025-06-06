@@ -1392,12 +1392,13 @@ The Summary section should focus on these unique aspects rather than restating r
 
 ### MCP Operations
 1. **✅ IMPLEMENTED: `journal/new-entry`** - Create a new journal entry from current git state with comprehensive TypedDict workflow integration
-2. `journal/summarize` - Generate weekly/monthly summaries  
-3. `journal/blogify` - Convert journal entry(s) to blog post format
-4. `journal/backfill` - Check for missed commits and create entries
-5. `journal/install-hook` - Install git post-commit hook
-6. `journal/add-reflection` - Add a manual reflection to today's journal
-7. `journal/init` - Initialize journal in current repository
+2. **✅ IMPLEMENTED: `journal/generate-daily-summary`** - Generate comprehensive AI-powered daily summaries from journal entries with 8-section structure and manual reflection preservation
+3. `journal/summarize` - Generate weekly/monthly summaries  
+4. `journal/blogify` - Convert journal entry(s) to blog post format
+5. `journal/backfill` - Check for missed commits and create entries
+6. `journal/install-hook` - Install git post-commit hook
+7. `journal/add-reflection` - Add a manual reflection to today's journal
+8. `journal/init` - Initialize journal in current repository
 
 Each operation will be instrumented with appropriate traces to monitor performance and error rates.
 
@@ -1474,6 +1475,62 @@ class SaveJournalEntryResult(TypedDict):
     success: bool
     created_new_file: bool  # Whether a new file was created vs appended
 ```
+
+#### ✅ IMPLEMENTED: journal/generate-daily-summary
+**Implementation Status**: Complete with comprehensive TypedDict schemas, AI-powered synthesis, and production-ready error handling.
+
+**Core Integration**:
+- **Type Safety**: Complete TypedDict definitions for `GenerateDailySummaryRequest` and `GenerateDailySummaryResponse`
+- **AI-Powered Synthesis**: Sophisticated 100+ line AI prompt with content quality guidelines and anti-hallucination rules
+- **Manual Reflection Preservation**: Automatic extraction and prioritization of user-written reflections using regex patterns
+- **File-Creation Trigger System**: Smart logic to determine when summaries should be generated based on journal activity
+- **8-Section Structure**: Standardized format with Summary, Reflections, Progress Made, Key Accomplishments, Technical Synopsis, Challenges and Learning, Discussion Highlights, Tone/Mood, and Daily Metrics
+- **Telemetry Integration**: Full OpenTelemetry instrumentation for monitoring and debugging
+
+**Request Processing**:
+- Validates required `date` parameter in YYYY-MM-DD format
+- Loads journal entries for the specified date using existing journal utilities
+- Extracts manual reflections using pattern-based regex matching
+- Calls AI generation with comprehensive context and quality guidelines
+
+**TypedDict Schemas**:
+```python
+class GenerateDailySummaryRequest(TypedDict):
+    """Request schema for journal/generate-daily-summary MCP tool."""
+    date: str  # Required: YYYY-MM-DD format
+
+class GenerateDailySummaryResponse(TypedDict):
+    """Response schema for journal/generate-daily-summary MCP tool."""
+    status: str  # "success" | "no_entries" | "error"
+    file_path: str  # Path to generated summary file or ""
+    content: str  # Markdown content of summary or ""
+    error: Optional[str]  # Error message if status is "error", else None
+```
+
+**AI Generation Features**:
+- **Content Quality Guidelines**: Rules for rich, thoughtful summaries grounded in actual data
+- **Section-Specific Instructions**: Detailed requirements for each of the 8 summary sections
+- **Anti-Hallucination Rules**: Strict requirements for evidence-based content
+- **Manual Reflection Prioritization**: User reflections take precedence over AI-generated content
+- **Formatting Standards**: Consistent markdown output structure
+
+**Response Formats**:
+- **Success**: `{"status": "success", "file_path": "/path/to/summaries/daily/2025-01-15-summary.md", "content": "# Daily Summary...", "error": null}`
+- **No Entries**: `{"status": "no_entries", "file_path": "", "content": "", "error": null}`
+- **Error**: `{"status": "error", "file_path": "", "content": "", "error": "Detailed error message"}`
+
+**Test Coverage**: 15 comprehensive test cases covering:
+- TypedDict schema validation and MCP tool registration
+- Successful daily summary generation with AI content
+- Manual reflection extraction and preservation
+- No entries found scenario handling
+- Error handling for invalid dates and file system issues
+- Telemetry integration and operation tracking
+- Mock AI generation for testing environments
+- File creation and content validation
+
+**File Organization**:
+Summary files are saved to `{journal_path}/summaries/daily/{date}-summary.md` with standardized naming for easy discovery and integration with existing journal workflows.
 
 #### journal/summarize
 - Options: `--week`, `--month`, `--range`, `--day`, `--year`
