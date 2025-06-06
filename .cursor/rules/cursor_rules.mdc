@@ -87,4 +87,15 @@ At the end of each subtask automatically:
     2. Run the test (confirm failure)
     3. Implement the config loader
     4. Run the test (confirm it passes)
+
+## Rule: Explicit Approval Pauses in Subtask Plans
+- **If a subtask plan contains 'PAUSE FOR MANUAL APPROVAL' or similar instructions, always pause and request approval at that step, even if general rules say to proceed.**
+- After writing failing tests and a stub, check the subtask plan for required approval points before implementing.
+- Echo the next step and approval checkpoint to the user before proceeding.
+- Summarize required approval points at the start of each subtask.
+- This rule takes precedence over general 'no approval needed' rules.
+- Example:
+  1. Write failing tests and stub.
+  2. If plan says 'PAUSE FOR MANUAL APPROVAL: design', pause and request approval before implementing.
+  3. Only proceed after explicit user approval.
   

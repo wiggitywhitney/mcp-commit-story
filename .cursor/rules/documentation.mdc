@@ -3,3 +3,55 @@ description:
 globs:
 alwaysApply: false
 ---
+# Documentation Usage for AI
+
+## **Primary Rule: Use Focused Docs First**
+
+When working with mcp-commit-story, **always reference the focused documentation in `/docs/` before consulting the comprehensive engineering spec**.
+
+### **Focused Documentation (/docs/) - Use These First**
+
+- **[Architecture](mdc:docs/architecture.md)** - System design and architectural decisions (115 lines)
+- **[MCP API Specification](mdc:docs/mcp-api-specification.md)** - Complete API reference (295 lines)  
+- **[Journal Behavior](mdc:docs/journal-behavior.md)** - Entry generation and content patterns (287 lines)
+- **[Implementation Guide](mdc:docs/implementation-guide.md)** - Development patterns and technical details (385 lines)
+
+### **Comprehensive Reference - Use as Backup**
+
+- **[Engineering Spec](mdc:engineering-mcp-journal-spec-final.md)** - Complete specification (900+ lines)
+  - Only use when focused docs don't contain the needed information
+  - Reference specific sections using the table of contents
+  - Prefer focused docs for better cognitive load management
+
+## **Documentation Selection Guide**
+
+| **Task Type** | **Primary Reference** | **Backup Reference** |
+|---|---|---|
+| **Understanding architecture** | [Architecture](mdc:docs/architecture.md) | Engineering Spec - Architecture sections |
+| **MCP integration/API work** | [MCP API Specification](mdc:docs/mcp-api-specification.md) | Engineering Spec - MCP sections |
+| **Journal entry behavior** | [Journal Behavior](mdc:docs/journal-behavior.md) | Engineering Spec - Journal sections |
+| **Implementation/coding** | [Implementation Guide](mdc:docs/implementation-guide.md) | Engineering Spec - Implementation sections |
+| **Testing approaches** | [Testing Standards](mdc:docs/testing_standards.md) | Engineering Spec - Testing sections |
+
+## **Best Practices**
+
+- **Start narrow**: Use the most specific focused doc for your task
+- **Cross-reference**: If focused docs conflict with engineering spec, flag for resolution
+- **Stay focused**: Avoid reading entire engineering spec unless absolutely necessary
+- **Update awareness**: Keep focused docs updated as implementation evolves
+
+## **Why This Matters**
+
+- **Cognitive load**: 300-line focused docs vs 900+ line comprehensive spec
+- **Efficiency**: Find relevant information faster
+- **Accuracy**: Focused docs are organized by concern, not chronologically
+- **Maintainability**: Easier to keep focused docs current
+
+## **When to Use Engineering Spec**
+
+- **Missing information**: Focused docs don't cover your specific need
+- **Historical context**: Understanding how decisions evolved
+- **Complete reference**: Need exhaustive detail on implementation
+- **Debugging**: Tracing through complete technical flow
+
+**Remember**: The focused docs exist to make your work easier. Use them!

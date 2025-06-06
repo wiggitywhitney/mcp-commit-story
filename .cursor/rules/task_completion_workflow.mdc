@@ -3,3 +3,142 @@ description:
 globs:
 alwaysApply: false
 ---
+# Task Completion & Archiving Workflow
+
+## **Overview**
+When tasks reach "done" status, archive them to maintain a clean, performant workspace while preserving complete project history.
+
+## **Directory Structure**
+```
+tasks/
+├── tasks.json                    # Active tasks only
+├── task_001.txt                  # Active task files only
+├── task_002.txt
+└── completed_tasks/
+    ├── completed_tasks.json      # Archived completed tasks
+    ├── task_003.txt             # Completed task files
+    ├── task_007.txt
+    └── task_015.txt
+```
+
+## **Archival Process**
+
+### **When to Archive**
+- ✅ Task status is "done" 
+- ✅ **ALL subtasks are "done"** (or no subtasks exist) - Archive complete task units only
+- ✅ Task has been verified/tested according to its test strategy
+- ✅ No pending dependencies from other active tasks
+
+### **Archive Unit Validation**
+- **Complete Task Units Only**: A main task can only be archived if both the main task AND all its subtasks have "done" status
+- **Incomplete Units Stay Active**: If any subtask is "pending", "in-progress", etc., the entire task unit remains in active tasks.json
+- **Preserve Work Integrity**: This prevents breaking up incomplete work and losing track of pending subtasks
+
+### **Steps to Archive a Completed Task**
+
+#### **Manual Single Task Archival**
+1. **Verify Complete Unit**: Ensure main task status is "done" AND all subtasks are "done"
+2. **Move Task File**: `mv tasks/task_XXX.txt tasks/completed_tasks/`
+3. **Update completed_tasks.json**: Add task data with completion metadata
+4. **Remove from tasks.json**: Delete task from main tasks list
+5. **Regenerate**: Use `mcp_taskmaster-ai_generate` or `task-master generate`
+
+#### **Automated Bulk Archival (Recommended)**
+Use the archival script for efficient processing of multiple completed task units:
+
+```bash
+python scripts/archive_completed_tasks.py
+```
+
+**This script will:**
+- ✅ Automatically identify complete task units (main + all subtasks done)
+- ✅ Move task files to archive directory
+- ✅ Update completed_tasks.json with proper metadata
+- ✅ Remove archived tasks from main tasks.json
+- ✅ Report file size improvements and performance gains
+- ✅ Preserve work integrity by only archiving complete units
+
+**Run this script regularly** when multiple tasks have been completed to maintain optimal MCP performance.
+
+### **When to Run Archival**
+- ✅ **After completing major milestones** (3+ task units done)
+- ✅ **When MCP operations become slow** (tasks.json > 200KB)
+- ✅ **During project phase transitions**
+- ✅ **Before major task refactoring or reorganization**
+- ✅ **As part of regular project maintenance**
+
+### **Post-Archival Cleanup**
+After successful archival, clean up temporary files:
+- ✅ **Remove backup files**: Delete any `.bak` files created during the process
+- ✅ **Verify archival**: Confirm archived tasks are in `tasks/completed_tasks/`
+- ✅ **Test MCP performance**: Ensure taskmaster operations are faster
+
+## **JSON File Management**
+
+### **completed_tasks.json Structure**
+```json
+{
+  "archived_date": "2025-01-XX",
+  "project_name": "Project Name",
+  "tasks": [
+    {
+      "id": 3,
+      "title": "Completed Task Title",
+      "status": "done",
+      "completed_date": "2025-01-XX",
+      "dependencies": [...],
+      "subtasks": [...],
+      "archived_from_main": true
+    }
+  ]
+}
+```
+
+### **Maintain ID References**
+- ✅ **Keep original task IDs** in archived tasks
+- ✅ **Document completion dates** when archiving
+- ✅ **Preserve dependency relationships** for historical tracking
+- ✅ **Note archive date** for audit trail
+
+## **Best Practices**
+
+### **Archive Timing**
+- Archive tasks immediately after marking "done"
+- Archive in dependency order (prerequisites first)
+- Archive related tasks together when logical
+- Archive after major milestones for clean organization
+
+### **Dependency Management**
+- ✅ **Before archiving**: Verify no active tasks depend on this task
+- ✅ **Update references**: Change dependency lists in active tasks to indicate completion
+- ✅ **Preserve history**: Keep dependency info in archived task for reference
+
+### **File Organization**
+- Use consistent naming: `task_XXX.txt` format
+- Maintain chronological order in completed_tasks.json **by completion date** (newest completed tasks at end)
+- Include completion metadata for tracking
+- Keep archive directory clean and organized
+
+## **Performance Benefits**
+- **Smaller tasks.json** → Faster MCP operations
+- **Reduced parse time** → Quicker task-master commands  
+- **Better responsiveness** → Improved development workflow
+- **Scalable approach** → Handles projects of any size
+
+## **Verification Steps**
+After archiving tasks:
+1. ✅ **Test taskmaster operations** (list, next, show) for speed
+2. ✅ **Verify dependency chains** are intact
+3. ✅ **Confirm archive files** contain complete data
+4. ✅ **Check active tasks.json** for correct remaining tasks
+
+## **Recovery Process**
+If you need to "un-archive" a task:
+1. Move task file from `completed_tasks/` back to `tasks/`
+2. Move task data from `completed_tasks.json` back to `tasks.json`
+3. Update status from "done" to appropriate active status
+4. Run `task-master generate` to refresh files
+
+---
+
+**Note**: This workflow optimizes taskmaster performance while maintaining complete project documentation and history.

@@ -3,3 +3,79 @@ description:
 globs:
 alwaysApply: false
 ---
+## **pyproject.toml Dependency Management**
+
+- **Critical Rule: All Production Dependencies Must Be in pyproject.toml**
+  - CI environment ONLY installs from `pyproject.toml` main dependencies section
+  - Never rely on `requirements.txt` or other dependency files for production code
+  - Dev dependencies go in `[project.optional-dependencies.dev]` section
+
+- **When to Update pyproject.toml Dependencies:**
+  - **Every time you add a new import statement** in production code (`src/` directory)
+  - **When adding new test dependencies** that import external packages
+  - **Before committing code that uses new libraries**
+  - **When CI fails with ModuleNotFoundError but tests pass locally**
+
+- **Common CI Failure Pattern Recognition:**
+  ```bash
+  # CI Error Pattern:
+  ModuleNotFoundError: No module named 'some_package'
+  # But locally: tests pass ✅
+  
+  # Root Cause: Package installed locally but missing from pyproject.toml
+  # Solution: Add to main dependencies section
+  ```
+
+- **Dependency Addition Checklist:**
+  ```python
+  # ✅ DO: When you add imports like this
+  from opentelemetry.exporter.prometheus import PrometheusMetricReader
+  from opentelemetry.instrumentation.requests import RequestsInstrumentor
+  
+  # ✅ DO: Immediately add to pyproject.toml
+  dependencies = [
+      "opentelemetry-exporter-prometheus>=0.54b0",
+      "opentelemetry-instrumentation-requests>=0.41b0",
+  ]
+  ```
+
+- **Version Specification Best Practices:**
+  - **Research actual available versions** on PyPI before specifying
+  - **Don't assume version patterns** across related packages (e.g., OpenTelemetry packages have different schemes)
+  - **Check for yanked versions** if you get "no matching distribution" errors
+  - **Use conservative version constraints** (`>=X.Y.Z`) rather than exact pins for libraries
+
+- **Local vs CI Environment Differences:**
+  - **Local development** often has extra packages from manual installs, requirements.txt, or previous environments
+  - **CI is clean** and only installs what's explicitly declared in pyproject.toml
+  - **Always test dependency changes** with a clean virtual environment when possible
+  - **Push dependency updates immediately** after adding new imports to catch issues early
+
+- **Error Resolution Workflow:**
+  1. **CI fails with ModuleNotFoundError** → Check if package is in pyproject.toml main dependencies
+  2. **Local tests pass but CI fails** → Almost always a missing dependency issue
+  3. **"No matching distribution found"** → Check available versions on PyPI, look for yanked versions
+  4. **Import works locally** → Verify the package name and version in pyproject.toml
+
+- **Prevention Strategy:**
+  - **Add dependencies BEFORE writing the import** when possible
+  - **Use `pip install package-name` AND update pyproject.toml** when adding new packages
+  - **Review imports in every commit** to ensure corresponding dependencies exist
+  - **Test in clean environments** periodically to catch environment drift
+
+- **Examples from This Project:**
+  ```python
+  # ❌ DON'T: Add imports without updating pyproject.toml
+  from opentelemetry.exporter.prometheus import PrometheusMetricReader  # CI will fail!
+  
+  # ✅ DO: Add import AND update pyproject.toml
+  from opentelemetry.exporter.prometheus import PrometheusMetricReader
+  # In pyproject.toml: "opentelemetry-exporter-prometheus>=0.54b0"
+  ```
+
+- **Historical Issues Resolved:**
+  - **Auto-instrumentation packages** (requests, aiohttp, asyncio, logging instrumentors)
+  - **Prometheus exporter** with version specification corrections
+  - **Pattern**: Code worked locally, CI failed on import, fixed by adding to pyproject.toml
+
+This rule prevents the "works on my machine" problem that has caused multiple CI failures in this project.
