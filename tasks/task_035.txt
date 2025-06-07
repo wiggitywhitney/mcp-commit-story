@@ -1,0 +1,576 @@
+# Task ID: 35
+# Title: Implement 4-Layer Journal Entry Architecture with Orchestration Layer
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Refactor the journal entry generation system from a monolithic approach to a clean 4-layer architecture with proper separation of concerns, focused AI function calls, and comprehensive error handling.
+# Details:
+This task involves refactoring the journal entry generation system to implement a clean 4-layer architecture:
+
+1. **Delete obsolete orchestration files**:
+   - Remove `orchestration.py` and `test_journal_orchestration.py` as they no longer align with the new architecture.
+
+2. **Create new orchestration layer**:
+   - Create a new file `src/mcp_commit_story/orchestration/journal_orchestrator.py` with the following structure:
+   ```python
+   import logging
+   from typing import Dict, Any, Optional, List
+   from pathlib import Path
+   
+   from ..context_collection import (
+       collect_chat_history,
+       collect_ai_terminal_commands,
+       collect_git_context
+   )
+   from ..journal import (
+       generate_title_section,
+       generate_summary_section,
+       generate_changes_section,
+       generate_context_section,
+       generate_reasoning_section,
+       generate_next_steps_section,
+       generate_reflection_section,
+       generate_metadata_section
+   )
+   from ..telemetry import log_telemetry_event
+   
+   logger = logging.getLogger(__name__)
+   
+   class JournalOrchestrator:
+       """Orchestrates the journal entry generation process across all layers."""
+       
+       def __init__(self, repo_path: Path, config: Dict[str, Any]):
+           self.repo_path = repo_path
+           self.config = config
+           self.context_data = {}
+           self.journal_sections = {}
+           self.errors = []
+       
+       def collect_context(self) -> Dict[str, Any]:
+           """Layer 3: Collect all necessary context for journal generation."""
+           logger.info("Starting context collection phase")
+           try:
+               # Git context collection (Python execution)
+               self.context_data["git"] = collect_git_context(self.repo_path)
+               log_telemetry_event("context_collection", {"type": "git", "status": "success"})
+           except Exception as e:
+               logger.error(f"Error collecting git context: {str(e)}")
+               self.errors.append({"phase": "context_collection", "type": "git", "error": str(e)})
+               log_telemetry_event("context_collection", {"type": "git", "status": "error", "error": str(e)})
+           
+           try:
+               # Chat history collection (AI execution)
+               self.context_data["chat"] = collect_chat_history(self.config)
+               log_telemetry_event("context_collection", {"type": "chat", "status": "success"})
+           except Exception as e:
+               logger.error(f"Error collecting chat history: {str(e)}")
+               self.errors.append({"phase": "context_collection", "type": "chat", "error": str(e)})
+               log_telemetry_event("context_collection", {"type": "chat", "status": "error", "error": str(e)})
+           
+           try:
+               # Terminal commands collection (AI execution)
+               self.context_data["terminal"] = collect_ai_terminal_commands(self.config)
+               log_telemetry_event("context_collection", {"type": "terminal", "status": "success"})
+           except Exception as e:
+               logger.error(f"Error collecting terminal commands: {str(e)}")
+               self.errors.append({"phase": "context_collection", "type": "terminal", "error": str(e)})
+               log_telemetry_event("context_collection", {"type": "terminal", "status": "error", "error": str(e)})
+           
+           return self.context_data
+       
+       def generate_journal_sections(self) -> Dict[str, str]:
+           """Layer 4: Generate all journal sections with focused AI execution."""
+           logger.info("Starting journal section generation phase")
+           
+           # Define all section generators with their names for consistent handling
+           section_generators = [
+               ("title", generate_title_section),
+               ("summary", generate_summary_section),
+               ("changes", generate_changes_section),
+               ("context", generate_context_section),
+               ("reasoning", generate_reasoning_section),
+               ("next_steps", generate_next_steps_section),
+               ("reflection", generate_reflection_section),
+               ("metadata", generate_metadata_section)
+           ]
+           
+           # Execute each section generator with proper error handling
+           for section_name, generator_func in section_generators:
+               try:
+                   self.journal_sections[section_name] = generator_func(self.context_data, self.config)
+                   log_telemetry_event("section_generation", {"section": section_name, "status": "success"})
+               except Exception as e:
+                   logger.error(f"Error generating {section_name} section: {str(e)}")
+                   self.errors.append({"phase": "section_generation", "section": section_name, "error": str(e)})
+                   log_telemetry_event("section_generation", {"section": section_name, "status": "error", "error": str(e)})
+                   # Provide fallback content for graceful degradation
+                   self.journal_sections[section_name] = f"[Error generating {section_name} section]"
+           
+           return self.journal_sections
+       
+       def orchestrate_journal_generation(self) -> Dict[str, Any]:
+           """Layer 2: Orchestrate the entire journal generation process."""
+           logger.info("Starting journal generation orchestration")
+           start_time = time.time()
+           
+           # Reset state for new orchestration
+           self.context_data = {}
+           self.journal_sections = {}
+           self.errors = []
+           
+           # Step 1: Collect all context
+           try:
+               self.collect_context()
+               log_telemetry_event("orchestration", {"phase": "context_collection", "status": "complete"})
+           except Exception as e:
+               logger.error(f"Critical error in context collection phase: {str(e)}")
+               log_telemetry_event("orchestration", {"phase": "context_collection", "status": "failed", "error": str(e)})
+               return {"success": False, "error": str(e), "phase": "context_collection"}
+           
+           # Step 2: Generate all journal sections
+           try:
+               self.generate_journal_sections()
+               log_telemetry_event("orchestration", {"phase": "section_generation", "status": "complete"})
+           except Exception as e:
+               logger.error(f"Critical error in section generation phase: {str(e)}")
+               log_telemetry_event("orchestration", {"phase": "section_generation", "status": "failed", "error": str(e)})
+               return {"success": False, "error": str(e), "phase": "section_generation"}
+           
+           # Step 3: Assemble final journal entry
+           try:
+               journal_content = self._assemble_journal_entry()
+               execution_time = time.time() - start_time
+               
+               result = {
+                   "success": True,
+                   "content": journal_content,
+                   "sections": self.journal_sections,
+                   "errors": self.errors,
+                   "execution_time": execution_time
+               }
+               
+               log_telemetry_event("orchestration", {
+                   "status": "success", 
+                   "execution_time": execution_time,
+                   "error_count": len(self.errors)
+               })
+               
+               return result
+           except Exception as e:
+               logger.error(f"Error assembling journal entry: {str(e)}")
+               log_telemetry_event("orchestration", {"phase": "assembly", "status": "failed", "error": str(e)})
+               return {"success": False, "error": str(e), "phase": "assembly"}
+       
+       def _assemble_journal_entry(self) -> str:
+           """Assemble the final journal entry from all sections."""
+           sections_order = ["title", "summary", "changes", "context", "reasoning", "next_steps", "reflection", "metadata"]
+           journal_parts = []
+           
+           for section in sections_order:
+               if section in self.journal_sections:
+                   journal_parts.append(self.journal_sections[section])
+           
+           return "\n\n".join(journal_parts)
+   ```
+
+3. **Create test file for orchestration layer**:
+   - Create `tests/test_journal_orchestrator.py` with comprehensive tests:
+   ```python
+   import pytest
+   from unittest.mock import patch, MagicMock
+   from pathlib import Path
+   
+   from mcp_commit_story.orchestration.journal_orchestrator import JournalOrchestrator
+   
+   @pytest.fixture
+   def mock_repo_path():
+       return Path("/mock/repo/path")
+   
+   @pytest.fixture
+   def mock_config():
+       return {
+           "journal": {
+               "path": "/mock/journal/path",
+               "template": "default"
+           },
+           "ai": {
+               "model": "gpt-4"
+           }
+       }
+   
+   @pytest.fixture
+   def orchestrator(mock_repo_path, mock_config):
+       return JournalOrchestrator(mock_repo_path, mock_config)
+   
+   # Test context collection layer
+   @patch("mcp_commit_story.orchestration.journal_orchestrator.collect_git_context")
+   @patch("mcp_commit_story.orchestration.journal_orchestrator.collect_chat_history")
+   @patch("mcp_commit_story.orchestration.journal_orchestrator.collect_ai_terminal_commands")
+   def test_collect_context_success(mock_terminal, mock_chat, mock_git, orchestrator):
+       # Setup mocks
+       mock_git.return_value = {"commit": "abc123", "message": "Test commit"}
+       mock_chat.return_value = {"messages": ["Hello", "World"]}
+       mock_terminal.return_value = {"commands": ["git status", "ls -la"]}
+       
+       # Execute
+       result = orchestrator.collect_context()
+       
+       # Verify
+       assert "git" in result
+       assert "chat" in result
+       assert "terminal" in result
+       assert result["git"]["commit"] == "abc123"
+       assert len(orchestrator.errors) == 0
+       
+   @patch("mcp_commit_story.orchestration.journal_orchestrator.collect_git_context")
+   @patch("mcp_commit_story.orchestration.journal_orchestrator.collect_chat_history")
+   @patch("mcp_commit_story.orchestration.journal_orchestrator.collect_ai_terminal_commands")
+   def test_collect_context_partial_failure(mock_terminal, mock_chat, mock_git, orchestrator):
+       # Setup mocks - git fails but others succeed
+       mock_git.side_effect = Exception("Git error")
+       mock_chat.return_value = {"messages": ["Hello", "World"]}
+       mock_terminal.return_value = {"commands": ["git status", "ls -la"]}
+       
+       # Execute
+       result = orchestrator.collect_context()
+       
+       # Verify
+       assert "git" not in result
+       assert "chat" in result
+       assert "terminal" in result
+       assert len(orchestrator.errors) == 1
+       assert orchestrator.errors[0]["phase"] == "context_collection"
+       assert orchestrator.errors[0]["type"] == "git"
+   
+   # Test journal section generation layer
+   @patch("mcp_commit_story.orchestration.journal_orchestrator.generate_title_section")
+   @patch("mcp_commit_story.orchestration.journal_orchestrator.generate_summary_section")
+   def test_generate_journal_sections_success(mock_summary, mock_title, orchestrator):
+       # Setup
+       orchestrator.context_data = {"git": {"commit": "abc123"}}
+       mock_title.return_value = "# Test Title"
+       mock_summary.return_value = "## Summary\nThis is a test summary."
+       
+       # Execute
+       result = orchestrator.generate_journal_sections()
+       
+       # Verify
+       assert "title" in result
+       assert "summary" in result
+       assert result["title"] == "# Test Title"
+       assert len(orchestrator.errors) == 0
+   
+   @patch("mcp_commit_story.orchestration.journal_orchestrator.generate_title_section")
+   @patch("mcp_commit_story.orchestration.journal_orchestrator.generate_summary_section")
+   def test_generate_journal_sections_partial_failure(mock_summary, mock_title, orchestrator):
+       # Setup - title fails but summary succeeds
+       orchestrator.context_data = {"git": {"commit": "abc123"}}
+       mock_title.side_effect = Exception("Title error")
+       mock_summary.return_value = "## Summary\nThis is a test summary."
+       
+       # Execute
+       result = orchestrator.generate_journal_sections()
+       
+       # Verify
+       assert "title" in result
+       assert "summary" in result
+       assert "[Error generating title section]" in result["title"]
+       assert len(orchestrator.errors) == 1
+       assert orchestrator.errors[0]["phase"] == "section_generation"
+       assert orchestrator.errors[0]["section"] == "title"
+   
+   # Test full orchestration
+   @patch("mcp_commit_story.orchestration.journal_orchestrator.JournalOrchestrator.collect_context")
+   @patch("mcp_commit_story.orchestration.journal_orchestrator.JournalOrchestrator.generate_journal_sections")
+   @patch("mcp_commit_story.orchestration.journal_orchestrator.JournalOrchestrator._assemble_journal_entry")
+   def test_orchestrate_journal_generation_success(mock_assemble, mock_generate, mock_collect, orchestrator):
+       # Setup
+       mock_collect.return_value = {"git": {"commit": "abc123"}}
+       mock_generate.return_value = {"title": "# Test", "summary": "## Summary"}
+       mock_assemble.return_value = "# Test\n\n## Summary"
+       
+       # Execute
+       result = orchestrator.orchestrate_journal_generation()
+       
+       # Verify
+       assert result["success"] is True
+       assert result["content"] == "# Test\n\n## Summary"
+       assert "execution_time" in result
+   
+   @patch("mcp_commit_story.orchestration.journal_orchestrator.JournalOrchestrator.collect_context")
+   def test_orchestrate_journal_generation_context_failure(mock_collect, orchestrator):
+       # Setup - context collection fails completely
+       mock_collect.side_effect = Exception("Critical context error")
+       
+       # Execute
+       result = orchestrator.orchestrate_journal_generation()
+       
+       # Verify
+       assert result["success"] is False
+       assert result["phase"] == "context_collection"
+       assert "error" in result
+   ```
+
+4. **Refactor server.py generate_journal_entry()**:
+   - Update `src/mcp_commit_story/server.py` to use the new orchestration layer:
+   ```python
+   from .orchestration.journal_orchestrator import JournalOrchestrator
+   import logging
+   
+   logger = logging.getLogger(__name__)
+   
+   @server.tool()
+   async def generate_journal_entry(request):
+       """Generate a journal entry for the latest commit."""
+       try:
+           # Layer 1: Simple delegation to orchestrator
+           repo_path = request.get("repo_path", os.getcwd())
+           config = request.get("config", {})
+           
+           # Create orchestrator instance
+           orchestrator = JournalOrchestrator(Path(repo_path), config)
+           
+           # Delegate to orchestration layer
+           result = orchestrator.orchestrate_journal_generation()
+           
+           if not result["success"]:
+               return {
+                   "status": "error",
+                   "message": f"Failed to generate journal entry: {result.get('error', 'Unknown error')}",
+                   "phase": result.get("phase", "unknown")
+               }
+           
+           # Write journal entry to file if path provided
+           journal_path = None
+           if "output_path" in request:
+               journal_path = Path(request["output_path"])
+               journal_path.parent.mkdir(parents=True, exist_ok=True)
+               with open(journal_path, "w") as f:
+                   f.write(result["content"])
+           
+           return {
+               "status": "success",
+               "content": result["content"],
+               "path": str(journal_path) if journal_path else None,
+               "sections": result["sections"],
+               "errors": result["errors"],
+               "execution_time": result["execution_time"]
+           }
+       except Exception as e:
+           logger.error(f"Error in generate_journal_entry: {str(e)}")
+           return {
+               "status": "error",
+               "message": f"Failed to generate journal entry: {str(e)}"
+           }
+   ```
+
+5. **Implement integration tests**:
+   - Create `tests/test_journal_integration.py` to verify end-to-end functionality:
+   ```python
+   import pytest
+   from unittest.mock import patch, MagicMock
+   from pathlib import Path
+   import tempfile
+   import os
+   
+   from mcp_commit_story.server import generate_journal_entry
+   
+   @pytest.fixture
+   def mock_request():
+       with tempfile.TemporaryDirectory() as tmpdir:
+           yield {
+               "repo_path": tmpdir,
+               "output_path": os.path.join(tmpdir, "journal.md"),
+               "config": {
+                   "journal": {
+                       "path": tmpdir,
+                       "template": "default"
+                   },
+                   "ai": {
+                       "model": "gpt-4"
+                   }
+               }
+           }
+   
+   @patch("mcp_commit_story.orchestration.journal_orchestrator.JournalOrchestrator.orchestrate_journal_generation")
+   async def test_generate_journal_entry_success(mock_orchestrate, mock_request):
+       # Setup
+       mock_orchestrate.return_value = {
+           "success": True,
+           "content": "# Test Journal Entry\n\n## Summary\nTest summary",
+           "sections": {
+               "title": "# Test Journal Entry",
+               "summary": "## Summary\nTest summary"
+           },
+           "errors": [],
+           "execution_time": 1.23
+       }
+       
+       # Execute
+       result = await generate_journal_entry(mock_request)
+       
+       # Verify
+       assert result["status"] == "success"
+       assert "# Test Journal Entry" in result["content"]
+       assert os.path.exists(mock_request["output_path"])
+       with open(mock_request["output_path"], "r") as f:
+           content = f.read()
+           assert "# Test Journal Entry" in content
+   
+   @patch("mcp_commit_story.orchestration.journal_orchestrator.JournalOrchestrator.orchestrate_journal_generation")
+   async def test_generate_journal_entry_failure(mock_orchestrate, mock_request):
+       # Setup
+       mock_orchestrate.return_value = {
+           "success": False,
+           "error": "Test error",
+           "phase": "context_collection"
+       }
+       
+       # Execute
+       result = await generate_journal_entry(mock_request)
+       
+       # Verify
+       assert result["status"] == "error"
+       assert "Test error" in result["message"]
+       assert result["phase"] == "context_collection"
+   ```
+
+6. **Delete obsolete files**:
+   - Remove `src/mcp_commit_story/orchestration.py`
+   - Remove `tests/test_journal_orchestration.py`
+
+7. **Update imports and dependencies**:
+   - Ensure all imports are correctly updated in affected files
+   - Add any new dependencies to `pyproject.toml` if needed
+
+8. **Documentation**:
+   - Add docstrings to all new functions and classes
+   - Update README.md with architecture overview
+   - Create architecture diagram showing the 4 layers and their interactions
+
+# Test Strategy:
+The implementation will be tested using a strict TDD approach with the following verification steps:
+
+1. **Unit Tests for Orchestration Layer**:
+   - Run the unit tests in `tests/test_journal_orchestrator.py` to verify:
+     - Context collection works correctly with proper error handling
+     - Journal section generation works with proper error handling
+     - Full orchestration process works end-to-end
+     - Error cases are handled gracefully at each layer
+     - Telemetry events are logged correctly
+
+2. **Integration Tests**:
+   - Run the integration tests in `tests/test_journal_integration.py` to verify:
+     - The MCP server handler correctly delegates to the orchestration layer
+     - Journal entries are correctly written to files when requested
+     - Error handling works correctly at the server level
+     - The full end-to-end flow works as expected
+
+3. **Manual Testing**:
+   - Test the refactored system with a real Git repository:
+     ```bash
+     python -m mcp_commit_story.cli journal generate --repo-path=/path/to/repo
+     ```
+   - Verify the journal entry is generated correctly with all sections
+   - Verify telemetry is logged correctly
+   - Verify error handling by intentionally causing failures (e.g., invalid repo path)
+
+4. **Performance Testing**:
+   - Compare performance metrics before and after refactoring:
+     ```python
+     import time
+     
+     # Before refactoring
+     start = time.time()
+     result_before = old_generate_journal_entry(request)
+     time_before = time.time() - start
+     
+     # After refactoring
+     start = time.time()
+     result_after = generate_journal_entry(request)
+     time_after = time.time() - start
+     
+     print(f"Before: {time_before:.2f}s, After: {time_after:.2f}s")
+     ```
+
+5. **Code Quality Checks**:
+   - Run linting and static analysis:
+     ```bash
+     flake8 src/mcp_commit_story/orchestration
+     pylint src/mcp_commit_story/orchestration
+     mypy src/mcp_commit_story/orchestration
+     ```
+   - Verify code coverage for new tests:
+     ```bash
+     pytest --cov=mcp_commit_story.orchestration tests/
+     ```
+   - Ensure coverage is at least 90% for the new orchestration layer
+
+6. **Backward Compatibility Testing**:
+   - Verify that existing clients of the MCP server still work correctly
+   - Test with the same input parameters and verify outputs match expected format
+   - Ensure no breaking changes to the API contract
+
+7. **Error Injection Testing**:
+   - Systematically inject errors at each layer to verify graceful degradation:
+     - Force context collection failures
+     - Force individual section generation failures
+     - Force assembly failures
+   - Verify appropriate error messages and fallback content
+
+8. **Cleanup Verification**:
+   - Confirm obsolete files have been removed:
+     ```bash
+     test ! -f src/mcp_commit_story/orchestration.py && echo "File removed successfully"
+     test ! -f tests/test_journal_orchestration.py && echo "File removed successfully"
+     ```
+
+# Subtasks:
+## 1. Clean up obsolete orchestration files [done]
+### Dependencies: None
+### Description: Remove all files from the previous orchestration experiment: src/mcp_commit_story/orchestration.py, tests/test_journal_orchestration.py, tests/test_mcp_server_orchestration.py, test_ai_orchestration.py, and demonstrate_ai_orchestration.py
+### Details:
+
+
+## 2. Design orchestration layer interface and API [pending]
+### Dependencies: None
+### Description: Define the function signatures, parameters, return types, and error handling patterns for the new orchestration layer. Document the interface between Layer 1 (MCP Server) and Layer 2 (Orchestration), as well as how Layer 2 will coordinate with Layers 3 and 4.
+### Details:
+
+
+## 3. Write failing tests for orchestration layer [pending]
+### Dependencies: 35.2
+### Description: Following TDD principles, create comprehensive failing tests for the orchestration layer before implementation. Tests should cover function orchestration, telemetry collection, error handling, graceful degradation when individual sections fail, and proper coordination of AI function calls.
+### Details:
+
+
+## 4. Implement orchestration layer [pending]
+### Dependencies: 35.3
+### Description: Create the new orchestration module that coordinates context collection (Layer 3) and content generation (Layer 4). Implement individual AI function calls, telemetry collection, error handling with fallbacks, and proper assembly of the final journal entry. Make the failing tests pass.
+### Details:
+
+
+## 5. Write failing tests for refactored server.py integration [pending]
+### Dependencies: 35.4
+### Description: Create failing tests for the refactored generate_journal_entry() function in server.py. Tests should verify that the monolithic AI prompt is replaced with simple delegation to the orchestration layer, maintaining backward compatibility with existing MCP interface.
+### Details:
+
+
+## 6. Refactor server.py to use orchestration layer [pending]
+### Dependencies: 35.5
+### Description: Replace the monolithic AI prompt in generate_journal_entry() with simple delegation to the orchestration layer. Remove the massive docstring and implement clean separation between Layer 1 (MCP Server) and Layer 2 (Orchestration). Ensure backward compatibility with existing MCP interface.
+### Details:
+
+
+## 7. End-to-end integration testing [pending]
+### Dependencies: 35.6
+### Description: Create comprehensive end-to-end tests that verify the complete 4-layer architecture works correctly from MCP server request to final journal entry generation. Test with various context scenarios, error conditions, and ensure proper telemetry collection throughout the entire flow.
+### Details:
+
+
+## 8. Performance validation and optimization [pending]
+### Dependencies: 35.7
+### Description: Validate that the new 4-layer architecture doesn't introduce performance regressions compared to the monolithic approach. Measure AI function call overhead, telemetry collection impact, and overall journal generation time. Optimize if needed while maintaining architectural benefits.
+### Details:
+
+
