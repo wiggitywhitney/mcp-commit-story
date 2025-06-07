@@ -359,7 +359,7 @@ def test_install_post_commit_hook_creates_hook_with_content(git_repo):
     with open(hook_path) as f:
         content = f.read()
     assert content.startswith("#!/bin/sh\n"), "Shebang should be #!/bin/sh"
-    assert "mcp-commit-story new-entry" in content, "Should contain the journal entry command"
+    assert "python -m mcp_commit_story.git_hook_worker" in content, "Should contain the enhanced Python worker"
     assert ">/dev/null 2>&1" in content, "Should suppress output"
     assert content.strip().endswith("|| true"), "Should not block commit on error"
 
@@ -379,7 +379,7 @@ def test_install_post_commit_hook_backs_up_existing_hook(git_repo):
     with open(hook_path) as f:
         content = f.read()
     assert content.startswith("#!/bin/sh\n"), "Shebang should be #!/bin/sh"
-    assert "mcp-commit-story new-entry" in content, "Should contain the journal entry command"
+    assert "python -m mcp_commit_story.git_hook_worker" in content, "Should contain the enhanced Python worker"
     assert ">/dev/null 2>&1" in content, "Should suppress output"
     assert content.strip().endswith("|| true"), "Should not block commit on error"
 

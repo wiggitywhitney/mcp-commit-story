@@ -189,14 +189,30 @@ The post-commit hook is generated using the `generate_hook_content()` function i
 - All output redirected to `/dev/null` with `|| true` to ensure non-blocking behavior
 - Script is intentionally lightweight and non-intrusive
 - Never interferes with normal Git operations
+- **Enhanced with Python worker architecture for daily summary triggering**
+
+#### Enhanced Hook Architecture
+The hook now uses a Python worker pattern for enhanced functionality:
+- **Primary hook**: Bash script that triggers Python worker module
+- **Python worker**: `git_hook_worker.py` module handles complex logic
+- **Daily summary detection**: Automatically detects when daily summaries should be generated
+- **MCP integration**: Communicates with MCP server for daily summary creation
+- **Error handling**: Graceful degradation with warning logs
+- **Git timestamp consistency**: Uses git commit timestamps throughout system
 
 #### Example Generated Hook
 ```sh
 #!/bin/sh
-# Trigger journal/new-entry via MCP server
-# Exact implementation depends on MCP client configuration
-echo "Triggering automated journal entry..." >/dev/null 2>&1 || true
+# Enhanced git hook with daily summary triggering
+python -m mcp_commit_story.git_hook_worker "$PWD" >/dev/null 2>&1 || true
 ```
+
+#### Worker Module Features
+- **Smart triggering**: File-creation-based detection for daily summary generation
+- **Timestamp consistency**: Uses `commit.committed_datetime.isoformat()` for all logging
+- **MCP communication**: Placeholder for future MCP server integration
+- **Comprehensive logging**: Structured logging with git commit timestamps
+- **Error resilience**: Never blocks git operations, logs warnings on failures
 
 ### Hook Installation Logic
 The function `install_post_commit_hook(repo_path)` in `src/mcp_commit_story/git_utils.py`:

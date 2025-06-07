@@ -227,23 +227,32 @@ def get_commit_diff_summary(commit) -> str:
     return "\n".join(summary_lines)
 
 
-def generate_hook_content(command: str = "mcp-commit-story new-entry") -> str:
+def generate_hook_content(command: str = None) -> str:
     """
     Generate the content for a portable Git post-commit hook script.
 
     Args:
-        command (str): The command to run in the hook. Defaults to 'mcp-commit-story new-entry'.
+        command (str, optional): Custom command to run in the hook. 
+                               If None, uses enhanced Python worker for daily summary triggering.
+                               If provided, uses legacy behavior for backwards compatibility.
 
     Returns:
         str: The complete hook script content as a string.
 
     Design:
         - Uses '#!/bin/sh' for maximum portability.
+        - Default behavior: Calls Python worker for journal entries + daily summary triggering.
+        - Custom command: Uses legacy behavior for backwards compatibility.
         - Runs the specified command, redirecting all output to /dev/null.
         - Appends '|| true' to ensure the hook never blocks a commit, even on error.
         - Keeps the script lightweight and non-intrusive, as recommended for Git hooks.
     """
-    return f"#!/bin/sh\n{command} >/dev/null 2>&1 || true\n"
+    if command is not None:
+        # Legacy behavior for backwards compatibility
+        return f"#!/bin/sh\n{command} >/dev/null 2>&1 || true\n"
+    else:
+        # Enhanced behavior with Python worker for daily summary triggering
+        return f'#!/bin/sh\npython -m mcp_commit_story.git_hook_worker "$PWD" >/dev/null 2>&1 || true\n'
 
 
 def backup_existing_hook(hook_path: str) -> Optional[str]:

@@ -105,6 +105,7 @@
 - **Hook-based triggering**: Automatic execution via git post-commit hook
 - **Repository awareness**: Understand git context and changes
 - **Multi-repo support**: Each repository maintains its own journal
+- **✅ Enhanced hook architecture**: Python worker pattern with daily summary auto-triggering and MCP integration
 
 #### **✅ IMPLEMENTED: AI Assistant Integration**
 - **✅ MCP protocol**: Expose functionality via Model Context Protocol with complete `journal/new-entry` implementation

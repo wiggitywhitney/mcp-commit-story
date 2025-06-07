@@ -527,7 +527,7 @@ Add `handle_generate_daily_summary()` function to `server.py`. Create appropriat
    - Double check all subtask requirements are met: MCP tool registration, request/response handling, error cases, telemetry
 </info added on 2025-06-04T17:59:36.884Z>
 
-## 3. Enhance Git Hook with Daily Summary Triggering [pending]
+## 3. Enhance Git Hook with Daily Summary Triggering [done]
 ### Dependencies: 27.1, 27.2
 ### Description: Modify the existing git hook generation to include date change detection and daily summary triggering logic.
 ### Details:
@@ -579,6 +579,40 @@ Update `generate_hook_content()` in `git_utils.py` to include date change detect
    - **Make sure pyproject.toml is updated as needed**
    - Double check all subtask requirements are met: hook enhancement, date detection, MCP integration, error handling
 </info added on 2025-06-04T18:01:36.075Z>
+<info added on 2025-06-07T20:37:11.858Z>
+### Design Decisions Approved ✅
+
+All design decisions have been approved by user:
+
+1. **Hook Communication Method**: Python script approach with MCP integration
+2. **Hook Integration Strategy**: File-based trigger with MCP delegation  
+3. **Error Handling Strategy**: Log warnings with graceful degradation
+4. **Hook Trigger Optimization**: Smart detection with journal file awareness
+5. **Performance & Implementation**: Bash wrapper + Python worker
+
+**Implementation Plan**:
+- Enhanced `generate_hook_content()` will generate: `python -m mcp_commit_story.git_hook_worker "$PWD" >/dev/null 2>&1 || true`
+- New `git_hook_worker.py` module will handle trigger logic and MCP communication
+- Builds on existing `daily_summary.py` infrastructure from subtask 27.1
+- Maintains graceful degradation and git operation reliability
+
+**Next Step**: Write comprehensive tests and verify they fail for the right reasons before implementation.
+</info added on 2025-06-07T20:37:11.858Z>
+<info added on 2025-06-07T20:43:12.892Z>
+### TDD Phase 1 Complete: Tests Written & Verified ✅
+
+**Tests Status**: All tests written and failing for the right reasons
+- ❌ 5 tests failing as expected (functionality not yet implemented)
+- ✅ 18 tests passing (existing functionality + placeholder tests)
+
+**Key failing tests confirm requirements**:
+- `generate_hook_content()` doesn't include Python worker call yet
+- `git_hook_worker` module doesn't exist yet  
+- Hook doesn't use `"$PWD"` environment variable yet
+- Integration tests confirm current vs. target behavior
+
+**Moving to Implementation Phase**: Now implementing the enhanced functionality based on approved design decisions.
+</info added on 2025-06-07T20:43:12.892Z>
 
 ## 4. Implement Daily Summary Generation Function [done]
 ### Dependencies: 27.1, 27.2

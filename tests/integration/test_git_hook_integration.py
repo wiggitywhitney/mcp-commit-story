@@ -31,9 +31,9 @@ def test_clean_hook_install(temp_git_repo):
     hook_path = temp_git_repo / ".git" / "hooks" / "post-commit"
     assert hook_path.exists()
     assert os.access(hook_path, os.X_OK)
-    # Optionally, check content
+    # Check content - should use new Python worker approach
     content = hook_path.read_text()
-    assert "mcp-commit-story new-entry" in content
+    assert "python -m mcp_commit_story.git_hook_worker" in content
 
 def test_overwrite_existing_hook(temp_git_repo):
     """Test installing hook when one already exists (should backup and overwrite)."""
@@ -48,9 +48,9 @@ def test_overwrite_existing_hook(temp_git_repo):
     # Assert backup exists
     backups = list(hook_path.parent.glob("post-commit.backup.*"))
     assert backups, "Backup file should be created"
-    # Assert new hook content
+    # Assert new hook content - should use new Python worker approach
     content = hook_path.read_text()
-    assert "mcp-commit-story new-entry" in content
+    assert "python -m mcp_commit_story.git_hook_worker" in content
 
 def test_hook_execution_on_commit(temp_git_repo, monkeypatch):
     """Test that the installed hook runs after a commit (simulate command)."""
@@ -163,7 +163,7 @@ def test_run_hook_with_sh(temp_git_repo):
 def test_hook_error_handling_does_not_block_commit(temp_git_repo, monkeypatch):
     """Test that if the hook command fails, the commit still succeeds (hook is non-blocking)."""
     from mcp_commit_story import git_utils
-    def error_hook_content(command="mcp-commit-story new-entry"):
+    def error_hook_content(command=None):
         # Simulate a failing command
         return """#!/bin/sh\nexit 1\n"""
     monkeypatch.setattr(git_utils, "generate_hook_content", error_hook_content)

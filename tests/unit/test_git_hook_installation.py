@@ -7,10 +7,11 @@ from unittest.mock import patch
 from mcp_commit_story.git_utils import install_post_commit_hook
 
 def test_basic_hook_content():
-    """Should generate a valid post-commit hook with default command."""
+    """Should generate a valid post-commit hook with enhanced Python worker."""
     content = generate_hook_content()
     assert content.startswith("#!/bin/sh\n"), "Shebang should be #!/bin/sh"
-    assert "mcp-commit-story new-entry" in content, "Default command should be present"
+    assert "python -m mcp_commit_story.git_hook_worker" in content, "Enhanced Python worker should be present"
+    assert '"$PWD"' in content, "Should pass current directory to worker"
     assert ">/dev/null 2>&1" in content, "Should suppress output"
     assert content.strip().endswith("|| true"), "Should not block commit on error"
 
@@ -45,7 +46,7 @@ def test_install_post_commit_hook_fresh_install(tmp_path):
     with open(hook_path) as f:
         content = f.read()
     assert content.startswith("#!/bin/sh\n")
-    assert "mcp-commit-story new-entry" in content
+    assert "python -m mcp_commit_story.git_hook_worker" in content
     assert content.strip().endswith("|| true")
 
 def test_install_post_commit_hook_replacement_creates_backup(tmp_path):
@@ -63,7 +64,7 @@ def test_install_post_commit_hook_replacement_creates_backup(tmp_path):
     with open(hook_path) as f:
         content = f.read()
     assert content.startswith("#!/bin/sh\n")
-    assert "mcp-commit-story new-entry" in content
+    assert "python -m mcp_commit_story.git_hook_worker" in content
     assert content.strip().endswith("|| true")
 
 def test_install_post_commit_hook_permission_error_on_hooks_dir(tmp_path):
