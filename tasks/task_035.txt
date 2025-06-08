@@ -655,11 +655,60 @@ sections['commit_metadata'] = execute_ai_function('generate_commit_metadata_sect
 - **Separation of Concerns:** Clear boundaries between Python orchestration and AI execution
 </info added on 2025-06-08T10:39:49.424Z>
 
-## 3. Write failing tests for orchestration layer [pending]
+## 3. Write failing tests for orchestration layer [done]
 ### Dependencies: 35.2
 ### Description: Following TDD principles, create comprehensive failing tests for the orchestration layer before implementation. Tests should cover function orchestration, telemetry collection, error handling, graceful degradation when individual sections fail, and proper coordination of AI function calls.
 ### Details:
+<info added on 2025-06-08T11:03:47.791Z>
+## Tests Successfully Created and Failing for the Right Reasons
 
+### Test Files Created
+
+**1. tests/test_journal_orchestrator.py (19,599 bytes)**
+- Tests for the core orchestration layer functions
+- Tests for AI function execution pattern 
+- Tests for context collection coordination
+- Tests for section validation and assembly
+- Tests for telemetry integration
+- Tests for error handling and graceful degradation
+
+**2. tests/test_server_orchestration_integration.py (11,473 bytes)**
+- Tests for server layer delegation to orchestration
+- Tests for MCP interface backward compatibility
+- Tests for error handling at server layer
+- Tests for telemetry aggregation between layers
+
+### Confirmed Failing for the Right Reasons
+
+**✅ test_journal_orchestrator.py**
+```
+ModuleNotFoundError: No module named 'mcp_commit_story.journal_orchestrator'
+```
+**Reason:** The orchestration module doesn't exist yet - PERFECT for TDD
+
+**✅ test_server_orchestration_integration.py**
+```
+AttributeError: server module does not have the attribute 'orchestrate_journal_generation'
+```
+**Reason:** Server hasn't been refactored to use orchestration yet - PERFECT for TDD
+
+### Test Coverage
+
+The failing tests comprehensively cover:
+- Main orchestration function with telemetry decoration
+- Individual AI function execution pattern
+- Context collection coordination (all 3 sources)
+- Section validation with type-specific fallbacks
+- Journal entry assembly logic
+- Error handling and graceful degradation
+- Server layer delegation and integration
+- MCP interface preservation
+- Telemetry collection and aggregation
+
+### Next Steps
+
+Ready for subtask 35.4 to implement the orchestration layer and make these tests pass while following the exact design specification from 35.2.
+</info added on 2025-06-08T11:03:47.791Z>
 
 ## 4. Implement orchestration layer [pending]
 ### Dependencies: 35.3
