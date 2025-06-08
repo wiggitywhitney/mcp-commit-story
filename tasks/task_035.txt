@@ -710,11 +710,62 @@ The failing tests comprehensively cover:
 Ready for subtask 35.4 to implement the orchestration layer and make these tests pass while following the exact design specification from 35.2.
 </info added on 2025-06-08T11:03:47.791Z>
 
-## 4. Implement orchestration layer [pending]
+## 4. Implement orchestration layer [done]
 ### Dependencies: 35.3
 ### Description: Create the new orchestration module that coordinates context collection (Layer 3) and content generation (Layer 4). Implement individual AI function calls, telemetry collection, error handling with fallbacks, and proper assembly of the final journal entry. Make the failing tests pass.
 ### Details:
+<info added on 2025-06-08T13:52:06.251Z>
+## Implementation Plan for Orchestration Layer
 
+Based on failing tests analysis, I need to implement:
+
+### 1. Core Module: `src/mcp_commit_story/journal_orchestrator.py`
+
+**Primary Functions:**
+- `orchestrate_journal_generation(commit_hash, journal_path)` - Main orchestration function with telemetry
+- `execute_ai_function(function_name, context)` - AI function execution pattern  
+- `collect_all_context_data(commit_hash, since_commit, max_messages_back, repo_path, journal_path)` - Context coordination
+- `assemble_journal_entry(sections)` - Pure Python assembly with validation
+- `validate_section_result(section_name, result)` - Type-specific validation with fallbacks
+
+**Key Requirements:**
+- Uses `@trace_mcp_operation("orchestrate_journal_generation")` decorator
+- Individual AI function calls (8 functions from journal.py)
+- Graceful degradation with specific fallbacks per section type
+- Comprehensive telemetry collection
+- Error handling with categorization
+
+### 2. AI Function Execution Pattern
+
+The tests expect `execute_ai_function()` to:
+- Validate function names against 8 allowed journal functions
+- Handle AI execution failures gracefully  
+- Return dict structure with error metadata on failures
+- Log AI function calls
+
+### 3. Context Collection Strategy
+
+`collect_all_context_data()` coordinates three sources:
+- `collect_git_context()` (existing, Python)
+- `collect_chat_history()` (existing, AI)  
+- `collect_ai_terminal_commands()` (existing, AI)
+- Returns `JournalContext` with partial failure handling
+
+### 4. Section Validation & Assembly
+
+Each section gets type-specific validation:
+- `summary`: string fallback to ""
+- `accomplishments`/`frustrations`: list fallback to []
+- `tone_mood`: None fallback
+- `discussion_notes`/`terminal_commands`: list fallback to []
+- `commit_metadata`: dict fallback to {}
+
+### 5. Server Integration
+
+Update `server.py` to add `orchestrate_journal_generation` import and delegation from `generate_journal_entry()`.
+
+Starting implementation with TDD approach - make failing tests pass while following the exact design specification from 35.2.
+</info added on 2025-06-08T13:52:06.251Z>
 
 ## 5. Write failing tests for refactored server.py integration [pending]
 ### Dependencies: 35.4

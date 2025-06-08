@@ -27,6 +27,59 @@ MCP Commit Story follows an **MCP-first architecture** with a minimal setup-only
                        └──────────────────┘
 ```
 
+## 4-Layer Journal Generation Architecture
+
+The journal generation process follows a **4-layer architecture** with an orchestration layer that coordinates all operations:
+
+### Layer 1: MCP Server (Delegation)
+- **Entry Point**: `server.py` - MCP tool handlers
+- **Responsibility**: Validate requests, delegate to orchestration layer
+- **Key Function**: `handle_journal_new_entry()` → delegates to `orchestrate_journal_generation()`
+
+### Layer 2: Orchestration (Coordination + Telemetry)
+- **Module**: `journal_orchestrator.py` 
+- **Responsibility**: Coordinate all phases with comprehensive telemetry
+- **Key Functions**:
+  - `orchestrate_journal_generation()` - Main orchestration with `@trace_mcp_operation`
+  - `execute_ai_function()` - Individual AI function execution pattern
+  - `collect_all_context_data()` - Context collection coordination
+  - `assemble_journal_entry()` - Final assembly with validation
+- **Features**:
+  - Individual AI function calls (8 functions from journal.py)
+  - Graceful degradation with specific fallbacks per section type
+  - Comprehensive telemetry using `get_mcp_metrics()` and `record_counter()`
+  - Error handling with categorization and contextual information
+
+### Layer 3: Context Collection (Data Gathering)
+- **Modules**: `context_collection.py`, `git_utils.py`
+- **Responsibility**: Gather context from three sources with graceful degradation
+- **Sources**:
+  - **Git Context**: `collect_git_context()` (Python implementation - most reliable)
+  - **Chat History**: `collect_chat_history()` (AI implementation - may fail)
+  - **Terminal Commands**: `collect_ai_terminal_commands()` (AI implementation - may fail)
+- **Fallback Strategy**: Always provides at least git context, gracefully handles failures
+
+### Layer 4: Content Generation (Individual AI Functions)
+- **Module**: `journal.py`
+- **Responsibility**: Generate specific journal sections using AI
+- **Functions** (8 individual AI function calls):
+  - `generate_summary_section()`
+  - `generate_technical_synopsis_section()`
+  - `generate_accomplishments_section()`
+  - `generate_frustrations_section()`
+  - `generate_tone_mood_section()`
+  - `generate_discussion_notes_section()`
+  - `generate_terminal_commands_section()`
+  - `generate_commit_metadata_section()`
+
+### Orchestration Benefits
+
+1. **Reliability**: Individual AI function calls with specific error handling
+2. **Observability**: Comprehensive telemetry at every layer
+3. **Graceful Degradation**: Continues operation even with partial failures
+4. **Type Safety**: Full validation and fallbacks for each section type
+5. **Performance**: Optimized context collection and AI execution patterns
+
 ## Setup CLI (Human Interface)
 
 **Entry Point**: `mcp-commit-story-setup`
@@ -80,6 +133,7 @@ await mcp_client.call_tool("journal/add-reflection", {
 # Automatically triggered after each commit
 git commit -m "Implement user authentication"
 # → Triggers journal/new-entry via MCP
+# → Orchestration layer coordinates all operations
 # → Creates journal/daily/2025-01-15.md entry
 ```
 
@@ -110,3 +164,4 @@ git commit -m "Implement user authentication"
 - **[Journal Behavior](journal-behavior.md)** - Content generation rules
 - **[Server Setup](server_setup.md)** - Deployment and configuration
 - **[Testing Standards](testing_standards.md)** - Quality assurance
+- **[Telemetry](telemetry.md)** - Observability and monitoring

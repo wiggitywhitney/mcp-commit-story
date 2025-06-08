@@ -13,6 +13,7 @@
 5. [Implementation](#implementation)
    - [MCP Server Overview](#mcp-server-overview)
    - [Core Components](#core-components)
+   - [4-Layer Orchestration Architecture](#4-layer-orchestration-architecture)
    - [File Structure](#file-structure)
    - [Configuration](#configuration)
    - [AI Tone/Style Configuration](#ai-tonestyle-configuration)
@@ -236,6 +237,107 @@ The journal system follows a modular architecture with clear separation of conce
 - Cross-platform timestamp formatting and file path handling
 
 This separation follows the single responsibility principle and makes the codebase easier to maintain and test.
+
+### 4-Layer Orchestration Architecture
+
+The journal generation process follows a **4-layer architecture** with a dedicated orchestration layer that coordinates all operations for maximum reliability and observability.
+
+#### Layer 1: MCP Server (Delegation)
+- **Module**: `server.py`
+- **Responsibility**: Request validation and delegation to orchestration layer
+- **Entry Points**:
+  - `handle_journal_new_entry()` - MCP tool handler
+  - Request validation using TypedDict contracts
+  - **Delegation**: `handle_journal_new_entry()` → `orchestrate_journal_generation()`
+- **Features**:
+  - MCP protocol compliance with structured request/response formats
+  - Error handling with standardized response formatting
+  - Telemetry integration via `@trace_mcp_operation` decorators
+
+#### Layer 2: Orchestration (Coordination + Telemetry)
+- **Module**: `journal_orchestrator.py` ✅ **IMPLEMENTED**
+- **Responsibility**: Coordinate all phases with comprehensive telemetry and error handling
+- **Key Functions**:
+  - `orchestrate_journal_generation(commit_hash, journal_path)` - Main orchestration with `@trace_mcp_operation`
+  - `execute_ai_function(function_name, context)` - Individual AI function execution pattern
+  - `collect_all_context_data(...)` - Context collection coordination with graceful degradation
+  - `assemble_journal_entry(sections, commit_hash)` - Final assembly with type-safe validation
+  - `validate_section_result(section_name, result)` - Type-specific validation with fallbacks
+  - `log_telemetry_event(event_name, **kwargs)` - Real telemetry integration
+
+**Architecture Benefits**:
+- **Individual AI Function Calls**: Each of the 8 journal sections (`generate_summary_section`, `generate_technical_synopsis_section`, etc.) called individually for granular error handling
+- **Graceful Degradation**: Context collection continues with partial failures; specific fallbacks per section type
+- **Comprehensive Telemetry**: Real telemetry using `get_mcp_metrics()` and `record_counter()` for `orchestration.*` events
+- **Error Categorization**: Detailed error tracking with contextual information for debugging
+- **Type Safety**: Full TypedDict validation and fallbacks for each section type
+
+**Telemetry Integration**:
+```python
+def log_telemetry_event(event_name: str, **kwargs):
+    """Log telemetry events through proper telemetry system."""
+    metrics = get_mcp_metrics()
+    if metrics:
+        # Record as counter with event type
+        metrics.record_counter(f"orchestration.{event_name}.total", 1, kwargs)
+    else:
+        # Fallback to logging
+        logger.info(f"Telemetry event: {event_name}, data: {kwargs}")
+```
+
+#### Layer 3: Context Collection (Data Gathering)
+- **Modules**: `context_collection.py`, `git_utils.py`
+- **Responsibility**: Gather context from three sources with graceful degradation
+- **Sources**:
+  - **Git Context**: `collect_git_context()` (Python implementation - most reliable)
+  - **Chat History**: `collect_chat_history()` (AI implementation - may fail)
+  - **Terminal Commands**: `collect_ai_terminal_commands()` (AI implementation - may fail)
+- **Fallback Strategy**: Always provides at least git context, gracefully handles AI failures
+- **Integration**: Called by orchestration layer via `collect_all_context_data()`
+
+#### Layer 4: Content Generation (Individual AI Functions)
+- **Module**: `journal.py`
+- **Responsibility**: Generate specific journal sections using AI
+- **Functions** (8 individual AI function calls executed by orchestration layer):
+  - `generate_summary_section(context)`
+  - `generate_technical_synopsis_section(context)`
+  - `generate_accomplishments_section(context)`
+  - `generate_frustrations_section(context)`
+  - `generate_tone_mood_section(context)`
+  - `generate_discussion_notes_section(context)`
+  - `generate_terminal_commands_section(context)`
+  - `generate_commit_metadata_section(context)`
+- **Error Handling**: Each function called individually with specific error handling per section
+- **Validation**: Results validated by orchestration layer with type-specific fallbacks
+
+#### Orchestration Flow
+```python
+@trace_mcp_operation("orchestrate_journal_generation")
+def orchestrate_journal_generation(commit_hash: str, journal_path: str) -> Dict[str, Any]:
+    # Phase 1: Context Collection (with graceful degradation)
+    journal_context = collect_all_context_data(commit_hash, since_commit, max_messages_back, repo_path, journal_path_obj)
+    
+    # Phase 2: Content Generation (individual AI function calls)
+    sections = {}
+    for function_name in VALID_AI_FUNCTIONS:
+        try:
+            log_telemetry_event("ai_function_call", function_name=function_name, operation="start")
+            sections[function_name] = execute_ai_function(function_name, journal_context)
+            telemetry['successful_ai_functions'] += 1
+        except Exception as e:
+            sections[function_name] = {'error': str(e), 'content': None}
+            telemetry['failed_ai_functions'] += 1
+    
+    # Phase 3: Assembly (with validation and fallbacks)
+    journal_entry = assemble_journal_entry(sections, commit_hash)
+    
+    return {'success': True, 'journal_entry': journal_entry, 'telemetry': telemetry}
+```
+
+#### Testing Coverage
+- **✅ 23 orchestration tests passing** covering all layers and error scenarios
+- **✅ Real telemetry integration tests** verifying `get_mcp_metrics()` integration
+- **✅ Server integration tests** (planned for subsequent subtasks)
 
 ### File Structure
 ```
