@@ -532,11 +532,128 @@ The implementation will be tested using a strict TDD approach with the following
 ### Details:
 
 
-## 2. Design orchestration layer interface and API [pending]
+## 2. Design orchestration layer interface and API [done]
 ### Dependencies: None
 ### Description: Define the function signatures, parameters, return types, and error handling patterns for the new orchestration layer. Document the interface between Layer 1 (MCP Server) and Layer 2 (Orchestration), as well as how Layer 2 will coordinate with Layers 3 and 4.
 ### Details:
+<info added on 2025-06-08T10:39:49.424Z>
+## Orchestration Layer Design Documentation
 
+### 4-Layer Architecture Overview
+
+**Layer 1 (MCP Server):** Simple delegation to orchestrator
+**Layer 2 (Orchestration):** Python coordination, telemetry, error handling, individual AI function calls  
+**Layer 3 (Context Collection):** Mixed execution (Git=Python, Chat/Terminal=AI)
+**Layer 4 (Content Generation):** Focused AI execution (8 individual functions)
+
+### Core Interface Design
+
+**Main Function:**
+```python
+@trace_mcp_operation("orchestrate_journal_generation")
+def orchestrate_journal_generation(commit_hash: str, journal_path: str) -> JournalEntry:
+    """Main orchestration function coordinating entire workflow."""
+```
+
+**AI Function Execution Pattern (Hybrid Approach):**
+```python
+def execute_ai_function(function_name: str, context: JournalContext) -> Dict[str, Any]:
+    """
+    Instruct AI agent to execute a specific function.
+    
+    AI Agent: Call {function_name}(context) from journal.py and return the result as a dictionary.
+    """
+    # AI agent executes the named function and returns results
+    # Python orchestrator does NOT call functions directly
+```
+
+### Context Collection Strategy
+
+**Individual Function Calls (No Wrapper):**
+```python
+# Call context collection functions directly
+chat_history = collect_chat_history(since_commit, max_messages_back) 
+terminal_context = collect_ai_terminal_commands(since_commit, max_messages_back)
+git_context = collect_git_context(commit_hash, repo, journal_path)
+
+# Assemble into JournalContext
+journal_context = JournalContext(
+    chat=chat_history,      # ChatHistory object
+    terminal=terminal_context,  # TerminalContext object  
+    git=git_context         # GitContext object
+)
+```
+
+**Error Handling:** Graceful degradation - continue with partial context if individual functions fail. Git-only journal entries are still valuable.
+
+### Content Generation Strategy
+
+**Individual AI Function Calls (Not Batched):**
+```python
+# Call each of 8 functions individually to maintain cognitive load reduction
+sections = {}
+sections['summary'] = execute_ai_function('generate_summary_section', journal_context)
+sections['technical_synopsis'] = execute_ai_function('generate_technical_synopsis_section', journal_context)
+sections['accomplishments'] = execute_ai_function('generate_accomplishments_section', journal_context)
+sections['frustrations'] = execute_ai_function('generate_frustrations_section', journal_context)
+sections['tone_mood'] = execute_ai_function('generate_tone_mood_section', journal_context)
+sections['discussion_notes'] = execute_ai_function('generate_discussion_notes_section', journal_context)
+sections['terminal_commands'] = execute_ai_function('generate_terminal_commands_section', journal_context)
+sections['commit_metadata'] = execute_ai_function('generate_commit_metadata_section', journal_context)
+```
+
+### Failed Section Handling
+
+**Always Include All Sections:** Use empty/default values for failed sections to ensure consistent structure:
+- `summary: ""` 
+- `accomplishments: []`
+- `frustrations: []` 
+- `tone_mood: None`
+- `discussion_notes: []`
+- `terminal_commands: []`
+- `commit_metadata: {}`
+
+### Return Type Validation
+
+**Comprehensive Validation:**
+- Check for required keys in TypedDict results
+- Validate data types (str, List[str], etc.)
+- Provide specific fallback values for each section type
+- Each section gets its own validation logic
+
+### Assembly Strategy
+
+**Pure Python Assembly:** No AI needed for combining results into JournalEntry structure. Just field mapping and validation.
+
+### Telemetry Integration
+
+**Following telemetry.md patterns:**
+- `@trace_mcp_operation("orchestrate_journal_generation")` for main function
+- Individual timing for each AI function call
+- Section success/failure metrics
+- Error categorization (ai_generation_failed, context_collection_failed, etc.)
+- Performance thresholds and circuit breaker patterns
+- Structured logging with trace correlation
+
+**Orchestrator-Level Metrics:**
+- Operation duration by phase (context collection, content generation, assembly)
+- Section success rates
+- Context collection partial failure tracking
+- Overall orchestration success rate
+
+### File Structure
+
+**Location:** `src/mcp_commit_story/journal_orchestrator.py` (flat structure matching codebase)
+
+### Key Benefits
+
+- **Reduced Cognitive Load:** Individual focused AI function calls instead of monolithic prompt
+- **Better Error Handling:** Graceful degradation with detailed telemetry 
+- **Consistent Structure:** Always returns complete JournalEntry with fallbacks
+- **Granular Observability:** Individual function timing and success tracking
+- **Type Safety:** Comprehensive validation with specific fallbacks per section
+- **Separation of Concerns:** Clear boundaries between Python orchestration and AI execution
+</info added on 2025-06-08T10:39:49.424Z>
 
 ## 3. Write failing tests for orchestration layer [pending]
 ### Dependencies: 35.2
