@@ -501,7 +501,7 @@
           "title": "Write failing tests for refactored server.py integration",
           "description": "Create failing tests for the refactored generate_journal_entry() function in server.py. Tests should verify that the monolithic AI prompt is replaced with simple delegation to the orchestration layer, maintaining backward compatibility with existing MCP interface.",
           "details": "",
-          "status": "pending",
+          "status": "done",
           "dependencies": [
             "35.4"
           ],
@@ -512,7 +512,7 @@
           "title": "Refactor server.py to use orchestration layer",
           "description": "Replace the monolithic AI prompt in generate_journal_entry() with simple delegation to the orchestration layer. Remove the massive docstring and implement clean separation between Layer 1 (MCP Server) and Layer 2 (Orchestration). Ensure backward compatibility with existing MCP interface.",
           "details": "",
-          "status": "pending",
+          "status": "done",
           "dependencies": [
             "35.5"
           ],

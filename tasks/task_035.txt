@@ -767,13 +767,13 @@ Update `server.py` to add `orchestrate_journal_generation` import and delegation
 Starting implementation with TDD approach - make failing tests pass while following the exact design specification from 35.2.
 </info added on 2025-06-08T13:52:06.251Z>
 
-## 5. Write failing tests for refactored server.py integration [pending]
+## 5. Write failing tests for refactored server.py integration [done]
 ### Dependencies: 35.4
 ### Description: Create failing tests for the refactored generate_journal_entry() function in server.py. Tests should verify that the monolithic AI prompt is replaced with simple delegation to the orchestration layer, maintaining backward compatibility with existing MCP interface.
 ### Details:
 
 
-## 6. Refactor server.py to use orchestration layer [pending]
+## 6. Refactor server.py to use orchestration layer [done]
 ### Dependencies: 35.5
 ### Description: Replace the monolithic AI prompt in generate_journal_entry() with simple delegation to the orchestration layer. Remove the massive docstring and implement clean separation between Layer 1 (MCP Server) and Layer 2 (Orchestration). Ensure backward compatibility with existing MCP interface.
 ### Details:
