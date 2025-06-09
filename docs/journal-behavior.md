@@ -20,7 +20,7 @@ This document defines how the mcp-commit-story system generates journal entries,
 
 ### Default Behavior
 - **One journal entry per Git commit**
-- Entries written to daily Markdown files, named `YYYY-MM-DD.md`
+- Entries written to daily Markdown files, named `YYYY-MM-DD-journal.md`
 - Timestamps included per entry (e.g., `4:02 PM — Commit abc123`)
 - Files appended in chronological order
 
@@ -238,39 +238,3 @@ Each journal entry should capture what was distinctive about this development se
 - Emotional context that influenced the work approach
 
 The Summary section should focus on these unique aspects rather than restating routine workflow steps.
-
----
-
-## Configuration Options
-
-### AI Tone/Style Configuration
-
-Control the tone and style of AI-generated summaries by setting the `ai_tone` field in `.mcp-commit-storyrc.yaml`.
-
-#### Supported Values
-- `neutral` (default): Objective, factual, and balanced. No strong personality.
-- `concise`: Short, direct, and minimal. Focuses on brevity and essentials.
-- `explanatory`: Clear, step-by-step, and focused on making things easy to understand.
-- `technical`: Uses precise, domain-specific language. For advanced/engineering audiences.
-- `reflective`: Thoughtful, introspective, and focused on lessons learned.
-- `friendly`: Warm, encouraging, and positive—but still professional.
-
-If an unsupported value is set, the system will fall back to `neutral` and log a warning.
-
-#### Configuration Example
-```yaml
-journal:
-  path: journal/
-  ai_tone: reflective
-  auto_generate: true
-  include_terminal: true
-  include_chat: true
-  include_mood: true
-```
-
-### Content Inclusion Toggles
-- `include_terminal`: Whether to attempt terminal command collection
-- `include_chat`: Whether to scan for chat history
-- `include_mood`: Whether to infer mood from available context
-
-All inclusion options default to `true` but degrade gracefully if data is unavailable. 

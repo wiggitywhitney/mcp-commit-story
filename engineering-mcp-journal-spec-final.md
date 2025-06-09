@@ -1773,134 +1773,144 @@ def should_generate_period_summaries(date_str: Optional[str]) -> Dict[str, bool]
 - **Backfill Friendly**: Can generate missing summaries for any historical date
 - **Race Condition Free**: No concurrent access issues with multiple git operations
 
-#### File Organization
+### Complete Daily Summary Automation Workflow
 
-Summary files are organized by period type:
+#### End-to-End Architecture
+The daily summary automation system implements a 4-layer architecture for complete commit-to-summary automation:
+
+**Layer 1 - Git Hook Trigger**: Post-commit hook using Python worker pattern calls git hook worker
+**Layer 2 - Worker Orchestration**: `git_hook_worker.py` coordinates trigger detection and MCP communication
+**Layer 3 - MCP Integration**: Worker calls MCP server `generate_daily_summary` tool
+**Layer 4 - AI Generation**: MCP tool orchestrates journal collection, AI synthesis, and file creation
+
+#### Workflow Process Steps
+
+1. **Git Commit Executed**: Developer makes normal git commit with journal entries
+2. **Hook Activation**: Post-commit hook executes `git_hook_worker.py` with repository path
+3. **Context Collection**: Worker loads configuration and scans journal directory for recent files
+4. **Trigger Detection**: `should_generate_daily_summary()` analyzes file creation patterns
+5. **Date Identification**: Returns target date for summary generation (previous day) or None
+6. **MCP Communication**: Worker calls MCP server with `generate_daily_summary` tool
+7. **Journal Collection**: MCP tool gathers all journal entries for target date
+8. **AI Synthesis**: 8-section daily summary generated with manual reflection preservation
+9. **File Creation**: Summary saved to `journal/summaries/daily/YYYY-MM-DD-summary.md`
+10. **Period Boundaries**: Check for weekly/monthly/quarterly summary triggers
+11. **Error Logging**: All operations logged to `.git/hooks/mcp-commit-story.log`
+12. **Graceful Exit**: Hook completes without blocking git operations
+
+#### Component Integration
+
+**Git Hook Worker** (`git_hook_worker.py`, 350 lines):
+- Orchestrates complete automation workflow
+- Implements graceful error handling and logging
+- Manages MCP server communication
+- Handles period summary boundary detection
+
+**Daily Summary Logic** (`daily_summary.py`, 1000+ lines):
+- File-creation-based trigger system
+- AI-powered summary generation with 8-section structure
+- Manual reflection extraction and preservation
+- Robust error handling and telemetry integration
+
+**MCP Server Integration** (`server.py`):
+- `handle_generate_daily_summary()` tool implementation
+- Complete TypedDict request/response schemas
+- Error handling and status reporting
+- Telemetry integration for monitoring
+
+#### Troubleshooting and Diagnostics
+
+**Hook Operation Logging**:
+All daily summary operations are logged to `.git/hooks/mcp-commit-story.log` with structured format:
 ```
-summaries/
-├── daily/
-│   ├── 2025-01-05-summary.md
-│   └── 2025-01-06-summary.md
-├── weekly/
-│   └── 2025-01-week1-summary.md
-├── monthly/
-│   └── 2025-01-summary.md
-└── quarterly/
-    └── 2025-Q1-summary.md
+[2025-01-06T09:30:15] INFO - === Git hook worker starting ===
+[2025-01-06T09:30:15] INFO - Daily summary should be generated for: 2025-01-05
+[2025-01-06T09:30:16] INFO - Daily summary generated successfully for 2025-01-05
+[2025-01-06T09:30:16] INFO - === Git hook worker completed ===
 ```
 
-### Source File Linking System
+**Common Issues and Resolution**:
+- **No Summary Generated**: Check for same-day commits, existing summaries, or insufficient journal entries
+- **Hook Not Executing**: Verify hook installation and execute permissions (`ls -la .git/hooks/post-commit`)
+- **MCP Communication Failures**: Check MCP server status and configuration
+- **Permission Errors**: Ensure write access to journal directories
 
-#### Overview
-The source file linking system creates a navigable hierarchy within summary generation, enabling users to trace information provenance from high-level summaries down to individual journal entries. This system is implemented through the `summary_utils.py` module and automatically integrated into all summary generation workflows.
+**Manual Testing Commands**:
+```bash
+# Test hook worker directly
+python -m mcp_commit_story.git_hook_worker "$PWD"
 
-#### Core Architecture
+# Test trigger logic manually  
+python -c "
+from mcp_commit_story.daily_summary import should_generate_daily_summary
+result = should_generate_daily_summary('journal/daily/2025-01-06-journal.md', 'journal/summaries/daily')
+print(f'Summary needed for: {result}')
+"
 
-**Primary Module**: `src/mcp_commit_story/summary_utils.py` (348 lines)
-- Source file detection for all summary types
-- Automatic link generation with existence checking
-- Markdown integration for formatted output
-- Error handling for missing files and invalid formats
-
-**Integration Points**:
-- `daily_summary.py`: Enhanced to include source linking via `add_source_links_to_summary()`
-- New summary modules: `weekly_summary.py`, `monthly_summary.py`, `quarterly_summary.py`, `yearly_summary.py`
-- Markdown generation: Automatic source links sections in summary output
-
-#### Hierarchical Linking Structure
-
-```
-Yearly (2025)
-├── Quarterly (Q2 2025) → Monthly summaries (2025-04.md, 2025-05.md, 2025-06.md)
-│   └── Monthly (2025-06) → Weekly summaries (week23-27.md) 
-│       └── Weekly (week23) → Daily summaries (2025-06-02 to 2025-06-08)
-│           └── Daily (2025-06-06) → Journal entry (2025-06-06-journal.md)
+# Monitor hook execution
+tail -f .git/hooks/mcp-commit-story.log
 ```
 
-#### Source Detection Logic
+#### Integration Testing
 
-**Daily Summaries**:
-- **Sources**: Journal entry files (`YYYY-MM-DD-journal.md`)
-- **Location**: `daily/` directory
-- **Implementation**: `_get_daily_summary_sources()`
+**End-to-End Test Suite** (`tests/integration/test_daily_summary_end_to_end.py`, 13 tests):
 
-**Weekly Summaries**:
-- **Sources**: Daily summary files for 7 consecutive days starting from Monday
-- **Location**: `summaries/daily/` directory
-- **Implementation**: `_get_weekly_summary_sources()` with Monday calculation logic
+**Complete Workflow Testing**:
+- Basic scenario: journal entries → commit → date change → summary generation
+- Multi-day scenarios with proper date transition handling  
+- Edge cases: first commit, same-day commits, no journal entries
 
-**Monthly Summaries**:
-- **Sources**: Weekly summary files for all weeks that start within the month
-- **Location**: `summaries/weekly/` directory
-- **Implementation**: `_get_monthly_summary_sources()` with complex calendar mathematics
-- **File Format Support**: Multiple naming conventions (`YYYY-MM-weekNN.md`, `YYYY-weekNN.md`, `YYYY-WWW.md`)
+**Git Hook Integration Testing**:
+- Hook installation with daily summary logic
+- Hook execution calling the worker
+- Graceful error handling that doesn't block git operations
 
-**Quarterly Summaries**:
-- **Sources**: Monthly summary files for the 3 months in the quarter
-- **Location**: `summaries/monthly/` directory
-- **Implementation**: `_get_quarterly_summary_sources()` with quarter-to-month mapping
+**Manual vs Automatic Consistency**:
+- Direct MCP tool invocation produces identical results to automatic triggering
+- Both methods use same underlying logic and file naming conventions
 
-**Yearly Summaries**:
-- **Sources**: Quarterly summary files for all 4 quarters
-- **Location**: `summaries/quarterly/` directory
-- **Implementation**: `_get_yearly_summary_sources()`
+**Error Recovery Testing**:
+- Hook failures don't disrupt git operations
+- Missing dependencies handled gracefully
+- File system errors logged with appropriate fallbacks
 
-#### Key Functions
-
+**Test Coverage Areas**:
 ```python
-def determine_source_files_for_summary(summary_type: str, date_identifier: str, journal_path: str) -> List[Dict[str, Any]]:
-    """Main entry point for source file detection."""
+class TestDailySummaryEndToEndWorkflow:
+    def test_complete_workflow_basic_scenario()      # Basic automation flow
+    def test_multi_day_scenario()                    # Multiple day transitions
+    def test_edge_case_same_day_multiple_commits()   # No duplicate summaries
+    def test_edge_case_no_journal_entries()          # Empty day handling
 
-def add_source_links_to_summary(summary_obj: Any, summary_type: str, date_identifier: str, journal_path: str) -> Any:
-    """Enhance summary objects with source file metadata."""
+class TestGitHookIntegrationWithDailySummary:
+    def test_hook_installation_includes_daily_summary_logic()  # Hook content verification
+    def test_hook_execution_calls_worker()                     # Worker integration
 
-def generate_source_links_section(source_files: List[Dict[str, Any]], coverage_description: str) -> str:
-    """Generate markdown-formatted source links sections."""
-
-def enhance_summary_markdown_with_source_links(markdown_content: str, summary_type: str, date_identifier: str, journal_path: str) -> str:
-    """Add source links to existing markdown content."""
+class TestManualVsAutomaticTriggering:
+    def test_manual_mcp_tool_invocation()           # Direct MCP tool testing
+    def test_automatic_vs_manual_consistency()      # Result equivalence
 ```
 
-#### Output Format
+**Test Infrastructure**:
+- Temporary git repositories with full journal structure
+- Mock MCP server for testing integration points
+- Comprehensive fixture system for multi-day scenarios
+- Automated hook installation and execution testing
 
-Source links are automatically formatted as markdown sections in summary files:
+#### Performance Characteristics
 
-```markdown
-#### Source Files
+**Hook Execution Time**: <2 seconds typical for summary generation
+**Memory Usage**: Minimal impact on git operations
+**Scalability**: Handles repositories with extensive journal history
+**Background Processing**: MCP operations run asynchronously
+**Resource Isolation**: Failures don't impact git workflow performance
 
-**Coverage**: June 6, 2025
+#### Security and Privacy
 
-**Available Files**:
-- [2025-06-06-journal.md](daily/2025-06-06-journal.md)
-
-**Missing Files**:
-- [2025-06-05-journal.md](daily/2025-06-05-journal.md) *(file not found)*
-```
-
-#### Error Handling and Edge Cases
-
-- **Invalid Date Formats**: Graceful parsing error handling with logging
-- **Missing Directories**: Robust file system error handling for missing `summaries/` subdirectories
-- **Calendar Edge Cases**: Complex logic for month boundaries, leap years, and week calculations
-- **File System Permissions**: Graceful handling of permission errors during file existence checks
-- **Unknown Summary Types**: Warning logs for unrecognized summary types with safe fallback
-
-#### Testing Coverage
-
-Comprehensive test suite in `tests/unit/test_summary_source_links.py`:
-- **9 test scenarios** covering all summary types and hierarchical relationships
-- **File existence testing** for both available and missing source files
-- **Calendar mathematics validation** for complex boundary scenarios
-- **Integration testing** with existing summary generation workflows
-- **Error condition handling** for invalid inputs and missing files
-
-#### Benefits
-
-1. **Information Traceability**: Complete provenance tracking from summaries to source data
-2. **Hierarchical Navigation**: Seamless navigation through the summary ecosystem
-3. **Content Transparency**: Clear visibility into data sources for each summary
-4. **Quality Assurance**: Users can verify summary accuracy by checking source files
-5. **Knowledge Graph Creation**: Interconnected system enabling discovery and exploration
+**Local Operations**: All processing happens locally, no external dependencies
+**Error Isolation**: Failures don't expose sensitive repository information
+**File Permissions**: Respects existing repository security model
+**Data Protection**: No automatic transmission of journal content
 
 ---
 

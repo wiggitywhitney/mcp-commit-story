@@ -14,6 +14,8 @@ This document provides detailed implementation guidance for developing the mcp-c
 8. [Testing Strategy](#testing-strategy)
 9. [Performance and Security](#performance-and-security)
 10. [Development Workflow](#development-workflow)
+11. [Daily Summary Workflow](#complete-daily-summary-workflow)
+12. [Daily Summary Troubleshooting](#daily-summary-troubleshooting-guide)
 
 ---
 
@@ -252,6 +254,129 @@ Located in `src/mcp_commit_story/daily_summary.py`:
 - Log warnings and continue on errors (don't break git operations)
 - Return `None` for any failure cases
 - Handle missing directories, permission errors, and invalid date formats gracefully
+
+### Complete Daily Summary Workflow
+
+#### End-to-End Workflow Process
+The daily summary system follows this complete workflow:
+
+1. **Trigger Detection**: Git hook worker checks for daily summary trigger using file-creation-based logic
+2. **MCP Communication**: Worker calls MCP server `generate_daily_summary` tool
+3. **Data Collection**: MCP tool collects all journal entries for the target date
+4. **Summary Generation**: AI-powered synthesis creates comprehensive daily summary
+5. **File Creation**: Summary saved to `journal/summaries/daily/YYYY-MM-DD-summary.md`
+6. **Period Boundaries**: Check for weekly/monthly/quarterly summary triggers
+7. **Logging**: All operations logged for troubleshooting and audit
+
+#### Workflow Components Integration
+- **Git Hook Worker** (`git_hook_worker.py`): Orchestrates the entire process
+- **Daily Summary Logic** (`daily_summary.py`): Implements trigger detection and file management
+- **MCP Server** (`server.py`): Provides `handle_generate_daily_summary` tool
+- **Journal Generation** (`journal.py`): AI-powered content synthesis
+- **Configuration** (`config.py`): Journal path and summary settings
+
+#### Automatic vs Manual Triggering
+- **Automatic**: Triggered by git commits when journal file creation indicates date change
+- **Manual**: Direct MCP tool invocation for specific dates
+- **Consistency**: Both methods use identical underlying logic and produce identical results
+- **Idempotent**: Safe to run multiple times - duplicate summaries prevented
+
+### Daily Summary Troubleshooting Guide
+
+#### Common Issues and Solutions
+
+**Hook Not Executing**
+- **Symptom**: No journal entries or summaries generated after commits
+- **Check**: Verify hook exists and is executable: `ls -la .git/hooks/post-commit`
+- **Fix**: Reinstall hook: `mcp-commit-story-setup install-hook`
+- **Debug**: Check hook log: `cat .git/hooks/mcp-commit-story.log`
+
+**Daily Summary Not Generated**
+- **Symptom**: Journal entries exist but no daily summary created
+- **Check**: Verify summary directory structure: `journal/summaries/daily/`
+- **Causes**: 
+  - Same-day commits (no date change detected)
+  - Summary already exists for target date
+  - Insufficient journal entries for target date
+- **Debug**: Review hook log for daily summary trigger decisions
+
+**Permission Errors**
+- **Symptom**: Hook fails with permission denied errors
+- **Check**: Directory permissions: `ls -la journal/`
+- **Fix**: Ensure write permissions: `chmod -R 755 journal/`
+- **Note**: Hook designed for graceful degradation - git operations continue
+
+**MCP Server Communication Failures**
+- **Symptom**: Hook log shows MCP tool call failures
+- **Check**: MCP server running and accessible
+- **Debug**: Test manual MCP tool invocation
+- **Fallback**: Hook continues with journal entry generation only
+
+**Missing Dependencies**
+- **Symptom**: Import errors in hook log
+- **Check**: Python environment has all required packages
+- **Fix**: Reinstall dependencies: `pip install -e .`
+- **Environment**: Ensure hook uses correct Python environment
+
+**Invalid Date Formats**
+- **Symptom**: Date extraction failures in hook log  
+- **Check**: Journal filenames follow YYYY-MM-DD-journal.md pattern
+- **Fix**: Rename files to correct format or recreate entries
+- **Prevention**: Use MCP tools for consistent file naming
+
+#### Debug Tools and Commands
+
+**Hook Log Analysis**
+```bash
+# View recent hook activity
+tail -n 50 .git/hooks/mcp-commit-story.log
+
+# Search for specific errors
+grep -i "error\|warning" .git/hooks/mcp-commit-story.log
+
+# Monitor hook execution in real-time
+tail -f .git/hooks/mcp-commit-story.log
+```
+
+**Manual Testing**
+```bash
+# Test hook worker directly
+python -m mcp_commit_story.git_hook_worker "$PWD"
+
+# Test daily summary trigger logic
+python -c "
+from mcp_commit_story.daily_summary import should_generate_daily_summary
+result = should_generate_daily_summary('journal/daily/2025-01-06-journal.md', 'journal/summaries/daily')
+print(f'Summary needed for: {result}')
+"
+
+# Test MCP tool directly
+# (Through MCP client or integrated environment)
+```
+
+**File System Verification**
+```bash
+# Check journal structure
+find journal/ -type f -name "*.md" | sort
+
+# Verify summary files
+ls -la journal/summaries/daily/
+
+# Check permissions
+ls -la journal/ journal/summaries/ journal/summaries/daily/
+```
+
+#### Performance Considerations
+- **Hook Execution Time**: Designed to complete quickly (<2 seconds typical)
+- **Background Processing**: MCP operations run asynchronously
+- **Resource Usage**: Minimal impact on git operations
+- **Scalability**: Handles repositories with extensive journal history
+
+#### Security and Privacy
+- **Local Operations**: All processing happens locally
+- **No External Calls**: No network dependencies for core functionality
+- **File Permissions**: Respects existing repository security model
+- **Error Isolation**: Failures don't expose sensitive information
 
 ### Backfill Mechanism
 - **Detection**: Check commits since last journal entry in any file
