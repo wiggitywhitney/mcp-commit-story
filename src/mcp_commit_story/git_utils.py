@@ -249,7 +249,7 @@ def generate_hook_content(command: str = None) -> str:
     """
     if command is not None:
         # Legacy behavior for backwards compatibility
-        return f"#!/bin/sh\n{command} >/dev/null 2>&1 || true\n"
+    return f"#!/bin/sh\n{command} >/dev/null 2>&1 || true\n"
     else:
         # Enhanced behavior with Python worker for daily summary triggering
         return f'#!/bin/sh\npython -m mcp_commit_story.git_hook_worker "$PWD" >/dev/null 2>&1 || true\n'

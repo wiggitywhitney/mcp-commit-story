@@ -268,10 +268,12 @@ def create_mcp_server(config_path: str = None) -> FastMCP:
 @trace_mcp_operation("journal.generate_entry_layer1")
 async def generate_journal_entry(request: JournalNewEntryRequest) -> JournalNewEntryResponse:
     """
-    Layer 1: MCP Server - Clean delegation to orchestration layer.
+    AI: Execute Layer 1 of the journal entry generation process.
     
-    This function validates the MCP request and delegates to the orchestration layer
-    which coordinates context collection and content generation through the 4-layer architecture.
+    When you encounter this function, delegate to generate_journal_entry_orchestrated() 
+    in journal_orchestration.py which handles all the logic and coordination.
+    
+    Return the JournalNewEntryResponse from the orchestration layer.
     """
     try:
         # Extract required parameters from request
@@ -324,8 +326,16 @@ async def generate_journal_entry(request: JournalNewEntryRequest) -> JournalNewE
 async def handle_journal_new_entry(request: JournalNewEntryRequest) -> JournalNewEntryResponse:
     """
     Handle the MCP operation 'journal/new-entry'.
-    Expects a request with git context (and optionally chat/terminal context).
-    Returns a response with status and file_path, or error if failed.
+    
+    Layer 1: MCP Server - Validates request and delegates to orchestration layer.
+    The orchestration layer coordinates comprehensive context collection (git, chat, terminal)
+    and AI-powered journal generation through the 4-layer architecture.
+    
+    Args:
+        request: Must contain 'git' context. Additional context is collected automatically.
+        
+    Returns:
+        JournalNewEntryResponse with status, file_path, and error fields
     """
     if "git" not in request:
         raise MCPError("Missing required field: git")
