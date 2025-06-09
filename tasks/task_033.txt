@@ -1,7 +1,7 @@
 # Task ID: 33
 # Title: Remove All Console Output
 # Status: pending
-# Dependencies: 28, 26
+# Dependencies: 26
 # Priority: medium
 # Description: Audit and remove all remaining stdout/print statements, replacing them with proper logging and return values to ensure clean operation for MCP clients.
 # Details:
