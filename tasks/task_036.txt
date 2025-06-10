@@ -160,3 +160,59 @@ This task involves significant improvements to the context collection system by 
    - Verify troubleshooting guidance is clear and helpful
    - Confirm telemetry events are documented according to standards
    - Document cross-platform considerations and configuration options
+
+# Subtasks:
+## 1. Cursor-chat-browser Analysis and Workspace Detection Research [pending]
+### Dependencies: None
+### Description: Conduct deep analysis of cursor-chat-browser repository to understand workspace detection algorithms, message parsing patterns, and cross-platform path handling.
+### Details:
+Research the cursor-chat-browser repository (https://github.com/thomas-pedersen/cursor-chat-browser) to extract workspace detection algorithms and understand how they handle different platforms. Document message parsing patterns, JSON structure navigation, cross-platform path handling (Windows/macOS/Linux/WSL2), error recovery mechanisms, and permission handling. Study search/filtering patterns for boundary detection insights and analyze performance characteristics with large chat histories. Validate compatibility with current Cursor versions and document findings for implementation. This is a research phase with no TDD cycle required.
+
+## 2. Remove Current Chat Context Function and Design SQLite Reader [pending]
+### Dependencies: 36.1
+### Description: Remove the limited current chat collection function and design the new SQLite-based approach with proper workspace detection.
+### Details:
+Remove the current limited `collect_ai_chat_context` function from `context_collection.py`. Create a new SQLite reader function that uses Python's built-in sqlite3 module. Implement multi-method workspace detection based on cursor-chat-browser patterns for Windows, WSL2, macOS, Linux, and Linux remote/SSH environments. Implement workspace hash discovery and validation logic. Include user configuration fallback for edge cases and proper error handling for missing or inaccessible databases. REQUIRES APPROVAL FOR: workspace fallback strategy, detection priority order, and user configuration methods.
+
+## 3. Implement Direct Database Query Function [pending]
+### Dependencies: 36.2
+### Description: Create a function to query the Cursor chat database and extract complete conversation history with proper parsing and error handling.
+### Details:
+Implement a direct database query function that queries the `ItemTable` where `key='aiService.prompts'` to extract the complete conversation history. Ensure both human and AI messages are captured. Handle message threading and conversation context preservation. Extract timestamps and metadata for intelligent boundary detection. Parse the returned JSON format into a structured conversation history. Include appropriate error handling and logging. REQUIRES APPROVAL FOR: chat boundary detection strategy, message attribution handling, and message caching approach.
+
+## 4. Implement Chat Boundary Detection Logic [pending]
+### Dependencies: 36.3
+### Description: Create intelligent boundary detection for chat context using complete conversation history access with configurable limits and topic change detection.
+### Details:
+Implement smart boundary detection using complete chat history access. Consider conversation breaks, topic changes, and manual delimiters. Provide configurable limits with intelligent defaults based on cursor-chat-browser insights. Implement topic change detection mechanisms and session separation logic. Support both automatic and manual boundary configuration. REQUIRES APPROVAL FOR: topic change detection method, default boundary limits, and edge case handling.
+
+## 5. Update Four-Source Context Integration [pending]
+### Dependencies: 36.4
+### Description: Update downstream components to process four distinct context sources (git, terminal, cursor chat database, synthesized summary) with proper fallback handling.
+### Details:
+Update the downstream components in the `generate_journal_entry` functions to process four distinct context sources: git, terminal, cursor chat database, and synthesized summary. Handle cases where some context sources might be unavailable. Maintain backward compatibility with existing journal generation. REQUIRES APPROVAL FOR: context source prioritization, integration approach (modify existing vs new functions), and fallback behavior when Cursor database unavailable.
+
+## 6. Implement Synthesized Summary Collection [pending]
+### Dependencies: 36.5
+### Description: Create a new synthesized summary collection function that uses AI prompts to generate high-level summaries of conversations with configurable options.
+### Details:
+Create a new synthesized summary collection function that uses AI prompts to generate high-level summaries of conversations. Provide configuration options for summary detail level and focus areas. Handle rate limiting and API errors gracefully. REQUIRES APPROVAL FOR: AI model selection and configuration, summary prompt structure for journal relevance, and configuration options (length, detail, focus areas).
+
+## 7. Add Performance Caching Mechanisms [pending]
+### Dependencies: 36.6
+### Description: Implement caching mechanisms to avoid regenerating summaries unnecessarily and optimize database query performance with configuration caching.
+### Details:
+Implement caching mechanisms to avoid regenerating summaries unnecessarily and optimize database query performance. Implement configuration caching for performance optimization. Add cache invalidation logic for data freshness. Add memory usage monitoring and cache size limits. No approval required for this implementation-focused subtask.
+
+## 8. Implement Cross-Platform Support and Error Handling [pending]
+### Dependencies: 36.7
+### Description: Leverage cursor-chat-browser patterns for cross-platform compatibility and implement robust error handling with clear user-facing diagnostics.
+### Details:
+Leverage proven cursor-chat-browser patterns for cross-platform compatibility. Handle path variations across operating systems (Windows/macOS/Linux/WSL2). Implement permission handling with clear error messages for database access issues. Create repeatable setup for any end user's environment with auto-detection. Implement robust error recovery mechanisms for corrupted/missing databases. Add user-friendly diagnostics. REQUIRES APPROVAL FOR: platform detection (auto vs manual), diagnostic information level, and edge case handling for non-standard installations.
+
+## 9. Add Comprehensive Telemetry and Final Documentation [pending]
+### Dependencies: 36.8
+### Description: Implement comprehensive telemetry as defined in docs/telemetry.md and create final documentation for the complete Cursor chat database integration system.
+### Details:
+Add comprehensive telemetry as defined in docs/telemetry.md for workspace detection, database queries, summary generation, and error conditions. Ensure privacy compliance for chat data telemetry. Update all new functions with appropriate telemetry decorators. Create comprehensive user guide and update PRD/Engineering Spec with complete documentation. REQUIRES APPROVAL FOR: telemetry data collection scope and chat data privacy handling approach.
+
