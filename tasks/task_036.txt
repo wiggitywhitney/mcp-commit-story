@@ -1,0 +1,104 @@
+# Task ID: 36
+# Title: Implement Cursor Chat Database Integration for Journal Context Collection
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Enhance the journal context collection by implementing direct SQLite integration with the Cursor chat database to access complete conversation history instead of limited recent messages.
+# Details:
+This task involves significant improvements to the context collection system by directly accessing the Cursor chat database, implemented in four distinct phases:
+
+## Phase 1: Core SQLite Integration (MVP)
+
+1. Remove the current limited `collect_ai_chat_context` function from `context_collection.py` that only captures recent messages.
+
+2. Add a new SQLite reader function to `context_collection.py` that can:
+   - Use Python's built-in sqlite3 module (no external dependencies)
+   - Locate and connect to the Cursor chat database at `~/Library/Application Support/Cursor/User/workspaceStorage/[MD5_HASH]/state.vscdb`
+   - Implement proper error handling for missing or inaccessible databases
+
+3. Implement a direct database query function that:
+   - Queries the `ItemTable` where `key='aiService.prompts'` to extract the complete conversation history
+   - Parses the returned JSON format into a structured conversation history
+   - Includes appropriate error handling and logging
+
+## Phase 2: Context Integration
+
+4. Update the downstream components in the `generate_journal_entry` functions to:
+   - Process FOUR distinct context sources: git, terminal, cursor chat database, and synthesized summary
+   - Handle cases where some context sources might be unavailable
+   - Maintain backward compatibility with existing journal generation
+
+5. Implement chat boundary detection logic:
+   - Strategy to be determined during implementation
+   - Consider options: all history, since last commit, configurable limit
+
+## Phase 3: Enhancement Features
+
+6. Create a new synthesized summary collection function that:
+   - Uses AI prompts to generate high-level summaries of conversations
+   - Provides configuration options for summary detail level and focus areas
+   - Handles rate limiting and API errors gracefully
+
+7. Implement caching mechanisms for performance:
+   - Avoid regenerating summaries unnecessarily
+   - Optimize database query performance
+
+## Phase 4: Production Readiness
+
+8. Implement cross-platform support considerations:
+   - Handle path variations across operating systems
+   - Test on Windows, macOS, and Linux
+
+9. Address packaging considerations:
+   - Zero external dependencies (using built-in sqlite3)
+   - Document installation requirements for end users
+   - Provide fallback mechanisms when database access is not available
+
+## Additional Requirements
+
+10. Add comprehensive telemetry as defined in docs/telemetry.md
+
+11. Implement user-friendly diagnostics:
+    - Check if Cursor workspace is accessible
+    - Validate chat data availability
+    - Provide helpful error messages
+    - Include troubleshooting guidance
+
+12. Update documentation to reflect the new capabilities and requirements.
+
+# Test Strategy:
+1. Unit Testing:
+   - Create unit tests for the new SQLite reader function with mock database responses
+   - Test the database query function with various sample data structures
+   - Verify the synthesized summary function produces expected outputs
+   - Test error handling for all new functions with various failure scenarios
+   - Verify telemetry implementation with mock events
+
+2. Integration Testing:
+   - Test the complete context collection pipeline with a real Cursor chat database
+   - Verify that all four context sources are properly integrated in journal generation
+   - Test across different operating systems to ensure path handling works correctly
+   - Verify backward compatibility with existing journal entries
+   - Test diagnostic features with various error conditions
+
+3. Performance Testing:
+   - Measure and optimize query performance for large chat histories
+   - Test memory usage when processing extensive conversation data
+   - Benchmark summary generation time and resource usage
+   - Verify caching mechanisms improve performance as expected
+
+4. User Acceptance Testing:
+   - Verify the quality and relevance of journal entries with the enhanced context
+   - Compare journal entries generated with and without the new context sources
+   - Gather feedback on summary quality and completeness
+   - Test user experience with diagnostic messages
+
+5. Phased Implementation Verification:
+   - Verify each phase can be deployed independently
+   - Test MVP functionality in isolation
+   - Ensure enhancements build properly on core functionality
+
+6. Documentation Review:
+   - Ensure all new features are properly documented
+   - Verify troubleshooting guidance is clear and helpful
+   - Confirm telemetry events are documented according to standards

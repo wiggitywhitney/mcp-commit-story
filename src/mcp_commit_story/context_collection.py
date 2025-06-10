@@ -2,6 +2,17 @@
 Context collection functions for MCP Commit Story.
 
 This module provides unified functions for collecting chat, terminal, and git context for journal entry generation.
+
+# Context Collection Module
+# 
+# MAJOR DISCOVERY (2025-06-10): Found that Cursor stores complete chat history in accessible
+# SQLite databases at ~/Library/Application Support/Cursor/User/workspaceStorage/[hash]/state.vscdb
+# 
+# Key: 'aiService.prompts' contains JSON array with complete conversation history
+# This eliminates need for cronjobs and provides full chat context for journal generation
+# 
+# TODO: Implement collect_cursor_chat_history() to replace the current chat collection
+# See docs/cursor-chat-discovery.md for complete implementation details
 """
 
 import os
