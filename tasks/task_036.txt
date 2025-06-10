@@ -5,7 +5,33 @@
 # Priority: high
 # Description: Enhance the journal context collection by implementing direct SQLite integration with the Cursor chat database to access complete conversation history instead of limited recent messages.
 # Details:
-This task involves significant improvements to the context collection system by directly accessing the Cursor chat database, implemented in four distinct phases:
+This task involves significant improvements to the context collection system by directly accessing the Cursor chat database, implemented in five distinct phases:
+
+## Phase 0: Strategic Research
+
+1. Cursor-chat-browser Deep Analysis:
+   - Extract workspace detection algorithms from https://github.com/thomas-pedersen/cursor-chat-browser (397+ stars, battle-tested)
+   - Document their message parsing patterns and JSON structure navigation
+   - Map their cross-platform path handling (Windows/macOS/Linux/WSL2)
+   - Understand their error recovery mechanisms and permission handling
+   - Study their search/filtering patterns for boundary detection insights
+   - Analyze performance characteristics with large chat histories
+
+2. Message Completeness Validation:
+   - Confirm AI response storage locations (ensure both human AND AI messages captured)
+   - Test conversation threading and context preservation across sessions
+   - Validate timestamp accuracy, formats, and timezone handling
+   - Document metadata availability and conversation session identification
+   - Test message attribution patterns (human vs AI)
+
+3. Implementation Confidence Validation:
+   - Verify compatibility with current Cursor versions
+   - Validate support for our journal generation use cases
+   - Confirm complete message access (human + AI)
+   - Verify intelligent boundary detection capabilities
+   - Test cross-platform compatibility
+   - Document error handling patterns
+   - Understand performance characteristics
 
 ## Phase 1: Core SQLite Integration (MVP)
 
@@ -13,11 +39,21 @@ This task involves significant improvements to the context collection system by 
 
 2. Add a new SQLite reader function to `context_collection.py` that can:
    - Use Python's built-in sqlite3 module (no external dependencies)
-   - Locate and connect to the Cursor chat database at `~/Library/Application Support/Cursor/User/workspaceStorage/[MD5_HASH]/state.vscdb`
+   - Implement multi-method workspace detection based on cursor-chat-browser patterns:
+     * Windows: %APPDATA%\Cursor\User\workspaceStorage
+     * WSL2: /mnt/c/Users/<USERNAME>/AppData/Roaming/Cursor/User/workspaceStorage
+     * macOS: ~/Library/Application Support/Cursor/User/workspaceStorage
+     * Linux: ~/.config/Cursor/User/workspaceStorage
+     * Linux (remote/SSH): ~/.cursor-server/data/User/workspaceStorage
+   - Implement workspace hash discovery and validation logic
+   - Include user configuration fallback for edge cases
    - Implement proper error handling for missing or inaccessible databases
 
 3. Implement a direct database query function that:
    - Queries the `ItemTable` where `key='aiService.prompts'` to extract the complete conversation history
+   - Ensures both human and AI messages are captured (not just human side)
+   - Handles message threading and conversation context preservation
+   - Extracts timestamps and metadata for intelligent boundary detection
    - Parses the returned JSON format into a structured conversation history
    - Includes appropriate error handling and logging
 
@@ -29,8 +65,11 @@ This task involves significant improvements to the context collection system by 
    - Maintain backward compatibility with existing journal generation
 
 5. Implement chat boundary detection logic:
-   - Strategy to be determined during implementation
-   - Consider options: all history, since last commit, configurable limit
+   - Implement smart boundary detection using complete chat history access
+   - Consider conversation breaks, topic changes, or manual delimiters
+   - Provide configurable limits with intelligent defaults based on cursor-chat-browser insights
+   - Implement topic change detection mechanisms and session separation logic
+   - Support for both automatic and manual boundary configuration
 
 ## Phase 3: Enhancement Features
 
@@ -42,17 +81,22 @@ This task involves significant improvements to the context collection system by 
 7. Implement caching mechanisms for performance:
    - Avoid regenerating summaries unnecessarily
    - Optimize database query performance
+   - Implement configuration caching for performance optimization
 
 ## Phase 4: Production Readiness
 
 8. Implement cross-platform support considerations:
-   - Handle path variations across operating systems
+   - Leverage proven cursor-chat-browser patterns for cross-platform compatibility
+   - Handle path variations across operating systems (Windows/macOS/Linux/WSL2)
+   - Implement permission handling with clear error messages for database access issues
+   - Create repeatable setup for any end user's environment with auto-detection
    - Test on Windows, macOS, and Linux
 
 9. Address packaging considerations:
    - Zero external dependencies (using built-in sqlite3)
    - Document installation requirements for end users
    - Provide fallback mechanisms when database access is not available
+   - Implement robust error recovery mechanisms for corrupted/missing databases
 
 ## Additional Requirements
 
@@ -67,38 +111,52 @@ This task involves significant improvements to the context collection system by 
 12. Update documentation to reflect the new capabilities and requirements.
 
 # Test Strategy:
-1. Unit Testing:
+1. Research Phase Validation:
+   - Verify cursor-chat-browser patterns work with current Cursor versions
+   - Test cross-platform path detection on all supported platforms
+   - Validate message extraction completeness (both human and AI messages)
+   - Verify boundary detection mechanisms with various conversation patterns
+   - Document performance characteristics with large chat histories
+
+2. Unit Testing:
    - Create unit tests for the new SQLite reader function with mock database responses
    - Test the database query function with various sample data structures
-   - Verify the synthesized summary function produces expected outputs
+   - Test workspace detection across different platform configurations
+   - Verify message threading and conversation context preservation
+   - Test the synthesized summary function produces expected outputs
    - Test error handling for all new functions with various failure scenarios
    - Verify telemetry implementation with mock events
 
-2. Integration Testing:
+3. Integration Testing:
    - Test the complete context collection pipeline with a real Cursor chat database
    - Verify that all four context sources are properly integrated in journal generation
    - Test across different operating systems to ensure path handling works correctly
    - Verify backward compatibility with existing journal entries
    - Test diagnostic features with various error conditions
+   - Validate boundary detection with real-world conversation patterns
 
-3. Performance Testing:
+4. Performance Testing:
    - Measure and optimize query performance for large chat histories
    - Test memory usage when processing extensive conversation data
    - Benchmark summary generation time and resource usage
    - Verify caching mechanisms improve performance as expected
+   - Test configuration caching effectiveness
 
-4. User Acceptance Testing:
+5. User Acceptance Testing:
    - Verify the quality and relevance of journal entries with the enhanced context
    - Compare journal entries generated with and without the new context sources
    - Gather feedback on summary quality and completeness
    - Test user experience with diagnostic messages
+   - Validate cross-platform user experience
 
-5. Phased Implementation Verification:
+6. Phased Implementation Verification:
    - Verify each phase can be deployed independently
    - Test MVP functionality in isolation
    - Ensure enhancements build properly on core functionality
+   - Validate research findings against implementation results
 
-6. Documentation Review:
+7. Documentation Review:
    - Ensure all new features are properly documented
    - Verify troubleshooting guidance is clear and helpful
    - Confirm telemetry events are documented according to standards
+   - Document cross-platform considerations and configuration options
