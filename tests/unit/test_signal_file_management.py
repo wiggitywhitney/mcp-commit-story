@@ -116,29 +116,41 @@ class TestCreateSignalFile:
         }
     
     def test_successful_signal_file_creation(self, signal_directory, sample_metadata):
-        """Test successful creation of signal file with proper format."""
-        tool_name = "journal_new_entry"
-        parameters = {"date": "2025-06-11", "auto_summary": True}
+        """Test successful creation of a signal file with complete data."""
+        from mcp_commit_story.signal_management import create_signal_file
         
-        file_path = create_signal_file(
-            signal_directory=signal_directory,
-            tool_name=tool_name,
-            parameters=parameters,
-            commit_metadata=sample_metadata
-        )
+        tool_name = "generate_daily_summary"
+        parameters = {"auto_summary": True, "date": "2025-06-11"}
+        commit_metadata = {
+            "hash": "abc123def456",
+            "author": "Test Author",
+            "email": "test@example.com",
+            "date": "2025-06-11T15:30:00Z",
+            "message": "Test commit"
+        }
         
-        # Verify file was created
+        # Create signal file
+        file_path = create_signal_file(signal_directory, tool_name, parameters, commit_metadata)
+        
+        # Verify file exists
         assert os.path.exists(file_path)
         
-        # Verify file content
+        # Read and verify content - updated for minimal format
         with open(file_path, 'r') as f:
             signal_data = json.load(f)
         
+        # Verify minimal format structure
         assert signal_data["tool"] == tool_name
-        assert signal_data["params"] == parameters
-        assert signal_data["metadata"] == sample_metadata
+        # Minimal format includes commit_hash in params
+        expected_params = {**parameters, "commit_hash": "abc123def456"}
+        assert signal_data["params"] == expected_params
         assert "created_at" in signal_data
-        assert "signal_id" in signal_data
+        
+        # Verify forbidden fields are NOT present (minimal format)
+        assert "metadata" not in signal_data
+        assert "signal_id" not in signal_data
+        assert "author" not in signal_data
+        assert "email" not in signal_data
     
     def test_unique_file_naming(self, signal_directory, sample_metadata):
         """Test that signal files have unique names for proper ordering."""
@@ -177,17 +189,23 @@ class TestCreateSignalFile:
         with open(file_path, 'r') as f:
             signal_data = json.load(f)
         
-        # Verify required fields are present
-        required_fields = ["tool", "params", "metadata", "created_at", "signal_id"]
+        # Verify required fields are present (minimal format)
+        required_fields = ["tool", "params", "created_at"]
         for field in required_fields:
             assert field in signal_data
         
         # Verify field types
         assert isinstance(signal_data["tool"], str)
         assert isinstance(signal_data["params"], dict)
-        assert isinstance(signal_data["metadata"], dict)
         assert isinstance(signal_data["created_at"], str)
-        assert isinstance(signal_data["signal_id"], str)
+        
+        # Verify commit_hash is added to params 
+        assert "commit_hash" in signal_data["params"]
+        
+        # Verify forbidden fields are NOT present (minimal format)
+        forbidden_fields = ["metadata", "signal_id", "author", "email"]
+        for field in forbidden_fields:
+            assert field not in signal_data
     
     def test_disk_space_error_handling(self, signal_directory, sample_metadata):
         """Test graceful handling of disk space errors."""
@@ -256,7 +274,9 @@ class TestCreateSignalFile:
         with open(file_path, 'r') as f:
             signal_data = json.load(f)
         
-        assert signal_data["params"] == {}
+        # In minimal format, commit_hash is always added to params
+        expected_params = {"commit_hash": sample_metadata["hash"]}
+        assert signal_data["params"] == expected_params
         assert "created_at" in signal_data
     
     def test_large_metadata_handling(self, signal_directory):
@@ -278,74 +298,61 @@ class TestCreateSignalFile:
         # File should be created successfully
         assert os.path.exists(file_path)
         
-        # Content should be preserved
+        # Content should be preserved in minimal format
         with open(file_path, 'r') as f:
             signal_data = json.load(f)
         
-        assert len(signal_data["metadata"]["message"]) == 10000
-        assert len(signal_data["metadata"]["files_changed"]) == 1000
+        # In minimal format, only commit_hash is preserved in params
+        expected_params = {"test": True, "commit_hash": "abc123def456"}
+        assert signal_data["params"] == expected_params
+        
+        # Large metadata is NOT stored in signal (minimal format)
+        assert "metadata" not in signal_data
+        assert "message" not in signal_data
+        assert "files_changed" not in signal_data
 
 
 class TestValidateSignalFormat:
     """Test JSON structure validation for signal files."""
     
     def test_valid_signal_format(self):
-        """Test validation of correctly formatted signal."""
+        """Test validation passes for correct minimal signal format."""
+        # Valid minimal signal format
         valid_signal = {
             "tool": "journal_new_entry",
-            "params": {"date": "2025-06-11"},
-            "metadata": {"hash": "abc123", "author": "Test"},
-            "created_at": "2025-06-11T07:36:12Z",
-            "signal_id": "signal_123"
+            "params": {"commit_hash": "abc123def456"},
+            "created_at": "2025-06-11T07:36:12Z"
         }
         
-        # Should not raise any exception
         result = validate_signal_format(valid_signal)
         assert result is True
     
     def test_missing_required_fields(self):
         """Test validation fails when required fields are missing."""
-        invalid_signals = [
-            # Missing tool
+        # Test missing each required field
+        incomplete_signals = [
+            # Missing 'tool'
             {
                 "params": {},
-                "metadata": {},
-                "created_at": "2025-06-11T07:36:12Z",
-                "signal_id": "signal_123"
-            },
-            # Missing params
-            {
-                "tool": "test_tool",
-                "metadata": {},
-                "created_at": "2025-06-11T07:36:12Z",
-                "signal_id": "signal_123"
-            },
-            # Missing metadata
-            {
-                "tool": "test_tool",
-                "params": {},
-                "created_at": "2025-06-11T07:36:12Z",
-                "signal_id": "signal_123"
-            },
-            # Missing created_at
-            {
-                "tool": "test_tool",
-                "params": {},
-                "metadata": {},
-                "signal_id": "signal_123"
-            },
-            # Missing signal_id
-            {
-                "tool": "test_tool",
-                "params": {},
-                "metadata": {},
                 "created_at": "2025-06-11T07:36:12Z"
-            }
+            },
+            # Missing 'params'
+            {
+                "tool": "test_tool",
+                "created_at": "2025-06-11T07:36:12Z"
+            },
+            # Missing 'created_at'
+            {
+                "tool": "test_tool",
+                "params": {}
+            },
+            # Completely empty
+            {}
         ]
         
-        for invalid_signal in invalid_signals:
+        for incomplete_signal in incomplete_signals:
             with pytest.raises(SignalValidationError):
-                validate_signal_format(invalid_signal)
+                validate_signal_format(incomplete_signal)
     
     def test_invalid_field_types(self):
         """Test validation fails when field types are incorrect."""
@@ -354,41 +361,19 @@ class TestValidateSignalFormat:
             {
                 "tool": 123,
                 "params": {},
-                "metadata": {},
-                "created_at": "2025-06-11T07:36:12Z",
-                "signal_id": "signal_123"
+                "created_at": "2025-06-11T07:36:12Z"
             },
             # params should be dict
             {
                 "tool": "test_tool",
                 "params": "invalid",
-                "metadata": {},
-                "created_at": "2025-06-11T07:36:12Z",
-                "signal_id": "signal_123"
-            },
-            # metadata should be dict
-            {
-                "tool": "test_tool",
-                "params": {},
-                "metadata": "invalid",
-                "created_at": "2025-06-11T07:36:12Z",
-                "signal_id": "signal_123"
+                "created_at": "2025-06-11T07:36:12Z"
             },
             # created_at should be string
             {
                 "tool": "test_tool", 
                 "params": {},
-                "metadata": {},
-                "created_at": 123,
-                "signal_id": "signal_123"
-            },
-            # signal_id should be string
-            {
-                "tool": "test_tool",
-                "params": {},
-                "metadata": {},
-                "created_at": "2025-06-11T07:36:12Z",
-                "signal_id": 123
+                "created_at": 123
             }
         ]
         
@@ -403,36 +388,23 @@ class TestValidateSignalFormat:
             validate_signal_format({
                 "tool": "",
                 "params": {},
-                "metadata": {},
-                "created_at": "2025-06-11T07:36:12Z",
-                "signal_id": "signal_123"
-            })
-        
-        # Empty signal_id should be invalid
-        with pytest.raises(SignalValidationError):
-            validate_signal_format({
-                "tool": "test_tool",
-                "params": {},
-                "metadata": {},
-                "created_at": "2025-06-11T07:36:12Z",
-                "signal_id": ""
+                "created_at": "2025-06-11T07:36:12Z"
             })
     
-    def test_additional_fields_allowed(self):
-        """Test that additional fields are allowed in signal format."""
+    def test_additional_fields_rejected_minimal_format(self):
+        """Test that additional fields are rejected in minimal signal format."""
         signal_with_extra_fields = {
             "tool": "journal_new_entry",
-            "params": {"date": "2025-06-11"},
-            "metadata": {"hash": "abc123"},
+            "params": {"commit_hash": "abc123"},
             "created_at": "2025-06-11T07:36:12Z",
-            "signal_id": "signal_123",
-            "extra_field": "allowed",
-            "version": "1.0"
+            "extra_field": "not_allowed",  # Extra field should be rejected
+            "metadata": {"hash": "abc123"},  # Legacy field should be rejected
+            "signal_id": "signal_123"  # Legacy field should be rejected
         }
         
-        # Should not raise any exception
-        result = validate_signal_format(signal_with_extra_fields)
-        assert result is True
+        # Should raise SignalValidationError for extra fields
+        with pytest.raises(SignalValidationError, match="Extra fields not allowed"):
+            validate_signal_format(signal_with_extra_fields)
     
     def test_non_dict_input(self):
         """Test validation fails for non-dict input."""

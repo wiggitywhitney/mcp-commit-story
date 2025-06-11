@@ -142,6 +142,15 @@ def create_signal_file(
     # Use thread lock for concurrent signal creation safety
     with _signal_creation_lock:
         try:
+            # Validate commit metadata has required hash
+            if not commit_metadata.get("hash"):
+                if metrics:
+                    metrics.record_counter("signal_file_missing_commit_hash", 1)
+                raise SignalFileError(
+                    "Commit metadata must contain 'hash' field for minimal signal creation",
+                    graceful_degradation=True
+                )
+            
             # Generate unique timestamp-based filename with microsecond precision and counter
             now = datetime.now(timezone.utc)
             # Use full microsecond precision for better uniqueness
@@ -164,13 +173,17 @@ def create_signal_file(
                 filename = f"{signal_id}.json"
                 file_path = Path(signal_directory) / filename
             
-            # Create signal data structure
+            # Create minimal signal data structure (privacy-safe, no redundancy)
+            # Add commit_hash to params for on-demand context retrieval
+            minimal_params = {
+                **parameters,
+                "commit_hash": commit_metadata.get("hash", "unknown")
+            }
+            
             signal_data = {
                 "tool": tool_name,
-                "params": parameters,
-                "metadata": commit_metadata,
-                "created_at": now.isoformat(),
-                "signal_id": signal_id
+                "params": minimal_params,
+                "created_at": now.isoformat()
             }
             
             # Validate signal format before writing
@@ -255,13 +268,11 @@ def validate_signal_format(signal_data: Any) -> bool:
                 f"Signal data must be a dictionary, got {type(signal_data)}"
             )
         
-        # Required fields with their expected types
+        # Required fields with their expected types (minimal format)
         required_fields = {
             "tool": str,
             "params": dict,
-            "metadata": dict,
-            "created_at": str,
-            "signal_id": str
+            "created_at": str
         }
         
         # Check all required fields are present
@@ -285,6 +296,16 @@ def validate_signal_format(signal_data: Any) -> bool:
                 if metrics:
                     metrics.record_counter("signal_validation_empty_string", 1)
                 raise SignalValidationError(f"Field '{field_name}' cannot be empty")
+        
+        # Check no extra fields are present (enforce minimal format)
+        allowed_fields = set(required_fields.keys())
+        present_fields = set(signal_data.keys())
+        extra_fields = present_fields - allowed_fields
+        
+        if extra_fields:
+            if metrics:
+                metrics.record_counter("signal_validation_extra_fields", 1)
+            raise SignalValidationError(f"Extra fields not allowed in minimal format: {extra_fields}")
         
         if metrics:
             metrics.record_counter("signal_validation_success", 1)
@@ -399,4 +420,75 @@ def read_signal_file(file_path: str) -> Dict[str, Any]:
     except FileNotFoundError:
         raise SignalValidationError(f"Signal file not found: {file_path}")
     except Exception as e:
-        raise SignalValidationError(f"Error reading signal file {file_path}: {e}") 
+        raise SignalValidationError(f"Error reading signal file {file_path}: {e}")
+
+
+# On-demand context retrieval functions for minimal signal processing
+
+def fetch_git_context_on_demand(commit_hash: str, repo_path: str) -> Optional[Dict[str, Any]]:
+    """
+    Fetch full git context on-demand using existing git_utils functions.
+    
+    This function retrieves git metadata when needed, eliminating the need to store
+    redundant metadata in signal files. Uses existing git_utils for consistency.
+    
+    Args:
+        commit_hash: Git commit hash from minimal signal
+        repo_path: Path to git repository
+        
+    Returns:
+        Optional[Dict[str, Any]]: Full commit context or None if failed
+    """
+    try:
+        from mcp_commit_story.git_utils import get_repo, get_commit_details
+        
+        # Use existing git_utils functions for consistency
+        repo = get_repo(repo_path)
+        
+        # Find commit by hash
+        try:
+            commit = repo.commit(commit_hash)
+        except Exception:
+            # If hash not found, try shorter hash
+            commit = repo.commit(commit_hash[:7])
+        
+        # Get full details using existing function
+        context = get_commit_details(commit)
+        return context
+        
+    except Exception as e:
+        # Graceful degradation - log but don't fail signal processing
+        from mcp_commit_story.git_hook_worker import log_hook_activity
+        log_hook_activity(f"Failed to fetch git context for {commit_hash}: {e}", "warning", repo_path)
+        return None
+
+
+def process_signal_with_context(signal_data: Dict[str, Any], repo_path: str) -> Dict[str, Any]:
+    """
+    Process a minimal signal by fetching git context on-demand.
+    
+    This function combines minimal signal data with on-demand git context retrieval,
+    providing full context to AI clients while maintaining signal privacy/efficiency.
+    
+    Args:
+        signal_data: Minimal signal data
+        repo_path: Path to git repository
+        
+    Returns:
+        Dict[str, Any]: Signal data enriched with git context
+    """
+    # Start with signal data
+    result = {
+        "tool": signal_data["tool"],
+        "params": signal_data["params"],
+        "created_at": signal_data["created_at"]
+    }
+    
+    # Fetch git context on-demand if commit hash is available
+    commit_hash = signal_data.get("params", {}).get("commit_hash")
+    if commit_hash:
+        commit_context = fetch_git_context_on_demand(commit_hash, repo_path)
+        if commit_context:
+            result["commit_context"] = commit_context
+    
+    return result

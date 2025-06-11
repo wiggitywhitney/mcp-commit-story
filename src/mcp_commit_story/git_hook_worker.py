@@ -250,6 +250,65 @@ def check_period_summary_triggers(date_str: str, repo_path: str) -> Dict[str, bo
         return {'weekly': False, 'monthly': False, 'quarterly': False, 'yearly': False}
 
 
+@handle_errors_gracefully  
+def determine_summary_trigger(repo_path: str, date_str: str) -> bool:
+    """
+    Determine if AI should be awakened for summary generation based on commit patterns.
+    
+    This function implements the "AI beast awakening" logic by analyzing commit
+    frequency and patterns to decide when summaries should be generated.
+    
+    Args:
+        repo_path: Path to git repository
+        date_str: Date string to check (YYYY-MM-DD format)
+        
+    Returns:
+        bool: True if summary should be generated (awaken the beast!)
+    """
+    try:
+        # For now, use simple logic - can be enhanced later
+        # In practice, this could analyze:
+        # - Number of commits today
+        # - Commit message patterns
+        # - File change complexity
+        # - Time since last summary
+        
+        commits_today = count_commits_today(repo_path, date_str)
+        
+        # Awaken AI beast if we have enough commits for a meaningful summary
+        return commits_today >= 3  # Threshold for summary generation
+        
+    except Exception as e:
+        log_hook_activity(f"Summary trigger check failed: {e}", "warning", repo_path)
+        return False  # Graceful degradation - don't block operations
+
+
+@handle_errors_gracefully
+def count_commits_today(repo_path: str, date_str: str) -> int:
+    """
+    Count commits made on a specific date.
+    
+    Args:
+        repo_path: Path to git repository  
+        date_str: Date string (YYYY-MM-DD format)
+        
+    Returns:
+        int: Number of commits on that date
+    """
+    try:
+        from mcp_commit_story.git_utils import get_repo
+        
+        repo = get_repo(repo_path)
+        
+        # Count commits on the specified date
+        # This is a simplified implementation
+        commits = list(repo.iter_commits(since=f"{date_str} 00:00:00", until=f"{date_str} 23:59:59"))
+        return len(commits)
+        
+    except Exception:
+        return 0  # Graceful degradation
+
+
 @handle_errors_gracefully
 def extract_commit_metadata(repo_path: str) -> Dict[str, Any]:
     """Extract commit metadata for signal creation.
@@ -481,16 +540,13 @@ def main() -> None:
         
         # 3. Always attempt to generate journal entry (maintains existing behavior)
         log_hook_activity("Creating journal entry signal", "info", repo_path)
-        result = create_tool_signal_safe(
+        # Create signal for AI processing
+        create_tool_signal_safe(
             "journal_new_entry", 
-            {"repo_path": repo_path}, 
+            {},  # ✅ Minimal - repo location inferred from signal file location
             commit_metadata, 
             repo_path
         )
-        if result:
-            log_hook_activity(f"Journal entry signal created: {result}", "info", repo_path)
-        else:
-            log_hook_activity("Journal entry signal creation failed", "warning", repo_path)
         
         log_hook_activity("=== Git hook worker completed ===", "info", repo_path)
         

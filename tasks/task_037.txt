@@ -1098,7 +1098,7 @@ Successfully created comprehensive test suite in `tests/unit/test_signal_file_re
    - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
 
-## 7. Research and Refactor Signal Files for Minimal State with Git Context Integration [pending]
+## 7. Research and Refactor Signal Files for Minimal State with Git Context Integration [done]
 ### Dependencies: 37.3
 ### Description: Research the redundancy between signal file metadata and existing git_utils/context_collection functions, then refactor to use minimal state approach where journal entries only need commit hash for git context lookup.
 ### Details:
@@ -1138,6 +1138,93 @@ Successfully created comprehensive test suite in `tests/unit/test_signal_file_re
    - **Make sure pyproject.toml is updated as needed**
    - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
+<info added on 2025-06-11T15:38:51.252Z>
+## 🔍 **Research Findings: Exact Changes Required**
+
+### **Files to Modify:**
+1. **`src/mcp_commit_story/signal_management.py`** - Change JSON structure in `create_signal_file()`
+2. **`src/mcp_commit_story/git_hook_worker.py`** - Update parameter calls to `create_tool_signal()`  
+3. **Any AI client code** - Update signal reading logic to use on-demand context
+
+### **Specific Function Changes:**
+
+**1. `signal_management.py` - `create_signal_file()` (Lines 157-170)**
+- **REMOVE**: `"metadata": commit_metadata` (redundant git context)
+- **REMOVE**: `"signal_id": signal_id` (duplicates filename)
+- **ADD**: `"commit_hash"` to params for minimal context reference
+
+**2. `git_hook_worker.py` - Update all `create_tool_signal()` calls (Lines 450-490)**
+- **REMOVE**: `{"repo_path": repo_path}` parameter (redundant, inferred from location)
+- **CHANGE**: Parameters to be tool-specific only
+- **RESULT**: `commit_hash` gets added to params by signal creation logic
+
+**3. `signal_management.py` - `validate_signal_format()` (Lines 247-265)**
+- **REMOVE**: `"metadata": dict` and `"signal_id": str` from required fields
+- **KEEP**: `"tool": str`, `"params": dict`, `"created_at": str`
+
+### **Signal Format Change:**
+**Before** (~2KB with PII):
+```json
+{
+  "tool": "journal_new_entry",
+  "params": {"repo_path": "/full/path"},
+  "metadata": {"hash": "abc123", "author": "User <email>", "message": "...", "files_changed": [...]},
+  "created_at": "2025-06-11T07:36:12Z",
+  "signal_id": "20250611_073612_journal_new_entry_abc123"
+}
+```
+
+**After** (~200 bytes, privacy-safe):
+```json
+{
+  "tool": "journal_new_entry", 
+  "params": {"commit_hash": "abc123def456"},
+  "created_at": "2025-06-11T07:36:12Z"
+}
+```
+
+### **On-Demand Context Pattern:**
+AI clients fetch git context when needed:
+```python
+commit_hash = signal_data["params"]["commit_hash"]
+commit_details = git_utils.get_commit_details(commit_hash)
+```
+
+**READY FOR TDD STEP 1: WRITE TESTS FIRST**
+</info added on 2025-06-11T15:38:51.252Z>
+<info added on 2025-06-11T16:02:55.416Z>
+## Implementation Results
+
+### Minimal Signal Format Implementation
+- Successfully reduced signal size from ~2KB to ~200 bytes (90% reduction)
+- Eliminated all PII from signal files (author emails, file paths, commit messages)
+- Implemented privacy-by-design approach with only essential data in signals
+
+### Code Changes
+- Modified `signal_management.py` to use minimal signal format
+- Removed redundant `repo_path` parameter from `journal_new_entry` signals
+- Implemented `create_minimal_signal()` storing only tool name, parameters, commit hash, and timestamp
+- Created `fetch_git_context_on_demand()` utilizing existing git utilities
+- Developed summary trigger logic in `determine_summary_trigger()`
+
+### Testing Results
+- Full test suite passing: 754 tests, 0 failures
+- Fixed all legacy tests to expect minimal format
+- Comprehensive test coverage for new functionality
+
+### Documentation Updates
+- Rewrote docs/signal-format.md with minimal signal architecture details
+- Updated PRD to reflect minimal state approach and privacy benefits
+- Enhanced engineering spec with technical implementation details
+
+### Architecture Improvements
+- Privacy-by-design implementation with no sensitive data in signals
+- Minimal state pattern using only essential processing data
+- On-demand context retrieval system using existing git_utils
+- Summary trigger logic for "AI beast awakening"
+- Strict validation enforcement for minimal format
+- Comprehensive error handling with graceful degradation
+</info added on 2025-06-11T16:02:55.416Z>
 
 ## 8. Implement Automatic .gitignore Management for Signal Files [pending]
 ### Dependencies: 37.2

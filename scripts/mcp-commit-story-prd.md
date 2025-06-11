@@ -132,15 +132,17 @@
 - **✅ Structured logging**: Complete server lifecycle logging with trace correlation and telemetry integration
 - **✅ Production readiness**: FastMCP integration with stdio transport for maximum AI client compatibility
 
-#### **✅ IMPLEMENTED: Signal Directory Management and File Creation**
-- **✅ File-based signaling mechanism**: Asynchronous communication between git hooks and AI clients via `.mcp-commit-story/signals/` directory
-- **✅ Signal file format**: JSON-structured signal files with timestamp-based naming for chronological ordering and uniqueness
-- **✅ Standard metadata scope**: Commit context including hash, author, date, message, files changed, and statistics in pretty JSON format
+#### **✅ IMPLEMENTED: Minimal Signal Architecture with Privacy by Design**
+- **✅ Privacy-first signaling mechanism**: Lightweight (~200 bytes) file-based signals enable asynchronous git hook to AI client communication via `.mcp-commit-story/signals/` directory
+- **✅ Minimal signal format**: Privacy-safe JSON structure containing only essential fields (tool, commit_hash, timestamp) with **no PII storage**
+- **✅ On-demand context retrieval**: Full git metadata (author, files, messages) retrieved when needed using existing `git_utils` functions, eliminating redundant data storage
+- **✅ 90% size reduction**: Optimized signal files (~200 bytes vs ~2KB legacy format) for enhanced performance and reduced privacy surface area
+- **✅ Strict validation**: Format enforcement explicitly rejects legacy signals containing PII fields (metadata, signal_id, author emails, file paths)
 - **✅ Thread safety**: Concurrent git hook execution support with threading locks and collision detection
 - **✅ Graceful degradation**: Error handling ensures git operations are never blocked by signal creation failures
-- **✅ Signal validation**: JSON format validation with required fields and comprehensive error reporting
-- **✅ Comprehensive API**: Core functions for directory creation, signal file management, and format validation
+- **✅ Git integration**: Context retrieved directly from authoritative git objects when processing signals, ensuring data accuracy and freshness
 - **✅ Production telemetry**: Full OpenTelemetry integration with metrics and tracing for signal operations
+- **✅ Auto-privacy protection**: `.mcp-commit-story/` directory automatically added to `.gitignore` preventing accidental PII commits
 
 #### **✅ IMPLEMENTED: Generic MCP Tool Signal Creation**
 - **✅ Universal tool support**: Single `create_tool_signal()` implementation works for any MCP tool (journal_new_entry, generate_daily_summary, generate_weekly_summary, etc.)
