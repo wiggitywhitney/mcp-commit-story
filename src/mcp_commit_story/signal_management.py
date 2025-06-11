@@ -1,11 +1,11 @@
 """
 Signal file management for MCP tool signaling.
 
-This module provides file-based signaling mechanism for MCP tools,
-allowing git hooks to create signal files that AI clients can discover
-and process for automated journal generation.
+SIGNAL FILES ARE TEMPORARY - cleared automatically with each new commit.
+These files enable AI-powered journal generation from git commits.
 
-Part of subtask 37.2: Implement Signal Directory Management and File Creation
+The .mcp-commit-story/ directory is in .gitignore and won't be committed.
+Users don't need to manage these files manually.
 """
 
 import json
@@ -15,6 +15,8 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, Optional
+import time
+import shutil
 
 from mcp_commit_story.telemetry import trace_mcp_operation, get_mcp_metrics
 
@@ -492,3 +494,252 @@ def process_signal_with_context(signal_data: Dict[str, Any], repo_path: str) -> 
             result["commit_context"] = commit_context
     
     return result
+
+
+# Signal cleanup functions - commit-based design for AI clarity
+
+# Simple cleanup lock for thread safety
+_cleanup_lock = threading.Lock()
+
+
+def validate_cleanup_safety(signal_directory: str) -> tuple[bool, str]:
+    """
+    Validate that it's safe to perform cleanup operations.
+    
+    Args:
+        signal_directory: Path to check for cleanup safety
+        
+    Returns:
+        tuple[bool, str]: (is_safe, reason)
+    """
+    try:
+        signal_path = Path(signal_directory)
+        
+        # Must be a .mcp-commit-story/signals directory
+        if not (signal_path.name == "signals" and 
+                signal_path.parent.name == ".mcp-commit-story"):
+            return False, "Path is not a signal directory"
+        
+        return True, "Valid signal directory, safe for cleanup"
+        
+    except Exception as e:
+        return False, f"Safety validation error: {e}"
+
+
+@trace_mcp_operation("signal_management.cleanup_old_signals")
+def cleanup_old_signals(signal_directory: str, max_age_hours: Optional[float] = None) -> Dict[str, Any]:
+    """
+    Clear all signals for new commit (simplified commit-based cleanup).
+    
+    This function removes all existing signals when a new commit is made,
+    ensuring AI only sees signals for the current commit.
+    
+    Args:
+        signal_directory: Path to signal directory
+        max_age_hours: Ignored (kept for test compatibility)
+        
+    Returns:
+        Dict[str, Any]: Cleanup results
+    """
+    metrics = get_mcp_metrics()
+    
+    result = {
+        "success": False,
+        "files_removed": 0,
+        "files_preserved": 0,
+        "total_size_freed": 0,
+        "errors": 0
+    }
+    
+    try:
+        if metrics:
+            metrics.record_counter("signal_cleanup_started", 1)
+        
+        # Validate directory safety
+        is_safe, reason = validate_cleanup_safety(signal_directory)
+        if not is_safe:
+            if metrics:
+                metrics.record_counter("signal_cleanup_safety_rejected", 1)
+            result["error"] = f"Cleanup safety validation failed: {reason}"
+            return result
+        
+        signal_dir = Path(signal_directory)
+        if not signal_dir.exists():
+            result["success"] = True  # No directory = already clean
+            return result
+        
+        # Use thread lock for safety during concurrent operations
+        with _cleanup_lock:
+            # Remove all .json signal files
+            for file_path in signal_dir.glob("*.json"):
+                try:
+                    file_size = file_path.stat().st_size
+                    file_path.unlink()
+                    result["files_removed"] += 1
+                    result["total_size_freed"] += file_size
+                    if metrics:
+                        metrics.record_counter("signal_cleanup_file_removed", 1)
+                except Exception as e:
+                    result["errors"] += 1
+                    if metrics:
+                        metrics.record_counter("signal_cleanup_file_error", 1)
+        
+        result["success"] = True
+        if metrics:
+            metrics.record_counter("signal_cleanup_completed", 1)
+            metrics.record_counter("signal_cleanup_files_removed", result["files_removed"])
+        
+    except Exception as e:
+        result["error"] = str(e)
+        if metrics:
+            metrics.record_counter("signal_cleanup_error", 1)
+    
+    return result
+
+
+# In-memory tracking for within-session processing
+_processed_signals = set()
+
+def mark_signal_processed(signal_file_path: str):
+    """Mark a signal as processed (in-memory only)."""
+    _processed_signals.add(os.path.basename(signal_file_path))
+
+
+def is_signal_processed(signal_file_path: str) -> bool:
+    """Check if signal has been processed this session."""
+    return os.path.basename(signal_file_path) in _processed_signals
+
+
+@trace_mcp_operation("signal_management.remove_processed_signals")
+def remove_processed_signals(signal_directory: str) -> Dict[str, Any]:
+    """
+    Remove signals marked as processed.
+    
+    Args:
+        signal_directory: Path to signal directory
+        
+    Returns:
+        Dict[str, Any]: Removal results
+    """
+    metrics = get_mcp_metrics()
+    
+    result = {
+        "processed_removed": 0,
+        "unprocessed_preserved": 0,
+        "orphaned_markers_cleaned": 0
+    }
+    
+    try:
+        signal_dir = Path(signal_directory)
+        if not signal_dir.exists():
+            return result
+        
+        with _cleanup_lock:
+            for file_path in signal_dir.glob("*.json"):
+                if is_signal_processed(str(file_path)):
+                    file_path.unlink()
+                    result["processed_removed"] += 1
+                    if metrics:
+                        metrics.record_counter("signal_processed_removed", 1)
+                else:
+                    result["unprocessed_preserved"] += 1
+        
+        if metrics:
+            metrics.record_counter("signal_processed_cleanup_completed", 1)
+            
+    except Exception as e:
+        if metrics:
+            metrics.record_counter("signal_processed_cleanup_error", 1)
+    
+    return result
+
+
+@trace_mcp_operation("signal_management.monitor_disk_space_and_cleanup")  
+def monitor_disk_space_and_cleanup(signal_directory: str, min_free_mb: int = 100) -> Dict[str, Any]:
+    """
+    Monitor disk space and trigger cleanup if needed.
+    
+    Args:
+        signal_directory: Path to signal directory
+        min_free_mb: Minimum free space in MB before triggering cleanup
+        
+    Returns:
+        Dict[str, Any]: Monitoring results
+    """
+    metrics = get_mcp_metrics()
+    
+    result = {
+        "cleanup_triggered": False,
+        "disk_space_before": 0,
+        "disk_space_after": 0,
+        "files_cleaned": 0
+    }
+    
+    try:
+        # Check disk space
+        total, used, free = shutil.disk_usage(signal_directory)
+        result["disk_space_before"] = free
+        
+        free_mb = free / (1024 * 1024)  # Convert to MB
+        
+        if free_mb < min_free_mb:
+            # Low disk space - clear all signals
+            result["cleanup_triggered"] = True
+            
+            if metrics:
+                metrics.record_counter("signal_disk_space_cleanup_triggered", 1)
+            
+            cleanup_result = cleanup_old_signals(signal_directory)
+            result["files_cleaned"] = cleanup_result.get("files_removed", 0)
+            
+            # Check space after cleanup
+            total, used, free = shutil.disk_usage(signal_directory)
+            result["disk_space_after"] = free
+        
+        if metrics:
+            metrics.record_gauge("signal_disk_space_free_bytes", free)
+            
+    except Exception as e:
+        if metrics:
+            metrics.record_counter("signal_disk_space_monitoring_error", 1)
+        result["error"] = str(e)
+    
+    return result
+
+
+def cleanup_signals_for_new_commit(repo_path: str) -> Dict[str, Any]:
+    """
+    Clear all previous signals when a new commit is made.
+    
+    This ensures AI only sees signals for the current commit,
+    maintaining a clean and predictable signal directory.
+    
+    Args:
+        repo_path: Path to git repository
+        
+    Returns:
+        Dict[str, Any]: Cleanup results
+    """
+    try:
+        signal_directory = get_signal_directory_path(repo_path)
+        
+        # Clear all existing signals for the new commit
+        cleanup_result = cleanup_old_signals(signal_directory)
+        
+        return {
+            "previous_signals_cleared": cleanup_result.get("files_removed", 0),
+            "success": cleanup_result.get("success", False)
+        }
+        
+    except Exception as e:
+        return {
+            "error": str(e),
+            "previous_signals_cleared": 0,
+            "success": False
+        }
+
+
+# Legacy function name for backward compatibility
+def cleanup_signals_post_commit(repo_path: str) -> Dict[str, Any]:
+    """Legacy function - use cleanup_signals_for_new_commit instead."""
+    return cleanup_signals_for_new_commit(repo_path)

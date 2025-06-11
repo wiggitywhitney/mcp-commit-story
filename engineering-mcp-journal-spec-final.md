@@ -1560,7 +1560,17 @@ The minimal signal management system enables asynchronous communication between 
 - Context retrieved from git objects ensures data accuracy and freshness
 - Telemetry provides monitoring with privacy-conscious logging
 
-**Documentation**: Complete specification available in `docs/signal-format.md` with minimal format examples, privacy architecture, and on-demand context retrieval patterns.
+**Signal Cleanup and Lifecycle Management**:
+- **Commit-Based Cleanup**: Automatic signal cleanup system triggered by git hooks clears ALL previous signals with each new commit
+- **AI-Friendly Design**: One commit = one signal context, eliminating temporal confusion for AI processing  
+- **Simple Architecture**: No time-based calculations, just "clear all on new commit" for maximum simplicity
+- **Performance Benefits**: AI only processes current commit signals, faster than time-based cleanup
+- **Thread Safety**: Concurrent cleanup operations handled safely with threading locks
+- **Core Functions**: `cleanup_signals_for_new_commit()`, `cleanup_old_signals()`, `monitor_disk_space_and_cleanup()`, `validate_cleanup_safety()`
+- **In-Memory Tracking**: Lightweight processed signal tracking without additional files cluttering the directory
+- **Graceful Degradation**: Cleanup failures never block git operations, comprehensive error handling and telemetry
+
+**Documentation**: Complete specification available in `docs/signal-format.md` with minimal format examples, privacy architecture, on-demand context retrieval patterns, and signal cleanup system documentation.
 
 ### Operation Details
 

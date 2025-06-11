@@ -143,6 +143,7 @@
 - **✅ Git integration**: Context retrieved directly from authoritative git objects when processing signals, ensuring data accuracy and freshness
 - **✅ Production telemetry**: Full OpenTelemetry integration with metrics and tracing for signal operations
 - **✅ Auto-privacy protection**: `.mcp-commit-story/` directory automatically added to `.gitignore` preventing accidental PII commits
+- **✅ Signal lifecycle management**: Commit-based automatic cleanup system ensuring AI only sees current commit signals for clarity and performance
 
 #### **✅ IMPLEMENTED: Generic MCP Tool Signal Creation**
 - **✅ Universal tool support**: Single `create_tool_signal()` implementation works for any MCP tool (journal_new_entry, generate_daily_summary, generate_weekly_summary, etc.)

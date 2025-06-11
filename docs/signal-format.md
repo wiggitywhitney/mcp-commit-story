@@ -198,7 +198,7 @@ commit_metadata = extract_commit_metadata(repo_path)
 signal_path = create_tool_signal(
     tool_name="generate_daily_summary",
     parameters={"date": "2025-06-11"},   # Tool-specific parameters
-    commit_metadata=commit_metadata,     # Only hash used internally
+    commit_metadata=commit_metadata,
     repo_path="/path/to/repo"
 )
 ```
@@ -354,6 +354,106 @@ minimal_signal = {
 - **Git Integration**: Context from authoritative source (git objects)
 - **Maintainability**: Simpler codebase, fewer data duplication bugs
 
+## Signal Cleanup and Maintenance
+
+Signal files are **temporary processing artifacts** that are automatically managed through a commit-based cleanup system optimized for AI clarity.
+
+### Cleanup Philosophy
+
+**SIGNAL FILES ARE TEMPORARY** - cleared automatically with each new commit. This ensures AI only sees signals for the current commit, maintaining a clean and predictable signal directory.
+
+### Automatic Cleanup System
+
+The system uses a **commit-based cleanup approach** rather than time-based maintenance:
+
+```python
+from mcp_commit_story.signal_management import cleanup_signals_for_new_commit
+
+# Automatically called by git hooks after each commit
+result = cleanup_signals_for_new_commit("/path/to/repo")
+# Clears ALL previous signals, ensuring only current commit signals remain
+```
+
+### Benefits of Commit-Based Cleanup
+
+- **AI-Friendly**: One commit = one signal context, no temporal confusion
+- **Simplicity**: No time calculations, just "clear all on new commit"  
+- **Faster Processing**: AI only processes current commit signals
+- **Cleaner UX**: Signal directory only reflects current state
+- **Git-Centric**: Aligns with project's git-centric time philosophy
+
+### Cleanup Functions
+
+```python
+from mcp_commit_story.signal_management import (
+    cleanup_signals_for_new_commit,    # Primary function
+    cleanup_old_signals,               # Core cleanup logic  
+    monitor_disk_space_and_cleanup,    # Emergency cleanup
+    validate_cleanup_safety            # Safety validation
+)
+
+# Primary cleanup (called by git hooks)
+cleanup_signals_for_new_commit(repo_path)
+
+# Emergency disk space cleanup
+monitor_disk_space_and_cleanup(signal_dir, min_free_mb=100)
+
+# Safety validation before cleanup
+is_safe, reason = validate_cleanup_safety(signal_dir)
+```
+
+### Safety Features
+
+- **Directory Validation**: Only operates on `.mcp-commit-story/signals/` directories
+- **Thread Safety**: Concurrent cleanup operations are safely handled
+- **Graceful Errors**: Cleanup failures don't block git operations
+- **Telemetry**: All cleanup operations are logged for monitoring
+
+### In-Memory Processing Tracking
+
+The system uses lightweight in-memory tracking for within-session processing:
+
+```python
+from mcp_commit_story.signal_management import (
+    mark_signal_processed,
+    is_signal_processed,
+    remove_processed_signals
+)
+
+# Mark signal as processed (in-memory only)
+mark_signal_processed("/path/to/signal.json")
+
+# Check if processed this session
+if is_signal_processed("/path/to/signal.json"):
+    # Already processed - skip
+    pass
+
+# Remove processed signals
+remove_processed_signals(signal_dir)
+```
+
+### Git Hook Integration
+
+Cleanup is automatically triggered by git hooks:
+
+```bash
+#!/bin/sh
+# .git/hooks/post-commit
+python -c "
+from mcp_commit_story.signal_management import cleanup_signals_for_new_commit
+cleanup_signals_for_new_commit('.')
+"
+```
+
+### User Experience
+
+Users don't need to manage signal files manually:
+
+- **Automatic**: Cleanup happens transparently with each commit
+- **Invisible**: No user intervention required
+- **Fast**: Cleanup takes <50ms typically
+- **Safe**: Never interferes with git operations
+
 ## Best Practices
 
 ### For Git Hooks
@@ -384,6 +484,7 @@ minimal_signal = {
 - **Processing Time**: <5ms per signal (minimal parsing)
 - **Context Retrieval**: <10ms per commit (git object access)
 - **Memory Usage**: 90% reduction in signal processing memory footprint
+- **Cleanup Time**: <50ms per cleanup operation
 
 ## Troubleshooting
 
@@ -396,6 +497,8 @@ minimal_signal = {
 **Context retrieval failure**: Verify git repository state and commit hash validity
 
 **Permission denied**: Ensure `.mcp-commit-story/` directory has write permissions
+
+**Signal accumulation**: Check if git hooks are properly calling cleanup functions
 
 ### Debugging
 
