@@ -86,7 +86,7 @@ utility function.
 - **Human**: "Tbh it is really satisfying to see my list of open tasks get smaller. 
   I was already wishing for a way to visually see them getting checked off"
 - **Human**: "I'm disappointed that the subtask plans in task 4 are not as detailed as 
-  the ones in our planning doc"
+  the ones in the planning doc"
 
 ## Developer Reflections
 - **17:47**: "I switched to claude-4-sonnet and omg it is so much better, sweet baby 
@@ -107,7 +107,7 @@ utility function.
 - **Mood and emotion:** The journal reflects your mood and tone based on how you talk to the AI agent or what you write in commit messages—so if you vent, celebrate, or reflect, those feelings are captured authentically.
 - **Summaries and threads:** Daily, weekly, monthly, and yearly summaries help you spot patterns, track progress, and find the stories worth sharing.
 
-For a technical deep dive into the architecture, workflow, and engineering decisions behind MCP Commit Story, see our **[Technical Documentation](docs/)** which includes:
+For a technical deep dive into the architecture, workflow, and engineering decisions behind MCP Commit Story, see the **[Technical Documentation](docs/)** which includes:
 
 - **[Architecture Overview](docs/architecture.md)** - System design and architectural decisions
 - **[MCP API Specification](docs/mcp-api-specification.md)** - Complete API reference for integration
@@ -197,6 +197,7 @@ MIT
 #### **Development & Testing**
 - **[Testing Standards](docs/testing_standards.md)** - Complete testing strategy (532 tests, 80% coverage, TDD patterns)
 - **[Server Setup](docs/server_setup.md)** - MCP server configuration and deployment guide
+- **[Signal Format](docs/signal-format.md)** - File-based signaling mechanism for git hook to AI client communication
 - **[On-Demand Directory Pattern](docs/on-demand-directory-pattern.md)** - File system organization patterns
 
 #### **Implementation Patterns**

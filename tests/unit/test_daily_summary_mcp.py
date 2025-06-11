@@ -424,21 +424,5 @@ class TestMCPToolRegistration:
         pass
 
 
-class TestTelemetryIntegration:
-    """Test telemetry integration for daily summary operations."""
-    
-    @pytest.mark.skip(reason="Telemetry integration already tested in test_telemetry.py and test_telemetry_integration.py - this test was testing implementation details that are covered by integration tests")
-    @pytest.mark.asyncio
-    async def test_telemetry_traces_operation(self):
-        """Test that daily summary generation includes proper telemetry tracing.
-        
-        NOTE: This test is skipped because telemetry integration is already comprehensively
-        tested in test_telemetry.py and test_telemetry_integration.py. The @trace_mcp_operation
-        decorator is already applied to daily summary functions and verified by integration tests.
-        Testing mock decorator calls adds complexity without value.
-        """
-        pass
-
-
 if __name__ == "__main__":
     pytest.main([__file__]) 

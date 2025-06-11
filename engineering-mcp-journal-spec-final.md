@@ -101,11 +101,11 @@ This document specifies a Model Context Protocol (MCP) server designed to captur
 The MCP server must be launchable as a standalone process and expose the required journal operations (e.g., `journal/new-entry`, `journal/summarize`, etc.) as specified in this document. The server should be discoverable by compatible clients (such as AI-powered editors, agents, or other tools) via a standard configuration mechanism.
 
 - **Server Launch:**
-  - **✅ IMPLEMENTED**: Primary launch method via official entry point: `python -m mcp_commit_story`
-  - **✅ IMPLEMENTED**: Comprehensive startup management with telemetry integration, configuration validation, and robust error handling
-  - **✅ IMPLEMENTED**: Unix standard exit codes (0=success, 1=error, 2=config error, 130=SIGINT) for reliable process management
-  - **✅ IMPLEMENTED**: Signal handling for graceful shutdown (SIGINT, SIGTERM) and configuration reload (SIGHUP)
-  - **✅ IMPLEMENTED**: Structured logging throughout server lifecycle with trace correlation
+  - Primary launch method via official entry point: `python -m mcp_commit_story`
+  - Comprehensive startup management with telemetry integration, configuration validation, and robust error handling
+  - Unix standard exit codes (0=success, 1=error, 2=config error, 130=SIGINT) for reliable process management
+  - Signal handling for graceful shutdown (SIGINT, SIGTERM) and configuration reload (SIGHUP)
+  - Structured logging throughout server lifecycle with trace correlation
   - The server must remain running and accessible to clients for the duration of its use.
 
 - **Client/Editor Integration:**
@@ -1487,9 +1487,75 @@ The Summary section should focus on these unique aspects rather than restating r
 
 Each operation will be instrumented with appropriate traces to monitor performance and error rates.
 
+### Signal Directory Management and File Creation
+
+**Implementation Status**: Complete with comprehensive telemetry integration, thread safety, and production-ready error handling.
+
+**Core Functionality**: 
+The signal management system enables asynchronous communication between git hooks and AI clients through a file-based signaling mechanism stored in `.mcp-commit-story/signals/` directory.
+
+**Key Functions**:
+- **`ensure_signal_directory(repo_path)`**: Creates and validates signal directory structure with proper permissions and error handling
+- **`create_signal_file(signal_directory, tool_name, parameters, commit_metadata)`**: Generates timestamped signal files with commit context and thread safety
+- **`validate_signal_format(signal_data)`**: Validates JSON structure and required fields with comprehensive error reporting
+
+**Signal File Format**:
+```json
+{
+  "tool": "journal_new_entry",
+  "params": {
+    "date": "2025-06-11",
+    "commit_hash": "abc123de"
+  },
+  "metadata": {
+    "hash": "abc123def456",
+    "author": "Developer Name",
+    "email": "dev@example.com",
+    "date": "2025-06-11T15:30:00Z",
+    "message": "Implement signal file management",
+    "files_changed": ["src/signal_management.py", "tests/test_signals.py"],
+    "insertions": 355,
+    "deletions": 12,
+    "files_modified": 2
+  },
+  "created_at": "2025-06-11T15:30:15.123456Z",
+  "signal_id": "20250611_153015_123456_journal_new_entry_abc123de"
+}
+```
+
+**Filename Convention**: 
+- Format: `{timestamp}_{tool_name}_{hash_prefix}.json`
+- Example: `20250611_153015_123456_journal_new_entry_abc123de.json`
+- Microsecond precision timestamps for chronological ordering
+- Collision detection with counter suffixes for guaranteed uniqueness
+
+**Advanced Features**:
+- **Thread Safety**: `threading.Lock()` for concurrent git hook execution
+- **Graceful Degradation**: Error handling ensures git operations are never blocked
+- **Standard Metadata Scope**: Commit context with hash, author, date, message, files changed, and statistics
+- **Pretty JSON Format**: Human-readable formatting for debugging and development
+- **Comprehensive Telemetry**: OpenTelemetry integration with metrics and tracing
+
+**Test Coverage**: 24 comprehensive test cases covering:
+- Signal directory creation and validation
+- Signal file generation with unique naming
+- JSON format validation and error handling
+- Thread safety and concurrent operations
+- Telemetry integration and metrics collection
+- Error scenarios and graceful degradation
+- Utility functions for signal management
+
+**Integration Points**:
+- Git hooks create signals for MCP tool execution
+- AI clients discover and process signals chronologically
+- Signal files bridge asynchronous communication gap
+- Telemetry provides monitoring and debugging capabilities
+
+**Documentation**: Complete specification available in `docs/signal-format.md` with API examples, best practices, and troubleshooting guides.
+
 ### Operation Details
 
-#### ✅ IMPLEMENTED: journal/new-entry
+#### journal/new-entry
 **Implementation Status**: Complete with comprehensive TypedDict integration, full test coverage, and production-ready error handling.
 
 **Core Integration**:
@@ -1561,7 +1627,7 @@ class SaveJournalEntryResult(TypedDict):
     created_new_file: bool  # Whether a new file was created vs appended
 ```
 
-#### ✅ IMPLEMENTED: journal/generate-daily-summary
+#### journal/generate-daily-summary
 **Implementation Status**: Complete with comprehensive TypedDict schemas, AI-powered synthesis, and production-ready error handling.
 
 **Core Integration**:
@@ -2461,39 +2527,7 @@ This tool is designed to be **developer-friendly**, **minimally intrusive**, and
 - **High test coverage** (comprehensive coverage achieved with 728 tests)
 - **Robust telemetry integration** with privacy protection
 
-### Current Project Status
-**Production-Ready Core Features:**
-- ✅ **728 tests** across 54 files with **comprehensive coverage** 
-- ✅ **Comprehensive documentation** covering all system components
-- ✅ **OpenTelemetry integration** with multi-exporter support
-- ✅ **MCP server implementation** with complete API specification
-- ✅ **Context collection system** with performance optimization
-- ✅ **Structured logging** with trace correlation and sensitive data protection
-- ✅ **Journal generation** with AI-powered content creation
-- ✅ **Reflection system** for manual journal additions
 
-**Documentation Coverage:**
-- **[Complete Technical Documentation](docs/)** - Organized by category and use case
-- **[Architecture Overview](docs/architecture.md)** - System design and decisions
-- **[MCP API Specification](docs/mcp-api-specification.md)** - Complete integration reference
-- **[Testing Standards](docs/testing_standards.md)** - TDD methodology and test patterns
-- **[Implementation Guide](docs/implementation-guide.md)** - Development patterns and best practices
-
-### Development Workflow
-1. **Test-Driven Development (TDD)** - Write failing tests first, then implement
-2. Implement MCP server operations with comprehensive telemetry
-3. Add OpenTelemetry instrumentation for observability
-4. Create comprehensive documentation for new features
-5. Implement CLI setup commands (journal-init, install-hook)
-6. Add configuration system with precedence hierarchy
-7. Implement AI-powered context collection and content generation
-8. Create structured logging with trace correlation
-9. Add multi-exporter telemetry configuration
-10. Implement comprehensive tests (maintain >90% coverage target)
-11. Update documentation to reflect implementation
-12. Package for distribution
-
-**Note**: The development workflow now emphasizes **documentation-driven development** alongside TDD, ensuring every feature is properly documented as it's implemented.
 
 ### Initialization Workflow
 1. User runs `mcp-commit-story-setup journal-init` in their repository

@@ -132,6 +132,16 @@
 - **✅ Structured logging**: Complete server lifecycle logging with trace correlation and telemetry integration
 - **✅ Production readiness**: FastMCP integration with stdio transport for maximum AI client compatibility
 
+#### **✅ IMPLEMENTED: Signal Directory Management and File Creation**
+- **✅ File-based signaling mechanism**: Asynchronous communication between git hooks and AI clients via `.mcp-commit-story/signals/` directory
+- **✅ Signal file format**: JSON-structured signal files with timestamp-based naming for chronological ordering and uniqueness
+- **✅ Standard metadata scope**: Commit context including hash, author, date, message, files changed, and statistics in pretty JSON format
+- **✅ Thread safety**: Concurrent git hook execution support with threading locks and collision detection
+- **✅ Graceful degradation**: Error handling ensures git operations are never blocked by signal creation failures
+- **✅ Signal validation**: JSON format validation with required fields and comprehensive error reporting
+- **✅ Comprehensive API**: Core functions for directory creation, signal file management, and format validation
+- **✅ Production telemetry**: Full OpenTelemetry integration with metrics and tracing for signal operations
+
 #### **Development Environment Compatibility**
 - **Cross-platform**: Work on macOS, Linux, Windows
 - **Editor agnostic**: No dependency on specific development tools

@@ -611,7 +611,7 @@ To verify the correct implementation of the file watcher pattern for MCP tool si
    - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
 
-## 2. Implement Signal Directory Management and File Creation [pending]
+## 2. Implement Signal Directory Management and File Creation [done]
 ### Dependencies: None
 ### Description: Create signal directory structure and file-based signaling mechanism using generic create_tool_signal() function for any MCP tool.
 ### Details:
@@ -651,6 +651,94 @@ To verify the correct implementation of the file watcher pattern for MCP tool si
    - **Make sure pyproject.toml is updated as needed**
    - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
+<info added on 2025-06-11T11:55:10.793Z>
+**IMPLEMENTATION COMPLETED**: Signal Directory Management and File Creation
+
+**Implementation Summary:**
+- **Module Created**: `src/mcp_commit_story/signal_management.py` (355 lines)
+- **Test Suite**: `tests/unit/test_signal_file_management.py` (545 lines, 24 tests)
+- **All 24 tests passing** with comprehensive coverage
+
+**Key Functions Implemented:**
+1. `ensure_signal_directory()` - Creates `.mcp-commit-story/signals/` structure with proper validation
+2. `create_signal_file()` - Generates unique signal files with approved design:
+   - Timestamp-based naming: `{timestamp}_{tool_name}_{hash_prefix}.json`
+   - Standard metadata scope (hash, author, date, message, files changed, stats)
+   - Pretty JSON format for readability
+   - Thread safety with locks
+   - Graceful degradation for git operations
+3. `validate_signal_format()` - JSON structure validation with required fields
+
+**Advanced Features:**
+- **Thread Safety**: `threading.Lock()` for concurrent signal creation
+- **Telemetry Integration**: Comprehensive metrics with graceful fallback when metrics unavailable
+- **Error Handling**: Custom exceptions (`SignalDirectoryError`, `SignalFileError`, `SignalValidationError`) with graceful degradation flags
+- **Filename Uniqueness**: Microsecond timestamps + collision detection with counter suffix
+- **Utility Functions**: 6 helper functions for signal management operations
+
+**Production-Ready Features:**
+- **Graceful degradation** - never blocks git operations
+- **Comprehensive telemetry** - tracks all operations and errors
+- **Thread safety** - handles concurrent git hook executions
+- **Robust error handling** - disk space, permissions, validation errors
+- **File naming strategy** - ensures chronological ordering and uniqueness
+
+**Testing Coverage:**
+- ✅ Directory creation and validation (5 tests)
+- ✅ Signal file creation and naming (8 tests) 
+- ✅ JSON format validation (6 tests)
+- ✅ Integration workflows (2 tests)
+- ✅ Error handling scenarios (3 tests)
+
+**Ready for Integration**: The signal management system is fully implemented and tested, ready for use by git hooks and MCP tool discovery mechanisms in subsequent subtasks.
+</info added on 2025-06-11T11:55:10.793Z>
+<info added on 2025-06-11T12:09:51.007Z>
+**IMPLEMENTATION COMPLETED**: Signal Directory Management and File Creation
+
+**Implementation Summary:**
+- **Module Created**: `src/mcp_commit_story/signal_management.py` (355 lines)
+- **Test Suite**: `tests/unit/test_signal_file_management.py` (545 lines, 24 tests)
+- **All 24 tests passing** with comprehensive coverage
+
+**Key Functions Implemented:**
+1. `ensure_signal_directory()` - Creates `.mcp-commit-story/signals/` structure with proper validation
+2. `create_signal_file()` - Generates unique signal files with approved design:
+   - Timestamp-based naming: `{timestamp}_{tool_name}_{hash_prefix}.json`
+   - Standard metadata scope (hash, author, date, message, files changed, stats)
+   - Pretty JSON format for readability
+   - Thread safety with locks
+   - Graceful degradation for git operations
+3. `validate_signal_format()` - JSON structure validation with required fields
+
+**Advanced Features:**
+- **Thread Safety**: `threading.Lock()` for concurrent signal creation
+- **Telemetry Integration**: Comprehensive metrics with graceful fallback when metrics unavailable
+- **Error Handling**: Custom exceptions (`SignalDirectoryError`, `SignalFileError`, `SignalValidationError`) with graceful degradation flags
+- **Filename Uniqueness**: Microsecond timestamps + collision detection with counter suffix
+- **Utility Functions**: 6 helper functions for signal management operations
+
+**Production-Ready Features:**
+- **Graceful degradation** - never blocks git operations
+- **Comprehensive telemetry** - tracks all operations and errors
+- **Thread safety** - handles concurrent git hook executions
+- **Robust error handling** - disk space, permissions, validation errors
+- **File naming strategy** - ensures chronological ordering and uniqueness
+
+**Testing Coverage:**
+- ✅ Directory creation and validation (5 tests)
+- ✅ Signal file creation and naming (8 tests) 
+- ✅ JSON format validation (6 tests)
+- ✅ Integration workflows (2 tests)
+- ✅ Error handling scenarios (3 tests)
+
+**Documentation Completed:**
+- Created `docs/signal-format.md` with comprehensive specification
+- Updated PRD with signal format implementation section
+- Updated engineering spec with detailed implementation documentation
+- Added reference to README.md technical documentation section
+
+**Ready for Integration**: The signal management system is fully implemented and tested, ready for use by git hooks and MCP tool discovery mechanisms in subsequent subtasks.
+</info added on 2025-06-11T12:09:51.007Z>
 
 ## 3. Replace call_mcp_tool Placeholder with Generic Tool Signal Creation [pending]
 ### Dependencies: 37.2
