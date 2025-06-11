@@ -1098,3 +1098,86 @@ Successfully created comprehensive test suite in `tests/unit/test_signal_file_re
    - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
 
+## 7. Research and Refactor Signal Files for Minimal State with Git Context Integration [pending]
+### Dependencies: 37.3
+### Description: Research the redundancy between signal file metadata and existing git_utils/context_collection functions, then refactor to use minimal state approach where journal entries only need commit hash for git context lookup.
+### Details:
+**Objective**: Research the redundancy between signal file metadata and existing git_utils/context_collection functions, then refactor to use minimal state approach where journal entries only need commit hash for git context lookup.
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_minimal_signal_state.py`
+   - Test `create_minimal_signal()` function that only stores commit hash + tool parameters
+   - Test `fetch_git_context_on_demand()` function that retrieves context using existing git_utils
+   - Test `determine_summary_trigger()` function for "awakening the AI beast" decision logic
+   - Test cases: minimal signal creation with only hash and tool params, on-demand git context retrieval using existing git_utils functions, summary trigger logic based on commit patterns/frequency, privacy-safe signal content (no PII), integration with existing context_collection.py functions
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: Minimal signal content scope (hash + tool + params vs additional essential metadata)
+   - **PAUSE FOR MANUAL APPROVAL**: Summary trigger mechanism (time-based vs commit-count vs content-based analysis)
+   - **PAUSE FOR MANUAL APPROVAL**: AI "awakening" strategy (separate signal vs flag in journal signal vs external trigger)
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Research existing git context collection in git_utils.py and context_collection.py
+   - Implement `create_minimal_signal()` that stores only: tool name, parameters, commit hash, timestamp
+   - Create `fetch_git_context_on_demand()` that uses existing git utilities for context when needed
+   - Develop "AI beast awakening" logic in `determine_summary_trigger()` for summary generation triggers
+   - Refactor existing signal creation to use minimal state approach
+   - Eliminate redundant git metadata storage while maintaining functionality
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update signal-format.md with minimal state architecture and privacy benefits
+     2. **PRD**: Update product requirements to reflect minimal state approach and context separation
+     3. **Engineering Spec**: Update technical implementation details for git context integration patterns and make sure TOC is current
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
+   - **MARK COMPLETE**
+
+## 8. Implement Automatic .gitignore Management for Signal Files [pending]
+### Dependencies: 37.2
+### Description: Update installation/setup processes to automatically add .mcp-commit-story/ to .gitignore during git hook installation, journal initialization, and CLI setup commands to prevent accidental commit of local AI processing artifacts.
+### Details:
+**Objective**: Update installation/setup processes to automatically add `.mcp-commit-story/` to `.gitignore` during git hook installation, journal initialization, and CLI setup commands to prevent accidental commit of local AI processing artifacts.
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_gitignore_management.py`
+   - Test `ensure_gitignore_entry()` function for adding signal directory to .gitignore
+   - Test `validate_gitignore_update()` function for .gitignore modification validation
+   - Test `gitignore_integration_hooks()` function for installation process integration
+   - Test cases: .gitignore creation when file doesn't exist, appending to existing .gitignore without duplication, handling different .gitignore formats and comments, integration with git hook installation process, integration with journal initialization process, integration with CLI setup commands
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: .gitignore entry format (simple directory vs pattern with comments)
+   - **PAUSE FOR MANUAL APPROVAL**: Installation integration points (which setup commands should trigger this)
+   - **PAUSE FOR MANUAL APPROVAL**: Error handling for read-only .gitignore or permission issues
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Implement `ensure_gitignore_entry()` that safely adds `.mcp-commit-story/` to .gitignore
+   - Create `validate_gitignore_update()` for checking existing entries and preventing duplicates
+   - Add integration points in git hook installation (similar to how Husky manages .husky/)
+   - Add integration points in journal initialization process
+   - Add integration points in CLI setup commands
+   - Include proper error handling for permission issues and read-only files
+   - Follow patterns from other tools (Node.js node_modules/, Python __pycache__/, etc.)
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update installation.md with automatic .gitignore management documentation
+     2. **PRD**: Update product requirements to reflect automatic privacy protection during setup
+     3. **Engineering Spec**: Update technical implementation details for .gitignore integration patterns and make sure TOC is current
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
+   - **MARK COMPLETE**
+

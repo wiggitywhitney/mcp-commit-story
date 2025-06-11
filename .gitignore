@@ -13,6 +13,9 @@ yarn-debug.log*
 yarn-error.log*
 dev-debug.log
 
+# MCP signal files (local AI processing artifacts)
+.mcp-commit-story/
+
 # Dependency directories
 node_modules/
 
