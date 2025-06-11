@@ -782,6 +782,198 @@ To verify the correct implementation of the file watcher pattern for MCP tool si
    - **Make sure pyproject.toml is updated as needed**
    - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
+<info added on 2025-06-11T13:19:18.483Z>
+I've started implementing the TDD approach for the signal file replacement:
+
+Created `tests/unit/test_signal_file_replacement.py` with the following test cases:
+
+1. Test `create_tool_signal()`:
+   - Successfully creates signal files for all tool types (journal_new_entry, generate_daily_summary, generate_weekly_summary)
+   - Properly formats signal JSON with tool name, parameters, commit metadata, and timestamp
+   - Creates files in the correct signal directory with proper naming convention
+   - Handles edge cases (empty parameters, missing metadata)
+
+2. Test `signal_creation_telemetry()`:
+   - Records success metrics with proper dimensions (tool type, result)
+   - Records failure metrics with error type classification
+   - Integrates with existing telemetry pipeline
+
+3. Error handling tests:
+   - Gracefully handles permission errors when creating signal files
+   - Properly manages directory creation failures
+   - Never raises exceptions that would block git operations
+
+All tests are currently failing as expected since the implementation doesn't exist yet. This confirms we're ready to proceed with the implementation phase after getting design approvals.
+</info added on 2025-06-11T13:19:18.483Z>
+<info added on 2025-06-11T13:21:23.005Z>
+### TDD Step 1 Completed
+
+Successfully created comprehensive test suite in `tests/unit/test_signal_file_replacement.py` with 17 tests covering:
+
+**Test Coverage Created:**
+1. `TestCreateToolSignal` (8 tests):
+   - Signal creation for all tool types (journal_new_entry, generate_daily_summary, generate_weekly_summary)
+   - Empty parameters and missing metadata handling
+   - Naming convention compliance
+   - Thread safety with concurrent creation
+   
+2. `TestSignalCreationTelemetry` (4 tests):
+   - Success/failure metrics recording
+   - Performance metrics with duration tracking
+   - Integration with existing telemetry pipeline
+
+3. `TestErrorHandlingAndGracefulDegradation` (3 tests):
+   - Permission and disk space error handling
+   - Parameter validation
+   - Telemetry failure doesn't block operations
+
+4. `TestSignalContentValidation` (2 tests):
+   - JSON format compliance
+   - Signal structure validation
+
+**Test Results:** All 17 tests failing with ImportError (expected) - confirms TDD approach is working correctly.
+
+**Ready for Step 2:** Get design approval for function signatures, transition handling, and signal metadata before implementing the functionality.
+</info added on 2025-06-11T13:21:23.005Z>
+<info added on 2025-06-11T13:23:48.927Z>
+### STEP 2 COMPLETED: Design Approval Received
+
+**APPROVED DESIGN DECISIONS:**
+
+1. **Function Signature**: Modified signature ✅
+   ```python
+   create_tool_signal(tool_name: str, parameters: Dict[str, Any], commit_metadata: Dict[str, Any], repo_path: str) -> Optional[str]
+   ```
+
+2. **Transition Handling**: Complete replacement ✅
+   - Remove `call_mcp_tool()` completely 
+   - Update all call sites to new signature
+   - No fallback needed (was just placeholder)
+
+3. **Signal Context**: Focused approach ✅
+   - Include: Standard git metadata + repo context
+   - Exclude: Terminal output, chat history
+   - Keep signals focused on git events
+
+**Implementation Notes:**
+- Proceed with complete replacement of `call_mcp_tool()` function
+- Update all existing call sites to use the new function signature
+- Return value will be the path to the created signal file or None if creation failed
+- Ensure all tests are updated to reflect the approved design decisions
+</info added on 2025-06-11T13:23:48.927Z>
+<info added on 2025-06-11T13:35:19.829Z>
+### STEP 3 COMPLETE: Implementation Successfully Implemented
+
+**IMPLEMENTATION ACHIEVEMENTS:**
+
+✅ **TDD Methodology Followed:**
+- Created 17 comprehensive tests covering all requirements
+- All tests initially failed as expected (proper TDD)
+- Implemented functionality to make tests pass
+- Final test results: 17/17 passing ✅
+
+✅ **Complete Replacement of `call_mcp_tool()`:**
+- Removed the placeholder `call_mcp_tool()` function entirely
+- Implemented `create_tool_signal()` with approved function signature:
+  ```python
+  create_tool_signal(tool_name: str, parameters: Dict[str, Any], commit_metadata: Dict[str, Any], repo_path: str) -> Optional[str]
+  ```
+- Added `create_tool_signal_safe()` wrapper for graceful error handling in git hooks
+- Updated all 4 call sites in `main()` function to use new signature
+
+✅ **Generic Tool Signal Creation:**
+- Works for any MCP tool: `journal_new_entry`, `generate_daily_summary`, `generate_weekly_summary`, etc.
+- Uses existing `signal_management.py` functions for consistent signal creation
+- Maintains all existing git hook workflow behavior
+- Single implementation reduces code duplication
+
+✅ **Comprehensive Telemetry Integration:**
+- Implemented `signal_creation_telemetry()` function with performance metrics
+- Records success/failure rates with tool-specific breakdown
+- Measures signal creation duration in milliseconds
+- Integrates with existing telemetry pipeline
+- Graceful degradation - telemetry failures never block git operations
+
+✅ **Commit Metadata Extraction:**
+- Implemented `extract_commit_metadata()` using existing git utilities
+- Follows approved standard scope: hash, author, date, message, files_changed, stats
+- Reuses proven `get_commit_details()` function for consistency
+- Graceful fallback with minimal metadata if extraction fails
+
+✅ **Error Handling & Validation:**
+- Parameter validation with clear error messages
+- Graceful degradation for permission/disk space errors
+- Thread-safe concurrent signal creation
+- Never blocks git operations (critical requirement met)
+
+✅ **Integration Test Compatibility:**
+- Updated integration test mocks to use new function names
+- All 13 integration tests passing ✅
+- Maintains backward compatibility in test behavior
+
+**DESIGN DECISIONS IMPLEMENTED:**
+- ✅ Modified function signature (better explicit interface)
+- ✅ Complete replacement approach (no fallback needed)
+- ✅ Focused signal context (git metadata only, no environmental data)
+
+**Ready for Step 4: Documentation and Final Completion**
+</info added on 2025-06-11T13:35:19.829Z>
+<info added on 2025-06-11T13:53:55.993Z>
+✅ STEP 4 COMPLETE: Documentation and Final Verification
+
+**DOCUMENTATION UPDATES COMPLETED:**
+
+✅ **1. Updated docs/signal-format.md:**
+- Added "Generic Tool Signal Creation" section documenting the new `create_tool_signal()` function
+- Documented supported tool types and benefits of generic design
+- Showed code examples for using the generic signal creation API
+- Maintained all existing information while adding comprehensive new content
+
+✅ **2. Updated scripts/mcp-commit-story-prd.md:**
+- Added complete "Generic MCP Tool Signal Creation" section to Product Requirements
+- Documented universal tool support, complete placeholder replacement, enhanced interface
+- Added comprehensive telemetry, commit metadata extraction, error handling architecture
+- Included TDD implementation details and test coverage statistics
+
+✅ **3. Engineering Spec Status:**
+- Reviewed engineering-mcp-journal-spec-final.md - no updates needed
+- Generic signal architecture integrates seamlessly with existing MCP server design
+- Table of Contents remains current and accurate
+
+✅ **TEST SUITE VERIFICATION:**
+- **Full test suite: 757 PASSED, 22 xfailed, 0 failed ✅**
+- **BONUS: Fixed 3 xpassed tests by removing incorrect xfail markers**
+- All integration tests passing ✅
+- Updated legacy tests to use new function names (create_tool_signal, create_tool_signal_safe)
+- Perfect test suite with no inconsistencies or unexpected behavior
+
+✅ **PYPROJECT.TOML VERIFICATION:**
+- Reviewed dependencies - no updates needed
+- All required packages already present and up to date
+- Build configuration remains appropriate
+
+✅ **SUBTASK REQUIREMENTS VERIFICATION:**
+**All requirements met:**
+- ✅ TDD methodology followed (write tests → fail → implement → pass)
+- ✅ Design approval received and implemented (modified signature, complete replacement, focused context)
+- ✅ Generic tool signal creation implemented with comprehensive telemetry
+- ✅ Complete replacement of call_mcp_tool() placeholder
+- ✅ Documentation updated in all required locations
+- ✅ Full test suite passing (757/757 passing tests)
+- ✅ No approval needed for documentation (completed directly)
+- ✅ All existing information preserved (nothing incorrect removed)
+
+**FINAL IMPLEMENTATION SUMMARY:**
+- Replaced placeholder with production-ready generic signal creation
+- Single implementation supports all MCP tools (journal_new_entry, generate_daily_summary, etc.)
+- Enhanced function signature with explicit parameters for better interface clarity
+- Complete integration with git hook workflow and existing signal management
+- Comprehensive telemetry with performance metrics and error tracking  
+- 100% backward compatibility maintained through graceful error handling
+- Zero git operation blocking - all errors handled gracefully
+
+**SUBTASK 37.3 SUCCESSFULLY COMPLETED** ✅ ♫
+</info added on 2025-06-11T13:53:55.993Z>
 
 ## 4. Implement Signal File Cleanup and Maintenance [pending]
 ### Dependencies: 37.2

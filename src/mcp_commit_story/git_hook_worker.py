@@ -251,33 +251,171 @@ def check_period_summary_triggers(date_str: str, repo_path: str) -> Dict[str, bo
 
 
 @handle_errors_gracefully
-def call_mcp_tool(tool_name: str, parameters: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """Call an MCP tool with graceful fallback.
+def extract_commit_metadata(repo_path: str) -> Dict[str, Any]:
+    """Extract commit metadata for signal creation.
     
     Args:
-        tool_name: Name of the MCP tool to call
-        parameters: Parameters to pass to the tool
+        repo_path: Path to the git repository
         
     Returns:
-        Tool response if successful, None if failed
+        Dictionary containing commit metadata following approved design
     """
     try:
-        # For now, log the MCP call attempt
-        # In a full implementation, this would attempt to communicate with MCP server
-        log_hook_activity(f"MCP tool call: {tool_name} with params: {parameters}")
+        from mcp_commit_story.git_utils import get_repo, get_current_commit, get_commit_details
         
-        # Placeholder for actual MCP integration
-        # This would be implemented based on the specific MCP communication mechanism
-        # For example:
-        # - HTTP requests to MCP server
-        # - Direct Python function calls
-        # - CLI subprocess calls
+        repo = get_repo(repo_path)
+        commit = get_current_commit(repo)
         
-        log_hook_activity("MCP integration not yet fully implemented", "warning")
-        return None
+        # Use existing git_utils function to get standard metadata
+        commit_details = get_commit_details(commit)
+        
+        # Convert to approved signal format
+        # Extract files changed from the commit
+        files_changed = []
+        for file_path in commit.stats.files.keys():
+            files_changed.append(file_path)
+        
+        return {
+            "hash": commit_details["hash"],
+            "author": commit_details["author"],
+            "date": commit.committed_datetime.isoformat(),
+            "message": commit_details["message"].strip(),
+            "files_changed": files_changed,
+            "stats": commit_details["stats"]
+        }
         
     except Exception as e:
-        log_hook_activity(f"Error calling MCP tool {tool_name}: {str(e)}", "error")
+        log_hook_activity(f"Error extracting commit metadata: {str(e)}", "error", repo_path)
+        # Return minimal metadata for graceful degradation
+        return {
+            "hash": "unknown",
+            "author": "unknown",
+            "date": datetime.now().isoformat(),
+            "message": "unknown",
+            "files_changed": [],
+            "stats": {"files": 0, "insertions": 0, "deletions": 0}
+        }
+
+
+def signal_creation_telemetry(tool_name: str, success: bool, error_type: str = None, duration_ms: float = None) -> None:
+    """Record telemetry for signal creation operations.
+    
+    Args:
+        tool_name: Name of the MCP tool for the signal
+        success: Whether signal creation was successful
+        error_type: Type of error if success=False
+        duration_ms: Duration of signal creation in milliseconds
+    """
+    try:
+        from mcp_commit_story.telemetry import get_mcp_metrics
+        
+        metrics = get_mcp_metrics()
+        if not metrics:
+            return  # Graceful degradation if no metrics available
+        
+        if success:
+            # Record success metrics
+            metrics.record_counter("signal_creation_success", 1)
+            metrics.record_counter(f"signal_creation_success_{tool_name}", 1)
+        else:
+            # Record failure metrics
+            metrics.record_counter("signal_creation_failure", 1)
+            metrics.record_counter(f"signal_creation_failure_{tool_name}", 1)
+            
+            if error_type:
+                metrics.record_counter(f"signal_creation_error_{error_type}", 1)
+        
+        # Record performance metrics if available
+        if duration_ms is not None:
+            metrics.record_histogram("signal_creation_duration_ms", duration_ms)
+            
+    except Exception as e:
+        # Telemetry failures should never block signal creation
+        log_hook_activity(f"Telemetry recording failed: {str(e)}", "warning")
+
+
+def create_tool_signal(tool_name: str, parameters: Dict[str, Any], commit_metadata: Dict[str, Any], repo_path: str) -> Optional[str]:
+    """Create a signal file for MCP tool execution.
+    
+    Approved design: Complete replacement of call_mcp_tool() with generic signal creation
+    that works for any MCP tool type while maintaining comprehensive telemetry.
+    
+    Args:
+        tool_name: Name of the MCP tool (e.g., "journal_new_entry")
+        parameters: Parameters to pass to the tool
+        commit_metadata: Git commit metadata following approved standard scope
+        repo_path: Path to the git repository
+        
+    Returns:
+        Path to created signal file if successful, None if failed
+        
+    Raises:
+        ValueError: For parameter validation errors (allows tests to check validation)
+    """
+    import time
+    
+    start_time = time.time()
+    
+    # Validate inputs - these should raise for tests
+    if not tool_name or not isinstance(tool_name, str):
+        raise ValueError("tool_name must be a non-empty string")
+    if parameters is None or not isinstance(parameters, dict):
+        raise ValueError("parameters must be a dictionary")
+    if commit_metadata is None or not isinstance(commit_metadata, dict):
+        raise ValueError("commit_metadata must be a dictionary")
+    if not repo_path or not isinstance(repo_path, str):
+        raise ValueError("repo_path must be a non-empty string")
+    
+    try:
+        from mcp_commit_story.signal_management import ensure_signal_directory, create_signal_file
+        
+        # Ensure signal directory exists
+        signal_directory = ensure_signal_directory(repo_path)
+        
+        # Create signal file using existing signal management
+        signal_file_path = create_signal_file(
+            signal_directory=signal_directory,
+            tool_name=tool_name,
+            parameters=parameters,
+            commit_metadata=commit_metadata
+        )
+        
+        # Record success telemetry
+        duration_ms = (time.time() - start_time) * 1000
+        signal_creation_telemetry(tool_name, success=True, duration_ms=duration_ms)
+        
+        log_hook_activity(f"Signal created for {tool_name}: {signal_file_path}", "info", repo_path)
+        return signal_file_path
+        
+    except Exception as e:
+        # Check if it's a graceful degradation error
+        error_type = "unknown_error"
+        if hasattr(e, 'graceful_degradation') and e.graceful_degradation:
+            error_type = "graceful_degradation"
+        elif "permission" in str(e).lower():
+            error_type = "permission_error"
+        elif "space" in str(e).lower():
+            error_type = "disk_space_error"
+        
+        duration_ms = (time.time() - start_time) * 1000
+        signal_creation_telemetry(tool_name, success=False, error_type=error_type, duration_ms=duration_ms)
+        
+        log_hook_activity(f"Signal creation failed for {tool_name}: {str(e)}", "error", repo_path)
+        return None
+
+
+@handle_errors_gracefully  
+def create_tool_signal_safe(tool_name: str, parameters: Dict[str, Any], commit_metadata: Dict[str, Any], repo_path: str) -> Optional[str]:
+    """Safe wrapper for create_tool_signal that handles all errors gracefully for use in main().
+    
+    This version catches validation errors to ensure git operations never fail.
+    """
+    try:
+        return create_tool_signal(tool_name, parameters, commit_metadata, repo_path)
+    except ValueError as e:
+        # Parameter validation errors - log and continue for graceful degradation in git hooks
+        log_hook_activity(f"Signal creation validation error for {tool_name}: {str(e)}", "error", repo_path)
+        signal_creation_telemetry(tool_name, success=False, error_type="validation_error")
         return None
 
 
@@ -306,35 +444,53 @@ def main() -> None:
             log_hook_activity(f"Not a git repository: {repo_path}", "warning", repo_path)
             return
         
+        # Extract commit metadata once for all signal creation
+        commit_metadata = extract_commit_metadata(repo_path)
+        
         # 1. Check if daily summary should be generated
         date_to_generate = check_daily_summary_trigger(repo_path)
         
         if date_to_generate:
-            # Attempt to generate daily summary via MCP
-            result = call_mcp_tool("generate_daily_summary", {"date": date_to_generate})
+            # Create signal for daily summary generation
+            result = create_tool_signal_safe(
+                "generate_daily_summary", 
+                {"date": date_to_generate}, 
+                commit_metadata, 
+                repo_path
+            )
             if result:
-                log_hook_activity(f"Daily summary generated successfully for {date_to_generate}", "info", repo_path)
+                log_hook_activity(f"Daily summary signal created for {date_to_generate}: {result}", "info", repo_path)
             else:
-                log_hook_activity(f"Daily summary generation failed for {date_to_generate}", "warning", repo_path)
+                log_hook_activity(f"Daily summary signal creation failed for {date_to_generate}", "warning", repo_path)
             
             # 2. Check if period summaries should be generated
             period_triggers = check_period_summary_triggers(date_to_generate, repo_path)
             
             for period, should_generate in period_triggers.items():
                 if should_generate:
-                    result = call_mcp_tool(f"generate_{period}_summary", {"date": date_to_generate})
+                    result = create_tool_signal_safe(
+                        f"generate_{period}_summary", 
+                        {"date": date_to_generate}, 
+                        commit_metadata, 
+                        repo_path
+                    )
                     if result:
-                        log_hook_activity(f"{period.title()} summary generated successfully", "info", repo_path)
+                        log_hook_activity(f"{period.title()} summary signal created: {result}", "info", repo_path)
                     else:
-                        log_hook_activity(f"{period.title()} summary generation failed", "warning", repo_path)
+                        log_hook_activity(f"{period.title()} summary signal creation failed", "warning", repo_path)
         
         # 3. Always attempt to generate journal entry (maintains existing behavior)
-        log_hook_activity("Attempting journal entry generation", "info", repo_path)
-        result = call_mcp_tool("new_journal_entry", {"repo_path": repo_path})
+        log_hook_activity("Creating journal entry signal", "info", repo_path)
+        result = create_tool_signal_safe(
+            "journal_new_entry", 
+            {"repo_path": repo_path}, 
+            commit_metadata, 
+            repo_path
+        )
         if result:
-            log_hook_activity("Journal entry generated successfully", "info", repo_path)
+            log_hook_activity(f"Journal entry signal created: {result}", "info", repo_path)
         else:
-            log_hook_activity("Journal entry generation failed", "warning", repo_path)
+            log_hook_activity("Journal entry signal creation failed", "warning", repo_path)
         
         log_hook_activity("=== Git hook worker completed ===", "info", repo_path)
         

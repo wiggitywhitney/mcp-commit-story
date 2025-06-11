@@ -111,6 +111,38 @@ file_path = create_signal_file(
 is_valid = validate_signal_format(signal_data)
 ```
 
+### Generic Tool Signal Creation
+
+The system supports creation of signals for any MCP tool through the generic `create_tool_signal()` function in the git hook worker:
+
+```python
+from mcp_commit_story.git_hook_worker import create_tool_signal
+
+# Extract commit metadata
+commit_metadata = extract_commit_metadata(repo_path)
+
+# Create signal for any MCP tool
+signal_path = create_tool_signal(
+    tool_name="generate_daily_summary",  # Any MCP tool name
+    parameters={"date": "2025-06-11"},   # Tool-specific parameters
+    commit_metadata=commit_metadata,     # Standard git context
+    repo_path="/path/to/repo"           # Repository path
+)
+```
+
+**Supported Tool Types:**
+- `journal_new_entry` - Create new journal entries
+- `generate_daily_summary` - Generate daily summaries
+- `generate_weekly_summary` - Generate weekly summaries  
+- `generate_monthly_summary` - Generate monthly summaries
+- Any other MCP tool implemented in the server
+
+**Benefits of Generic Design:**
+- Single implementation supports all MCP tools
+- Consistent signal format across tool types
+- Comprehensive telemetry for all signal creation
+- Reduced code duplication and maintenance overhead
+
 ### Utility Functions
 
 ```python

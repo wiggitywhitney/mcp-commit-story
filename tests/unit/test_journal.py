@@ -138,7 +138,6 @@ def test_generate_summary_section_handles_missing_git():
     assert result['summary'] == ""
 
 
-@pytest.mark.xfail(reason="Requires AI agent or mock AI")
 def test_generate_summary_section_ignores_how_and_errors():
     ctx = JournalContext(
         chat={'messages': [
@@ -219,7 +218,6 @@ def test_generate_accomplishments_section_pride_and_concern():
     assert any('finally' in a.lower() or 'got' in a.lower() for a in result['accomplishments'])
 
 
-@pytest.mark.xfail(reason="Requires AI agent or mock AI")
 def test_generate_accomplishments_section_git_only():
     ctx = JournalContext(
         chat=None,
@@ -534,7 +532,6 @@ def test_generate_discussion_notes_section_format():
     assert any(isinstance(n, dict) and n.get('speaker') == 'Agent' for n in notes)
 
 
-@pytest.mark.xfail(reason="Requires AI agent or mock AI")
 def test_generate_terminal_commands_section_happy_path():
     ctx = JournalContext(
         chat=None,
