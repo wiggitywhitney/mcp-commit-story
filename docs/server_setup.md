@@ -21,13 +21,24 @@ The MCP server is a Python service that exposes journal operations (such as `jou
    ```
 
 ## Launching the Server
-Run the server using your preferred Python environment:
+
+### Primary Entry Point (Recommended)
+Run the server using the official MCP server entry point:
 ```sh
-python -m mcp_commit_story.server
+python -m mcp_commit_story
 ```
-Or, if you have a CLI entry point:
+
+This entry point provides:
+- **Comprehensive telemetry and monitoring** with startup/shutdown metrics
+- **Robust error handling** with proper exit codes (0=success, 1=error, 2=config error, 130=SIGINT)
+- **Signal handling** for graceful shutdown (SIGINT, SIGTERM) and config reload (SIGHUP)
+- **Configuration validation** with clear error messages for invalid or missing settings
+- **Structured logging** throughout the server lifecycle
+
+### Alternative Launch Methods
+For development or specific use cases, you can also run:
 ```sh
-mcp-commit-story-server
+python -m mcp_commit_story.server  # Direct server module (legacy)
 ```
 
 The server uses **stdio transport** by default for maximum compatibility with AI clients and editors.

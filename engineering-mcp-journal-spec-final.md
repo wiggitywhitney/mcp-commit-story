@@ -101,7 +101,11 @@ This document specifies a Model Context Protocol (MCP) server designed to captur
 The MCP server must be launchable as a standalone process and expose the required journal operations (e.g., `journal/new-entry`, `journal/summarize`, etc.) as specified in this document. The server should be discoverable by compatible clients (such as AI-powered editors, agents, or other tools) via a standard configuration mechanism.
 
 - **Server Launch:**
-  - The method for launching the MCP server is not prescribed by this specification. It may be started via a CLI command, Python entry point, or any other mechanism appropriate to the environment.
+  - **✅ IMPLEMENTED**: Primary launch method via official entry point: `python -m mcp_commit_story`
+  - **✅ IMPLEMENTED**: Comprehensive startup management with telemetry integration, configuration validation, and robust error handling
+  - **✅ IMPLEMENTED**: Unix standard exit codes (0=success, 1=error, 2=config error, 130=SIGINT) for reliable process management
+  - **✅ IMPLEMENTED**: Signal handling for graceful shutdown (SIGINT, SIGTERM) and configuration reload (SIGHUP)
+  - **✅ IMPLEMENTED**: Structured logging throughout server lifecycle with trace correlation
   - The server must remain running and accessible to clients for the duration of its use.
 
 - **Client/Editor Integration:**
