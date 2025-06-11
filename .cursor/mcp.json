@@ -33,6 +33,14 @@
           "-y",
           "@upstash/context7-mcp"
         ]
+      },
+      "mcp-commit-story": {
+        "command": "python",
+        "args": ["-m", "mcp_commit_story"],
+        "cwd": "/Users/wiggitywhitney/Repos/mcp-commit-story",
+        "env": {
+          "LOG_LEVEL": "INFO"
+        }
       }
     }
   }
