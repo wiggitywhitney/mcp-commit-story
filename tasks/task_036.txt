@@ -33,6 +33,20 @@ This task involves significant improvements to the context collection system by 
    - Document error handling patterns
    - Understand performance characteristics
 
+4. Architectural Research Questions:
+   - RESEARCH QUESTION 1: Chat Parsing Location
+     * Should intelligent parsing guided by git code/file changes happen at collection time or downstream during journal generation?
+     * Determine optimal architecture for git-change-guided chat selection
+     * Evaluate tradeoffs between early vs. late filtering (performance, flexibility, maintainability)
+     * Consider impact on caching strategies and incremental updates
+
+   - RESEARCH QUESTION 2: Terminal Commands Value
+     * Are terminal commands helpful at all, or should they be omitted entirely?
+     * Current assessment: "seem shallow and usually related only to tests"
+     * Research whether they add sufficient value to justify collection complexity
+     * Analyze sample journal entries with and without terminal commands
+     * Determine if specific types of terminal commands are more valuable than others
+
 ## Phase 1: Core SQLite Integration (MVP)
 
 1. Remove the current limited `collect_ai_chat_context` function from `context_collection.py` that only captures recent messages.
@@ -63,6 +77,8 @@ This task involves significant improvements to the context collection system by 
    - Process FOUR distinct context sources: git, terminal, cursor chat database, and synthesized summary
    - Handle cases where some context sources might be unavailable
    - Maintain backward compatibility with existing journal generation
+   - Implement architecture based on Research Question 1 findings (collection-time vs. generation-time filtering)
+   - Conditionally include terminal commands based on Research Question 2 findings
 
 5. Implement git-driven chat relevance detection:
    - Use git changes (files, functions, variables) as semantic search criteria to find relevant chat segments
@@ -130,6 +146,8 @@ This task involves significant improvements to the context collection system by 
    - Validate message extraction completeness (both human and AI messages)
    - Verify boundary detection mechanisms with various conversation patterns
    - Document performance characteristics with large chat histories
+   - Validate architectural decisions from Research Question 1 (collection-time vs. generation-time filtering)
+   - Test journal quality with and without terminal commands to validate Research Question 2 findings
 
 2. Unit Testing:
    - Create unit tests for the new SQLite reader function with mock database responses
@@ -151,6 +169,8 @@ This task involves significant improvements to the context collection system by 
    - Validate boundary detection with real-world conversation patterns
    - Test git-driven chat relevance detection with real-world code changes and chat histories
    - Verify that journal entries include relevant historical chat segments related to code changes
+   - Compare journal quality with the chosen architecture from Research Question 1
+   - If terminal commands are included, verify their contribution to journal quality
 
 4. Performance Testing:
    - Measure and optimize query performance for large chat histories
@@ -160,6 +180,7 @@ This task involves significant improvements to the context collection system by 
    - Test configuration caching effectiveness
    - Measure performance impact of semantic search on large chat histories
    - Test caching effectiveness for similar git changes
+   - Compare performance between collection-time vs. generation-time filtering approaches
 
 5. User Acceptance Testing:
    - Verify the quality and relevance of journal entries with the enhanced context
@@ -170,6 +191,7 @@ This task involves significant improvements to the context collection system by 
    - Evaluate the quality of git-driven chat relevance detection
    - Verify that journal entries capture the full thinking process behind code changes
    - Compare journal entries with basic recent messages vs. git-driven relevant messages
+   - If terminal commands are included, evaluate their contribution to journal comprehensiveness
 
 6. Phased Implementation Verification:
    - Verify each phase can be deployed independently
@@ -183,6 +205,7 @@ This task involves significant improvements to the context collection system by 
    - Confirm telemetry events are documented according to standards
    - Document cross-platform considerations and configuration options
    - Document the git-driven chat relevance detection approach and configuration options
+   - Document architectural decisions from research questions and their rationale
 
 # Subtasks:
 ## 1. Cursor-chat-browser Analysis and Workspace Detection Research [pending]
@@ -244,4 +267,16 @@ Leverage proven cursor-chat-browser patterns for cross-platform compatibility. H
 ### Description: Implement comprehensive telemetry as defined in docs/telemetry.md and create final documentation for the complete Cursor chat database integration system.
 ### Details:
 Add comprehensive telemetry as defined in docs/telemetry.md for workspace detection, database queries, summary generation, and error conditions. Ensure privacy compliance for chat data telemetry. Update all new functions with appropriate telemetry decorators. Create comprehensive user guide and update PRD/Engineering Spec with complete documentation. Include documentation on git-driven chat relevance detection and its configuration options. REQUIRES APPROVAL FOR: telemetry data collection scope and chat data privacy handling approach.
+
+## 11. Research Chat Parsing Location Architecture Question [pending]
+### Dependencies: 36.1
+### Description: Research whether intelligent parsing guided by git code/file changes should happen at collection time or downstream during journal generation.
+### Details:
+Conduct research to determine the optimal architecture for git-change-guided chat selection. Evaluate tradeoffs between early filtering (at collection time) versus late filtering (during journal generation) in terms of performance, flexibility, maintainability, and user experience. Consider impact on caching strategies and incremental updates. Document findings with clear recommendations and rationale for the chosen approach. This is a research task with no TDD cycle required, but should include proof-of-concept testing to validate conclusions.
+
+## 12. Research Terminal Commands Value Question [pending]
+### Dependencies: 36.1
+### Description: Research whether terminal commands add sufficient value to justify their collection complexity or should be omitted entirely.
+### Details:
+Investigate the current assessment that terminal commands "seem shallow and usually related only to tests" to determine if they add sufficient value to justify collection complexity. Analyze sample journal entries with and without terminal commands. Determine if specific types of terminal commands are more valuable than others. Consider the impact on journal quality and completeness. Document findings with clear recommendations on whether to include terminal commands and if so, which types and how to filter them. This is a research task with no TDD cycle required.
 

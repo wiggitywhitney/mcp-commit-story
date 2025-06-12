@@ -3,10 +3,10 @@
 # Status: pending
 # Dependencies: 36
 # Priority: medium
-# Description: Develop and integrate an AI-powered context synthesis system as the fourth source in the context collection framework, capturing workspace understanding, session meta-context, and contextual awareness beyond chat messages.
+# Description: Develop and integrate an AI-powered context synthesis system as the fourth source in the context collection framework, capturing workspace understanding, session meta-context, and contextual awareness beyond chat messages, with intelligent timing-aware logic to determine relevance based on time elapsed.
 # Details:
 ## Implementation Overview
-This task involves creating a sophisticated AI-driven context synthesis system that will serve as the fourth pillar in our context collection framework, complementing the existing git, chat, and terminal context sources.
+This task involves creating a sophisticated AI-driven context synthesis system that will serve as the fourth pillar in our context collection framework, complementing the existing git, chat, and terminal context sources. The system must include intelligent timing logic to determine when synthesized context is beneficial versus potentially detrimental.
 
 ## Phase 1: AI Prompt Engineering
 1. Design a set of specialized prompts that can:
@@ -18,6 +18,7 @@ This task involves creating a sophisticated AI-driven context synthesis system t
    - Current project type and technology stack
    - Recent development activities
    - Detected patterns in coding behavior
+   - Time elapsed since relevant activities
 
 ## Phase 2: Context Collection Function
 1. Implement `collectSynthesizedContext()` function that:
@@ -25,6 +26,7 @@ This task involves creating a sophisticated AI-driven context synthesis system t
    - Applies the engineered prompts to an AI model
    - Processes and structures the AI responses
    - Returns a rich contextual understanding object
+   - Includes metadata about context freshness and relevance
 2. Optimize prompt execution to minimize latency:
    - Implement caching for similar contexts
    - Use streaming responses where appropriate
@@ -67,6 +69,20 @@ This task involves creating a sophisticated AI-driven context synthesis system t
    - Provide higher-level abstractions of development activities
 2. Implement configurable verbosity levels for synthesized context in journal entries
 
+## Phase 6: Timing-Aware Context Relevance
+1. Research and implement a time-decay model for context relevance:
+   - Track timestamps for all context sources
+   - Calculate relevance scores based on recency
+   - Determine thresholds for when context becomes potentially detrimental
+2. Decision point implementation:
+   - Collection-time approach: Only collect synthesized context when time thresholds indicate it would be valuable
+   - Processing-time approach: Always collect but include relevance metadata for downstream filtering
+   - Hybrid approach: Basic collection-time filtering with more nuanced processing-time decisions
+3. Implement adaptive thresholds based on:
+   - Project type and development patterns
+   - Historical usefulness of synthesized context
+   - User feedback and preferences
+
 # Test Strategy:
 ## Testing Approach
 
@@ -82,6 +98,11 @@ This task involves creating a sophisticated AI-driven context synthesis system t
    - Test prioritization logic when contexts overlap or conflict
    - Ensure performance remains acceptable with the additional context source
 
+3. Test timing-aware relevance logic:
+   - Verify correct calculation of time-based relevance scores
+   - Test with various time intervals between context collection and usage
+   - Validate threshold logic for inclusion/exclusion decisions
+
 ### Integration Tests
 1. End-to-end testing of the complete context collection pipeline:
    - Verify all four context sources are collected and integrated properly
@@ -92,6 +113,7 @@ This task involves creating a sophisticated AI-driven context synthesis system t
    - Verify synthesized context appears appropriately in journal entries
    - Test different verbosity settings for synthesized context
    - Compare journal quality before and after implementation
+   - Verify correct handling of time-delayed journal generation
 
 ### Quality Assessment
 1. Implement a scoring system to evaluate synthesized context quality:
@@ -99,11 +121,13 @@ This task involves creating a sophisticated AI-driven context synthesis system t
    - Uniqueness compared to other context sources
    - Insight value beyond raw data
    - Accuracy of meta-context understanding
+   - Correlation between time elapsed and context quality
 
 2. Conduct user testing:
    - Have developers review journal entries with synthesized context
    - Collect feedback on usefulness and accuracy
    - Measure impact on development workflow and documentation quality
+   - Specifically test scenarios with varying time delays
 
 ### Performance Testing
 1. Benchmark latency impact:
@@ -115,3 +139,38 @@ This task involves creating a sophisticated AI-driven context synthesis system t
    - Monitor memory usage during context collection
    - Verify CPU usage remains within acceptable limits
    - Test on different hardware configurations
+
+### Time-Relevance Testing
+1. Create test scenarios with controlled time delays:
+   - Immediate journal generation after commit
+   - Short delays (minutes to hours)
+   - Long delays (days)
+   - Very long delays (weeks)
+2. Evaluate quality and relevance of synthesized context across these scenarios
+3. Validate that the system correctly identifies when to include vs. exclude synthesized context
+
+# Subtasks:
+## 39.1. Research optimal timing thresholds for context relevance [pending]
+### Dependencies: None
+### Description: Conduct research to determine appropriate time thresholds for when synthesized context transitions from helpful to potentially confusing or detrimental. Consider different project types, development patterns, and context categories.
+### Details:
+
+
+## 39.2. Design and implement time-decay model for context relevance [pending]
+### Dependencies: None
+### Description: Create a mathematical model that calculates relevance scores based on time elapsed since context was collected. Include configurable parameters for different types of context that may decay at different rates.
+### Details:
+
+
+## 39.3. Implement collection-time vs. processing-time decision logic [pending]
+### Dependencies: None
+### Description: Determine and implement whether timing-aware decisions should happen at collection time (potentially skipping collection when not relevant) or at processing time (always collecting but filtering during journal generation). Document tradeoffs of each approach.
+### Details:
+
+
+## 39.4. Add timestamp tracking to all context sources [pending]
+### Dependencies: None
+### Description: Modify existing context collection functions to include precise timestamps for when each piece of context was generated or collected, enabling accurate time-decay calculations.
+### Details:
+
+
