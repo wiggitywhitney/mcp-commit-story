@@ -3,3 +3,222 @@ description:
 globs:
 alwaysApply: false
 ---
+# Test Suite Integrity Rule
+
+**All tests in the entire test suite must pass. Never skip addressing a failing test, even if it appears unrelated to the current task.**
+
+## Core Principle
+
+- **The test suite is the foundation of code quality and system reliability**
+- **Every failing test represents a potential bug or broken functionality**
+- **Ignoring "unrelated" test failures leads to technical debt and system instability**
+- **Test suite integrity is a prerequisite for any code changes**
+
+## Implementation Requirements
+
+### ✅ DO: Always Fix All Failing Tests
+
+```bash
+# ✅ Run full test suite before any implementation
+python -m pytest tests/ -v
+
+# ✅ Fix ALL failing tests, not just related ones
+python -m pytest tests/ -x --tb=short
+
+# ✅ Verify test suite health after changes
+python -m pytest tests/ --tb=short
+```
+
+### ✅ DO: Address Test Failures by Priority
+
+1. **Critical System Tests**: Core functionality, integration tests
+2. **Unit Test Failures**: Individual component failures
+3. **Edge Case Tests**: Boundary condition tests
+4. **Documentation Tests**: Import tests, structure validation
+
+### ✅ DO: Update Tests When Implementation Changes
+
+```python
+# ✅ Update test expectations to match new behavior
+def test_enhanced_hook_content():
+    """Updated test for enhanced git hook functionality."""
+    content = generate_hook_content()
+    assert "python -m mcp_commit_story.git_hook_worker" in content
+    assert '"$PWD"' in content
+```
+
+### ✅ DO: Maintain Backward Compatibility Tests
+
+```python
+# ✅ Keep backward compatibility tests working
+def test_custom_command_still_works():
+    """Ensure legacy behavior still functions."""
+    custom = "echo 'hello world'"
+    content = generate_hook_content(custom)
+    assert custom in content
+```
+
+### ❌ DON'T: Skip "Unrelated" Test Failures
+
+```bash
+# ❌ Wrong - ignoring failures
+pytest tests/unit/test_my_feature.py  # Only testing related code
+
+# ❌ Wrong - proceeding with failures
+# "The git_utils tests are failing but that's not related to my change"
+```
+
+### ❌ DON'T: Leave Broken Tests "For Later"
+
+```python
+# ❌ Wrong - commenting out broken tests
+# def test_important_functionality():
+#     # TODO: Fix this later
+#     pass
+
+# ❌ Wrong - marking tests as xfail without justification
+@pytest.mark.xfail(reason="Will fix later")  # Not acceptable
+def test_core_feature():
+    pass
+```
+
+## Implementation Workflow
+
+### **1. Pre-Implementation Check**
+```bash
+# Always start with clean test suite
+python -m pytest tests/ -v
+# If failures exist: STOP and fix them first
+```
+
+### **2. During Implementation**
+```bash
+# Run tests frequently during development
+python -m pytest tests/unit/test_current_module.py -v
+python -m pytest tests/ -x  # Stop on first failure
+```
+
+### **3. Post-Implementation Verification**
+```bash
+# Comprehensive test suite validation
+python -m pytest tests/ --tb=short
+# All tests must pass before considering task complete
+```
+
+### **4. Integration Test Validation**
+```bash
+# Run integration tests to catch system-level issues
+python -m pytest tests/integration/ -v
+```
+
+## Common Failure Patterns and Solutions
+
+### **Import Errors**
+```python
+# ✅ Fix missing imports in new modules
+import git  # Add missing GitPython import
+
+# ✅ Update __init__.py files if needed
+from .new_module import new_function
+```
+
+### **API Changes**
+```python
+# ✅ Update function signatures in tests
+def test_function_with_new_parameter():
+    result = my_function(param1, new_param=default_value)
+```
+
+### **Test Data Updates**
+```python
+# ✅ Update test expectations for new behavior
+def test_enhanced_functionality():
+    # Updated assertion for new enhanced behavior
+    assert "enhanced_feature" in result
+```
+
+### **Mock Updates**
+```python
+# ✅ Update mocks to match new function signatures
+@patch('module.function')
+def test_with_updated_mock(mock_func):
+    mock_func.return_value = new_expected_value
+```
+
+## Test Categories and Treatment
+
+### **Unit Tests** - Must All Pass
+- Individual function and class tests
+- Isolated component testing
+- Mock-based testing
+
+### **Integration Tests** - Must All Pass
+- Cross-component interaction tests
+- File system operation tests
+- CLI integration tests
+
+### **Expected Failures (xfail)** - Acceptable Only When:
+- Clearly documented with specific reason
+- Temporary due to external dependencies (AI services)
+- Marked with specific condition for when to revisit
+
+```python
+# ✅ Acceptable xfail usage
+@pytest.mark.xfail(reason="Requires AI agent or mock AI")
+def test_ai_dependent_feature():
+    pass
+```
+
+### **Skipped Tests** - Use Sparingly
+- Only for tests requiring external resources
+- Must have clear reason and condition
+
+```python
+# ✅ Acceptable skip usage
+@pytest.mark.skipif(not AI_SERVICE_AVAILABLE, reason="AI service not configured")
+def test_ai_integration():
+    pass
+```
+
+## Benefits of Complete Test Suite Integrity
+
+- **Confidence**: Every code change is validated against the entire system
+- **Quality**: Prevents regression bugs from reaching production
+- **Documentation**: Tests serve as living documentation of system behavior
+- **Refactoring Safety**: Can safely refactor with confidence
+- **Debugging**: Failing tests provide immediate feedback on issues
+
+## Exceptions
+
+**The only acceptable reasons for temporarily proceeding with failing tests:**
+
+1. **External Service Outage**: Tests failing due to temporary external service issues
+2. **Environment Setup**: Tests failing due to missing development environment setup
+3. **Explicit Stakeholder Decision**: Business decision to proceed with known issues
+
+**All exceptions must be:**
+- Documented with clear reasoning
+- Tracked with specific remediation plan
+- Resolved within defined timeframe
+
+## Integration with Development Workflow
+
+### **Task Completion Criteria**
+1. All task requirements implemented ✅
+2. New functionality tested ✅  
+3. **ALL tests in suite passing** ✅
+4. Documentation updated ✅
+5. Code review ready ✅
+
+### **Before Marking Task Complete**
+```bash
+# Final validation checklist
+python -m pytest tests/ --tb=short
+# If exit code != 0: Task is NOT complete
+```
+
+## Related Rules
+
+- [TDD Workflow](mdc:.cursor/rules/cursor_rules.mdc) - Test-driven development patterns
+- [Git Operations](mdc:.cursor/rules/git_operations.mdc) - Git workflow integration
+- [Code Quality](mdc:.cursor/rules/code_quality.mdc) - Overall quality standards
