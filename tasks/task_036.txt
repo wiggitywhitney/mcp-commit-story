@@ -3,7 +3,7 @@
 # Status: pending
 # Dependencies: None
 # Priority: high
-# Description: Enhance the journal context collection by implementing direct SQLite integration with the Cursor chat database to access complete conversation history instead of limited recent messages.
+# Description: Enhance the journal context collection by implementing direct SQLite integration with the Cursor chat database to access complete conversation history instead of limited recent messages, using git changes as semantic search criteria to intelligently select relevant chat segments.
 # Details:
 This task involves significant improvements to the context collection system by directly accessing the Cursor chat database, implemented in five distinct phases:
 
@@ -64,51 +64,64 @@ This task involves significant improvements to the context collection system by 
    - Handle cases where some context sources might be unavailable
    - Maintain backward compatibility with existing journal generation
 
-5. Implement chat boundary detection logic:
+5. Implement git-driven chat relevance detection:
+   - Use git changes (files, functions, variables) as semantic search criteria to find relevant chat segments
+   - Extract key terms, function names, and concepts from git diffs
+   - Implement semantic matching between code changes and chat content
+   - Score and rank chat segments by relevance to code changes
+   - Prioritize chat segments that directly discuss the modified code elements
+   - Include both recent and historical chat segments that relate to the current changes
+   - Support fuzzy matching for partial or conceptual references to code elements
+
+6. Implement chat boundary detection logic:
    - Implement smart boundary detection using complete chat history access
    - Consider conversation breaks, topic changes, or manual delimiters
    - Provide configurable limits with intelligent defaults based on cursor-chat-browser insights
    - Implement topic change detection mechanisms and session separation logic
    - Support for both automatic and manual boundary configuration
+   - Ensure boundaries preserve the context of git-relevant chat segments
 
 ## Phase 3: Enhancement Features
 
-6. Create a new synthesized summary collection function that:
+7. Create a new synthesized summary collection function that:
    - Uses AI prompts to generate high-level summaries of conversations
    - Provides configuration options for summary detail level and focus areas
    - Handles rate limiting and API errors gracefully
+   - Emphasizes the relationship between chat segments and code changes
+   - Captures the thinking process behind implementation decisions
 
-7. Implement caching mechanisms for performance:
+8. Implement caching mechanisms for performance:
    - Avoid regenerating summaries unnecessarily
    - Optimize database query performance
    - Implement configuration caching for performance optimization
+   - Cache semantic search results for similar git changes
 
 ## Phase 4: Production Readiness
 
-8. Implement cross-platform support considerations:
+9. Implement cross-platform support considerations:
    - Leverage proven cursor-chat-browser patterns for cross-platform compatibility
    - Handle path variations across operating systems (Windows/macOS/Linux/WSL2)
    - Implement permission handling with clear error messages for database access issues
    - Create repeatable setup for any end user's environment with auto-detection
    - Test on Windows, macOS, and Linux
 
-9. Address packaging considerations:
-   - Zero external dependencies (using built-in sqlite3)
-   - Document installation requirements for end users
-   - Provide fallback mechanisms when database access is not available
-   - Implement robust error recovery mechanisms for corrupted/missing databases
+10. Address packaging considerations:
+    - Zero external dependencies (using built-in sqlite3)
+    - Document installation requirements for end users
+    - Provide fallback mechanisms when database access is not available
+    - Implement robust error recovery mechanisms for corrupted/missing databases
 
 ## Additional Requirements
 
-10. Add comprehensive telemetry as defined in docs/telemetry.md
+11. Add comprehensive telemetry as defined in docs/telemetry.md
 
-11. Implement user-friendly diagnostics:
+12. Implement user-friendly diagnostics:
     - Check if Cursor workspace is accessible
     - Validate chat data availability
     - Provide helpful error messages
     - Include troubleshooting guidance
 
-12. Update documentation to reflect the new capabilities and requirements.
+13. Update documentation to reflect the new capabilities and requirements.
 
 # Test Strategy:
 1. Research Phase Validation:
@@ -126,6 +139,8 @@ This task involves significant improvements to the context collection system by 
    - Test the synthesized summary function produces expected outputs
    - Test error handling for all new functions with various failure scenarios
    - Verify telemetry implementation with mock events
+   - Test git-driven chat relevance detection with various code change scenarios
+   - Verify semantic matching between code changes and chat content
 
 3. Integration Testing:
    - Test the complete context collection pipeline with a real Cursor chat database
@@ -134,6 +149,8 @@ This task involves significant improvements to the context collection system by 
    - Verify backward compatibility with existing journal entries
    - Test diagnostic features with various error conditions
    - Validate boundary detection with real-world conversation patterns
+   - Test git-driven chat relevance detection with real-world code changes and chat histories
+   - Verify that journal entries include relevant historical chat segments related to code changes
 
 4. Performance Testing:
    - Measure and optimize query performance for large chat histories
@@ -141,6 +158,8 @@ This task involves significant improvements to the context collection system by 
    - Benchmark summary generation time and resource usage
    - Verify caching mechanisms improve performance as expected
    - Test configuration caching effectiveness
+   - Measure performance impact of semantic search on large chat histories
+   - Test caching effectiveness for similar git changes
 
 5. User Acceptance Testing:
    - Verify the quality and relevance of journal entries with the enhanced context
@@ -148,6 +167,9 @@ This task involves significant improvements to the context collection system by 
    - Gather feedback on summary quality and completeness
    - Test user experience with diagnostic messages
    - Validate cross-platform user experience
+   - Evaluate the quality of git-driven chat relevance detection
+   - Verify that journal entries capture the full thinking process behind code changes
+   - Compare journal entries with basic recent messages vs. git-driven relevant messages
 
 6. Phased Implementation Verification:
    - Verify each phase can be deployed independently
@@ -160,6 +182,7 @@ This task involves significant improvements to the context collection system by 
    - Verify troubleshooting guidance is clear and helpful
    - Confirm telemetry events are documented according to standards
    - Document cross-platform considerations and configuration options
+   - Document the git-driven chat relevance detection approach and configuration options
 
 # Subtasks:
 ## 1. Cursor-chat-browser Analysis and Workspace Detection Research [pending]
@@ -180,39 +203,45 @@ Remove the current limited `collect_ai_chat_context` function from `context_coll
 ### Details:
 Implement a direct database query function that queries the `ItemTable` where `key='aiService.prompts'` to extract the complete conversation history. Ensure both human and AI messages are captured. Handle message threading and conversation context preservation. Extract timestamps and metadata for intelligent boundary detection. Parse the returned JSON format into a structured conversation history. Include appropriate error handling and logging. REQUIRES APPROVAL FOR: chat boundary detection strategy, message attribution handling, and message caching approach.
 
-## 4. Implement Chat Boundary Detection Logic [pending]
+## 4. Implement Git-Driven Chat Relevance Detection [pending]
 ### Dependencies: 36.3
+### Description: Create a system that uses git changes as semantic search criteria to find relevant chat segments in the complete conversation history.
+### Details:
+Implement a git-driven chat relevance detection system that uses code changes as search criteria. Extract key terms, function names, and concepts from git diffs. Create semantic matching algorithms between code changes and chat content. Score and rank chat segments by relevance to code changes. Prioritize chat segments that directly discuss the modified code elements. Include both recent and historical chat segments that relate to the current changes. Support fuzzy matching for partial or conceptual references to code elements. REQUIRES APPROVAL FOR: semantic matching approach, relevance scoring algorithm, and search depth configuration.
+
+## 5. Implement Chat Boundary Detection Logic [pending]
+### Dependencies: 36.4
 ### Description: Create intelligent boundary detection for chat context using complete conversation history access with configurable limits and topic change detection.
 ### Details:
-Implement smart boundary detection using complete chat history access. Consider conversation breaks, topic changes, and manual delimiters. Provide configurable limits with intelligent defaults based on cursor-chat-browser insights. Implement topic change detection mechanisms and session separation logic. Support both automatic and manual boundary configuration. REQUIRES APPROVAL FOR: topic change detection method, default boundary limits, and edge case handling.
+Implement smart boundary detection using complete chat history access. Consider conversation breaks, topic changes, and manual delimiters. Provide configurable limits with intelligent defaults based on cursor-chat-browser insights. Implement topic change detection mechanisms and session separation logic. Support both automatic and manual boundary configuration. Ensure boundaries preserve the context of git-relevant chat segments. REQUIRES APPROVAL FOR: topic change detection method, default boundary limits, and edge case handling.
 
-## 5. Update Four-Source Context Integration [pending]
-### Dependencies: 36.4
+## 6. Update Four-Source Context Integration [pending]
+### Dependencies: 36.5
 ### Description: Update downstream components to process four distinct context sources (git, terminal, cursor chat database, synthesized summary) with proper fallback handling.
 ### Details:
 Update the downstream components in the `generate_journal_entry` functions to process four distinct context sources: git, terminal, cursor chat database, and synthesized summary. Handle cases where some context sources might be unavailable. Maintain backward compatibility with existing journal generation. REQUIRES APPROVAL FOR: context source prioritization, integration approach (modify existing vs new functions), and fallback behavior when Cursor database unavailable.
 
-## 6. Implement Synthesized Summary Collection [pending]
-### Dependencies: 36.5
+## 7. Implement Synthesized Summary Collection [pending]
+### Dependencies: 36.6
 ### Description: Create a new synthesized summary collection function that uses AI prompts to generate high-level summaries of conversations with configurable options.
 ### Details:
-Create a new synthesized summary collection function that uses AI prompts to generate high-level summaries of conversations. Provide configuration options for summary detail level and focus areas. Handle rate limiting and API errors gracefully. REQUIRES APPROVAL FOR: AI model selection and configuration, summary prompt structure for journal relevance, and configuration options (length, detail, focus areas).
+Create a new synthesized summary collection function that uses AI prompts to generate high-level summaries of conversations. Provide configuration options for summary detail level and focus areas. Handle rate limiting and API errors gracefully. Emphasize the relationship between chat segments and code changes. Capture the thinking process behind implementation decisions. REQUIRES APPROVAL FOR: AI model selection and configuration, summary prompt structure for journal relevance, and configuration options (length, detail, focus areas).
 
-## 7. Add Performance Caching Mechanisms [pending]
-### Dependencies: 36.6
+## 8. Add Performance Caching Mechanisms [pending]
+### Dependencies: 36.7
 ### Description: Implement caching mechanisms to avoid regenerating summaries unnecessarily and optimize database query performance with configuration caching.
 ### Details:
-Implement caching mechanisms to avoid regenerating summaries unnecessarily and optimize database query performance. Implement configuration caching for performance optimization. Add cache invalidation logic for data freshness. Add memory usage monitoring and cache size limits. No approval required for this implementation-focused subtask.
+Implement caching mechanisms to avoid regenerating summaries unnecessarily and optimize database query performance. Implement configuration caching for performance optimization. Add cache invalidation logic for data freshness. Add memory usage monitoring and cache size limits. Cache semantic search results for similar git changes. No approval required for this implementation-focused subtask.
 
-## 8. Implement Cross-Platform Support and Error Handling [pending]
-### Dependencies: 36.7
+## 9. Implement Cross-Platform Support and Error Handling [pending]
+### Dependencies: 36.8
 ### Description: Leverage cursor-chat-browser patterns for cross-platform compatibility and implement robust error handling with clear user-facing diagnostics.
 ### Details:
 Leverage proven cursor-chat-browser patterns for cross-platform compatibility. Handle path variations across operating systems (Windows/macOS/Linux/WSL2). Implement permission handling with clear error messages for database access issues. Create repeatable setup for any end user's environment with auto-detection. Implement robust error recovery mechanisms for corrupted/missing databases. Add user-friendly diagnostics. REQUIRES APPROVAL FOR: platform detection (auto vs manual), diagnostic information level, and edge case handling for non-standard installations.
 
-## 9. Add Comprehensive Telemetry and Final Documentation [pending]
-### Dependencies: 36.8
+## 10. Add Comprehensive Telemetry and Final Documentation [pending]
+### Dependencies: 36.9
 ### Description: Implement comprehensive telemetry as defined in docs/telemetry.md and create final documentation for the complete Cursor chat database integration system.
 ### Details:
-Add comprehensive telemetry as defined in docs/telemetry.md for workspace detection, database queries, summary generation, and error conditions. Ensure privacy compliance for chat data telemetry. Update all new functions with appropriate telemetry decorators. Create comprehensive user guide and update PRD/Engineering Spec with complete documentation. REQUIRES APPROVAL FOR: telemetry data collection scope and chat data privacy handling approach.
+Add comprehensive telemetry as defined in docs/telemetry.md for workspace detection, database queries, summary generation, and error conditions. Ensure privacy compliance for chat data telemetry. Update all new functions with appropriate telemetry decorators. Create comprehensive user guide and update PRD/Engineering Spec with complete documentation. Include documentation on git-driven chat relevance detection and its configuration options. REQUIRES APPROVAL FOR: telemetry data collection scope and chat data privacy handling approach.
 

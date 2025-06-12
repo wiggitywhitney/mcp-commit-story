@@ -102,7 +102,7 @@ The journal generation process follows a **4-layer architecture** with an orches
 
 ## Git Integration
 
-**Post-Commit Hook**: Automatically triggers `journal/new-entry` via MCP after each commit, enabling fully automated journaling without human intervention.
+**Post-Commit Hook**: Creates signal files after each commit containing commit information, enabling context capture at the time of the commit for later AI processing.
 
 ## Usage Patterns
 
@@ -128,13 +128,19 @@ await mcp_client.call_tool("journal/add-reflection", {
 })
 ```
 
-### Automated Journaling (Git Hook)
+### Signal-Based Journaling (Git Hook + Manual Processing)
 ```bash
-# Automatically triggered after each commit
+# Git commit creates signal file
 git commit -m "Implement user authentication"
-# → Triggers journal/new-entry via MCP
+# → Creates .mcp-commit-story/signals/[timestamp]-journal_new_entry.json
+
+# Later, when ready to process:
+# User asks AI: "Create a journal entry"
+# → AI calls journal/new-entry MCP tool
+# → Tool discovers and processes all pending signals
 # → Orchestration layer coordinates all operations
 # → Creates journal/daily/2025-01-15.md entry
+# → Signal files are cleaned up
 ```
 
 ## Benefits

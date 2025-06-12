@@ -2,11 +2,13 @@
 
 ## System Overview
 
-**MCP Commit Story** is an engineering journal system that automatically generates rich documentation from your development sessions. When you make a git commit, it:
+**MCP Commit Story** is an engineering journal system that generates rich documentation from your development sessions using a signal-based workflow. When you make a git commit, it:
 
-1. **Collects Context** from four sources: git changes, terminal history, chat conversations, and AI summaries
-2. **Generates Journal Entries** with AI, including technical details, accomplishments, and decision rationale  
-3. **Preserves Development History** in markdown files for future reference
+1. **Creates Signal Files** containing commit information for later processing
+2. **Processes Signals** when you ask your AI assistant to create journal entries
+3. **Collects Context** from four sources: git changes, terminal history, chat conversations, and AI summaries
+4. **Generates Journal Entries** with AI, including technical details, accomplishments, and decision rationale  
+5. **Preserves Development History** in markdown files for future reference
 
 **The Chat History Problem**: Previously, journal entries had poor "discussion notes" because AI agents only access ~5-20 recent messages, missing crucial conversation context about design decisions and problem-solving approaches.
 

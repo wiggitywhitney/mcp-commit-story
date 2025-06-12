@@ -416,7 +416,7 @@ These errors are skipped silently without user notification:
 - **Include what works**, silently omit what doesn't
 - **No error messages** clutter the journal output
 - **User never sees broken features** - they just don't get that section
-- **Future-proof**: automatically works when AI tools improve their APIs
+- **Future-proof**: adapts when AI tools improve their APIs
 
 ### Debug Mode Implementation
 ```python

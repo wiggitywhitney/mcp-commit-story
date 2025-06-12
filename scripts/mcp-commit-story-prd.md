@@ -11,7 +11,7 @@
 - **Capture context**: Record not just what was built, but how it felt and why it mattered
 - **Enable storytelling**: Transform development work into content for blogs, talks, and retrospectives  
 - **Support growth**: Help developers reflect on and document their professional journey
-- **Zero friction**: Work silently in the background, triggered by normal git workflow
+- **Zero friction**: Signal-based workflow captures context immediately, processes when you're ready
 
 ---
 
@@ -33,7 +33,7 @@
 ## **Core User Stories**
 
 ### **As a Developer, I want to:**
-1. **Automatically capture my development story** so I don't lose the context behind my work
+1. **Capture my development story through signals** so I don't lose the context behind my work
 2. **Remember why I made technical decisions** weeks or months later
 3. **Have concrete examples for performance reviews** without manually tracking accomplishments
 4. **Find authentic stories for blog posts and talks** based on real development experiences
@@ -51,7 +51,7 @@
 ### **Core Functionality**
 
 #### **✅ IMPLEMENTED: Automated Journal Generation**
-- **✅ Trigger**: Generate journal entry automatically on each git commit via MCP `journal/new-entry` handler
+- **✅ Trigger**: Generate journal entry via MCP `journal/new-entry` handler when processing signals created by git commits
 - **✅ Content**: Capture commit details, code changes, and available context through comprehensive TypedDict workflow system
 - **✅ Format**: Human-readable markdown files organized by date with structured sections
 - **✅ Storage**: Local files in the developer's repository with on-demand directory creation

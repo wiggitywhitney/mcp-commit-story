@@ -87,7 +87,7 @@
 ---
 
 ## Overview
-This document specifies a Model Context Protocol (MCP) server designed to capture and generate engineering journal entries within a code repository. The journal records commits, technical progress, decision-making context, and emotional tone, with the goal of producing content that can be analyzed for patterns and reused for storytelling (e.g., blog posts, conference talks).
+This document specifies a Model Context Protocol (MCP) server designed to capture and generate engineering journal entries within a code repository using a signal-based workflow. Git commits create signal files that are processed when users request journal entry generation. The journal records commits, technical progress, decision-making context, and emotional tone, with the goal of producing content that can be analyzed for patterns and reused for storytelling (e.g., blog posts, conference talks).
 
 ## Goals
 - Record accurate, structured engineering activity and emotional context
