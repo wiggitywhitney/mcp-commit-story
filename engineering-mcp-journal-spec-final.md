@@ -87,14 +87,15 @@
 ---
 
 ## Overview
-This document specifies a Model Context Protocol (MCP) server designed to capture and generate engineering journal entries within a code repository using a signal-based workflow. Git commits create signal files that are processed when users request journal entry generation. The journal records commits, technical progress, decision-making context, and emotional tone, with the goal of producing content that can be analyzed for patterns and reused for storytelling (e.g., blog posts, conference talks).
+This document specifies a Model Context Protocol (MCP) server designed to capture and generate engineering journal entries within a code repository using background generation. Git commits automatically trigger journal entry creation that happens silently in the background, with intelligent context collection and fresh AI generation for each entry. The journal records commits, technical progress, decision-making context, and emotional tone, with the goal of producing content that can be analyzed for patterns and reused for storytelling (e.g., blog posts, conference talks).
 
 ## Goals
-- Record accurate, structured engineering activity and emotional context
+- Record accurate, structured engineering activity and emotional context automatically
 - Enable narrative storytelling across daily, weekly, and monthly timelines
 - Identify patterns and trends in development work over time
-- Keep entries truthful (anti-hallucination), useful, and minimally intrusive
-- Integrate seamlessly with Git workflows and existing dev tools
+- Keep entries truthful (anti-hallucination), useful, and completely non-intrusive
+- Integrate seamlessly with Git workflows through background processing
+- Provide user control through manual context addition tools
 
 ## MCP Server Configuration and Integration
 
@@ -1487,136 +1488,102 @@ The Summary section should focus on these unique aspects rather than restating r
 
 Each operation will be instrumented with appropriate traces to monitor performance and error rates.
 
-### Minimal Signal Architecture with Privacy by Design
+### Background Generation Architecture
 
-**Implementation Status**: Complete with privacy-first design, 90% size reduction, and production-ready on-demand context retrieval.
+**Implementation Status**: Planned - Direct git hook execution with comprehensive context collection and fresh AI generation.
 
 **Core Philosophy**: 
-The minimal signal management system enables asynchronous communication between git hooks and AI clients through privacy-safe lightweight signal files (~200 bytes) stored in `.mcp-commit-story/signals/` directory. Full git context is retrieved on-demand using existing `git_utils` functions.
+The background generation system provides direct, automatic journal entry creation triggered by git commits. No intermediate signaling files are required - the git hook directly executes the standalone journal generator with comprehensive context collection including git metadata, intelligent chat filtering, recent journal entries, and project overview.
 
 **Key Functions**:
-- **`ensure_signal_directory(repo_path)`**: Creates and validates signal directory structure with automatic `.gitignore` privacy protection
-- **`create_signal_file(signal_directory, tool_name, parameters, commit_metadata)`**: Generates minimal timestamped signal files with only essential data (no PII)
-- **`validate_signal_format(signal_data)`**: Strictly validates minimal JSON structure and explicitly rejects legacy formats containing PII
-- **`fetch_git_context_on_demand(signal_data, repo_path)`**: Retrieves full git context when needed using authoritative git objects
+- **`generate_journal_entry(commit_hash)`**: Main entry point called directly by git hook
+- **`collect_git_context(commit_hash)`**: Extract git metadata, diffs, and file changes (always available)
+- **`collect_and_filter_chat_history(git_context)`**: Intelligent chat extraction based on git changes
+- **`load_recent_journal_entries()`**: Load today's journal + 2 most recent daily files for continuity
+- **`load_project_overview()`**: Load README or configured project context file
+- **`invoke_ai_generation(context)`**: Generate journal entry with fresh AI agent
 
-**Minimal Signal File Format** (Privacy-Safe):
-```json
-{
-  "tool": "journal_new_entry",
-  "params": {
-    "commit_hash": "abc123def456789012345678901234567890abcd"
-  },
-  "created_at": "2025-06-11T15:30:15.123456Z"
-}
+**Context Collection Flow**:
+```python
+def generate_journal_entry(commit_hash: str) -> None:
+    """Main entry point called directly by git hook"""
+    # 1. Always available - git context
+    git_context = collect_git_context(commit_hash)
+    
+    # 2. Intelligent filtering - relevant chat history
+    chat_history = collect_and_filter_chat_history(git_context)
+    
+    # 3. Continuity - recent journal context
+    journal_context = load_recent_journal_entries()
+    
+    # 4. Project understanding - README/overview
+    project_context = load_project_overview()
+    
+    # 5. Fresh AI generation with comprehensive context
+    entry = invoke_ai_generation({
+        'git': git_context,
+        'chat': chat_history,
+        'journals': journal_context,
+        'project': project_context
+    })
+    
+    # 6. Write journal entry
+    write_journal_entry(entry)
 ```
 
-**Privacy Protection**:
-- **No PII Storage**: Author emails, names, file paths excluded from signal files
-- **On-Demand Context**: Full git metadata retrieved using `git_utils.get_commit_details()` when processing signals
-- **Ephemeral Processing**: Signal files are temporary communication artifacts, not data stores
-- **Auto-gitignore**: `.mcp-commit-story/` directory automatically excluded from git to prevent PII commits
+**Intelligent Chat Processing**:
+- **Git-driven filtering**: Extract keywords and concepts from git diffs
+- **Relevance scoring**: Match chat content against code changes to find related discussions
+- **Boundary detection**: Identify relevant chat sessions and conversation segments
+- **Context optimization**: Include only chat portions that relate to the actual work done
 
-**Filename Convention**: 
-- Format: `{timestamp}_{tool_name}_{hash_prefix}.json`
-- Example: `20250611_153015_journal_new_entry_abc123de.json`
-- Microsecond precision timestamps for chronological ordering
-- 90% size reduction: ~200 bytes vs ~2KB legacy format
+**Architecture Benefits**:
+- **Direct Execution**: No intermediate files or signaling complexity
+- **Fresh Context**: Each entry generated with comprehensive, current context
+- **Never Blocks**: Git operations complete normally even if journal generation fails
+- **Intelligent Filtering**: Only relevant chat history included based on actual code changes
+- **Project Awareness**: Fresh AI agent always understands project goals via README context
 
-**Advanced Features**:
-- **Thread Safety**: `threading.Lock()` for concurrent git hook execution
-- **Graceful Degradation**: Error handling ensures git operations are never blocked
-- **Strict Validation**: Format enforcement explicitly rejects signals containing PII fields (metadata, signal_id, author, email)
-- **Git Integration**: Context retrieved directly from authoritative git objects ensuring data accuracy
-- **Performance Optimization**: <1ms signal creation, <10ms context retrieval, 90% memory usage reduction
-- **Comprehensive Telemetry**: OpenTelemetry integration with metrics and tracing
+**Daily Summary Generation**:
+- **Automatic Detection**: Generated when date boundaries are detected
+- **Same Pattern**: Background generation using recent journal entries as input
+- **Multi-timeframe**: Weekly, monthly, quarterly, yearly summaries planned
 
-**AI Beast Awakening Logic**:
-- **Normal commit**: Creates only `journal_new_entry` signal
-- **Summary needed**: Creates both `journal_new_entry` + `generate_daily_summary` signals  
-- **Beast awakening**: Occurs through additional signal file creation, not signal modification
-- **All signals**: Use minimal format for privacy and performance
+**Error Handling**:
+- **Graceful Degradation**: Works even when some context sources unavailable
+- **Git Operation Protection**: Journal generation failures never affect git commits
+- **Comprehensive Logging**: Full telemetry for monitoring and debugging
+- **Fallback Strategies**: Minimum viable journal entries even with limited context
 
-**Test Coverage**: 14 comprehensive test cases covering:
-- Minimal signal creation with privacy protection
-- On-demand git context retrieval integration
-- Strict validation rejecting legacy formats with PII
-- AI beast awakening logic for summary triggers
-- Error handling with graceful degradation
-- Performance optimization and memory efficiency
-- Integration with existing git_utils and context_collection systems
-
-**Migration Benefits**:
-- **90% Size Reduction**: 200 bytes vs 2KB per signal
-- **Privacy Compliance**: No PII stored in signal files
-- **Performance Improvement**: Faster I/O, reduced memory usage
-- **Git Integration**: Context from authoritative source (git objects)
-- **Maintainability**: Simpler codebase, fewer data duplication bugs
-
-**Integration Points**:
-- Git hooks create minimal signals for MCP tool execution
-- AI clients discover signals and retrieve context on-demand using `fetch_git_context_on_demand()`
-- Signal files provide privacy-safe asynchronous communication
-- Context retrieved from git objects ensures data accuracy and freshness
-- Telemetry provides monitoring with privacy-conscious logging
-
-**Signal Cleanup and Lifecycle Management**:
-- **Commit-Based Cleanup**: Automatic signal cleanup system triggered by git hooks clears ALL previous signals with each new commit
-- **AI-Friendly Design**: One commit = one signal context, eliminating temporal confusion for AI processing  
-- **Simple Architecture**: No time-based calculations, just "clear all on new commit" for maximum simplicity
-- **Performance Benefits**: AI only processes current commit signals, faster than time-based cleanup
-- **Thread Safety**: Concurrent cleanup operations handled safely with threading locks
-- **Core Functions**: `cleanup_signals_for_new_commit()`, `cleanup_old_signals()`, `monitor_disk_space_and_cleanup()`, `validate_cleanup_safety()`
-- **In-Memory Tracking**: Lightweight processed signal tracking without additional files cluttering the directory
-- **Graceful Degradation**: Cleanup failures never block git operations, comprehensive error handling and telemetry
-
-**Documentation**: Complete specification available in `docs/signal-format.md` with minimal format examples, privacy architecture, on-demand context retrieval patterns, and signal cleanup system documentation.
+**Performance Optimization**:
+- **Fast Execution**: Optimized for quick background processing
+- **Resource Efficiency**: Minimal overhead on git operations
+- **Context Caching**: Intelligent caching of project context and recent journals
+- **Parallel Processing**: Context collection can happen concurrently where possible
 
 ### Operation Details
 
 #### journal/new-entry
-**Implementation Status**: Complete with comprehensive TypedDict integration, full test coverage, and production-ready error handling.
+**Implementation Status**: Deprecated - Core journal generation now happens automatically via background generation.
 
-**Core Integration**:
-- **Workflow Integration**: Seamlessly integrates `generate_journal_entry()` from subtask 9.1 and `save_journal_entry()` from subtask 9.2
-- **Type Safety**: Complete TypedDict definitions for all data flows including `GenerateJournalEntryInput`, `GenerateJournalEntryResult`, `SaveJournalEntryInput`, and `SaveJournalEntryResult`
-- **Journal-Only Commit Detection**: Automatic detection and skipping of commits that only modify journal files to prevent recursion
-- **Error Handling**: Comprehensive error handling with structured responses for success, skip, and error scenarios
-- **Telemetry Integration**: Full OpenTelemetry instrumentation for performance monitoring and debugging
+**Architectural Change**: 
+This MCP tool is no longer the primary method for journal entry creation. Journal entries are now generated automatically in the background after each git commit via the standalone journal generator. This tool may be retained for manual journal entry creation in special cases, but the primary workflow is now:
 
-**Request Processing**:
-- Validates required `git` context parameter using MCP error handling decorators
-- Processes optional `chat` and `terminal` context when available
-- Converts MCP request data into workflow-compatible format using TypedDict structures
-
-**Workflow Execution**:
-```python
-# Step 1: Generate journal entry using subtask 9.1 function
-journal_entry = workflow_generate_entry(commit, config, debug=False)
-
-if journal_entry is None:
-    # Journal-only commit detected and skipped
-    return {"status": "skipped", "file_path": "", "error": None}
-
-# Step 2: Save journal entry using subtask 9.2 function  
-file_path = workflow_save_entry(journal_entry, config, debug=False)
-
-return {"status": "success", "file_path": file_path, "error": None}
+```
+Git Commit → Post-commit Hook → generate_journal_entry() → Journal Entry Created
 ```
 
-**Response Formats**:
-- **Success**: `{"status": "success", "file_path": "/path/to/journal/daily/2025-06-04.md", "error": null}`
-- **Skipped (Journal-only commit)**: `{"status": "skipped", "file_path": "", "error": null}`  
-- **Error**: `{"status": "error", "file_path": "", "error": "Detailed error message"}`
+**Background Generation Benefits**:
+- **Zero Friction**: No manual intervention required
+- **Fresh Context**: Each entry generated with comprehensive context
+- **Never Blocks**: Git operations complete normally
+- **Intelligent Filtering**: Only relevant chat history included
 
-**Test Coverage**: 13 comprehensive test cases covering:
-- MCP request validation and error handling
-- Successful journal entry creation workflow
-- Journal-only commit detection and skipping
-- Telemetry integration and error recording
-- Git operations integration
-- Response format compliance
-- Workflow function integration from subtasks 9.1 and 9.2
+**Manual Override**: This tool can still be used for:
+- Manual journal entry creation for specific commits
+- Regenerating journal entries with different context
+- Testing and debugging journal generation
+- Special cases where background generation failed
 
 **Type System Integration**:
 The implementation utilizes a comprehensive TypedDict system defined in `src/mcp_commit_story/journal_workflow_types.py`:
@@ -1645,6 +1612,39 @@ class SaveJournalEntryResult(TypedDict):
     success: bool
     created_new_file: bool  # Whether a new file was created vs appended
 ```
+
+#### journal/add-reflection
+**Implementation Status**: Complete - Manual reflection addition tool for user-controlled context.
+
+**Purpose**: Allow users to add their own thoughts and reflections directly to journal entries. These reflections are captured verbatim and automatically included in future journal entries and summaries.
+
+**Core Integration**:
+- **Direct Implementation**: Uses existing reflection_core.py functionality
+- **Timestamp Integration**: Automatic timestamping with proper formatting
+- **Context Preservation**: Reflections are included in journal context for future entries
+- **User Control**: Provides manual context addition without workflow disruption
+
+**Request Processing**:
+- Validates reflection text content
+- Appends to today's journal file with proper formatting
+- Ensures reflections are tagged for future AI recognition
+
+#### journal/capture-context
+**Implementation Status**: Planned - Capture AI assistant's current knowledge as journal context.
+
+**Purpose**: Allow users to manually capture the current AI conversation context and knowledge state, making it available for future journal entries generated by fresh AI agents.
+
+**Core Integration**:
+- **Context Extraction**: Capture current conversation state and decisions
+- **Journal Integration**: Append captured context to today's journal file
+- **Future Availability**: Ensure captured context is included in recent journal loading
+- **User Control**: Manual context capture when significant insights occur
+
+**Request Processing**:
+- Extract current AI conversation context
+- Format as structured journal entry
+- Tag appropriately for AI recognition
+- Append to today's journal with timestamp
 
 #### journal/generate-daily-summary
 **Implementation Status**: Complete with comprehensive TypedDict schemas, AI-powered synthesis, and production-ready error handling.
@@ -2056,16 +2056,22 @@ Generated journal entry successfully (some sections omitted)
 
 ## Git Integration
 
+### Background Generation Architecture
+- **Direct Execution**: Git hook directly calls standalone journal generator
+- **No MCP Dependency**: Core functionality works without MCP server running
+- **Comprehensive Context**: Automatic collection of git, chat, journal, and project context
+- **Fresh AI Generation**: Each entry created by fresh AI agent with full context
+
 ### Hook Installation
 - `mcp-commit-story-setup install-hook` command
 - Checks for existing hooks and prompts for action
-- Creates hook that implements recursion prevention logic
+- Creates hook that calls background journal generator directly
 - Backs up existing hooks before modification
 
 ### Backfill Mechanism
 - Detection: Check commits since last journal entry in any file
 - Order: Add missed entries in chronological order
-- Context: Skip terminal/chat history for backfilled entries
+- Context: Skip terminal/chat history for backfilled entries (git context only)
 - Annotation: Mark entries as backfilled with timestamp
 
 ### Commit Processing
@@ -2074,34 +2080,51 @@ Generated journal entry successfully (some sections omitted)
 - Skip commits that only modify journal files
 - For mixed commits (code + journal files), exclude journal files from analysis
 
-### Post-Commit Hook Content Generation (Engineering Spec)
-- The post-commit hook is generated using the `generate_hook_content(command: str = "mcp-commit-story-setup install-hook")` function in [src/mcp_commit_story/git_utils.py](src/mcp_commit_story/git_utils.py).
-- The hook script uses `#!/bin/sh` for portability and triggers MCP operations via the configured MCP server endpoint.
-- All output is redirected to `/dev/null` and the command is followed by `|| true` to ensure the hook never blocks a commit, even if journal entry creation fails.
-- The script is intentionally lightweight and non-intrusive, designed to never interfere with normal Git operations.
-- The installation logic (see `install_post_commit_hook`) backs up any existing hook before replacing it and sets the new hook as executable.
-- **Enhanced with Python worker architecture for daily summary triggering and MCP integration**
-- This approach guarantees:
-  - **Portability** (works on all Unix-like systems)
-  - **Non-blocking** (never prevents a commit)
-  - **Simplicity** (easy to audit and modify)
-  - **MCP Integration** (triggers automated journal entry via MCP server)
-  - **Daily Summary Detection** (smart file-creation-based triggering)
-  - **Git Timestamp Consistency** (uses commit timestamps throughout)
-- All logic is covered by strict TDD and unit tests in `tests/unit/test_git_hook_installation.py` and `tests/unit/test_git_utils.py`.
+### Background Journal Generation
+- **Entry Point**: `generate_journal_entry(commit_hash)` called directly by git hook
+- **Context Collection**: Comprehensive context gathering from multiple sources
+- **AI Generation**: Fresh AI agent invoked with complete context
+- **Silent Operation**: Never blocks git operations, runs in background
+- **Error Resilience**: Graceful degradation when context sources unavailable
 
-**Enhanced hook architecture:**
-- **Primary hook**: Bash script delegates to Python worker module
-- **Worker module**: `git_hook_worker.py` handles complex logic and daily summary detection
-- **MCP communication**: Structured communication with MCP server for summary generation
-- **Error handling**: Graceful degradation with comprehensive logging
-- **Timestamp consistency**: Git commit timestamps used throughout system
+**Context Collection Flow:**
+```python
+def generate_journal_entry(commit_hash: str) -> None:
+    """Main entry point called directly by git hook"""
+    # 1. Always available - git context
+    git_context = collect_git_context(commit_hash)
+    
+    # 2. Intelligent filtering - relevant chat history
+    chat_history = collect_and_filter_chat_history(git_context)
+    
+    # 3. Continuity - recent journal context
+    journal_context = load_recent_journal_entries()
+    
+    # 4. Project understanding - README/overview
+    project_context = load_project_overview()
+    
+    # 5. Fresh AI generation with comprehensive context
+    entry = invoke_ai_generation({
+        'git': git_context,
+        'chat': chat_history,
+        'journals': journal_context,
+        'project': project_context
+    })
+    
+    # 6. Write journal entry
+    write_journal_entry(entry)
+```
 
 **Example generated hook content:**
 ```sh
 #!/bin/sh
-# Enhanced git hook with daily summary triggering
-python -m mcp_commit_story.git_hook_worker "$PWD" >/dev/null 2>&1 || true
+# Background journal generation hook
+python -c "
+from mcp_commit_story.background_generator import generate_journal_entry
+import subprocess
+commit_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode().strip()
+generate_journal_entry(commit_hash)
+" >/dev/null 2>&1 || true
 ```
 
 #### Post-Commit Hook Installation Core Logic
@@ -2310,6 +2333,41 @@ The project uses GitHub Actions for automated testing:
 - **Performance validation**: Telemetry overhead and system performance monitoring
 
 For complete testing documentation, see **[Testing Standards](docs/testing_standards.md)**.
+
+---
+
+## Architectural Summary
+
+### Background Generation Architecture (Current)
+
+This system has been redesigned around **background generation** where git hooks directly invoke standalone journal generators. The key architectural change eliminates the complexity of signal-based communication in favor of direct execution with comprehensive context collection.
+
+**Core Workflow:**
+```
+Git Commit → Post-commit Hook → generate_journal_entry() → Journal Entry Created
+```
+
+**Key Benefits:**
+- **Zero Friction**: Automatic operation without user intervention
+- **Fresh Context**: Each entry generated with comprehensive, current context
+- **Never Blocks**: Git operations complete normally even if journal generation fails
+- **Intelligent Filtering**: Only relevant chat history included based on actual code changes
+- **Project Awareness**: Fresh AI agent always understands project goals via README context
+
+**MCP Tools Role:**
+MCP tools are now focused on **user-controlled interactions** rather than core functionality:
+- `journal/add-reflection`: Manual reflection addition
+- `journal/capture-context`: Capture AI conversation context
+- `journal/generate-daily-summary`: Manual summary generation
+- Core journal generation happens automatically in background
+
+**Context Sources:**
+1. **Git Context** (always available): Commit metadata, diffs, file changes
+2. **Chat History** (intelligent filtering): Relevant conversations based on code changes
+3. **Journal Context** (continuity): Today's journal + 2 most recent daily files
+4. **Project Context** (understanding): README or configured project overview
+
+This architecture provides the promised "automatic" journal generation while maintaining user control through manual context addition tools.
 
 ---
 

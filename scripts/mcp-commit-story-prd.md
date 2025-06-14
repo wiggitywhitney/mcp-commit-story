@@ -5,13 +5,14 @@
 
 ## **Product Overview**
 
-**MCP Commit Story** is an automated engineering journal tool that captures the story behind code commits. It transforms development work into narrative entries that can be used for retrospectives, career documentation, and content creation.
+**MCP Commit Story** is an automated engineering journal tool that captures the story behind code commits through background generation. It transforms development work into narrative entries that can be used for retrospectives, career documentation, and content creation.
 
 ### **Core Value Proposition**
 - **Capture context**: Record not just what was built, but how it felt and why it mattered
 - **Enable storytelling**: Transform development work into content for blogs, talks, and retrospectives  
 - **Support growth**: Help developers reflect on and document their professional journey
-- **Zero friction**: Signal-based workflow captures context immediately, processes when you're ready
+- **Zero friction**: Background generation captures and processes context automatically after each commit
+- **User control**: Manual tools for adding reflections and capturing AI context when needed
 
 ---
 
@@ -33,11 +34,12 @@
 ## **Core User Stories**
 
 ### **As a Developer, I want to:**
-1. **Capture my development story through signals** so I don't lose the context behind my work
+1. **Have my development story captured automatically** so I don't lose the context behind my work
 2. **Remember why I made technical decisions** weeks or months later
 3. **Have concrete examples for performance reviews** without manually tracking accomplishments
 4. **Find authentic stories for blog posts and talks** based on real development experiences
 5. **Reflect on my growth over time** through patterns in my work and challenges
+6. **Add context when I need to** without disrupting my workflow
 
 ### **As a Team Lead, I want to:**
 1. **Access rich context for retrospectives** beyond just what shipped
@@ -50,30 +52,35 @@
 
 ### **Core Functionality**
 
-#### **✅ IMPLEMENTED: Automated Journal Generation**
-- **✅ Trigger**: Generate journal entry via MCP `journal/new-entry` handler when processing signals created by git commits
-- **✅ Content**: Capture commit details, code changes, and available context through comprehensive TypedDict workflow system
-- **✅ Format**: Human-readable markdown files organized by date with structured sections
-- **✅ Storage**: Local files in the developer's repository with on-demand directory creation
-- **✅ Integration**: Full MCP protocol integration with comprehensive test coverage and telemetry
-- **✅ Error Handling**: Graceful handling of missing context, file permissions, and journal-only commit detection
-- **✅ Type Safety**: Complete TypedDict definitions for all workflow operations ensuring API contract compliance
+#### **Background Journal Generation**
+- **Trigger**: Automatic generation after each git commit via post-commit hook
+- **Context Collection**: 
+  - Git metadata, diffs, and file changes (always available)
+  - Cursor chat history with intelligent filtering based on git changes
+  - Recent journal entries for continuity (today + 2 most recent daily files)
+  - Project overview/README for context
+- **Processing**: Fresh AI agent invoked with comprehensive context for each entry
+- **Output**: Human-readable markdown files with machine-readable tags
+- **Storage**: Local files in the developer's repository organized by date
+- **Performance**: Background processing never blocks git operations
 
-#### **Context Collection** 
-- **Git data**: Commit messages, file changes, timestamps
-- **Chat history**: Conversations with AI assistants during development (when available)
-- **Terminal activity**: Commands executed during development session (when available)
-- **Decision context**: Technical choices and reasoning (when evident from available data)
+#### **Intelligent Chat History Processing**
+- **Git-driven filtering**: Extract keywords and concepts from git diffs
+- **Relevance scoring**: Match chat content against code changes to find related discussions
+- **Boundary detection**: Identify relevant chat sessions and conversation segments
+- **Context optimization**: Include only chat portions that relate to the actual work done
 
-#### **✅ IMPLEMENTED: Multi-Timeframe Summaries**
-- **✅ Daily summaries**: Comprehensive AI-generated daily summaries via MCP `journal/generate-daily-summary` tool with 8-section structure (Summary, Reflections, Progress Made, Key Accomplishments, Technical Synopsis, Challenges and Learning, Discussion Highlights, Tone/Mood, Daily Metrics)
-- **✅ Manual reflection preservation**: User-written reflections are automatically extracted and prioritized in summaries, preserving authentic developer insights verbatim
-- **✅ Smart trigger system**: File-creation-based triggers automatically determine when summaries should be generated based on journal activity
-- **✅ Robust error handling**: Graceful handling of missing entries, invalid dates, and file system issues with appropriate status responses
-- **✅ Source file linking**: Hierarchical navigation system where each summary type (daily, weekly, monthly, quarterly, yearly) automatically links to its constituent source files, enabling users to trace information provenance from high-level summaries down to individual journal entries
-- **Weekly summaries**: Patterns, progress themes, key achievements (planned)
-- **Monthly summaries**: Major milestones, growth areas, significant learnings (planned)
-- **Yearly summaries**: Career development, skill evolution, major projects (planned)
+#### **User-Controlled Context Addition**
+- **Manual reflections**: Direct thought capture via journal/add-reflection tool
+- **AI context capture**: Capture current AI assistant knowledge via journal/capture-context tool
+- **Flexible timing**: Add context before, during, or after development work
+- **Integration**: Context automatically included in future journal entries
+
+#### **Automatic Summary Generation**
+- **Daily summaries**: Generated automatically when date boundaries are detected
+- **Multi-timeframe summaries**: Weekly, monthly, quarterly, yearly (planned)
+- **Same pattern**: Background generation using recent journal entries as input
+- **Manual override**: MCP tools available for manual summary generation when needed
 
 #### **Content Quality Standards**
 - **No hallucination**: All content must be grounded in actual data (commits, chat, commands)
@@ -90,9 +97,10 @@
 
 #### **Daily Usage Experience**  
 - **Invisible operation**: No disruption to normal development workflow
-- **Reliable triggering**: Consistently generates entries on commits
-- **Fast execution**: No noticeable delay to commit process
-- **Graceful degradation**: Works even when some data sources unavailable
+- **Automatic processing**: Journal entries appear without user intervention
+- **Fast execution**: Background processing completes quickly after commits
+- **Graceful degradation**: Works even when some context sources unavailable
+- **Optional interaction**: Manual context tools available when needed
 
 #### **Content Discovery Experience**
 - **Logical organization**: Easy to find entries by date or time period
@@ -103,81 +111,36 @@
 
 #### **Git Integration**
 - **Hook-based triggering**: Automatic execution via git post-commit hook
+- **Direct execution**: Standalone generator runs independently of MCP server
 - **Repository awareness**: Understand git context and changes
 - **Multi-repo support**: Each repository maintains its own journal
-- **✅ Enhanced hook architecture**: Python worker pattern with daily summary auto-triggering and MCP integration
+- **Never blocks**: Git operations complete normally even if journal generation fails
 
-#### **✅ IMPLEMENTED: Automatic Daily Summary Generation**
-- **✅ Smart triggering**: File-creation-based detection automatically generates daily summaries when journal activity indicates date change
-- **✅ Git hook integration**: Enhanced post-commit hook using Python worker architecture detects summary opportunities
-- **✅ MCP integration**: Hook worker communicates with MCP server for summary generation
-- **✅ Graceful degradation**: Hook operations never block git commits, with comprehensive error handling and logging
-- **✅ End-to-end workflow**: Complete automation from commit → date detection → summary generation → file creation
-- **✅ Period boundary detection**: Automatic weekly/monthly/quarterly summary triggering on date transitions
-- **✅ Troubleshooting support**: Comprehensive logging and debug tools for hook operation diagnosis
+#### **AI Assistant Integration**
+- **MCP protocol**: Interactive tools exposed via Model Context Protocol
+- **Chat context awareness**: Access to AI assistant conversation history when available
+- **Fresh AI instances**: Each journal entry generated by new AI agent with full context
+- **Context capture**: Tools to manually capture AI assistant's current knowledge
+- **Optional dependency**: Core functionality works without MCP server running
 
-#### **✅ IMPLEMENTED: AI Assistant Integration**
-- **✅ MCP protocol**: Expose functionality via Model Context Protocol with complete `journal/new-entry` implementation
-- **✅ Chat context awareness**: Access to AI assistant conversation history when available through structured TypedDict interfaces
-- **✅ Command tracking**: Capture AI-executed commands when available through terminal context collection
-- **✅ Type-safe workflows**: Comprehensive TypedDict system ensures reliable data flow between all components
-- **✅ Error handling**: Robust error responses and validation for all MCP operations
-- **✅ Performance**: Optimized implementation with telemetry monitoring and minimal overhead
-
-#### **✅ IMPLEMENTED: MCP Server Entry Point**
-- **✅ Primary launch method**: Official `python -m mcp_commit_story` entry point with comprehensive telemetry and monitoring
-- **✅ Robust error handling**: Proper Unix exit codes (0=success, 1=error, 2=config error, 130=SIGINT) 
-- **✅ Signal handling**: Graceful shutdown (SIGINT, SIGTERM) and config reload (SIGHUP) capabilities
-- **✅ Configuration validation**: Clear error messages for invalid or missing configuration settings
-- **✅ Structured logging**: Complete server lifecycle logging with trace correlation and telemetry integration
-- **✅ Production readiness**: FastMCP integration with stdio transport for maximum AI client compatibility
-
-#### **✅ IMPLEMENTED: Minimal Signal Architecture with Privacy by Design**
-- **✅ Privacy-first signaling mechanism**: Lightweight (~200 bytes) file-based signals enable asynchronous git hook to AI client communication via `.mcp-commit-story/signals/` directory
-- **✅ Minimal signal format**: Privacy-safe JSON structure containing only essential fields (tool, commit_hash, timestamp) with **no PII storage**
-- **✅ On-demand context retrieval**: Full git metadata (author, files, messages) retrieved when needed using existing `git_utils` functions, eliminating redundant data storage
-- **✅ 90% size reduction**: Optimized signal files (~200 bytes vs ~2KB legacy format) for enhanced performance and reduced privacy surface area
-- **✅ Strict validation**: Format enforcement explicitly rejects legacy signals containing PII fields (metadata, signal_id, author emails, file paths)
-- **✅ Thread safety**: Concurrent git hook execution support with threading locks and collision detection
-- **✅ Graceful degradation**: Error handling ensures git operations are never blocked by signal creation failures
-- **✅ Git integration**: Context retrieved directly from authoritative git objects when processing signals, ensuring data accuracy and freshness
-- **✅ Production telemetry**: Full OpenTelemetry integration with metrics and tracing for signal operations
-- **✅ Auto-privacy protection**: `.mcp-commit-story/` directory automatically added to `.gitignore` preventing accidental PII commits
-- **✅ Signal lifecycle management**: Commit-based automatic cleanup system ensuring AI only sees current commit signals for clarity and performance
-
-#### **✅ IMPLEMENTED: Generic MCP Tool Signal Creation**
-- **✅ Universal tool support**: Single `create_tool_signal()` implementation works for any MCP tool (journal_new_entry, generate_daily_summary, generate_weekly_summary, etc.)
-- **✅ Complete placeholder replacement**: Fully replaced the `call_mcp_tool()` placeholder with production-ready generic signal creation
-- **✅ Enhanced function interface**: Explicit parameters for tool name, parameters, commit metadata, and repository path providing clear signal creation intent
-- **✅ Comprehensive telemetry**: Performance metrics, success/failure rates, and error type classification for all tool signal creation
-- **✅ Commit metadata extraction**: Automatic extraction of git commit context using existing utilities with graceful fallback
-- **✅ Error handling architecture**: Separate validation and graceful degradation layers ensuring git operations never fail while maintaining data integrity
-- **✅ Hook workflow integration**: Complete integration with git post-commit hook supporting daily/weekly/monthly summary generation alongside journal entries
-- **✅ Test-driven implementation**: 17 comprehensive tests covering all signal creation scenarios, error conditions, and telemetry integration with 100% pass rate
+#### **Cursor Integration**
+- **SQLite database access**: Extract chat history from Cursor's local database
+- **Cross-platform support**: Work on macOS, Linux, Windows with different Cursor installations
+- **Workspace detection**: Automatically find relevant chat history for current repository
+- **Privacy respect**: Only access chat data that relates to current development work
 
 #### **Development Environment Compatibility**
 - **Cross-platform**: Work on macOS, Linux, Windows
-- **Editor agnostic**: No dependency on specific development tools
+- **Editor agnostic**: No dependency on specific development tools beyond git
 - **Version control friendly**: Journal files work well with git
+- **Minimal dependencies**: Core functionality requires only Python and git
 
-#### **Observability and Monitoring**
-- **✅ IMPLEMENTED: Comprehensive telemetry integration**: Complete OpenTelemetry-based observability system integrated throughout the MCP server lifecycle and journal operations
-- **✅ IMPLEMENTED: End-to-end tracing**: Distributed traces capture the complete journey from MCP tool call initiation through journal generation, AI processing, and file writing operations
-- **✅ IMPLEMENTED: Real-time metrics collection**: Automatic collection of tool call counts, durations, success/failure rates, file operation metrics, AI generation timing, and system performance metrics
-- **✅ IMPLEMENTED: Structured logging with trace correlation**: JSON-formatted logs automatically enhanced with OpenTelemetry trace and span IDs for seamless debugging
-- **✅ IMPLEMENTED: Multi-environment telemetry support**: Production-ready configuration with console output for development and OTLP export for production observability backends
-- **✅ IMPLEMENTED: Graceful degradation**: System continues operating normally even when telemetry infrastructure fails, ensuring reliability
-- **✅ IMPLEMENTED: Performance monitoring**: Sub-5ms overhead per operation with comprehensive timing and resource utilization tracking
-- **✅ IMPLEMENTED: MCP-specific observability**: Dedicated metrics for tool call patterns, client attribution (Cursor, Claude Desktop), and operation success rates
-- **✅ IMPLEMENTED: Security-conscious logging**: Automatic redaction of sensitive data (passwords, API keys, tokens, git info, URLs, personal data) from all log output with configurable debug mode for development
-- **✅ IMPLEMENTED: Health monitoring**: Built-in health checks for telemetry system status and integration verification
-- **✅ IMPLEMENTED: Hot configuration reload**: Update telemetry settings without restarting the MCP server
-- **✅ IMPLEMENTED: Production deployment ready**: Configurable exporters supporting Jaeger, DataDog, New Relic, Prometheus, and custom observability backends
-- **✅ IMPLEMENTED: Journal operations instrumentation**: Complete observability for all journal management operations including file operations, AI generation, directory creation, context loading, and entry parsing
-- **✅ IMPLEMENTED: Context collection telemetry**: Comprehensive instrumentation for Git operations (diff, log, status) and context gathering (chat history, terminal commands) with performance optimization, memory tracking, and smart file sampling for large repositories
-- **✅ IMPLEMENTED: Async/sync operation support**: Telemetry decorator automatically handles both synchronous and asynchronous functions for comprehensive coverage
-- **✅ IMPLEMENTED: Advanced sensitive data filtering**: Multi-layer protection with production and debug modes, handling git information, authentication data, connection strings, and personal information
-- **✅ IMPLEMENTED: Integration test telemetry validation**: Comprehensive test framework validates telemetry functionality across MCP tool execution chains, AI generation pipelines, and production scenarios with automated circuit breaker and performance impact testing
+#### **Background Processing Architecture**
+- **Standalone operation**: Core journal generation works without external dependencies
+- **Fresh context**: Each entry generated with comprehensive, current context
+- **Error isolation**: Processing failures don't affect git operations
+- **Resource efficiency**: Optimized for quick background execution
+- **Telemetry**: Performance monitoring and error tracking
 
 ---
 
@@ -187,16 +150,19 @@
 - **Daily active usage**: Consistent journal generation on commits
 - **Content creation**: Developers using journal entries for external content
 - **Retention**: Continued use after initial setup
+- **Context addition**: Usage of manual reflection and context capture tools
 
 ### **Value Metrics**
 - **Retrospective quality**: More meaningful team and individual retrospectives
 - **Career development**: Concrete examples used in performance discussions  
 - **Content creation**: Blog posts, talks, or documentation created from journal content
+- **Decision recall**: Developers successfully finding past decision context
 
 ### **Experience Metrics**
 - **Setup success rate**: Percentage of developers who successfully initialize and use the tool
-- **Workflow disruption**: Minimal impact on development speed and flow
+- **Workflow disruption**: Minimal impact on development speed and flow (target: <1 second overhead)
 - **Content satisfaction**: Developers find the generated content accurate and useful
+- **Context relevance**: Chat history filtering produces relevant, useful content
 
 ---
 
