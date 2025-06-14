@@ -1,7 +1,7 @@
 # Task ID: 30
 # Title: Create Release Preparation Script
 # Status: pending
-# Dependencies: 15, 26
+# Dependencies: 26, 44
 # Priority: high
 # Description: Develop an automated release validation script that performs a series of quality checks before publishing to ensure the package meets all requirements.
 # Details:

@@ -1,0 +1,63 @@
+# Task ID: 36
+# Title: Implement Cursor Chat Database Integration for Journal Context Collection
+# Status: done
+# Dependencies: None
+# Priority: high
+# Description: Research and document the SQLite integration with the Cursor chat database to access complete conversation history for journal context collection, focusing on database structure, message extraction, and intelligent boundary detection.
+# Details:
+This task focused on researching the core SQLite integration with the Cursor chat database to enable reliable access to complete conversation history for journal context collection. The research phase has been completed successfully.
+
+## Research Achievements
+
+1. Investigated the current limited `collect_ai_chat_context` function in `context_collection.py` and identified its limitations.
+
+2. Researched SQLite database locations and access patterns:
+   - Documented multi-method workspace detection based on cursor-chat-browser patterns:
+     * Windows: %APPDATA%\Cursor\User\workspaceStorage
+     * WSL2: /mnt/c/Users/<USERNAME>/AppData/Roaming/Cursor/User/workspaceStorage
+     * macOS: ~/Library/Application Support/Cursor/User/workspaceStorage
+     * Linux: ~/.config/Cursor/User/workspaceStorage
+     * Linux (remote/SSH): ~/.cursor-server/data/User/workspaceStorage
+   - Analyzed workspace hash discovery and validation logic
+   - Documented user configuration options for edge cases
+   - Identified potential error scenarios for missing or inaccessible databases
+
+3. Researched database query requirements:
+   - Identified key tables and query patterns for `ItemTable` where key is one of:
+     * `'aiService.prompts'` (legacy format)
+     * `'workbench.panel.aichat.view.aichat.chatdata'` (standard format)
+     * `'composerData'` (new format in globalStorage/state.vscdb)
+   - Documented message structure for both human and AI messages
+   - Analyzed message threading and conversation context preservation requirements
+   - Documented timestamp and metadata formats for intelligent boundary detection
+   - Analyzed JSON format parsing requirements for structured conversation history
+   - Identified necessary error handling and logging approaches
+
+4. Researched chat boundary detection approaches:
+   - Documented smart boundary detection techniques using complete chat history access
+   - Analyzed conversation breaks, topic changes, and manual delimiter patterns
+   - Researched configurable limits and intelligent defaults based on cursor-chat-browser insights
+   - Documented topic change detection mechanisms and session separation logic
+   - Analyzed requirements for both automatic and manual boundary configuration
+   - Documented approaches to ensure boundaries preserve the context of relevant chat segments
+
+## Implementation Requirements (Moved to Separate Tasks)
+
+Based on the research findings, the implementation work has been divided into separate focused tasks (Tasks 45, 46, 47) to ensure proper execution of each component.
+
+Comprehensive documentation of all research findings can be found in docs/cursor-chat-database-research.md.
+
+# Test Strategy:
+The testing strategy has been updated to reflect the completion of the research phase. Implementation testing will be handled in the separate implementation tasks (45, 46, 47).
+
+1. Research Documentation Review:
+   - Verify all database access patterns are properly documented
+   - Confirm database schema documentation is accurate and comprehensive
+   - Ensure all identified error scenarios are documented
+   - Verify boundary detection approaches are clearly explained
+   - Confirm cross-platform considerations are thoroughly documented
+
+2. Implementation Task Division Review:
+   - Verify that all implementation requirements from the research are properly assigned to the new tasks
+   - Ensure no critical implementation details are missed in the task division
+   - Confirm that dependencies between implementation tasks are properly identified

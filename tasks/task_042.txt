@@ -1,0 +1,468 @@
+# Task ID: 42
+# Title: Implement Performance Optimization and Cross-Platform Infrastructure
+# Status: pending
+# Dependencies: 40
+# Priority: medium
+# Description: Implement comprehensive performance caching mechanisms and cross-platform support infrastructure with robust error handling and user diagnostics.
+# Details:
+This task focuses on implementing production-ready performance optimization and reliable cross-platform infrastructure with the following components:
+
+1. **Performance Caching Mechanisms**:
+```python
+@trace_mcp_operation
+def initialize_cache_system(config):
+    """Set up the caching system with appropriate size limits based on config"""
+    cache_config = config.get('cache', {})
+    max_memory_mb = cache_config.get('max_memory_mb', 100)
+    
+    return {
+        'summary_cache': {},
+        'query_cache': {},
+        'config_cache': {},
+        'search_cache': {},
+        'stats': {
+            'hits': 0,
+            'misses': 0,
+            'memory_usage': 0,
+            'max_memory_mb': max_memory_mb
+        }
+    }
+
+@trace_mcp_operation
+def get_cached_summary(commit_id, cache_system):
+    """Retrieve cached summary if available, otherwise return None"""
+    if commit_id in cache_system['summary_cache']:
+        cache_system['stats']['hits'] += 1
+        return cache_system['summary_cache'][commit_id]
+    
+    cache_system['stats']['misses'] += 1
+    return None
+
+@trace_mcp_operation
+def cache_summary(commit_id, summary, cache_system):
+    """Store summary in cache with memory monitoring"""
+    # Calculate approximate memory usage
+    memory_usage = len(summary) * 2  # Rough estimate: 2 bytes per character
+    
+    # Check if adding would exceed limit
+    if (cache_system['stats']['memory_usage'] + memory_usage) / (1024 * 1024) > cache_system['stats']['max_memory_mb']:
+        # Implement LRU eviction strategy
+        _evict_oldest_cache_entries(cache_system, memory_usage)
+    
+    cache_system['summary_cache'][commit_id] = summary
+    cache_system['stats']['memory_usage'] += memory_usage
+    return True
+
+@trace_mcp_operation
+def _evict_oldest_cache_entries(cache_system, required_space):
+    """Evict oldest entries until required space is available"""
+    # Implementation of LRU eviction
+    pass
+
+@trace_mcp_operation
+def cache_semantic_search_results(query_hash, results, cache_system):
+    """Cache semantic search results for git changes"""
+    # Implementation
+    pass
+
+@trace_mcp_operation
+def invalidate_cache(cache_type, identifier=None, cache_system=None):
+    """Invalidate specific cache entries or entire cache types"""
+    if identifier:
+        if identifier in cache_system[cache_type]:
+            del cache_system[cache_type][identifier]
+    else:
+        cache_system[cache_type] = {}
+    
+    # Update memory usage stats
+    _recalculate_memory_usage(cache_system)
+    return True
+```
+
+2. **Cross-Platform Support and Error Handling**:
+```python
+@trace_mcp_operation
+def normalize_path(path, platform=None):
+    """Normalize path for cross-platform compatibility"""
+    if platform is None:
+        platform = sys.platform
+    
+    # Convert to Path object and resolve
+    path_obj = Path(path).resolve()
+    
+    # Handle Windows/Unix path differences
+    if platform.startswith('win'):
+        return str(path_obj).replace('\\', '/')
+    return str(path_obj)
+
+@trace_mcp_operation
+def detect_environment():
+    """Auto-detect user environment details for cross-platform setup"""
+    env_info = {
+        'platform': sys.platform,
+        'is_wsl': False,
+        'cursor_workspace': None,
+        'db_access': False,
+        'python_version': sys.version,
+    }
+    
+    # Detect WSL
+    if sys.platform == 'linux':
+        try:
+            with open('/proc/version', 'r') as f:
+                if 'microsoft' in f.read().lower():
+                    env_info['is_wsl'] = True
+        except:
+            pass
+    
+    # Detect Cursor workspace
+    try:
+        # Implementation to detect Cursor workspace
+        pass
+    except Exception as e:
+        env_info['cursor_error'] = str(e)
+    
+    # Check database access
+    try:
+        # Implementation to check database access
+        pass
+    except Exception as e:
+        env_info['db_error'] = str(e)
+    
+    return env_info
+
+@trace_mcp_operation
+def handle_permission_error(operation, path, error):
+    """Handle permission errors with clear user guidance"""
+    error_message = f"Permission denied when trying to {operation} at {path}."
+    
+    if sys.platform.startswith('win'):
+        guidance = "Please check if you have appropriate access rights or try running as administrator."
+    elif sys.platform == 'darwin':  # macOS
+        guidance = "Please check file permissions with 'ls -la' and adjust with 'chmod' if needed."
+    else:  # Linux/Unix
+        guidance = "Please check file permissions with 'ls -la' and adjust with 'chmod' if needed."
+    
+    return {
+        'error': error_message,
+        'guidance': guidance,
+        'original_error': str(error)
+    }
+
+@trace_mcp_operation
+def recover_from_corrupted_database(db_path):
+    """Attempt to recover from corrupted database"""
+    # Implementation for database recovery
+    pass
+```
+
+3. **User-Friendly Diagnostics**:
+```python
+@trace_mcp_operation
+def run_system_diagnostics():
+    """Run comprehensive system diagnostics and return results"""
+    results = {
+        'environment': detect_environment(),
+        'cursor_workspace': check_cursor_workspace(),
+        'chat_data': check_chat_data_availability(),
+        'database': check_database_health(),
+        'git_access': check_git_access(),
+        'performance': check_performance_metrics()
+    }
+    
+    # Generate overall health status
+    results['overall_health'] = calculate_overall_health(results)
+    
+    return results
+
+@trace_mcp_operation
+def check_cursor_workspace():
+    """Check if Cursor workspace is accessible"""
+    # Implementation
+    pass
+
+@trace_mcp_operation
+def check_chat_data_availability():
+    """Validate chat data availability"""
+    # Implementation
+    pass
+
+@trace_mcp_operation
+def check_database_health():
+    """Check database health and integrity"""
+    # Implementation
+    pass
+
+@trace_mcp_operation
+def generate_troubleshooting_guide(diagnostic_results):
+    """Generate user-friendly troubleshooting guide based on diagnostic results"""
+    guide = ["# Troubleshooting Guide\n"]
+    
+    # Add sections based on diagnostic results
+    if not diagnostic_results['cursor_workspace']['accessible']:
+        guide.append("## Cursor Workspace Issues\n")
+        guide.append(diagnostic_results['cursor_workspace']['guidance'])
+    
+    if not diagnostic_results['chat_data']['available']:
+        guide.append("## Chat Data Issues\n")
+        guide.append(diagnostic_results['chat_data']['guidance'])
+    
+    # Add more sections as needed
+    
+    return "\n".join(guide)
+```
+
+4. **Integration with Existing Systems**:
+```python
+@trace_mcp_operation
+def integrate_with_git_relevance_system(cache_system):
+    """Integrate caching with Git-Driven Chat Relevance Detection System"""
+    # Implementation to connect with Task 40
+    pass
+
+@trace_mcp_operation
+def optimize_database_queries():
+    """Implement optimized database query patterns"""
+    # Implementation
+    pass
+```
+
+5. **Configuration Management**:
+```python
+@trace_mcp_operation
+def load_cached_config(config_path, cache_system):
+    """Load configuration with caching for performance"""
+    config_hash = _hash_file(config_path)
+    
+    if config_hash in cache_system['config_cache']:
+        return cache_system['config_cache'][config_hash]
+    
+    # Load config from file
+    with open(config_path, 'r') as f:
+        config = yaml.safe_load(f)
+    
+    # Cache the config
+    cache_system['config_cache'][config_hash] = config
+    
+    return config
+
+@trace_mcp_operation
+def _hash_file(file_path):
+    """Generate hash for a file to use as cache key"""
+    hasher = hashlib.md5()
+    with open(file_path, 'rb') as f:
+        buf = f.read()
+        hasher.update(buf)
+    return hasher.hexdigest()
+```
+
+All implementations will follow strict TDD practices with failing tests written first, and will include comprehensive telemetry as defined in docs/telemetry.md.
+
+# Test Strategy:
+The implementation will be verified through a comprehensive testing strategy:
+
+1. **Unit Tests for Caching Mechanisms**:
+```python
+def test_cache_initialization():
+    """Test that cache system initializes with correct defaults"""
+    config = {'cache': {'max_memory_mb': 200}}
+    cache_system = initialize_cache_system(config)
+    
+    assert cache_system['stats']['max_memory_mb'] == 200
+    assert cache_system['stats']['memory_usage'] == 0
+    assert cache_system['stats']['hits'] == 0
+    assert cache_system['stats']['misses'] == 0
+
+def test_summary_caching():
+    """Test storing and retrieving summaries from cache"""
+    cache_system = initialize_cache_system({})
+    
+    # Test cache miss
+    assert get_cached_summary('abc123', cache_system) is None
+    assert cache_system['stats']['misses'] == 1
+    
+    # Test cache hit
+    cache_summary('abc123', 'Test summary', cache_system)
+    assert get_cached_summary('abc123', cache_system) == 'Test summary'
+    assert cache_system['stats']['hits'] == 1
+
+def test_cache_eviction():
+    """Test that cache evicts entries when memory limit is reached"""
+    # Create small cache (1KB)
+    cache_system = initialize_cache_system({'cache': {'max_memory_mb': 0.001}})
+    
+    # Add entries until eviction occurs
+    large_string = 'x' * 600  # ~1.2KB
+    cache_summary('entry1', large_string, cache_system)
+    cache_summary('entry2', large_string, cache_system)
+    
+    # First entry should be evicted
+    assert get_cached_summary('entry1', cache_system) is None
+    assert get_cached_summary('entry2', cache_system) is not None
+```
+
+2. **Cross-Platform Path Tests**:
+```python
+def test_path_normalization():
+    """Test path normalization across platforms"""
+    # Test Windows path normalization
+    windows_path = 'C:\\Users\\test\\Documents'
+    normalized = normalize_path(windows_path, platform='win32')
+    assert '/' in normalized
+    assert '\\' not in normalized
+    
+    # Test Unix path normalization
+    unix_path = '/home/user/documents'
+    normalized = normalize_path(unix_path, platform='linux')
+    assert normalized == unix_path
+
+def test_environment_detection():
+    """Test environment detection functionality"""
+    env_info = detect_environment()
+    assert 'platform' in env_info
+    assert 'is_wsl' in env_info
+    assert 'cursor_workspace' in env_info
+    assert 'db_access' in env_info
+```
+
+3. **Error Handling Tests**:
+```python
+def test_permission_error_handling():
+    """Test permission error handling with appropriate guidance"""
+    error_info = handle_permission_error('write', '/test/path', PermissionError('Access denied'))
+    
+    assert 'error' in error_info
+    assert 'guidance' in error_info
+    assert 'original_error' in error_info
+    assert 'Permission denied' in error_info['error']
+
+def test_database_recovery():
+    """Test database recovery mechanisms"""
+    with tempfile.NamedTemporaryFile() as temp_db:
+        # Create corrupted database simulation
+        with open(temp_db.name, 'wb') as f:
+            f.write(b'corrupted data')
+        
+        # Test recovery
+        result = recover_from_corrupted_database(temp_db.name)
+        assert result['success'] is True or result['success'] is False
+        assert 'message' in result
+```
+
+4. **Diagnostic Tests**:
+```python
+def test_system_diagnostics():
+    """Test system diagnostics functionality"""
+    results = run_system_diagnostics()
+    
+    assert 'environment' in results
+    assert 'cursor_workspace' in results
+    assert 'chat_data' in results
+    assert 'database' in results
+    assert 'overall_health' in results
+
+def test_troubleshooting_guide_generation():
+    """Test generation of troubleshooting guide"""
+    mock_results = {
+        'cursor_workspace': {'accessible': False, 'guidance': 'Check Cursor installation'},
+        'chat_data': {'available': True, 'guidance': ''},
+        'database': {'healthy': True, 'guidance': ''},
+        'git_access': {'available': True, 'guidance': ''},
+        'performance': {'acceptable': True, 'guidance': ''},
+        'overall_health': 'warning'
+    }
+    
+    guide = generate_troubleshooting_guide(mock_results)
+    assert 'Troubleshooting Guide' in guide
+    assert 'Cursor Workspace Issues' in guide
+    assert 'Check Cursor installation' in guide
+```
+
+5. **Integration Tests**:
+```python
+def test_integration_with_git_relevance_system():
+    """Test integration with Git-Driven Chat Relevance Detection System"""
+    cache_system = initialize_cache_system({})
+    result = integrate_with_git_relevance_system(cache_system)
+    assert result['success'] is True
+
+def test_config_caching():
+    """Test configuration caching functionality"""
+    with tempfile.NamedTemporaryFile(mode='w+') as temp_config:
+        # Write test config
+        temp_config.write('test: value\n')
+        temp_config.flush()
+        
+        cache_system = initialize_cache_system({})
+        
+        # First load should cache
+        config1 = load_cached_config(temp_config.name, cache_system)
+        assert config1['test'] == 'value'
+        
+        # Second load should use cache
+        config2 = load_cached_config(temp_config.name, cache_system)
+        assert config2['test'] == 'value'
+        
+        # Verify it's the same object (cached)
+        assert id(config1) == id(config2)
+```
+
+6. **Performance Tests**:
+```python
+def test_caching_performance():
+    """Test that caching improves performance"""
+    cache_system = initialize_cache_system({})
+    
+    # Measure time without cache
+    start_time = time.time()
+    get_cached_summary('test_id', cache_system)  # Cache miss
+    no_cache_time = time.time() - start_time
+    
+    # Add to cache
+    cache_summary('test_id', 'Test summary', cache_system)
+    
+    # Measure time with cache
+    start_time = time.time()
+    get_cached_summary('test_id', cache_system)  # Cache hit
+    cache_time = time.time() - start_time
+    
+    # Cache should be faster
+    assert cache_time < no_cache_time
+```
+
+7. **Cross-Platform Testing**:
+   - Set up CI/CD pipeline to run tests on:
+     - Windows (latest)
+     - macOS (latest)
+     - Ubuntu Linux (latest)
+   - Include WSL2 testing for Windows
+   - Test with different Python versions (3.8, 3.9, 3.10)
+
+8. **Telemetry Validation**:
+```python
+def test_telemetry_integration():
+    """Test that telemetry is correctly implemented"""
+    collector = TelemetryCollector()
+    
+    with collector.collect():
+        cache_system = initialize_cache_system({})
+        cache_summary('test_id', 'Test summary', cache_system)
+        get_cached_summary('test_id', cache_system)
+    
+    # Verify operations were tracked
+    operations = collector.get_operations()
+    assert any(op['name'] == 'initialize_cache_system' for op in operations)
+    assert any(op['name'] == 'cache_summary' for op in operations)
+    assert any(op['name'] == 'get_cached_summary' for op in operations)
+    
+    # Verify performance impact is minimal
+    for op in operations:
+        assert op['duration'] < 0.1  # Less than 100ms per operation
+```
+
+9. **Manual Testing Checklist**:
+   - Verify cache behavior with large datasets
+   - Test on all target platforms (Windows, macOS, Linux, WSL2)
+   - Verify error messages are user-friendly and actionable
+   - Test diagnostics with various simulated failure conditions
+   - Verify troubleshooting guides provide clear resolution steps

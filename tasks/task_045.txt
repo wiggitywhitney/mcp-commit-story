@@ -1,0 +1,303 @@
+# Task ID: 45
+# Title: Design and Implement SQLite Workspace Detection and Reader
+# Status: pending
+# Dependencies: None
+# Priority: medium
+# Description: Create a robust SQLite reader function that uses Python's built-in sqlite3 module to access Cursor's chat database with cross-platform workspace detection capabilities.
+# Details:
+This task implements a foundational SQLite reader function for accessing Cursor's chat database across multiple platforms, with a strong focus on workspace detection:
+
+1. **Core Database Access Layer**:
+```python
+@trace_mcp_operation
+def get_cursor_chat_database(user_override_path=None):
+    """
+    Locate and connect to the Cursor chat SQLite database
+    
+    Args:
+        user_override_path: Optional user-provided path to database
+        
+    Returns:
+        sqlite3.Connection: Database connection object
+        
+    Raises:
+        CursorDatabaseNotFoundError: If database cannot be located
+        CursorDatabaseAccessError: If database exists but cannot be accessed
+    """
+    # Try user override path first if provided
+    if user_override_path:
+        if os.path.exists(user_override_path):
+            try:
+                return sqlite3.connect(user_override_path)
+            except sqlite3.Error as e:
+                raise CursorDatabaseAccessError(f"Cannot access user-provided database: {e}")
+        else:
+            # Don't fail immediately, try standard locations
+            pass
+    
+    # Platform detection
+    platform_name = platform.system().lower()
+    
+    # Multi-platform workspace detection
+    base_paths = []
+    
+    if platform_name == "windows":
+        base_paths.append(os.path.join(os.environ.get("APPDATA", ""), "Cursor", "User", "workspaceStorage"))
+    elif platform_name == "darwin":  # macOS
+        base_paths.append(os.path.expanduser("~/Library/Application Support/Cursor/User/workspaceStorage"))
+    elif platform_name == "linux":
+        # Check if running in WSL
+        if os.path.exists("/proc/version") and "microsoft" in open("/proc/version").read().lower():
+            username = os.environ.get("USER", "")
+            base_paths.append(f"/mnt/c/Users/{username}/AppData/Roaming/Cursor/User/workspaceStorage")
+        
+        # Standard Linux paths
+        base_paths.append(os.path.expanduser("~/.config/Cursor/User/workspaceStorage"))
+        base_paths.append(os.path.expanduser("~/.cursor-server/data/User/workspaceStorage"))
+    
+    # Workspace hash discovery
+    for base_path in base_paths:
+        if not os.path.exists(base_path):
+            continue
+            
+        # Find workspace hash directories
+        workspace_dirs = [d for d in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, d))]
+        
+        for workspace_dir in workspace_dirs:
+            # Look for cursor-chat-browser pattern
+            db_path = os.path.join(base_path, workspace_dir, "cursor-chat-browser", "chat.db")
+            if os.path.exists(db_path):
+                try:
+                    return sqlite3.connect(db_path)
+                except sqlite3.Error as e:
+                    # Log but continue trying other paths
+                    logging.warning(f"Found but couldn't access database at {db_path}: {e}")
+    
+    # If we get here, we couldn't find or access the database
+    raise CursorDatabaseNotFoundError("Could not locate Cursor chat database in any standard location")
+
+@trace_mcp_operation
+@functools.lru_cache(maxsize=32)
+def query_cursor_chat_database(sql, params=None, user_override_path=None):
+    """
+    Execute a query against the Cursor chat database with caching
+    
+    Args:
+        sql: SQL query to execute
+        params: Parameters for the query
+        user_override_path: Optional user-provided path to database
+        
+    Returns:
+        list: Query results
+        
+    Raises:
+        CursorDatabaseError: If query fails
+    """
+    try:
+        conn = get_cursor_chat_database(user_override_path)
+        cursor = conn.cursor()
+        
+        if params:
+            cursor.execute(sql, params)
+        else:
+            cursor.execute(sql)
+            
+        results = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return results
+    except (CursorDatabaseNotFoundError, CursorDatabaseAccessError) as e:
+        # Re-raise these specific errors
+        raise
+    except Exception as e:
+        raise CursorDatabaseError(f"Error executing query: {e}")
+```
+
+2. **Custom Exception Classes**:
+```python
+class CursorDatabaseError(Exception):
+    """Base exception for Cursor database errors"""
+    pass
+
+class CursorDatabaseNotFoundError(CursorDatabaseError):
+    """Exception raised when Cursor database cannot be found"""
+    pass
+    
+class CursorDatabaseAccessError(CursorDatabaseError):
+    """Exception raised when Cursor database exists but cannot be accessed"""
+    pass
+```
+
+3. **Configuration Integration**:
+```python
+@trace_mcp_operation
+def get_cursor_database_config():
+    """Get cursor database configuration from user settings"""
+    config = get_mcp_config()
+    return config.get("cursor_database", {})
+```
+
+4. **Schema Validation Function**:
+```python
+@trace_mcp_operation
+def validate_cursor_chat_schema(conn):
+    """
+    Validate that the connected database has the expected schema
+    
+    Args:
+        conn: SQLite connection
+        
+    Returns:
+        bool: True if schema is valid
+        
+    Raises:
+        CursorDatabaseSchemaError: If schema validation fails
+    """
+    required_tables = ["conversations", "messages"]
+    cursor = conn.cursor()
+    
+    # Get list of tables
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+    tables = [row[0] for row in cursor.fetchall()]
+    
+    # Check required tables exist
+    for table in required_tables:
+        if table not in tables:
+            raise CursorDatabaseSchemaError(f"Required table '{table}' not found in database")
+    
+    return True
+```
+
+5. **Implementation Notes**:
+- The function uses Python's built-in sqlite3 module without external dependencies
+- Implements multi-method workspace detection based on platform-specific paths
+- Includes proper error handling with custom exception classes
+- Uses lru_cache for performance optimization
+- Maintains compatibility with the existing system (does not remove old collect_ai_chat_context function)
+- Includes telemetry via @trace_mcp_operation decorators
+
+# Test Strategy:
+The implementation should be verified through the following test strategy:
+
+1. **Unit Tests**:
+```python
+def test_platform_detection():
+    """Test that the correct platform is detected"""
+    # Mock platform.system() to return different values
+    with patch('platform.system', return_value='Windows'):
+        assert is_windows() == True
+        assert is_macos() == False
+        assert is_linux() == False
+    
+    with patch('platform.system', return_value='Darwin'):
+        assert is_windows() == False
+        assert is_macos() == True
+        assert is_linux() == False
+        
+    with patch('platform.system', return_value='Linux'):
+        assert is_windows() == False
+        assert is_macos() == False
+        assert is_linux() == True
+
+def test_database_path_resolution():
+    """Test that database paths are correctly resolved for each platform"""
+    # Test Windows path resolution
+    with patch('platform.system', return_value='Windows'), \
+         patch('os.environ.get', return_value='C:\\Users\\Test\\AppData\\Roaming'), \
+         patch('os.path.exists', return_value=True), \
+         patch('os.listdir', return_value=['hash1']), \
+         patch('os.path.isdir', return_value=True):
+        
+        paths = get_potential_database_paths()
+        assert 'C:\\Users\\Test\\AppData\\Roaming\\Cursor\\User\\workspaceStorage\\hash1\\cursor-chat-browser\\chat.db' in paths
+
+    # Similar tests for macOS and Linux...
+
+def test_database_connection():
+    """Test database connection with mock database"""
+    # Create a temporary SQLite database
+    conn = sqlite3.connect(':memory:')
+    cursor = conn.cursor()
+    
+    # Create test schema
+    cursor.execute('CREATE TABLE conversations (id TEXT, title TEXT)')
+    cursor.execute('CREATE TABLE messages (id TEXT, conversation_id TEXT, content TEXT)')
+    
+    # Insert test data
+    cursor.execute('INSERT INTO conversations VALUES (?, ?)', ('conv1', 'Test Conversation'))
+    cursor.execute('INSERT INTO messages VALUES (?, ?, ?)', ('msg1', 'conv1', 'Test message'))
+    
+    conn.commit()
+    
+    # Mock the database connection function
+    with patch('your_module.get_cursor_chat_database', return_value=conn):
+        # Test query function
+        results = query_cursor_chat_database('SELECT * FROM conversations')
+        assert len(results) == 1
+        assert results[0][0] == 'conv1'
+        
+        results = query_cursor_chat_database('SELECT * FROM messages WHERE conversation_id = ?', ('conv1',))
+        assert len(results) == 1
+        assert results[0][2] == 'Test message'
+
+def test_error_handling():
+    """Test error handling for various failure scenarios"""
+    # Test database not found
+    with patch('your_module.get_cursor_chat_database', side_effect=CursorDatabaseNotFoundError("Test error")):
+        with pytest.raises(CursorDatabaseNotFoundError):
+            query_cursor_chat_database('SELECT 1')
+    
+    # Test database access error
+    with patch('your_module.get_cursor_chat_database', side_effect=CursorDatabaseAccessError("Test error")):
+        with pytest.raises(CursorDatabaseAccessError):
+            query_cursor_chat_database('SELECT 1')
+    
+    # Test query error
+    with patch('your_module.get_cursor_chat_database', return_value=sqlite3.connect(':memory:')):
+        with pytest.raises(CursorDatabaseError):
+            query_cursor_chat_database('SELECT * FROM nonexistent_table')
+```
+
+2. **Integration Tests**:
+```python
+def test_telemetry_integration():
+    """Test that telemetry is correctly captured"""
+    collector = TelemetryCollector()
+    
+    with collector:
+        try:
+            # This should trigger telemetry
+            get_cursor_chat_database()
+        except:
+            pass
+    
+    # Verify telemetry was captured
+    operations = collector.get_operations()
+    assert any(op.name == 'get_cursor_chat_database' for op in operations)
+
+def test_cross_platform_compatibility():
+    """Test cross-platform compatibility with different path formats"""
+    # This would be a manual test on different platforms
+    # Document the test procedure for each platform
+    pass
+```
+
+3. **Manual Testing Checklist**:
+   - Test on Windows with standard installation
+   - Test on macOS with standard installation
+   - Test on Linux with standard installation
+   - Test on WSL2 with Windows Cursor installation
+   - Test with user override path
+   - Test with missing database
+   - Test with corrupted database
+   - Test with unexpected schema
+   - Verify error messages are clear and actionable
+
+4. **Performance Testing**:
+   - Verify caching works by measuring repeated query times
+   - Test with large database to ensure performance is acceptable
+
+5. **Documentation Verification**:
+   - Ensure all functions have proper docstrings
+   - Verify error messages are clear and provide troubleshooting guidance
+   - Check that telemetry is properly documented

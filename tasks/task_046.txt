@@ -1,0 +1,294 @@
+# Task ID: 46
+# Title: Implement Direct Database Query Function
+# Status: pending
+# Dependencies: 45
+# Priority: medium
+# Description: Create a function to query the Cursor chat database and extract complete conversation history with proper parsing and error handling.
+# Details:
+This task implements a robust database query function that extracts comprehensive chat data from Cursor's SQLite database:
+
+1. **Core Query Function Implementation**:
+```python
+@trace_mcp_operation
+def query_cursor_chat_database(workspace_path=None):
+    """
+    Query the Cursor chat database to extract complete conversation history.
+    
+    Args:
+        workspace_path: Optional path to workspace. If None, uses detected workspace.
+        
+    Returns:
+        List of conversation objects with structured message history
+        
+    Raises:
+        CursorDatabaseError: When database access or parsing fails
+    """
+    try:
+        # Get database path using the SQLite Reader function
+        db_path = get_cursor_database_path(workspace_path)
+        
+        # Connect to database
+        connection = sqlite3.connect(db_path)
+        cursor = connection.cursor()
+        
+        # Query all potential chat data locations
+        conversations = []
+        
+        # Legacy format
+        legacy_data = _query_table_by_key(cursor, "ItemTable", "aiService.prompts")
+        if legacy_data:
+            conversations.extend(_parse_legacy_format(legacy_data))
+            
+        # Standard format
+        standard_data = _query_table_by_key(cursor, "ItemTable", 
+                                          "workbench.panel.aichat.view.aichat.chatdata")
+        if standard_data:
+            conversations.extend(_parse_standard_format(standard_data))
+            
+        # New format
+        new_data = _query_table_by_key(cursor, "ItemTable", "composerData")
+        if new_data:
+            conversations.extend(_parse_new_format(new_data))
+            
+        connection.close()
+        return conversations
+        
+    except Exception as e:
+        logger.error(f"Error querying Cursor chat database: {str(e)}")
+        raise CursorDatabaseError(f"Failed to query chat database: {str(e)}")
+```
+
+2. **Helper Functions for Database Access**:
+```python
+@trace_mcp_operation
+def _query_table_by_key(cursor, table_name, key_value):
+    """Query a specific table by key value and return results."""
+    try:
+        cursor.execute(f"SELECT key, value FROM {table_name} WHERE key = ?", (key_value,))
+        results = cursor.fetchall()
+        return results
+    except sqlite3.Error as e:
+        logger.warning(f"Error querying {table_name} with key {key_value}: {str(e)}")
+        return []
+```
+
+3. **Format-Specific Parsing Functions**:
+```python
+@trace_mcp_operation
+def _parse_legacy_format(data_rows):
+    """Parse legacy format chat data into structured conversation objects."""
+    conversations = []
+    
+    for _, value in data_rows:
+        try:
+            # Legacy format typically stores JSON string in the value column
+            chat_data = json.loads(value)
+            
+            # Extract messages with proper threading
+            messages = []
+            for msg in chat_data.get("messages", []):
+                messages.append({
+                    "role": msg.get("role", "unknown"),
+                    "content": msg.get("content", ""),
+                    "id": msg.get("id", str(uuid.uuid4())),
+                    "parent_id": msg.get("parent_id", None)
+                })
+            
+            conversations.append({
+                "id": chat_data.get("id", str(uuid.uuid4())),
+                "title": chat_data.get("title", "Untitled Conversation"),
+                "messages": messages,
+                "format": "legacy"
+            })
+        except json.JSONDecodeError:
+            logger.warning(f"Failed to parse legacy format chat data")
+            
+    return conversations
+
+# Similar functions for _parse_standard_format and _parse_new_format
+```
+
+4. **Error Handling and Custom Exceptions**:
+```python
+class CursorDatabaseError(Exception):
+    """Exception raised for errors in the Cursor database operations."""
+    pass
+```
+
+5. **Caching Implementation**:
+```python
+@lru_cache(maxsize=32)
+@trace_mcp_operation
+def get_cached_conversations(workspace_path=None):
+    """
+    Cached version of query_cursor_chat_database to improve performance
+    for repeated calls.
+    """
+    return query_cursor_chat_database(workspace_path)
+```
+
+6. **Telemetry Integration**:
+```python
+@trace_mcp_operation
+def query_cursor_chat_database_with_telemetry(workspace_path=None):
+    """Wrapper with telemetry for the database query function."""
+    start_time = time.time()
+    try:
+        result = query_cursor_chat_database(workspace_path)
+        telemetry.record_event(
+            "cursor_db_query_success",
+            {
+                "duration_ms": (time.time() - start_time) * 1000,
+                "conversation_count": len(result),
+                "message_count": sum(len(conv["messages"]) for conv in result)
+            }
+        )
+        return result
+    except Exception as e:
+        telemetry.record_event(
+            "cursor_db_query_failure",
+            {
+                "duration_ms": (time.time() - start_time) * 1000,
+                "error_type": type(e).__name__,
+                "error_message": str(e)
+            }
+        )
+        raise
+```
+
+Implementation Considerations:
+- Focus on robust error handling with clear error messages
+- Implement comprehensive logging for debugging
+- Use Python's built-in sqlite3 module for database access
+- Apply caching for performance optimization where appropriate
+- Handle all three known data formats (legacy, standard, new)
+- Ensure proper message threading and conversation context preservation
+- Extract metadata for intelligent boundary detection
+
+# Test Strategy:
+The implementation will be verified through a comprehensive testing approach:
+
+1. **Unit Tests**:
+```python
+def test_query_cursor_chat_database():
+    """Test the main query function with a mock database."""
+    # Setup mock database with test data
+    mock_db_path = setup_mock_cursor_database()
+    
+    # Test with explicit path
+    conversations = query_cursor_chat_database(mock_db_path)
+    assert isinstance(conversations, list)
+    assert len(conversations) > 0
+    
+    # Verify conversation structure
+    for conv in conversations:
+        assert "id" in conv
+        assert "title" in conv
+        assert "messages" in conv
+        assert "format" in conv
+        
+        # Verify message structure
+        for msg in conv["messages"]:
+            assert "role" in msg
+            assert "content" in msg
+            assert "id" in msg
+            
+    # Test error handling with invalid path
+    with pytest.raises(CursorDatabaseError):
+        query_cursor_chat_database("/invalid/path")
+```
+
+2. **Format-Specific Tests**:
+```python
+def test_parse_legacy_format():
+    """Test parsing of legacy format data."""
+    mock_data = [(
+        "aiService.prompts", 
+        json.dumps({
+            "id": "test-conv-1",
+            "title": "Test Conversation",
+            "messages": [
+                {"role": "user", "content": "Hello", "id": "msg1"},
+                {"role": "assistant", "content": "Hi there", "id": "msg2", "parent_id": "msg1"}
+            ]
+        })
+    )]
+    
+    result = _parse_legacy_format(mock_data)
+    assert len(result) == 1
+    assert result[0]["id"] == "test-conv-1"
+    assert len(result[0]["messages"]) == 2
+    assert result[0]["messages"][1]["parent_id"] == "msg1"
+```
+
+3. **Integration Tests**:
+```python
+def test_integration_with_sqlite_reader():
+    """Test integration with the SQLite reader function."""
+    # Mock the workspace detection
+    with patch("mcp.cursor_db.get_cursor_database_path") as mock_get_path:
+        mock_get_path.return_value = setup_mock_cursor_database()
+        
+        # Test the query function without explicit path
+        conversations = query_cursor_chat_database()
+        assert isinstance(conversations, list)
+        assert len(conversations) > 0
+```
+
+4. **Telemetry Tests**:
+```python
+def test_telemetry_integration():
+    """Test telemetry integration in the database query function."""
+    # Setup telemetry collector
+    collector = TelemetryCollector()
+    
+    # Mock database to return test data
+    with patch("mcp.cursor_db.query_cursor_chat_database") as mock_query:
+        mock_query.return_value = [{"id": "test", "title": "Test", "messages": []}]
+        
+        # Call the function with telemetry
+        result = query_cursor_chat_database_with_telemetry()
+        
+        # Verify telemetry events
+        events = collector.get_events()
+        assert any(e["name"] == "cursor_db_query_success" for e in events)
+        
+    # Test failure case
+    with patch("mcp.cursor_db.query_cursor_chat_database") as mock_query:
+        mock_query.side_effect = Exception("Test error")
+        
+        # Call should raise the exception
+        with pytest.raises(Exception):
+            query_cursor_chat_database_with_telemetry()
+            
+        # Verify failure telemetry
+        events = collector.get_events()
+        assert any(e["name"] == "cursor_db_query_failure" for e in events)
+```
+
+5. **Performance Tests**:
+```python
+def test_performance_with_large_dataset():
+    """Test performance with a large chat history dataset."""
+    # Generate large mock dataset
+    large_db_path = setup_large_mock_cursor_database(conversation_count=100, messages_per_conversation=50)
+    
+    # Measure execution time
+    start_time = time.time()
+    conversations = query_cursor_chat_database(large_db_path)
+    execution_time = time.time() - start_time
+    
+    # Verify results
+    assert len(conversations) == 100
+    assert all(len(conv["messages"]) == 50 for conv in conversations)
+    
+    # Performance assertion (adjust threshold as needed)
+    assert execution_time < 2.0, f"Query took too long: {execution_time} seconds"
+```
+
+6. **Manual Testing Checklist**:
+- Verify function works with actual Cursor installations on different platforms
+- Test with different Cursor versions to ensure compatibility
+- Validate parsing of all three data formats with real-world examples
+- Check memory usage with large chat histories
+- Verify error messages are clear and actionable
