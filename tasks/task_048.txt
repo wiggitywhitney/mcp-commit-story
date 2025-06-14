@@ -3,58 +3,62 @@
 # Status: pending
 # Dependencies: 45, 46, 47
 # Priority: high
-# Description: Replace the empty collect_chat_history() implementation with actual Cursor SQLite extraction functionality to retrieve chat data from the database.
+# Description: Refactor the existing collect_chat_history() implementation in context_collection.py with actual Cursor SQLite extraction functionality to retrieve chat data from the database.
 # Details:
-This task implements the core chat collection functionality by replacing the placeholder implementation with a working version:
+This task refactors the existing chat collection functionality by replacing the placeholder implementation with a working version that extracts data from Cursor's SQLite database:
 
-1. **Update the collect_chat_history Function**:
+1. **Refactor the Existing collect_chat_history Function**:
+   - Preserve the current function signature: `collect_chat_history(since_commit=None, max_messages_back=150) -> ChatHistory`
+   - Maintain compatibility with existing callers in journal_workflow.py and journal_orchestrator.py
+   - Keep all existing telemetry decorators and error handling patterns
+   - Fill in the TODO comment with actual implementation
+
 ```python
 @trace_mcp_operation
-def collect_chat_history(commit_hash=None, config=None):
+def collect_chat_history(since_commit=None, max_messages_back=150):
     """
     Collect chat history from Cursor's SQLite database.
     
     Args:
-        commit_hash: Optional commit hash for context
-        config: Configuration dictionary
+        since_commit: Optional commit hash to filter messages after a certain point
+        max_messages_back: Maximum number of messages to retrieve
         
     Returns:
-        Dictionary containing chat history data or None if unavailable
+        ChatHistory object containing the extracted chat data or None if unavailable
     """
     try:
         # Get workspace path from config or detect automatically
-        workspace_path = config.get("cursor", {}).get("workspace_path", None)
+        workspace_path = get_cursor_workspace_path()
         
         # Query the database using the direct database query function
-        chat_data = query_cursor_chat_database(workspace_path)
+        chat_data = query_cursor_chat_database(workspace_path, max_messages_back)
         
         if not chat_data:
             logger.info("No chat data found in Cursor database")
             return None
             
         # Apply boundary detection to segment conversations
-        boundary_detector = ChatBoundaryDetector(config)
+        boundary_detector = ChatBoundaryDetector()
         segmented_chats = boundary_detector.segment_conversations(chat_data)
         
-        # Format the chat data for journal integration
+        # Format the chat data for journal integration (maintaining ChatHistory return type)
         formatted_chats = []
         for segment in segmented_chats:
-            formatted_segment = {
-                "timestamp": segment["timestamp"],
-                "topic": segment["topic"],
-                "messages": segment["messages"],
-                "summary": segment.get("summary", "")
-            }
+            formatted_segment = ChatConversation(
+                timestamp=segment["timestamp"],
+                topic=segment["topic"],
+                messages=segment["messages"],
+                summary=segment.get("summary", "")
+            )
             formatted_chats.append(formatted_segment)
             
-        return {
-            "source": "cursor_chat",
-            "conversations": formatted_chats,
-            "raw_data": chat_data if config.get("debug", False) else None
-        }
+        return ChatHistory(
+            source="cursor_chat",
+            conversations=formatted_chats
+        )
     except Exception as e:
         logger.error(f"Error collecting chat history: {str(e)}")
-        if config and config.get("debug", False):
+        if config.get("debug", False):
             logger.exception("Detailed error:")
         return None
 ```
@@ -69,7 +73,7 @@ def collect_chat_history(commit_hash=None, config=None):
 3. **Integration with Boundary Detection**:
    - Utilize the ChatBoundaryDetector class to properly segment conversations
    - Ensure proper handling of conversation context and topic changes
-   - Apply configurable limits for conversation history
+   - Apply the max_messages_back parameter to limit conversation history
 
 4. **Workspace Detection Logic**:
    - Implement fallback logic for workspace detection:
@@ -78,47 +82,53 @@ def collect_chat_history(commit_hash=None, config=None):
      - Handle cross-platform differences (Windows, macOS, Linux)
 
 5. **Data Transformation**:
-   - Transform raw SQLite data into a structured format suitable for journal integration
-   - Include timestamps, topics, message content, and participants
-   - Optionally include raw data in debug mode for troubleshooting
+   - Transform raw SQLite data into the expected ChatHistory structure
+   - Ensure compatibility with existing code that consumes the ChatHistory type
+   - Maintain the existing return type structure to avoid breaking changes
 
 # Test Strategy:
-To verify the correct implementation of the chat collection functionality:
+To verify the correct refactoring of the chat collection functionality:
 
-1. **Unit Tests**:
-   - Create test cases for the collect_chat_history function:
+1. **Verify Existing Tests**:
+   - Confirm that all existing tests continue to pass with the refactored implementation
+   - Ensure no regressions are introduced in the journal workflow
+   - Verify that the function maintains its expected behavior from the caller's perspective
+
+2. **Unit Tests**:
+   - Create test cases for the refactored collect_chat_history function:
      - Test with valid workspace path and existing database
      - Test with invalid workspace path
      - Test with valid path but missing database
      - Test with corrupted database
      - Test with empty database (no chats)
-     - Test with various configuration options
+     - Test with various max_messages_back values
 
-2. **Integration Tests**:
+3. **Integration Tests**:
    - Test the integration with the ChatBoundaryDetector:
      - Verify that conversations are properly segmented
      - Verify that topic changes are correctly identified
      - Test with different boundary detection configurations
 
-3. **Cross-Platform Testing**:
+4. **Cross-Platform Testing**:
    - Test on Windows, macOS, and Linux to ensure workspace detection works correctly
    - Verify database path resolution on each platform
    - Test with different user permission scenarios
 
-4. **Manual Verification**:
+5. **Manual Verification**:
    - Run the function against a known Cursor chat database
    - Compare the output with expected chat history
    - Verify that all messages are correctly extracted
    - Check that timestamps and user information are preserved
 
-5. **Error Handling Verification**:
+6. **Error Handling Verification**:
    - Deliberately introduce errors to test error handling:
      - Remove database file permissions
      - Modify database schema
      - Simulate database corruption
      - Test with network drives or unusual file paths
 
-6. **Performance Testing**:
+7. **Performance Testing**:
    - Test with large chat histories to ensure performance
    - Measure execution time and memory usage
    - Verify that the function handles large datasets efficiently
+   - Test the impact of different max_messages_back values

@@ -3,9 +3,9 @@
 # Status: pending
 # Dependencies: 48
 # Priority: high
-# Description: Create a function that intelligently filters chat history based on git diff content to find only relevant discussions related to code changes.
+# Description: Add a function that intelligently filters chat history based on git diff content to find only relevant discussions related to code changes, and modify the existing collect_chat_history() to optionally use this filter.
 # Details:
-This task implements a sophisticated chat filtering system that uses git diff information to identify relevant chat segments:
+This task extends the existing chat collection system with a sophisticated filtering capability that uses git diff information to identify relevant chat segments:
 
 1. **Extract Keywords from Git Diffs**:
 ```python
@@ -87,10 +87,10 @@ def score_chat_relevance(chat_message, keywords, threshold=0.3):
     return score if score >= threshold else 0.0
 ```
 
-3. **Filter Chat History**:
+3. **Add New Filter Function to context_collection.py**:
 ```python
 @trace_mcp_operation
-def filter_chat_by_git_diff(chat_history, diff_content, min_score=0.3, context_window=2):
+def filter_chat_by_git_relevance(chat_history, diff_content, min_score=0.3, context_window=2):
     """
     Filter chat history based on git diff content to find relevant discussions.
     
@@ -104,7 +104,7 @@ def filter_chat_by_git_diff(chat_history, diff_content, min_score=0.3, context_w
         list: Filtered chat segments relevant to the code changes
     """
     if not chat_history or not diff_content:
-        return []
+        return chat_history  # Return original if no filtering possible
     
     # Extract keywords from diff
     keywords = extract_keywords_from_diff(diff_content)
@@ -125,7 +125,7 @@ def filter_chat_by_git_diff(chat_history, diff_content, min_score=0.3, context_w
     
     # Create continuous segments
     if not relevant_indices:
-        return []
+        return []  # No relevant messages found
         
     relevant_indices = sorted(relevant_indices)
     segments = []
@@ -144,44 +144,50 @@ def filter_chat_by_git_diff(chat_history, diff_content, min_score=0.3, context_w
     return segments
 ```
 
-4. **Integration with Existing System**:
+4. **Modify Existing collect_chat_history Function**:
 ```python
 @trace_mcp_operation
-def get_relevant_chat_history(commit_hash=None, file_path=None, config=None):
+def collect_chat_history(commit_hash=None, config=None, filter_by_git=False, file_path=None):
     """
-    Get chat history relevant to specific git changes.
+    Collect chat history, optionally filtered by git relevance.
     
     Args:
-        commit_hash (str): Optional commit hash to analyze
-        file_path (str): Optional specific file to focus on
+        commit_hash (str): Optional commit hash for context
         config (dict): Configuration options
+        filter_by_git (bool): Whether to filter chat by git relevance
+        file_path (str): Optional specific file to focus on for filtering
         
     Returns:
-        list: Filtered chat segments relevant to the code changes
+        list: Chat history, potentially filtered by git relevance
     """
-    # Get complete chat history
-    chat_history = collect_chat_history(commit_hash, config)
+    # Original chat collection logic remains unchanged
+    chat_history = [...existing implementation...]  
     
-    # Get git diff content
-    if commit_hash:
-        diff_content = get_git_diff(commit_hash, file_path)
-    else:
-        diff_content = get_uncommitted_changes(file_path)
+    # Apply git-based filtering if requested
+    if filter_by_git:
+        # Get git diff content using existing collect_git_context patterns
+        if commit_hash:
+            diff_content = get_git_diff(commit_hash, file_path)
+        else:
+            diff_content = get_uncommitted_changes(file_path)
+        
+        # Apply filtering with configurable parameters
+        min_score = config.get('min_relevance_score', 0.3) if config else 0.3
+        context_window = config.get('context_window', 2) if config else 2
+        
+        return filter_chat_by_git_relevance(chat_history, diff_content, min_score, context_window)
     
-    # Filter chat history based on diff content
-    min_score = config.get('min_relevance_score', 0.3) if config else 0.3
-    context_window = config.get('context_window', 2) if config else 2
-    
-    return filter_chat_by_git_diff(chat_history, diff_content, min_score, context_window)
+    # Return unfiltered chat history if filtering not requested
+    return chat_history
 ```
 
-The implementation should handle edge cases such as:
-- Empty git diffs or chat history
-- Irrelevant chat content (returning empty results)
-- Configurable relevance thresholds and context windows
-- Proper error handling for git command failures
-
-The code should be optimized for performance, especially for large chat histories, by using efficient data structures and algorithms.
+The implementation should:
+- Preserve backward compatibility by making filtering optional
+- Integrate with existing git context collection patterns
+- Handle edge cases such as empty git diffs or chat history
+- Support configurable relevance thresholds and context windows
+- Include proper error handling for git command failures
+- Be optimized for performance with large chat histories
 
 # Test Strategy:
 To verify the correct implementation of the Git-Driven Chat Parsing functionality:
@@ -205,35 +211,44 @@ To verify the correct implementation of the Git-Driven Chat Parsing functionalit
 
 3. **Integration Tests for Filtering Logic**:
    - Create mock chat history and git diff content
-   - Verify that `filter_chat_by_git_diff` correctly:
+   - Verify that `filter_chat_by_git_relevance` correctly:
      - Identifies relevant messages based on scoring
      - Includes appropriate context window messages
      - Creates continuous segments when relevant messages are close
      - Returns empty list for irrelevant chat history
+     - Returns original chat history when diff content is empty
 
-4. **End-to-End Tests**:
-   - Test the `get_relevant_chat_history` function with:
+4. **Backward Compatibility Tests**:
+   - Verify that `collect_chat_history` works exactly as before when `filter_by_git=False`
+   - Ensure no regression in existing functionality
+   - Test with various combinations of parameters to ensure all paths work correctly
+
+5. **End-to-End Tests**:
+   - Test the modified `collect_chat_history` function with:
+     - `filter_by_git=True` and various other parameters
      - Real commit hashes from the project repository
-     - Various configuration options (min_score, context_window)
-     - Different file paths to filter specific changes
+     - Different configuration options (min_score, context_window)
+     - Various file paths to filter specific changes
    - Verify that the returned chat segments are actually relevant to the code changes
 
-5. **Performance Testing**:
+6. **Performance Testing**:
    - Measure execution time with large chat histories (1000+ messages)
+   - Compare performance with and without filtering
    - Ensure memory usage remains reasonable with large inputs
    - Verify that the implementation scales linearly with input size
 
-6. **Manual Verification**:
+7. **Manual Verification**:
    - Perform manual review of filtered results for a set of real commits
    - Compare the filtered chat segments with the complete history to verify relevance
    - Adjust relevance thresholds based on manual verification results
 
-7. **Error Handling Tests**:
+8. **Error Handling Tests**:
    - Test with invalid commit hashes
    - Test with non-existent file paths
    - Verify proper error messages and graceful failure modes
+   - Ensure the system degrades gracefully when filtering cannot be applied
 
-8. **Configuration Tests**:
+9. **Configuration Tests**:
    - Verify that different configuration values properly affect the filtering behavior
    - Test extreme configuration values (very high/low thresholds, large context windows)
 

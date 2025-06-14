@@ -3,11 +3,11 @@
 # Status: pending
 # Dependencies: None
 # Priority: medium
-# Description: Create the functionality to generate daily, weekly, monthly, quarterly, and yearly summaries of journal entries, with special emphasis on manual reflections.
+# Description: Refactor and extend the existing functionality to generate daily, weekly, monthly, quarterly, and yearly summaries of journal entries, with special emphasis on manual reflections.
 # Details:
-Implement summary generation in the MCP server with the following features:
+Refactor and extend the existing summary generation in the MCP server with the following features:
 
-1. Date range utilities:
+1. Refactor date range utilities to support all periods:
 ```python
 def get_date_range(period, date=None):
     """Get start and end dates for a period"""
@@ -50,7 +50,7 @@ def get_date_range(period, date=None):
         raise ValueError(f"Unknown period: {period}")
 ```
 
-2. Journal file collection:
+2. Extend journal file collection to support all periods:
 ```python
 def get_journal_files_in_range(start_date, end_date, config):
     """Get journal files in date range"""
@@ -64,7 +64,7 @@ def get_journal_files_in_range(start_date, end_date, config):
     return files
 ```
 
-3. Summary generation with manual reflection prioritization:
+3. Enhance existing summary generation with improved manual reflection prioritization:
 ```python
 def generate_summary(files, period, config):
     """Generate summary from journal files"""
@@ -188,7 +188,7 @@ def calculate_entry_significance(entry):
     return max(score, 0)  # Ensure score doesn't go negative
 ```
 
-4. Summary file saving:
+4. Extend summary file saving to support all periods:
 ```python
 def save_summary(content, period, date, config):
     """Save summary to appropriate file"""
@@ -227,7 +227,7 @@ def save_summary(content, period, date, config):
     return file_path
 ```
 
-5. MCP handler implementation:
+5. Extend existing MCP handler implementation:
 ```python
 @trace_operation("journal_summarize")
 async def handle_summarize(request):
@@ -266,7 +266,7 @@ async def handle_summarize(request):
     }
 ```
 
-6. Directory creation utility:
+6. Ensure directory creation utility is properly used:
 ```python
 def ensure_journal_directory(dir_path):
     """Ensure the journal directory exists, creating it if necessary"""
@@ -282,15 +282,15 @@ def ensure_journal_directory(dir_path):
 - All summary-writing functions (including save_summary) must call ensure_journal_directory(file_path) before writing
 - See docs/on-demand-directory-pattern.md for implementation details and test patterns
 
-8. Manual reflection prioritization:
+8. Enhanced manual reflection prioritization:
 - Manual reflections must be prominently displayed at the beginning of summaries
 - Use visual distinction (emoji, formatting) to highlight manual reflections
 - Include date context for each reflection
 - Preserve the original wording of manual reflections
-- Implement reflection extraction from common section patterns
+- Enhance existing reflection extraction from common section patterns
 - Ensure manual reflections are always prioritized over inferred content
 
-Note: This implementation focuses solely on MCP/AI agent operations for summary generation. CLI functionality is limited to setup commands (journal-init, install-hook) only. Refer to updated documentation for details.
+Note: This refactoring focuses on extending the existing functionality in src/mcp_commit_story/daily_summary.py to support all time periods. The existing journal section generators in journal.py should be leveraged rather than reimplemented. The MCP operations should be extended rather than created from scratch.
 
 # Test Strategy:
 1. Unit tests for date range utilities
@@ -343,19 +343,19 @@ Note: This implementation focuses solely on MCP/AI agent operations for summary 
     - Test with entries at quarter boundaries
 
 # Subtasks:
-## 11.1. Implement entry significance calculation [pending]
+## 11.1. Extend existing entry significance calculation [pending]
 ### Dependencies: None
-### Description: Create the algorithm to analyze journal entries and assign significance scores based on content analysis.
+### Description: Enhance the existing algorithm to analyze journal entries and assign significance scores based on content analysis.
 ### Details:
 
 
-## 11.2. Modify summary generation to prioritize significant entries [pending]
+## 11.2. Enhance summary generation to prioritize significant entries [pending]
 ### Dependencies: None
-### Description: Update the summary generation logic to give more narrative weight to entries with higher significance scores.
+### Description: Update the existing summary generation logic to give more narrative weight to entries with higher significance scores.
 ### Details:
 
 
-## 11.3. Create test cases for entry significance calculation [pending]
+## 11.3. Create test cases for enhanced entry significance calculation [pending]
 ### Dependencies: None
 ### Description: Develop test cases with various types of entries (substantial, trivial, mixed) to verify proper significance scoring.
 ### Details:
@@ -363,7 +363,7 @@ Note: This implementation focuses solely on MCP/AI agent operations for summary 
 
 ## 11.4. Test summary prioritization with real-world examples [pending]
 ### Dependencies: None
-### Description: Test the summary generation with a set of real-world journal entries to ensure meaningful work is properly highlighted.
+### Description: Test the enhanced summary generation with a set of real-world journal entries to ensure meaningful work is properly highlighted.
 ### Details:
 
 
@@ -403,15 +403,15 @@ Note: This implementation focuses solely on MCP/AI agent operations for summary 
 ### Details:
 
 
-## 11.11. Verify MCP operation for summarization [pending]
+## 11.11. Extend MCP operation for summarization [pending]
 ### Dependencies: None
-### Description: Ensure that summarization is properly implemented as an MCP operation and accessible to the AI agent.
+### Description: Extend the existing MCP operation to support all summary periods (daily, weekly, monthly, quarterly, yearly).
 ### Details:
 
 
-## 11.12. Test AI agent interaction with summarization [pending]
+## 11.12. Test AI agent interaction with extended summarization [pending]
 ### Dependencies: None
-### Description: Create tests to verify that the AI agent can properly request and process summary generation through the MCP server.
+### Description: Create tests to verify that the AI agent can properly request and process summary generation for all periods through the MCP server.
 ### Details:
 
 
@@ -427,19 +427,19 @@ Note: This implementation focuses solely on MCP/AI agent operations for summary 
 ### Details:
 
 
-## 11.15. Implement manual reflection extraction [pending]
+## 11.15. Enhance existing manual reflection extraction [pending]
 ### Dependencies: None
-### Description: Create functionality to extract manual reflections from journal entries using pattern matching for common section headers.
+### Description: Improve the existing functionality to extract manual reflections from journal entries using pattern matching for common section headers.
 ### Details:
 
 
-## 11.16. Implement manual reflection prioritization in summaries [pending]
+## 11.16. Enhance manual reflection prioritization in summaries [pending]
 ### Dependencies: None
 ### Description: Update summary generation to display manual reflections prominently at the beginning with visual distinction and date context.
 ### Details:
 
 
-## 11.17. Add tests for manual reflection extraction [pending]
+## 11.17. Add tests for enhanced manual reflection extraction [pending]
 ### Dependencies: None
 ### Description: Create tests to verify that manual reflections are correctly extracted from various section formats and positions.
 ### Details:
@@ -451,21 +451,21 @@ Note: This implementation focuses solely on MCP/AI agent operations for summary 
 ### Details:
 
 
-## 11.19. Implement quarterly summary support [pending]
+## 11.19. Implement weekly, monthly, quarterly and yearly summary support [pending]
 ### Dependencies: None
-### Description: Add support for generating quarterly summaries, including date range calculation and file naming conventions.
+### Description: Extend the existing daily summary functionality to support generating weekly, monthly, quarterly, and yearly summaries, including date range calculation and file naming conventions.
 ### Details:
 
 
-## 11.20. Create tests for quarterly summary generation [pending]
+## 11.20. Create tests for extended period summary generation [pending]
 ### Dependencies: None
-### Description: Develop tests to verify correct date range calculation, file naming, and content generation for quarterly summaries.
+### Description: Develop tests to verify correct date range calculation, file naming, and content generation for weekly, monthly, quarterly, and yearly summaries.
 ### Details:
 
 
-## 11.21. Update documentation to include quarterly summaries [pending]
+## 11.21. Update documentation to include all summary periods [pending]
 ### Dependencies: None
-### Description: Update relevant documentation to include information about quarterly summary generation and usage.
+### Description: Update relevant documentation to include information about weekly, monthly, quarterly, and yearly summary generation and usage.
 ### Details:
 
 
