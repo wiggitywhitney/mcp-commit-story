@@ -1,0 +1,217 @@
+# Task ID: 51
+# Title: Implement Journal/Capture-Context MCP Tool
+# Status: pending
+# Dependencies: 22, 50
+# Priority: high
+# Description: Create an MCP tool that allows users to manually capture context that will be included in future journal entries, enabling developers to add relevant information that might not be captured automatically.
+# Details:
+Implement the journal/capture-context MCP tool with the following components:
+
+1. **MCP Server Handler**:
+```python
+@trace_mcp_operation
+def handle_journal_capture_context(params, config):
+    """
+    Handle requests to capture manual context for journal entries.
+    
+    Args:
+        params (dict): Parameters including:
+            - text (str): The context text to capture
+            - tags (list, optional): List of tags to associate with the context
+        config (dict): Configuration dictionary
+        
+    Returns:
+        dict: Response with status and captured context details
+    """
+    try:
+        # Extract parameters
+        text = params.get("text")
+        if not text:
+            return {"status": "error", "message": "No context text provided"}
+            
+        tags = params.get("tags", ["manual-context"])
+        if "manual-context" not in tags:
+            tags.append("manual-context")
+            
+        # Format the captured context
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        formatted_context = f"\n\n## Manual Context Capture ({timestamp})\n\n{text}\n\n"
+        formatted_context += f"Tags: {', '.join(tags)}\n"
+        
+        # Determine today's journal file path
+        journal_path = Path(config["journal"]["path"])
+        today = datetime.now().strftime("%Y-%m-%d")
+        journal_file = journal_path / f"{today}.md"
+        
+        # Create directory if it doesn't exist
+        journal_path.mkdir(parents=True, exist_ok=True)
+        
+        # Append context to today's journal file
+        with open(journal_file, "a+") as f:
+            f.write(formatted_context)
+            
+        return {
+            "status": "success",
+            "message": "Context captured successfully",
+            "file": str(journal_file),
+            "timestamp": timestamp,
+            "tags": tags
+        }
+    except Exception as e:
+        return {"status": "error", "message": f"Failed to capture context: {str(e)}"}
+```
+
+2. **Register the Handler in MCP Server**:
+Add the new handler to the server's tool registry in `src/mcp_commit_story/server.py`:
+```python
+def register_tools():
+    # ... existing tool registrations ...
+    
+    # Register the capture-context tool
+    register_tool(
+        "journal/capture-context",
+        "Capture manual context for journal entries",
+        handle_journal_capture_context,
+        [
+            {"name": "text", "type": "string", "description": "Context text to capture"},
+            {"name": "tags", "type": "array", "description": "Optional tags for the context", "required": False}
+        ]
+    )
+```
+
+3. **CLI Command Implementation**:
+Add a CLI command for capturing context in `src/mcp_commit_story/cli.py`:
+```python
+@cli.command()
+@click.argument("text")
+@click.option("--tags", "-t", multiple=True, help="Tags to associate with the context")
+def capture(text, tags):
+    """Capture manual context for journal entries."""
+    response = send_mcp_request("journal/capture-context", {
+        "text": text,
+        "tags": list(tags) if tags else ["manual-context"]
+    })
+    
+    if response.get("status") == "success":
+        click.echo(f"Context captured successfully in {response.get('file')}")
+    else:
+        click.echo(f"Error: {response.get('message')}", err=True)
+```
+
+4. **Update Standalone Journal Generator**:
+Modify the standalone journal generator (from Task 50) to include captured context when generating entries:
+```python
+def collect_recent_manual_context(days=1):
+    """
+    Collect manual context captured in recent journal entries.
+    
+    Args:
+        days (int): Number of days to look back for context
+        
+    Returns:
+        str: Concatenated manual context entries
+    """
+    journal_path = Path(config["journal"]["path"])
+    context_entries = []
+    
+    # Get dates for the lookback period
+    today = datetime.now().date()
+    date_range = [today - timedelta(days=i) for i in range(days)]
+    
+    # Check each date's journal file for manual context
+    for date in date_range:
+        date_str = date.strftime("%Y-%m-%d")
+        journal_file = journal_path / f"{date_str}.md"
+        
+        if journal_file.exists():
+            with open(journal_file, "r") as f:
+                content = f.read()
+                
+            # Extract manual context sections using regex
+            manual_contexts = re.findall(r"## Manual Context Capture \(.*?\)(.*?)(?=\n## |\Z)", 
+                                        content, re.DOTALL)
+            
+            if manual_contexts:
+                for context in manual_contexts:
+                    context_entries.append(context.strip())
+    
+    return "\n\n".join(context_entries)
+```
+
+5. **Integration with Journal Generation**:
+Update the journal generation function to include the captured context:
+```python
+def generate_journal_entry(commit_info, config):
+    """Generate a journal entry for a commit"""
+    # ... existing code ...
+    
+    # Add manual context if available
+    recent_context = collect_recent_manual_context()
+    if recent_context:
+        prompt_parts.append("\nRecently captured manual context:")
+        prompt_parts.append(recent_context)
+    
+    # ... continue with existing generation code ...
+```
+
+# Test Strategy:
+To verify the correct implementation of the journal/capture-context MCP tool:
+
+1. **Unit Tests**:
+   - Create unit tests for the `handle_journal_capture_context` function:
+     ```python
+     def test_handle_journal_capture_context():
+         # Test with valid parameters
+         result = handle_journal_capture_context({"text": "Test context"}, test_config)
+         assert result["status"] == "success"
+         assert "file" in result
+         
+         # Test with empty text
+         result = handle_journal_capture_context({"text": ""}, test_config)
+         assert result["status"] == "error"
+         
+         # Test with custom tags
+         result = handle_journal_capture_context({"text": "Test with tags", "tags": ["important", "meeting"]}, test_config)
+         assert "manual-context" in result["tags"]
+         assert "important" in result["tags"]
+     ```
+
+2. **Integration Tests**:
+   - Test the MCP server handler registration:
+     ```python
+     def test_capture_context_tool_registration():
+         tools = get_registered_tools()
+         assert "journal/capture-context" in tools
+     ```
+   
+   - Test the CLI command:
+     ```python
+     def test_capture_cli_command():
+         runner = CliRunner()
+         result = runner.invoke(cli, ["capture", "Test context from CLI"])
+         assert "Context captured successfully" in result.output
+         
+         # Test with tags
+         result = runner.invoke(cli, ["capture", "Test with tags", "-t", "important", "-t", "meeting"])
+         assert "Context captured successfully" in result.output
+     ```
+
+3. **Manual Testing**:
+   - Execute the following test scenarios:
+     1. Capture context with the CLI command: `mcp-commit-story capture "This is important context for today's work"`
+     2. Verify the context is appended to today's journal file
+     3. Capture context with tags: `mcp-commit-story capture "Meeting notes" -t meeting -t important`
+     4. Verify the context with tags is correctly formatted in the journal file
+     5. Generate a journal entry after capturing context and verify the context is included
+     6. Test the MCP API directly: `curl -X POST http://localhost:5000/api/tool/journal/capture-context -d '{"text":"API test context"}'`
+
+4. **File System Verification**:
+   - Check that the journal directory is created if it doesn't exist
+   - Verify that context is properly appended to existing journal files
+   - Ensure the timestamp and tags are correctly formatted
+
+5. **Standalone Generator Integration Test**:
+   - Capture context using the tool
+   - Run the standalone journal generator
+   - Verify that the generated journal entry includes the captured context
+   - Test with multiple days of context to ensure the lookback period works correctly

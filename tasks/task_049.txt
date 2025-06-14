@@ -1,0 +1,240 @@
+# Task ID: 49
+# Title: Implement Git-Driven Chat Parsing
+# Status: pending
+# Dependencies: 48
+# Priority: high
+# Description: Create a function that intelligently filters chat history based on git diff content to find only relevant discussions related to code changes.
+# Details:
+This task implements a sophisticated chat filtering system that uses git diff information to identify relevant chat segments:
+
+1. **Extract Keywords from Git Diffs**:
+```python
+def extract_keywords_from_diff(diff_content):
+    """
+    Extract meaningful keywords, function names, and concepts from git diff content.
+    
+    Args:
+        diff_content (str): The raw git diff content
+        
+    Returns:
+        list: Extracted keywords, function names, and concepts
+    """
+    keywords = []
+    
+    # Extract function/method names (lines starting with + or - and containing def or function)
+    function_pattern = r'[+-].*(?:def|function)\s+(\w+)'
+    functions = re.findall(function_pattern, diff_content)
+    keywords.extend(functions)
+    
+    # Extract class names
+    class_pattern = r'[+-].*class\s+(\w+)'
+    classes = re.findall(class_pattern, diff_content)
+    keywords.extend(classes)
+    
+    # Extract variable names with meaningful context
+    var_pattern = r'[+-].*(\w+)\s*='
+    variables = re.findall(var_pattern, diff_content)
+    keywords.extend([v for v in variables if len(v) > 3])  # Filter out short variable names
+    
+    # Extract file paths and names
+    file_pattern = r'(?:---|\+\+\+)\s+(?:a/|b/)?(.+)'
+    files = re.findall(file_pattern, diff_content)
+    keywords.extend([os.path.basename(f) for f in files])
+    
+    # Remove duplicates and common programming keywords
+    common_words = {'self', 'None', 'True', 'False', 'return', 'import', 'from', 'as'}
+    keywords = [k for k in keywords if k not in common_words]
+    
+    return list(set(keywords))
+```
+
+2. **Score Chat Relevance**:
+```python
+def score_chat_relevance(chat_message, keywords, threshold=0.3):
+    """
+    Score the relevance of a chat message based on extracted keywords.
+    
+    Args:
+        chat_message (dict): The chat message to score
+        keywords (list): Keywords extracted from git diff
+        threshold (float): Minimum score to consider relevant
+        
+    Returns:
+        float: Relevance score between 0 and 1
+    """
+    if not keywords or not chat_message.get('content'):
+        return 0.0
+    
+    content = chat_message['content'].lower()
+    
+    # Basic keyword matching
+    direct_matches = sum(1 for kw in keywords if kw.lower() in content)
+    
+    # Use NLP techniques for semantic matching
+    # This could be enhanced with embeddings or more sophisticated NLP
+    words = re.findall(r'\w+', content)
+    word_matches = sum(1 for kw in keywords for w in words 
+                      if (kw.lower() in w.lower() or w.lower() in kw.lower()) 
+                      and len(w) > 3)
+    
+    # Calculate final score
+    total_keywords = len(keywords)
+    if total_keywords == 0:
+        return 0.0
+        
+    score = (direct_matches * 0.7 + word_matches * 0.3) / total_keywords
+    
+    return score if score >= threshold else 0.0
+```
+
+3. **Filter Chat History**:
+```python
+@trace_mcp_operation
+def filter_chat_by_git_diff(chat_history, diff_content, min_score=0.3, context_window=2):
+    """
+    Filter chat history based on git diff content to find relevant discussions.
+    
+    Args:
+        chat_history (list): Complete chat history from collect_chat_history()
+        diff_content (str): Git diff content
+        min_score (float): Minimum relevance score threshold
+        context_window (int): Number of messages to include before/after relevant ones
+        
+    Returns:
+        list: Filtered chat segments relevant to the code changes
+    """
+    if not chat_history or not diff_content:
+        return []
+    
+    # Extract keywords from diff
+    keywords = extract_keywords_from_diff(diff_content)
+    
+    # Score each message
+    scored_messages = []
+    for i, message in enumerate(chat_history):
+        score = score_chat_relevance(message, keywords, min_score)
+        scored_messages.append((i, message, score))
+    
+    # Identify relevant message clusters
+    relevant_indices = set()
+    for i, message, score in scored_messages:
+        if score >= min_score:
+            # Add the message and its context window
+            for j in range(max(0, i - context_window), min(len(chat_history), i + context_window + 1)):
+                relevant_indices.add(j)
+    
+    # Create continuous segments
+    if not relevant_indices:
+        return []
+        
+    relevant_indices = sorted(relevant_indices)
+    segments = []
+    current_segment = []
+    
+    for i in range(len(chat_history)):
+        if i in relevant_indices:
+            current_segment.append(chat_history[i])
+        elif current_segment:
+            segments.append(current_segment)
+            current_segment = []
+    
+    if current_segment:
+        segments.append(current_segment)
+    
+    return segments
+```
+
+4. **Integration with Existing System**:
+```python
+@trace_mcp_operation
+def get_relevant_chat_history(commit_hash=None, file_path=None, config=None):
+    """
+    Get chat history relevant to specific git changes.
+    
+    Args:
+        commit_hash (str): Optional commit hash to analyze
+        file_path (str): Optional specific file to focus on
+        config (dict): Configuration options
+        
+    Returns:
+        list: Filtered chat segments relevant to the code changes
+    """
+    # Get complete chat history
+    chat_history = collect_chat_history(commit_hash, config)
+    
+    # Get git diff content
+    if commit_hash:
+        diff_content = get_git_diff(commit_hash, file_path)
+    else:
+        diff_content = get_uncommitted_changes(file_path)
+    
+    # Filter chat history based on diff content
+    min_score = config.get('min_relevance_score', 0.3) if config else 0.3
+    context_window = config.get('context_window', 2) if config else 2
+    
+    return filter_chat_by_git_diff(chat_history, diff_content, min_score, context_window)
+```
+
+The implementation should handle edge cases such as:
+- Empty git diffs or chat history
+- Irrelevant chat content (returning empty results)
+- Configurable relevance thresholds and context windows
+- Proper error handling for git command failures
+
+The code should be optimized for performance, especially for large chat histories, by using efficient data structures and algorithms.
+
+# Test Strategy:
+To verify the correct implementation of the Git-Driven Chat Parsing functionality:
+
+1. **Unit Tests for Keyword Extraction**:
+   - Create test cases with sample git diffs containing various code constructs (functions, classes, variables)
+   - Verify that the `extract_keywords_from_diff` function correctly identifies and extracts:
+     - Function names (both additions and deletions)
+     - Class names
+     - Meaningful variable names
+     - File paths and names
+   - Test with empty diffs, large diffs, and diffs with special characters
+
+2. **Unit Tests for Relevance Scoring**:
+   - Create test cases with predefined keywords and various chat messages
+   - Verify that `score_chat_relevance` correctly scores messages:
+     - High scores for messages containing exact keyword matches
+     - Moderate scores for messages with partial or semantic matches
+     - Zero scores for completely irrelevant messages
+   - Test edge cases: empty keywords, empty messages, very long messages
+
+3. **Integration Tests for Filtering Logic**:
+   - Create mock chat history and git diff content
+   - Verify that `filter_chat_by_git_diff` correctly:
+     - Identifies relevant messages based on scoring
+     - Includes appropriate context window messages
+     - Creates continuous segments when relevant messages are close
+     - Returns empty list for irrelevant chat history
+
+4. **End-to-End Tests**:
+   - Test the `get_relevant_chat_history` function with:
+     - Real commit hashes from the project repository
+     - Various configuration options (min_score, context_window)
+     - Different file paths to filter specific changes
+   - Verify that the returned chat segments are actually relevant to the code changes
+
+5. **Performance Testing**:
+   - Measure execution time with large chat histories (1000+ messages)
+   - Ensure memory usage remains reasonable with large inputs
+   - Verify that the implementation scales linearly with input size
+
+6. **Manual Verification**:
+   - Perform manual review of filtered results for a set of real commits
+   - Compare the filtered chat segments with the complete history to verify relevance
+   - Adjust relevance thresholds based on manual verification results
+
+7. **Error Handling Tests**:
+   - Test with invalid commit hashes
+   - Test with non-existent file paths
+   - Verify proper error messages and graceful failure modes
+
+8. **Configuration Tests**:
+   - Verify that different configuration values properly affect the filtering behavior
+   - Test extreme configuration values (very high/low thresholds, large context windows)
+
+Document all test results and any adjustments made to the implementation based on test findings.

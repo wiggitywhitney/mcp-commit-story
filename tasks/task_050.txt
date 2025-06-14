@@ -1,0 +1,527 @@
+# Task ID: 50
+# Title: Create Standalone Journal Generator
+# Status: pending
+# Dependencies: 48, 49
+# Priority: high
+# Description: Implement a non-MCP journal generation function that runs from git hooks without requiring signals or MCP server, collecting git context directly and generating journal entries silently in the background.
+# Details:
+This task implements a standalone journal generation function that operates independently of the MCP server architecture:
+
+1. **Create the Core Standalone Journal Generator Function**:
+```python
+def generate_journal_standalone(git_context=None):
+    """
+    Generate journal entries without requiring MCP server or signals.
+    
+    Args:
+        git_context: Optional git context dictionary. If None, will be collected automatically.
+        
+    Returns:
+        bool: Success status of journal generation
+    """
+    try:
+        # Collect git context if not provided
+        if git_context is None:
+            git_context = collect_git_context()
+            
+        # Extract relevant chat history using git-driven parsing
+        chat_history = parse_git_relevant_chats(git_context)
+        
+        # Load existing journal files
+        journal_context = load_journal_context()
+        
+        # Load project overview/README
+        project_context = load_project_overview()
+        
+        # Prepare complete context for AI
+        full_context = {
+            'git_context': git_context,
+            'chat_history': chat_history,
+            'journal_context': journal_context,
+            'project_context': project_context
+        }
+        
+        # Invoke AI agent with context
+        journal_entry = generate_ai_journal_entry(full_context)
+        
+        # Write to journal file
+        success = write_journal_entry(journal_entry)
+        
+        return success
+    except Exception as e:
+        # Log error but don't raise - this runs in background
+        log_error(f"Standalone journal generation failed: {str(e)}")
+        return False
+```
+
+2. **Implement Git Context Collection**:
+```python
+def collect_git_context():
+    """
+    Collect git context directly without requiring MCP server.
+    
+    Returns:
+        dict: Git context information
+    """
+    git_context = {
+        'commit_hash': subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('utf-8').strip(),
+        'branch': subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).decode('utf-8').strip(),
+        'diff': subprocess.check_output(['git', 'diff', 'HEAD~1']).decode('utf-8'),
+        'commit_message': subprocess.check_output(['git', 'log', '-1', '--pretty=%B']).decode('utf-8'),
+        'author': subprocess.check_output(['git', 'log', '-1', '--pretty=%an']).decode('utf-8').strip(),
+        'timestamp': subprocess.check_output(['git', 'log', '-1', '--pretty=%at']).decode('utf-8').strip()
+    }
+    return git_context
+```
+
+3. **Implement Journal Context Loading**:
+```python
+def load_journal_context():
+    """
+    Load today's journal file if it exists plus the two most recent daily journal files.
+    
+    Returns:
+        dict: Journal context information
+    """
+    today = datetime.now().strftime('%Y-%m-%d')
+    journal_dir = os.path.join(get_project_root(), 'journal')
+    
+    # Get today's journal if it exists
+    today_journal = None
+    today_path = os.path.join(journal_dir, f"{today}.md")
+    if os.path.exists(today_path):
+        with open(today_path, 'r') as f:
+            today_journal = f.read()
+    
+    # Get two most recent journal files
+    journal_files = sorted([f for f in os.listdir(journal_dir) if f.endswith('.md') and f != f"{today}.md"], reverse=True)
+    recent_journals = []
+    
+    for journal_file in journal_files[:2]:
+        with open(os.path.join(journal_dir, journal_file), 'r') as f:
+            recent_journals.append({
+                'date': journal_file.replace('.md', ''),
+                'content': f.read()
+            })
+    
+    return {
+        'today': today_journal,
+        'recent': recent_journals
+    }
+```
+
+4. **Implement Project Overview Loading**:
+```python
+def load_project_overview():
+    """
+    Load project overview/README as context.
+    
+    Returns:
+        str: Project overview content
+    """
+    project_root = get_project_root()
+    readme_paths = [
+        os.path.join(project_root, 'README.md'),
+        os.path.join(project_root, 'readme.md'),
+        os.path.join(project_root, 'README.txt'),
+        os.path.join(project_root, 'project_overview.md')
+    ]
+    
+    for path in readme_paths:
+        if os.path.exists(path):
+            with open(path, 'r') as f:
+                return f.read()
+    
+    return "No project overview found."
+```
+
+5. **Implement AI Journal Entry Generation**:
+```python
+def generate_ai_journal_entry(context):
+    """
+    Invoke a fresh AI agent with all context to generate journal entry.
+    
+    Args:
+        context: Complete context dictionary
+        
+    Returns:
+        str: Generated journal entry
+    """
+    # Configure AI prompt
+    prompt = f"""
+    Generate a detailed journal entry based on the following context:
+    
+    1. Git Changes:
+    - Commit: {context['git_context']['commit_hash']}
+    - Message: {context['git_context']['commit_message']}
+    - Branch: {context['git_context']['branch']}
+    - Changes: {summarize_diff(context['git_context']['diff'])}
+    
+    2. Relevant Chat History:
+    {format_chat_history(context['chat_history'])}
+    
+    3. Recent Journal Context:
+    {format_journal_context(context['journal_context'])}
+    
+    4. Project Overview:
+    {summarize_text(context['project_context'], max_length=500)}
+    
+    Create a comprehensive journal entry that includes:
+    - Summary of changes made
+    - Key decisions and their rationale
+    - Technical challenges encountered and solutions
+    - Next steps or future considerations
+    """
+    
+    # Call AI service (implementation will vary based on chosen AI provider)
+    ai_response = call_ai_service(prompt)
+    
+    return format_journal_entry(ai_response)
+```
+
+6. **Implement Journal Writing Function**:
+```python
+def write_journal_entry(journal_entry):
+    """
+    Write the generated journal entry to the appropriate file.
+    
+    Args:
+        journal_entry: Generated journal content
+        
+    Returns:
+        bool: Success status
+    """
+    today = datetime.now().strftime('%Y-%m-%d')
+    journal_dir = os.path.join(get_project_root(), 'journal')
+    
+    # Create journal directory if it doesn't exist
+    os.makedirs(journal_dir, exist_ok=True)
+    
+    journal_path = os.path.join(journal_dir, f"{today}.md")
+    
+    # Append to today's journal if it exists, otherwise create new file
+    mode = 'a' if os.path.exists(journal_path) else 'w'
+    
+    try:
+        with open(journal_path, mode) as f:
+            # Add timestamp if appending
+            if mode == 'a':
+                f.write(f"\n\n## Entry at {datetime.now().strftime('%H:%M:%S')}\n\n")
+            else:
+                f.write(f"# Journal for {today}\n\n## Entry at {datetime.now().strftime('%H:%M:%S')}\n\n")
+            
+            f.write(journal_entry)
+        return True
+    except Exception as e:
+        log_error(f"Failed to write journal entry: {str(e)}")
+        return False
+```
+
+7. **Create Git Hook Installation Function**:
+```python
+def install_git_hooks():
+    """
+    Install git hooks to trigger journal generation automatically.
+    
+    Returns:
+        bool: Success status
+    """
+    project_root = get_project_root()
+    hooks_dir = os.path.join(project_root, '.git', 'hooks')
+    
+    # Create post-commit hook
+    hook_path = os.path.join(hooks_dir, 'post-commit')
+    
+    hook_content = """#!/bin/sh
+# Auto-generated journal hook
+python -c "from journal_generator import generate_journal_standalone; generate_journal_standalone()"
+"""
+    
+    try:
+        with open(hook_path, 'w') as f:
+            f.write(hook_content)
+        
+        # Make hook executable
+        os.chmod(hook_path, 0o755)
+        return True
+    except Exception as e:
+        log_error(f"Failed to install git hooks: {str(e)}")
+        return False
+```
+
+8. **Create Command-Line Interface for Manual Triggering**:
+```python
+def main():
+    """Command-line interface for standalone journal generator"""
+    parser = argparse.ArgumentParser(description='Generate journal entries without MCP server')
+    parser.add_argument('--install-hooks', action='store_true', help='Install git hooks for automatic journal generation')
+    parser.add_argument('--generate', action='store_true', help='Generate journal entry now')
+    
+    args = parser.parse_args()
+    
+    if args.install_hooks:
+        success = install_git_hooks()
+        print(f"Git hooks installation {'successful' if success else 'failed'}")
+    
+    if args.generate:
+        success = generate_journal_standalone()
+        print(f"Journal generation {'successful' if success else 'failed'}")
+        
+    if not args.install_hooks and not args.generate:
+        parser.print_help()
+
+if __name__ == "__main__":
+    main()
+```
+
+9. **Integration with Existing Chat Collection Functions**:
+```python
+def parse_git_relevant_chats(git_context):
+    """
+    Use the git-driven chat parsing to find relevant discussions.
+    
+    Args:
+        git_context: Git context information
+        
+    Returns:
+        list: Relevant chat history
+    """
+    # Reuse the existing chat collection and parsing functions
+    from chat_collector import collect_chat_history
+    from git_chat_parser import filter_chats_by_git_context
+    
+    # Get all chat history
+    all_chats = collect_chat_history()
+    
+    # Filter based on git context
+    relevant_chats = filter_chats_by_git_context(all_chats, git_context)
+    
+    return relevant_chats
+```
+
+# Test Strategy:
+To verify the standalone journal generator is working correctly:
+
+1. **Unit Testing Core Functions**:
+   - Create unit tests for each component function:
+     ```python
+     def test_collect_git_context():
+         # Mock git commands to return predictable output
+         with patch('subprocess.check_output') as mock_git:
+             mock_git.side_effect = [
+                 b'abc123\n',  # commit hash
+                 b'feature-branch\n',  # branch
+                 b'diff --git a/file.py b/file.py\n...',  # diff
+                 b'Commit message\n',  # commit message
+                 b'Test User\n',  # author
+                 b'1609459200\n'  # timestamp
+             ]
+             
+             context = collect_git_context()
+             
+             assert context['commit_hash'] == 'abc123'
+             assert context['branch'] == 'feature-branch'
+             assert 'diff --git' in context['diff']
+             assert context['commit_message'] == 'Commit message\n'
+             assert context['author'] == 'Test User'
+             assert context['timestamp'] == '1609459200'
+     ```
+
+2. **Test Journal Context Loading**:
+   - Create a test with mock journal files:
+     ```python
+     def test_load_journal_context():
+         # Create temporary journal directory with test files
+         with tempfile.TemporaryDirectory() as temp_dir:
+             # Mock get_project_root to return temp_dir
+             with patch('journal_generator.get_project_root', return_value=temp_dir):
+                 journal_dir = os.path.join(temp_dir, 'journal')
+                 os.makedirs(journal_dir)
+                 
+                 # Create test journal files
+                 today = datetime.now().strftime('%Y-%m-%d')
+                 yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+                 day_before = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
+                 
+                 with open(os.path.join(journal_dir, f"{today}.md"), 'w') as f:
+                     f.write("Today's journal")
+                 with open(os.path.join(journal_dir, f"{yesterday}.md"), 'w') as f:
+                     f.write("Yesterday's journal")
+                 with open(os.path.join(journal_dir, f"{day_before}.md"), 'w') as f:
+                     f.write("Day before's journal")
+                 
+                 # Test function
+                 context = load_journal_context()
+                 
+                 assert context['today'] == "Today's journal"
+                 assert len(context['recent']) == 2
+                 assert context['recent'][0]['date'] == yesterday
+                 assert context['recent'][0]['content'] == "Yesterday's journal"
+     ```
+
+3. **Test AI Integration**:
+   - Mock the AI service call:
+     ```python
+     def test_generate_ai_journal_entry():
+         test_context = {
+             'git_context': {
+                 'commit_hash': 'abc123',
+                 'commit_message': 'Test commit',
+                 'branch': 'test-branch',
+                 'diff': 'test diff content'
+             },
+             'chat_history': ['Chat 1', 'Chat 2'],
+             'journal_context': {
+                 'today': 'Today content',
+                 'recent': [{'date': '2023-01-01', 'content': 'Recent content'}]
+             },
+             'project_context': 'Project overview'
+         }
+         
+         # Mock AI service call
+         with patch('journal_generator.call_ai_service', return_value="Generated journal content"):
+             entry = generate_ai_journal_entry(test_context)
+             assert "Generated journal content" in entry
+     ```
+
+4. **Integration Test for Full Process**:
+   - Test the complete standalone generation process:
+     ```python
+     def test_generate_journal_standalone():
+         # Mock all component functions
+         with patch('journal_generator.collect_git_context') as mock_git, \
+              patch('journal_generator.parse_git_relevant_chats') as mock_parse, \
+              patch('journal_generator.load_journal_context') as mock_journal, \
+              patch('journal_generator.load_project_overview') as mock_project, \
+              patch('journal_generator.generate_ai_journal_entry') as mock_ai, \
+              patch('journal_generator.write_journal_entry') as mock_write:
+             
+             # Configure mocks
+             mock_git.return_value = {'commit_hash': 'test123'}
+             mock_parse.return_value = ['Relevant chat']
+             mock_journal.return_value = {'today': None, 'recent': []}
+             mock_project.return_value = 'Project overview'
+             mock_ai.return_value = 'Generated journal entry'
+             mock_write.return_value = True
+             
+             # Run function
+             result = generate_journal_standalone()
+             
+             # Verify all components were called
+             mock_git.assert_called_once()
+             mock_parse.assert_called_once()
+             mock_journal.assert_called_once()
+             mock_project.assert_called_once()
+             mock_ai.assert_called_once()
+             mock_write.assert_called_once_with('Generated journal entry')
+             
+             assert result is True
+     ```
+
+5. **Git Hook Installation Test**:
+   - Test the hook installation process:
+     ```python
+     def test_install_git_hooks():
+         with tempfile.TemporaryDirectory() as temp_dir:
+             # Create fake .git directory
+             git_dir = os.path.join(temp_dir, '.git')
+             hooks_dir = os.path.join(git_dir, 'hooks')
+             os.makedirs(hooks_dir)
+             
+             # Mock get_project_root
+             with patch('journal_generator.get_project_root', return_value=temp_dir):
+                 result = install_git_hooks()
+                 
+                 # Verify hook was created
+                 hook_path = os.path.join(hooks_dir, 'post-commit')
+                 assert os.path.exists(hook_path)
+                 
+                 # Verify hook content
+                 with open(hook_path, 'r') as f:
+                     content = f.read()
+                     assert 'generate_journal_standalone' in content
+                 
+                 # Verify permissions
+                 assert os.access(hook_path, os.X_OK)
+                 
+                 assert result is True
+     ```
+
+6. **Manual Testing with Git Commits**:
+   1. Install the git hooks using the CLI tool
+   2. Make a small code change and commit it
+   3. Verify that a journal entry was generated in the journal directory
+   4. Check that the journal entry contains relevant information about the commit
+
+7. **Error Handling Test**:
+   - Test graceful failure when components fail:
+     ```python
+     def test_error_handling():
+         # Mock collect_git_context to raise an exception
+         with patch('journal_generator.collect_git_context', side_effect=Exception("Test error")), \
+              patch('journal_generator.log_error') as mock_log:
+             
+             result = generate_journal_standalone()
+             
+             # Verify error was logged but not raised
+             mock_log.assert_called_once()
+             assert "Test error" in mock_log.call_args[0][0]
+             assert result is False
+     ```
+
+8. **Performance Testing**:
+   - Measure execution time to ensure it's suitable for a git hook:
+     ```python
+     def test_performance():
+         start_time = time.time()
+         generate_journal_standalone()
+         execution_time = time.time() - start_time
+         
+         # Should complete in a reasonable time for a git hook
+         assert execution_time < 5.0  # 5 seconds max
+     ```
+
+9. **System Integration Test**:
+   - Test with actual Cursor chat database and git repository:
+     1. Set up a test repository with Cursor chat history
+     2. Make commits with associated chat discussions
+     3. Run the standalone generator
+     4. Verify journal entries contain relevant information from both git and chat history
+
+# Subtasks:
+## 1. Implement Git Context Collection Function [pending]
+### Dependencies: None
+### Description: Create a function that collects git context directly without requiring the MCP server, extracting information about the current commit, branch, diff, and other relevant git metadata.
+### Details:
+Implement the `collect_git_context()` function that uses subprocess calls to git commands to extract commit hash, branch name, diff from previous commit, commit message, author, and timestamp. Handle potential errors gracefully and ensure the function works across different operating systems. Include proper error handling for cases where git commands might fail.
+
+## 2. Create Journal Context Loading Functions [pending]
+### Dependencies: None
+### Description: Implement functions to load existing journal files, including today's journal if it exists and the two most recent daily journal files.
+### Details:
+Implement `load_journal_context()` to locate and read journal files from the project's journal directory. The function should handle cases where the journal directory doesn't exist yet or when there are no previous journal entries. Format the returned data as a dictionary with 'today' and 'recent' keys for easy access in the journal generation process.
+
+## 3. Implement Project Overview Loading [pending]
+### Dependencies: None
+### Description: Create a function to load the project overview or README file to provide context about the project for journal generation.
+### Details:
+Implement `load_project_overview()` to search for README.md, readme.md, README.txt, or project_overview.md files in the project root. Return the content of the first file found, or a default message if none exists. Include logic to handle different file encodings and potential read errors.
+
+## 4. Develop AI Journal Entry Generation [pending]
+### Dependencies: None
+### Description: Create a function that invokes an AI agent with the collected context to generate a comprehensive journal entry.
+### Details:
+Implement `generate_ai_journal_entry()` that constructs an appropriate prompt using the git context, chat history, journal context, and project overview. Include helper functions like `summarize_diff()`, `format_chat_history()`, `format_journal_context()`, and `summarize_text()` to properly format the input data. Implement the `call_ai_service()` function to interact with the chosen AI provider's API.
+
+## 5. Implement Core Standalone Journal Generator [pending]
+### Dependencies: None
+### Description: Create the main standalone journal generation function that orchestrates the entire process from context collection to journal writing.
+### Details:
+Implement `generate_journal_standalone()` as the main entry point that coordinates all the other functions. Include the journal writing functionality (`write_journal_entry()`) that handles creating the journal directory if needed, determining whether to create a new file or append to an existing one, and formatting the entry with appropriate timestamps. Implement proper error handling to ensure the function fails gracefully without disrupting the user's workflow.
+
+## 6. Create Git Hook Integration and CLI [pending]
+### Dependencies: None
+### Description: Implement git hook installation and a command-line interface for manual triggering of journal generation.
+### Details:
+Implement `install_git_hooks()` to create a post-commit hook that automatically triggers journal generation after each commit. Create a main function with argparse to provide a CLI for manual journal generation and hook installation. Include proper documentation in the CLI help text. Ensure the git hooks are made executable with appropriate permissions.
+

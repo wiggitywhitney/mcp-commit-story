@@ -1,0 +1,1270 @@
+# Task ID: 37
+# Title: Implement File Watcher Pattern for MCP Tool Signaling in Git Hook Worker
+# Status: pending
+# Dependencies: 13, 29
+# Priority: high
+# Description: Replace the placeholder call_mcp_tool() function in git_hook_worker.py with a file-based signaling mechanism that allows AI clients to autonomously discover and execute MCP tools for journal generation. Additionally, implement the MCP server entry point in __main__.py to support the python -m mcp_commit_story command.
+# Details:
+This task involves implementing a file-based signaling mechanism in the git hook worker to enable AI clients to discover and execute MCP tools, as well as creating a properly instrumented __main__.py file:
+
+1. **Update Signal Directory Structure**:
+   - Create a function to ensure the `.mcp-commit-story/signals/` directory exists:
+   ```python
+   def ensure_signal_directory():
+       """Create the signals directory if it doesn't exist."""
+       signal_dir = Path(".mcp-commit-story/signals")
+       signal_dir.mkdir(parents=True, exist_ok=True)
+       return signal_dir
+   ```
+
+2. **Signal File Creation**:
+   - Replace the placeholder `call_mcp_tool()` function with signal file creation:
+   ```python
+   def create_signal_file(commit_info, tool_request):
+       """Create a signal file for AI clients to discover."""
+       metrics = get_mcp_metrics()
+       
+       try:
+           signal_dir = ensure_signal_directory()
+           
+           # Generate unique signal file name with timestamp and commit hash
+           timestamp = int(time.time())
+           signal_file = signal_dir / f"{timestamp}_{commit_info['hash'][:8]}.json"
+           
+           # Prepare signal content
+           signal_data = {
+               "commit": commit_info,
+               "tool_request": tool_request,
+               "created_at": timestamp
+           }
+           
+           # Write signal file
+           with open(signal_file, "w") as f:
+               json.dump(signal_data, f, indent=2)
+               
+           metrics.record_counter("signal_file_created", 1)
+           logger.info(f"Created signal file: {signal_file}")
+           return signal_file
+       except Exception as e:
+           metrics.record_counter("signal_file_creation_error", 1)
+           logger.error(f"Failed to create signal file: {str(e)}")
+           # Graceful degradation - never block git operations
+           return None
+   ```
+
+3. **Update Git Hook Worker**:
+   - Modify the main worker function to use the new signal mechanism:
+   ```python
+   def process_commit(repo_path, commit_hash):
+       """Process a commit and create signal files for AI clients."""
+       metrics = get_mcp_metrics()
+       metrics.record_counter("commit_processed", 1)
+       
+       try:
+           # Get commit information
+           commit_info = get_commit_info(repo_path, commit_hash)
+           
+           # Create signal for journal entry generation
+           create_signal_file(commit_info, {
+               "tool": "journal/generate",
+               "params": {
+                   "commit_hash": commit_hash,
+                   "repo_path": repo_path
+               }
+           })
+           
+           # Success - return without blocking git
+           return True
+       except Exception as e:
+           metrics.record_counter("commit_processing_error", 1)
+           logger.error(f"Error processing commit: {str(e)}")
+           # Graceful degradation - never block git operations
+           return False
+   ```
+
+4. **Signal Format Documentation**:
+   - Add documentation for the signal file format:
+   ```python
+   """
+   Signal File Format:
+   {
+       "commit": {
+           "hash": "full_commit_hash",
+           "short_hash": "short_hash",
+           "author": "Author Name <email@example.com>",
+           "message": "Commit message",
+           "timestamp": 1234567890
+       },
+       "tool_request": {
+           "tool": "journal/generate",
+           "params": {
+               "commit_hash": "full_commit_hash",
+               "repo_path": "/path/to/repo"
+           }
+       },
+       "created_at": 1234567890
+   }
+   """
+   ```
+
+5. **Telemetry Integration**:
+   - Ensure comprehensive telemetry using existing patterns:
+   ```python
+   # Add these metrics to the existing telemetry
+   metrics.record_counter("signal_file_created", 1)
+   metrics.record_counter("signal_file_creation_error", 1)
+   metrics.record_gauge("signal_file_size_bytes", os.path.getsize(signal_file))
+   ```
+
+6. **Error Handling**:
+   - Implement robust error handling to ensure git operations are never blocked:
+   ```python
+   try:
+       # Signal creation logic
+   except Exception as e:
+       metrics.record_counter("signal_file_creation_error", 1)
+       logger.error(f"Failed to create signal file: {str(e)}")
+       # Continue without blocking git operations
+   ```
+
+7. **Cleanup Mechanism**:
+   - Add a function to clean up old signal files:
+   ```python
+   def cleanup_old_signals(max_age_hours=24):
+       """Remove signal files older than the specified age."""
+       try:
+           signal_dir = Path(".mcp-commit-story/signals")
+           if not signal_dir.exists():
+               return
+               
+           current_time = time.time()
+           max_age_seconds = max_age_hours * 3600
+           
+           for signal_file in signal_dir.glob("*.json"):
+               file_age = current_time - signal_file.stat().st_mtime
+               if file_age > max_age_seconds:
+                   signal_file.unlink()
+                   logger.debug(f"Removed old signal file: {signal_file}")
+       except Exception as e:
+           logger.error(f"Error cleaning up signal files: {str(e)}")
+   ```
+
+8. **MCP Server Entry Point Implementation**:
+   - Create `src/mcp_commit_story/__main__.py` as the official entry point:
+   ```python
+   #!/usr/bin/env python3
+   """MCP Commit Story Server Entry Point.
+
+   This module serves as the entry point for the MCP server when invoked via:
+   `python -m mcp_commit_story`
+   
+   It initializes the MCP server with stdio transport, loads configuration,
+   and provides proper error handling and telemetry.
+   """
+
+   import sys
+   import logging
+   import traceback
+   from typing import Optional, Dict, Any
+
+   from mcp_commit_story.config import load_config
+   from mcp_commit_story.telemetry import get_mcp_metrics, setup_telemetry
+   from mcp_commit_story.server import MCPServer
+   from mcp_commit_story.transport import StdioTransport
+
+   logger = logging.getLogger(__name__)
+
+   def main() -> int:
+       """Initialize and run the MCP server with stdio transport.
+
+       Returns:
+           int: Exit code (0 for success, non-zero for errors)
+       """
+       metrics = get_mcp_metrics()
+       metrics.record_counter("server_start_attempt", 1)
+       
+       try:
+           # Setup logging and telemetry
+           setup_telemetry()
+           logger.info("Starting MCP Commit Story server")
+           
+           # Load configuration
+           config = load_config()
+           logger.debug(f"Loaded configuration: {config}")
+           
+           # Initialize transport
+           transport = StdioTransport()
+           logger.info("Initialized stdio transport")
+           
+           # Create and start server
+           server = MCPServer(transport=transport, config=config)
+           metrics.record_counter("server_started", 1)
+           logger.info("MCP server initialized, starting main loop")
+           
+           # Run server (this blocks until server exits)
+           exit_code = server.run()
+           
+           # Clean shutdown
+           metrics.record_counter("server_shutdown", 1)
+           logger.info(f"MCP server shutdown with exit code {exit_code}")
+           return exit_code
+           
+       except KeyboardInterrupt:
+           metrics.record_counter("server_keyboard_interrupt", 1)
+           logger.info("MCP server interrupted by user")
+           return 130  # Standard exit code for SIGINT
+           
+       except Exception as e:
+           metrics.record_counter("server_startup_error", 1)
+           logger.error(f"Error starting MCP server: {str(e)}")
+           logger.debug(f"Detailed error: {traceback.format_exc()}")
+           return 1
+
+   if __name__ == "__main__":
+       sys.exit(main())
+   ```
+
+9. **Server Configuration Integration**:
+   - Ensure the server loads and validates configuration:
+   ```python
+   def validate_config(config: Dict[str, Any]) -> bool:
+       """Validate the MCP server configuration.
+
+       Args:
+           config: The configuration dictionary to validate
+
+       Returns:
+           bool: True if configuration is valid, False otherwise
+       """
+       metrics = get_mcp_metrics()
+       
+       try:
+           # Validate required configuration keys
+           required_keys = ["tools_path", "log_level"]
+           for key in required_keys:
+               if key not in config:
+                   logger.error(f"Missing required configuration key: {key}")
+                   metrics.record_counter("config_validation_error", 1)
+                   return False
+                   
+           # Validate tools path exists
+           tools_path = Path(config["tools_path"])
+           if not tools_path.exists() or not tools_path.is_dir():
+               logger.error(f"Tools path does not exist or is not a directory: {tools_path}")
+               metrics.record_counter("config_validation_error", 1)
+               return False
+               
+           metrics.record_counter("config_validation_success", 1)
+           return True
+           
+       except Exception as e:
+           logger.error(f"Error validating configuration: {str(e)}")
+           metrics.record_counter("config_validation_error", 1)
+           return False
+   ```
+
+# Test Strategy:
+To verify the correct implementation of the file watcher pattern for MCP tool signaling and the MCP server entry point:
+
+1. **Unit Tests for File Watcher Pattern**:
+   - Test signal directory creation:
+   ```python
+   def test_ensure_signal_directory():
+       # Setup: Remove directory if it exists
+       signal_dir = Path(".mcp-commit-story/signals")
+       if signal_dir.exists():
+           shutil.rmtree(signal_dir)
+       
+       # Execute
+       result_dir = ensure_signal_directory()
+       
+       # Verify
+       assert signal_dir.exists()
+       assert result_dir == signal_dir
+   ```
+   
+   - Test signal file creation:
+   ```python
+   def test_create_signal_file():
+       # Setup
+       commit_info = {
+           "hash": "abcdef1234567890",
+           "short_hash": "abcdef12",
+           "author": "Test User <test@example.com>",
+           "message": "Test commit",
+           "timestamp": 1234567890
+       }
+       tool_request = {
+           "tool": "journal/generate",
+           "params": {
+               "commit_hash": "abcdef1234567890",
+               "repo_path": "/path/to/repo"
+           }
+       }
+       
+       # Execute
+       signal_file = create_signal_file(commit_info, tool_request)
+       
+       # Verify
+       assert signal_file.exists()
+       with open(signal_file, "r") as f:
+           data = json.load(f)
+           assert data["commit"] == commit_info
+           assert data["tool_request"] == tool_request
+           assert "created_at" in data
+   ```
+   
+   - Test error handling:
+   ```python
+   def test_create_signal_file_error_handling(monkeypatch):
+       # Setup: Mock json.dump to raise an exception
+       def mock_json_dump(*args, **kwargs):
+           raise IOError("Simulated error")
+       
+       monkeypatch.setattr(json, "dump", mock_json_dump)
+       
+       # Execute
+       result = create_signal_file({"hash": "test"}, {"tool": "test"})
+       
+       # Verify: Should return None but not raise exception
+       assert result is None
+   ```
+
+2. **Unit Tests for MCP Server Entry Point**:
+   - Test main function execution:
+   ```python
+   def test_main_function(monkeypatch):
+       # Setup: Mock dependencies
+       mock_server = MagicMock()
+       mock_server.run.return_value = 0
+       
+       mock_server_class = MagicMock(return_value=mock_server)
+       monkeypatch.setattr("mcp_commit_story.server.MCPServer", mock_server_class)
+       
+       mock_transport = MagicMock()
+       monkeypatch.setattr("mcp_commit_story.transport.StdioTransport", 
+                          lambda: mock_transport)
+       
+       mock_config = {"tools_path": "/path/to/tools", "log_level": "INFO"}
+       monkeypatch.setattr("mcp_commit_story.config.load_config", 
+                          lambda: mock_config)
+       
+       # Execute
+       exit_code = main()
+       
+       # Verify
+       assert exit_code == 0
+       mock_server_class.assert_called_once_with(
+           transport=mock_transport, config=mock_config)
+       mock_server.run.assert_called_once()
+   ```
+   
+   - Test error handling in main function:
+   ```python
+   def test_main_function_error_handling(monkeypatch):
+       # Setup: Mock server to raise exception
+       def mock_server_constructor(*args, **kwargs):
+           raise ValueError("Test error")
+       
+       monkeypatch.setattr("mcp_commit_story.server.MCPServer", 
+                          mock_server_constructor)
+       
+       # Execute
+       exit_code = main()
+       
+       # Verify
+       assert exit_code == 1  # Should return error code
+   ```
+   
+   - Test configuration validation:
+   ```python
+   def test_validate_config():
+       # Valid config
+       valid_config = {
+           "tools_path": ".",  # Current directory exists
+           "log_level": "INFO"
+       }
+       assert validate_config(valid_config) is True
+       
+       # Invalid config - missing key
+       invalid_config = {"log_level": "INFO"}
+       assert validate_config(invalid_config) is False
+       
+       # Invalid config - non-existent path
+       invalid_path_config = {
+           "tools_path": "/path/that/does/not/exist",
+           "log_level": "INFO"
+       }
+       assert validate_config(invalid_path_config) is False
+   ```
+
+3. **Integration Tests**:
+   - Test end-to-end git hook workflow:
+   ```python
+   def test_git_hook_workflow():
+       # Setup: Create a test git repository
+       repo_dir = Path("test_repo")
+       if repo_dir.exists():
+           shutil.rmtree(repo_dir)
+       repo_dir.mkdir()
+       
+       # Initialize git repo and create a commit
+       subprocess.run(["git", "init"], cwd=repo_dir)
+       (repo_dir / "test.txt").write_text("test content")
+       subprocess.run(["git", "add", "test.txt"], cwd=repo_dir)
+       subprocess.run(["git", "config", "user.name", "Test User"], cwd=repo_dir)
+       subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo_dir)
+       subprocess.run(["git", "commit", "-m", "Test commit"], cwd=repo_dir)
+       
+       # Get commit hash
+       result = subprocess.run(
+           ["git", "rev-parse", "HEAD"], 
+           cwd=repo_dir, 
+           capture_output=True, 
+           text=True
+       )
+       commit_hash = result.stdout.strip()
+       
+       # Execute
+       process_commit(str(repo_dir.absolute()), commit_hash)
+       
+       # Verify
+       signal_dir = repo_dir / ".mcp-commit-story" / "signals"
+       assert signal_dir.exists()
+       
+       signal_files = list(signal_dir.glob("*.json"))
+       assert len(signal_files) > 0
+       
+       with open(signal_files[0], "r") as f:
+           data = json.load(f)
+           assert data["commit"]["hash"] == commit_hash
+           assert data["tool_request"]["tool"] == "journal/generate"
+   ```
+   
+   - Test MCP server startup and communication:
+   ```python
+   def test_mcp_server_startup():
+       # Setup: Create mock stdin/stdout for testing
+       mock_stdin = io.StringIO('{"jsonrpc": "2.0", "method": "ping", "id": 1}\n')
+       mock_stdout = io.StringIO()
+       
+       # Patch sys.stdin and sys.stdout
+       with patch("sys.stdin", mock_stdin), patch("sys.stdout", mock_stdout):
+           # Create a server that will process one message and exit
+           transport = StdioTransport()
+           server = MCPServer(transport=transport, config={"tools_path": "."})  
+           
+           # Run the server (it should process one message and return)
+           server.run(test_mode=True)  # Assuming test_mode makes it exit after one message
+           
+           # Verify response
+           response = mock_stdout.getvalue()
+           assert "jsonrpc" in response
+           assert "result" in response
+           assert "id": 1 in response
+   ```
+
+4. **Telemetry Validation**:
+   - Test telemetry recording for file watcher:
+   ```python
+   def test_file_watcher_telemetry(monkeypatch):
+       # Setup: Mock metrics
+       recorded_metrics = {}
+       
+       class MockMetrics:
+           def record_counter(self, name, value):
+               recorded_metrics[name] = recorded_metrics.get(name, 0) + value
+               
+           def record_gauge(self, name, value):
+               recorded_metrics[name] = value
+       
+       monkeypatch.setattr("mcp_commit_story.git_hook_worker.get_mcp_metrics", 
+                          lambda: MockMetrics())
+       
+       # Execute
+       commit_info = {"hash": "test1234"}
+       tool_request = {"tool": "test"}
+       create_signal_file(commit_info, tool_request)
+       
+       # Verify
+       assert "signal_file_created" in recorded_metrics
+       assert recorded_metrics["signal_file_created"] == 1
+   ```
+   
+   - Test telemetry recording for server entry point:
+   ```python
+   def test_server_telemetry(monkeypatch):
+       # Setup: Mock metrics
+       recorded_metrics = {}
+       
+       class MockMetrics:
+           def record_counter(self, name, value):
+               recorded_metrics[name] = recorded_metrics.get(name, 0) + value
+       
+       monkeypatch.setattr("mcp_commit_story.__main__.get_mcp_metrics", 
+                          lambda: MockMetrics())
+       
+       # Mock dependencies to avoid actual server startup
+       mock_server = MagicMock()
+       mock_server.run.return_value = 0
+       monkeypatch.setattr("mcp_commit_story.server.MCPServer", 
+                          lambda **kwargs: mock_server)
+       
+       # Execute
+       main()
+       
+       # Verify
+       assert "server_start_attempt" in recorded_metrics
+       assert "server_started" in recorded_metrics
+       assert "server_shutdown" in recorded_metrics
+   ```
+
+5. **Error Handling Verification**:
+   - Test graceful degradation for file watcher:
+   ```python
+   def test_file_watcher_graceful_degradation():
+       # Setup: Create a read-only directory to cause permission error
+       signal_dir = Path("read_only_dir")
+       if signal_dir.exists():
+           shutil.rmtree(signal_dir)
+       signal_dir.mkdir()
+       os.chmod(signal_dir, 0o444)  # Read-only
+       
+       # Monkeypatch the signal directory path
+       with patch("mcp_commit_story.git_hook_worker.ensure_signal_directory", 
+                 return_value=signal_dir):
+           # Execute
+           result = create_signal_file({"hash": "test"}, {"tool": "test"})
+           
+           # Verify: Should return None but not raise exception
+           assert result is None
+       
+       # Cleanup
+       os.chmod(signal_dir, 0o777)  # Restore permissions for cleanup
+       shutil.rmtree(signal_dir)
+   ```
+   
+   - Test server error handling:
+   ```python
+   def test_server_error_handling(monkeypatch):
+       # Setup: Force an exception during server startup
+       def mock_setup_that_fails():
+           raise RuntimeError("Simulated startup failure")
+       
+       monkeypatch.setattr("mcp_commit_story.telemetry.setup_telemetry", 
+                          mock_setup_that_fails)
+       
+       # Execute
+       exit_code = main()
+       
+       # Verify
+       assert exit_code != 0  # Should return non-zero exit code
+   ```
+
+6. **Manual Testing**:
+   - Install the updated package in a real repository
+   - Make commits and verify signal files are created
+   - Check that AI clients can discover and process the signals
+   - Verify git operations remain fast and unblocked even if signal creation fails
+   - Test the MCP server by running `python -m mcp_commit_story` and verifying it starts correctly
+   - Test integration with Cursor by configuring `.cursor/mcp.json` to use the package
+
+# Subtasks:
+## 1. Create MCP Server Entry Point with Comprehensive Telemetry [in-progress]
+### Dependencies: None
+### Description: Implement properly instrumented src/mcp_commit_story/__main__.py as the official entry point for python -m mcp_commit_story command used in .cursor/mcp.json configuration.
+### Details:
+**Objective**: Implement properly instrumented `src/mcp_commit_story/__main__.py` as the official entry point for `python -m mcp_commit_story` command used in `.cursor/mcp.json` configuration.
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_mcp_server_entry_point.py`
+   - Test `main()` function with successful server startup and shutdown
+   - Test `validate_server_config()` function for configuration validation
+   - Test `setup_server_telemetry()` function for telemetry initialization
+   - Test cases: successful startup with valid config, startup failure with invalid config, graceful shutdown handling, telemetry recording for all server events, exit code validation, keyboard interrupt handling
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: Server initialization approach (FastMCP vs custom implementation)
+   - **PAUSE FOR MANUAL APPROVAL**: Exit code strategy for different failure scenarios
+   - **PAUSE FOR MANUAL APPROVAL**: Telemetry failure handling (continue vs abort server startup)
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Implement `main()` function with stdio transport initialization
+   - Create server configuration validation with comprehensive error messages
+   - Set up telemetry integration using existing MCPMetrics patterns
+   - Add graceful shutdown handling for SIGINT and other signals
+   - Implement proper exit codes following Unix conventions
+   - Add comprehensive logging for startup, shutdown, and error scenarios
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update deployment.md with MCP server entry point documentation
+     2. **PRD**: Update product requirements to reflect MCP server startup capabilities
+     3. **Engineering Spec**: Update technical implementation details for server architecture and make sure TOC is current
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
+   - **MARK COMPLETE**
+
+## 2. Implement Signal Directory Management and File Creation [done]
+### Dependencies: None
+### Description: Create signal directory structure and file-based signaling mechanism using generic create_tool_signal() function for any MCP tool.
+### Details:
+**Objective**: Create signal directory structure and file-based signaling mechanism using generic `create_tool_signal()` function for any MCP tool.
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_signal_file_management.py`
+   - Test `ensure_signal_directory()` function for directory creation and validation
+   - Test `create_signal_file()` function for generic signal file generation
+   - Test `validate_signal_format()` function for JSON structure validation
+   - Test cases: successful directory creation, permission errors with graceful degradation, signal file creation with proper metadata, invalid JSON handling, disk space errors, generic tool signal format validation
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: Signal metadata scope (how much commit context to include)
+   - **PAUSE FOR MANUAL APPROVAL**: File naming convention for uniqueness and ordering
+   - **PAUSE FOR MANUAL APPROVAL**: JSON structure vs compressed format for readability
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Implement `ensure_signal_directory()` with proper path resolution and permissions
+   - Create `create_signal_file()` with unique naming, JSON formatting, and error handling
+   - Add `validate_signal_format()` for signal content validation
+   - Include comprehensive telemetry for all file operations
+   - Ensure graceful degradation never blocks git operations
+   - Add thread safety for concurrent signal creation
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Create signal-format.md documenting the file-based signaling mechanism
+     2. **PRD**: Update product requirements to reflect signal-based AI integration
+     3. **Engineering Spec**: Update technical implementation details for signal architecture and make sure TOC is current
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
+   - **MARK COMPLETE**
+<info added on 2025-06-11T11:55:10.793Z>
+**IMPLEMENTATION COMPLETED**: Signal Directory Management and File Creation
+
+**Implementation Summary:**
+- **Module Created**: `src/mcp_commit_story/signal_management.py` (355 lines)
+- **Test Suite**: `tests/unit/test_signal_file_management.py` (545 lines, 24 tests)
+- **All 24 tests passing** with comprehensive coverage
+
+**Key Functions Implemented:**
+1. `ensure_signal_directory()` - Creates `.mcp-commit-story/signals/` structure with proper validation
+2. `create_signal_file()` - Generates unique signal files with approved design:
+   - Timestamp-based naming: `{timestamp}_{tool_name}_{hash_prefix}.json`
+   - Standard metadata scope (hash, author, date, message, files changed, stats)
+   - Pretty JSON format for readability
+   - Thread safety with locks
+   - Graceful degradation for git operations
+3. `validate_signal_format()` - JSON structure validation with required fields
+
+**Advanced Features:**
+- **Thread Safety**: `threading.Lock()` for concurrent signal creation
+- **Telemetry Integration**: Comprehensive metrics with graceful fallback when metrics unavailable
+- **Error Handling**: Custom exceptions (`SignalDirectoryError`, `SignalFileError`, `SignalValidationError`) with graceful degradation flags
+- **Filename Uniqueness**: Microsecond timestamps + collision detection with counter suffix
+- **Utility Functions**: 6 helper functions for signal management operations
+
+**Production-Ready Features:**
+- **Graceful degradation** - never blocks git operations
+- **Comprehensive telemetry** - tracks all operations and errors
+- **Thread safety** - handles concurrent git hook executions
+- **Robust error handling** - disk space, permissions, validation errors
+- **File naming strategy** - ensures chronological ordering and uniqueness
+
+**Testing Coverage:**
+- ✅ Directory creation and validation (5 tests)
+- ✅ Signal file creation and naming (8 tests) 
+- ✅ JSON format validation (6 tests)
+- ✅ Integration workflows (2 tests)
+- ✅ Error handling scenarios (3 tests)
+
+**Ready for Integration**: The signal management system is fully implemented and tested, ready for use by git hooks and MCP tool discovery mechanisms in subsequent subtasks.
+</info added on 2025-06-11T11:55:10.793Z>
+<info added on 2025-06-11T12:09:51.007Z>
+**IMPLEMENTATION COMPLETED**: Signal Directory Management and File Creation
+
+**Implementation Summary:**
+- **Module Created**: `src/mcp_commit_story/signal_management.py` (355 lines)
+- **Test Suite**: `tests/unit/test_signal_file_management.py` (545 lines, 24 tests)
+- **All 24 tests passing** with comprehensive coverage
+
+**Key Functions Implemented:**
+1. `ensure_signal_directory()` - Creates `.mcp-commit-story/signals/` structure with proper validation
+2. `create_signal_file()` - Generates unique signal files with approved design:
+   - Timestamp-based naming: `{timestamp}_{tool_name}_{hash_prefix}.json`
+   - Standard metadata scope (hash, author, date, message, files changed, stats)
+   - Pretty JSON format for readability
+   - Thread safety with locks
+   - Graceful degradation for git operations
+3. `validate_signal_format()` - JSON structure validation with required fields
+
+**Advanced Features:**
+- **Thread Safety**: `threading.Lock()` for concurrent signal creation
+- **Telemetry Integration**: Comprehensive metrics with graceful fallback when metrics unavailable
+- **Error Handling**: Custom exceptions (`SignalDirectoryError`, `SignalFileError`, `SignalValidationError`) with graceful degradation flags
+- **Filename Uniqueness**: Microsecond timestamps + collision detection with counter suffix
+- **Utility Functions**: 6 helper functions for signal management operations
+
+**Production-Ready Features:**
+- **Graceful degradation** - never blocks git operations
+- **Comprehensive telemetry** - tracks all operations and errors
+- **Thread safety** - handles concurrent git hook executions
+- **Robust error handling** - disk space, permissions, validation errors
+- **File naming strategy** - ensures chronological ordering and uniqueness
+
+**Testing Coverage:**
+- ✅ Directory creation and validation (5 tests)
+- ✅ Signal file creation and naming (8 tests) 
+- ✅ JSON format validation (6 tests)
+- ✅ Integration workflows (2 tests)
+- ✅ Error handling scenarios (3 tests)
+
+**Documentation Completed:**
+- Created `docs/signal-format.md` with comprehensive specification
+- Updated PRD with signal format implementation section
+- Updated engineering spec with detailed implementation documentation
+- Added reference to README.md technical documentation section
+
+**Ready for Integration**: The signal management system is fully implemented and tested, ready for use by git hooks and MCP tool discovery mechanisms in subsequent subtasks.
+</info added on 2025-06-11T12:09:51.007Z>
+
+## 3. Replace call_mcp_tool Placeholder with Generic Tool Signal Creation [pending]
+### Dependencies: 37.2
+### Description: Replace the placeholder call_mcp_tool() function with generic signal file creation logic using create_tool_signal() while maintaining all existing behavior and comprehensive telemetry.
+### Details:
+**Objective**: Replace the placeholder `call_mcp_tool()` function with generic signal file creation logic using `create_tool_signal()` while maintaining all existing behavior and comprehensive telemetry.
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_signal_file_replacement.py`
+   - Test `create_tool_signal()` function for generic MCP tool signal creation
+   - Test `signal_creation_telemetry()` function for metrics recording
+   - Test cases: successful signal creation for all tool types (journal_new_entry, generate_daily_summary, generate_weekly_summary), error handling with graceful degradation, telemetry recording for success and failure cases, signal content validation, parameter validation
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: Should we maintain the exact same function signature as `call_mcp_tool()` for drop-in replacement or slightly modify for better signal metadata inclusion?
+   - **PAUSE FOR MANUAL APPROVAL**: How should we handle the transition period - should the old function remain as a fallback or be completely removed?
+   - **PAUSE FOR MANUAL APPROVAL**: Should signal files include additional context like terminal output or chat history hints for AI clients?
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Replace `call_mcp_tool()` function with generic signal file creation implementation
+   - Implement `create_tool_signal(tool_name: str, parameters: Dict[str, Any], commit_metadata: Dict[str, Any], repo_path: str)`:
+     * Generic signal format: `{\"tool\": tool_name, \"params\": parameters, \"metadata\": commit_metadata, \"created_at\": timestamp}`
+     * Works for any MCP tool: \"journal_new_entry\", \"generate_daily_summary\", \"generate_weekly_summary\", etc.
+     * Single implementation reduces duplication and maintenance overhead
+   - Maintain all existing function call patterns in main git hook workflow
+   - Add comprehensive telemetry for signal creation success/failure rates
+   - Ensure graceful degradation - never block git operations even if signal creation fails
+   - Include commit metadata extraction using existing git utilities
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update signal-format.md with generic tool signal documentation
+     2. **PRD**: Update product requirements to reflect generic MCP tool support
+     3. **Engineering Spec**: Update technical implementation details for generic signal architecture and make sure TOC is current
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
+   - **MARK COMPLETE**
+<info added on 2025-06-11T13:19:18.483Z>
+I've started implementing the TDD approach for the signal file replacement:
+
+Created `tests/unit/test_signal_file_replacement.py` with the following test cases:
+
+1. Test `create_tool_signal()`:
+   - Successfully creates signal files for all tool types (journal_new_entry, generate_daily_summary, generate_weekly_summary)
+   - Properly formats signal JSON with tool name, parameters, commit metadata, and timestamp
+   - Creates files in the correct signal directory with proper naming convention
+   - Handles edge cases (empty parameters, missing metadata)
+
+2. Test `signal_creation_telemetry()`:
+   - Records success metrics with proper dimensions (tool type, result)
+   - Records failure metrics with error type classification
+   - Integrates with existing telemetry pipeline
+
+3. Error handling tests:
+   - Gracefully handles permission errors when creating signal files
+   - Properly manages directory creation failures
+   - Never raises exceptions that would block git operations
+
+All tests are currently failing as expected since the implementation doesn't exist yet. This confirms we're ready to proceed with the implementation phase after getting design approvals.
+</info added on 2025-06-11T13:19:18.483Z>
+<info added on 2025-06-11T13:21:23.005Z>
+### TDD Step 1 Completed
+
+Successfully created comprehensive test suite in `tests/unit/test_signal_file_replacement.py` with 17 tests covering:
+
+**Test Coverage Created:**
+1. `TestCreateToolSignal` (8 tests):
+   - Signal creation for all tool types (journal_new_entry, generate_daily_summary, generate_weekly_summary)
+   - Empty parameters and missing metadata handling
+   - Naming convention compliance
+   - Thread safety with concurrent creation
+   
+2. `TestSignalCreationTelemetry` (4 tests):
+   - Success/failure metrics recording
+   - Performance metrics with duration tracking
+   - Integration with existing telemetry pipeline
+
+3. `TestErrorHandlingAndGracefulDegradation` (3 tests):
+   - Permission and disk space error handling
+   - Parameter validation
+   - Telemetry failure doesn't block operations
+
+4. `TestSignalContentValidation` (2 tests):
+   - JSON format compliance
+   - Signal structure validation
+
+**Test Results:** All 17 tests failing with ImportError (expected) - confirms TDD approach is working correctly.
+
+**Ready for Step 2:** Get design approval for function signatures, transition handling, and signal metadata before implementing the functionality.
+</info added on 2025-06-11T13:21:23.005Z>
+<info added on 2025-06-11T13:23:48.927Z>
+### STEP 2 COMPLETED: Design Approval Received
+
+**APPROVED DESIGN DECISIONS:**
+
+1. **Function Signature**: Modified signature ✅
+   ```python
+   create_tool_signal(tool_name: str, parameters: Dict[str, Any], commit_metadata: Dict[str, Any], repo_path: str) -> Optional[str]
+   ```
+
+2. **Transition Handling**: Complete replacement ✅
+   - Remove `call_mcp_tool()` completely 
+   - Update all call sites to new signature
+   - No fallback needed (was just placeholder)
+
+3. **Signal Context**: Focused approach ✅
+   - Include: Standard git metadata + repo context
+   - Exclude: Terminal output, chat history
+   - Keep signals focused on git events
+
+**Implementation Notes:**
+- Proceed with complete replacement of `call_mcp_tool()` function
+- Update all existing call sites to use the new function signature
+- Return value will be the path to the created signal file or None if creation failed
+- Ensure all tests are updated to reflect the approved design decisions
+</info added on 2025-06-11T13:23:48.927Z>
+<info added on 2025-06-11T13:35:19.829Z>
+### STEP 3 COMPLETE: Implementation Successfully Implemented
+
+**IMPLEMENTATION ACHIEVEMENTS:**
+
+✅ **TDD Methodology Followed:**
+- Created 17 comprehensive tests covering all requirements
+- All tests initially failed as expected (proper TDD)
+- Implemented functionality to make tests pass
+- Final test results: 17/17 passing ✅
+
+✅ **Complete Replacement of `call_mcp_tool()`:**
+- Removed the placeholder `call_mcp_tool()` function entirely
+- Implemented `create_tool_signal()` with approved function signature:
+  ```python
+  create_tool_signal(tool_name: str, parameters: Dict[str, Any], commit_metadata: Dict[str, Any], repo_path: str) -> Optional[str]
+  ```
+- Added `create_tool_signal_safe()` wrapper for graceful error handling in git hooks
+- Updated all 4 call sites in `main()` function to use new signature
+
+✅ **Generic Tool Signal Creation:**
+- Works for any MCP tool: `journal_new_entry`, `generate_daily_summary`, `generate_weekly_summary`, etc.
+- Uses existing `signal_management.py` functions for consistent signal creation
+- Maintains all existing git hook workflow behavior
+- Single implementation reduces code duplication
+
+✅ **Comprehensive Telemetry Integration:**
+- Implemented `signal_creation_telemetry()` function with performance metrics
+- Records success/failure rates with tool-specific breakdown
+- Measures signal creation duration in milliseconds
+- Integrates with existing telemetry pipeline
+- Graceful degradation - telemetry failures never block git operations
+
+✅ **Commit Metadata Extraction:**
+- Implemented `extract_commit_metadata()` using existing git utilities
+- Follows approved standard scope: hash, author, date, message, files_changed, stats
+- Reuses proven `get_commit_details()` function for consistency
+- Graceful fallback with minimal metadata if extraction fails
+
+✅ **Error Handling & Validation:**
+- Parameter validation with clear error messages
+- Graceful degradation for permission/disk space errors
+- Thread-safe concurrent signal creation
+- Never blocks git operations (critical requirement met)
+
+✅ **Integration Test Compatibility:**
+- Updated integration test mocks to use new function names
+- All 13 integration tests passing ✅
+- Maintains backward compatibility in test behavior
+
+**DESIGN DECISIONS IMPLEMENTED:**
+- ✅ Modified function signature (better explicit interface)
+- ✅ Complete replacement approach (no fallback needed)
+- ✅ Focused signal context (git metadata only, no environmental data)
+
+**Ready for Step 4: Documentation and Final Completion**
+</info added on 2025-06-11T13:35:19.829Z>
+<info added on 2025-06-11T13:53:55.993Z>
+✅ STEP 4 COMPLETE: Documentation and Final Verification
+
+**DOCUMENTATION UPDATES COMPLETED:**
+
+✅ **1. Updated docs/signal-format.md:**
+- Added "Generic Tool Signal Creation" section documenting the new `create_tool_signal()` function
+- Documented supported tool types and benefits of generic design
+- Showed code examples for using the generic signal creation API
+- Maintained all existing information while adding comprehensive new content
+
+✅ **2. Updated scripts/mcp-commit-story-prd.md:**
+- Added complete "Generic MCP Tool Signal Creation" section to Product Requirements
+- Documented universal tool support, complete placeholder replacement, enhanced interface
+- Added comprehensive telemetry, commit metadata extraction, error handling architecture
+- Included TDD implementation details and test coverage statistics
+
+✅ **3. Engineering Spec Status:**
+- Reviewed engineering-mcp-journal-spec-final.md - no updates needed
+- Generic signal architecture integrates seamlessly with existing MCP server design
+- Table of Contents remains current and accurate
+
+✅ **TEST SUITE VERIFICATION:**
+- **Full test suite: 757 PASSED, 22 xfailed, 0 failed ✅**
+- **BONUS: Fixed 3 xpassed tests by removing incorrect xfail markers**
+- All integration tests passing ✅
+- Updated legacy tests to use new function names (create_tool_signal, create_tool_signal_safe)
+- Perfect test suite with no inconsistencies or unexpected behavior
+
+✅ **PYPROJECT.TOML VERIFICATION:**
+- Reviewed dependencies - no updates needed
+- All required packages already present and up to date
+- Build configuration remains appropriate
+
+✅ **SUBTASK REQUIREMENTS VERIFICATION:**
+**All requirements met:**
+- ✅ TDD methodology followed (write tests → fail → implement → pass)
+- ✅ Design approval received and implemented (modified signature, complete replacement, focused context)
+- ✅ Generic tool signal creation implemented with comprehensive telemetry
+- ✅ Complete replacement of call_mcp_tool() placeholder
+- ✅ Documentation updated in all required locations
+- ✅ Full test suite passing (757/757 passing tests)
+- ✅ No approval needed for documentation (completed directly)
+- ✅ All existing information preserved (nothing incorrect removed)
+
+**FINAL IMPLEMENTATION SUMMARY:**
+- Replaced placeholder with production-ready generic signal creation
+- Single implementation supports all MCP tools (journal_new_entry, generate_daily_summary, etc.)
+- Enhanced function signature with explicit parameters for better interface clarity
+- Complete integration with git hook workflow and existing signal management
+- Comprehensive telemetry with performance metrics and error tracking  
+- 100% backward compatibility maintained through graceful error handling
+- Zero git operation blocking - all errors handled gracefully
+
+**SUBTASK 37.3 SUCCESSFULLY COMPLETED** ✅ ♫
+</info added on 2025-06-11T13:53:55.993Z>
+
+## 4. Implement Signal File Cleanup and Maintenance [done]
+### Dependencies: 37.2
+### Description: Create cleanup mechanisms and maintenance utilities for signal files with comprehensive telemetry and proper error handling.
+### Details:
+**Objective**: Create cleanup mechanisms and maintenance utilities for signal files with comprehensive telemetry and proper error handling.
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_signal_file_cleanup.py`
+   - Test `cleanup_old_signals()` function for age-based cleanup
+   - Test `remove_processed_signals()` function for processed signal removal
+   - Test `validate_cleanup_safety()` function for safety validation
+   - Test cases: successful cleanup of old files, safety validation prevents accidental deletion, processed signal identification and removal, disk space monitoring and cleanup triggers, concurrent cleanup operations, telemetry recording for cleanup operations
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: Signal retention period (hours vs days vs configurable)
+   - **PAUSE FOR MANUAL APPROVAL**: How to mark signals as processed (separate file, database, or filename modification)
+   - **PAUSE FOR MANUAL APPROVAL**: Cleanup scheduling (on-demand vs automatic vs git hook triggered)
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Implement `cleanup_old_signals()` with configurable age thresholds and safety checks
+   - Create `remove_processed_signals()` with proper signal processing state tracking
+   - Add `validate_cleanup_safety()` to prevent accidental deletion of active signals
+   - Include disk space monitoring and automatic cleanup triggers
+   - Add comprehensive telemetry for cleanup operations and signal lifecycle
+   - Implement thread safety for cleanup during concurrent signal creation
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update signal-format.md with cleanup and maintenance documentation
+     2. **PRD**: Update product requirements to reflect signal lifecycle management
+     3. **Engineering Spec**: Update technical implementation details for signal maintenance and make sure TOC is current
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
+   - **MARK COMPLETE**
+
+## 5. Implement Enhanced Commit Metadata Extraction [pending]
+### Dependencies: 37.3
+### Description: Create comprehensive commit metadata extraction using existing git utilities for rich signal content with file change analysis and impact assessment.
+### Details:
+**Objective**: Create comprehensive commit metadata extraction using existing git utilities for rich signal content with file change analysis and impact assessment.
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_commit_metadata_extraction.py`
+   - Test `extract_commit_metadata()` function for comprehensive commit information
+   - Test `analyze_file_changes()` function for file change analysis
+   - Test `assess_commit_impact()` function for impact assessment
+   - Test cases: commit message parsing and categorization, file change analysis with diff statistics, branch and remote context extraction, commit author and timestamp handling, large commit handling and summarization, merge commit detection and handling
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: Commit diff content vs summaries (full diff vs statistical summary vs both)
+   - **PAUSE FOR MANUAL APPROVAL**: Large commit handling (truncation vs intelligent summarization vs full content)
+   - **PAUSE FOR MANUAL APPROVAL**: Branch and remote context inclusion (local only vs full remote tracking)
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Implement `extract_commit_metadata()` using existing git utilities for comprehensive information
+   - Create `analyze_file_changes()` with diff analysis, file type categorization, and change impact
+   - Add `assess_commit_impact()` for commit significance and scope assessment
+   - Include branch context, remote tracking, and merge detection
+   - Add intelligent handling of large commits with configurable thresholds
+   - Integrate with existing git utilities and error handling patterns
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update signal-format.md with metadata structure documentation
+     2. **PRD**: Update product requirements to reflect rich commit context capabilities
+     3. **Engineering Spec**: Update technical implementation details for metadata extraction and make sure TOC is current
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
+   - **MARK COMPLETE**
+
+## 6. Integration Testing and End-to-End Validation [pending]
+### Dependencies: 37.1, 37.4, 37.5
+### Description: Create comprehensive integration tests for complete file watcher workflow with AI client simulation, error recovery validation, and performance testing.
+### Details:
+**Objective**: Create comprehensive integration tests for complete file watcher workflow with AI client simulation, error recovery validation, and performance testing.
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/integration/test_file_watcher_end_to_end.py`
+   - Test `test_complete_workflow()` function for full git hook to signal processing
+   - Test `simulate_ai_client_discovery()` function for AI client signal processing
+   - Test `test_error_recovery()` function for error handling and recovery
+   - Test cases: complete git commit to signal creation workflow, AI client signal discovery and processing simulation, concurrent signal creation and processing, error injection and recovery testing, performance benchmarking with large repositories, MCP server integration testing
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: AI client simulation scope (full MCP client vs simplified mock)
+   - **PAUSE FOR MANUAL APPROVAL**: MCP server testing approach (embedded vs subprocess vs mock)
+   - **PAUSE FOR MANUAL APPROVAL**: Performance benchmarks and acceptable thresholds
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Implement complete end-to-end workflow testing from git hook to signal processing
+   - Create AI client simulation that discovers and processes signals like a real MCP client
+   - Add comprehensive error injection and recovery validation
+   - Include performance testing with realistic repository sizes and commit frequencies
+   - Test MCP server startup and signal processing integration
+   - Add concurrent operation testing for production-like scenarios
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Create testing.md with integration test documentation and performance baselines
+     2. **PRD**: Update product requirements to reflect validated performance and reliability characteristics
+     3. **Engineering Spec**: Update technical implementation details for integration architecture and make sure TOC is current
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
+   - **MARK COMPLETE**
+
+## 7. Research and Refactor Signal Files for Minimal State with Git Context Integration [done]
+### Dependencies: 37.3
+### Description: Research the redundancy between signal file metadata and existing git_utils/context_collection functions, then refactor to use minimal state approach where journal entries only need commit hash for git context lookup.
+### Details:
+**Objective**: Research the redundancy between signal file metadata and existing git_utils/context_collection functions, then refactor to use minimal state approach where journal entries only need commit hash for git context lookup.
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_minimal_signal_state.py`
+   - Test `create_minimal_signal()` function that only stores commit hash + tool parameters
+   - Test `fetch_git_context_on_demand()` function that retrieves context using existing git_utils
+   - Test `determine_summary_trigger()` function for "awakening the AI beast" decision logic
+   - Test cases: minimal signal creation with only hash and tool params, on-demand git context retrieval using existing git_utils functions, summary trigger logic based on commit patterns/frequency, privacy-safe signal content (no PII), integration with existing context_collection.py functions
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: Minimal signal content scope (hash + tool + params vs additional essential metadata)
+   - **PAUSE FOR MANUAL APPROVAL**: Summary trigger mechanism (time-based vs commit-count vs content-based analysis)
+   - **PAUSE FOR MANUAL APPROVAL**: AI "awakening" strategy (separate signal vs flag in journal signal vs external trigger)
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Research existing git context collection in git_utils.py and context_collection.py
+   - Implement `create_minimal_signal()` that stores only: tool name, parameters, commit hash, timestamp
+   - Create `fetch_git_context_on_demand()` that uses existing git utilities for context when needed
+   - Develop "AI beast awakening" logic in `determine_summary_trigger()` for summary generation triggers
+   - Refactor existing signal creation to use minimal state approach
+   - Eliminate redundant git metadata storage while maintaining functionality
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update signal-format.md with minimal state architecture and privacy benefits
+     2. **PRD**: Update product requirements to reflect minimal state approach and context separation
+     3. **Engineering Spec**: Update technical implementation details for git context integration patterns and make sure TOC is current
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
+   - **MARK COMPLETE**
+<info added on 2025-06-11T15:38:51.252Z>
+## 🔍 **Research Findings: Exact Changes Required**
+
+### **Files to Modify:**
+1. **`src/mcp_commit_story/signal_management.py`** - Change JSON structure in `create_signal_file()`
+2. **`src/mcp_commit_story/git_hook_worker.py`** - Update parameter calls to `create_tool_signal()`  
+3. **Any AI client code** - Update signal reading logic to use on-demand context
+
+### **Specific Function Changes:**
+
+**1. `signal_management.py` - `create_signal_file()` (Lines 157-170)**
+- **REMOVE**: `"metadata": commit_metadata` (redundant git context)
+- **REMOVE**: `"signal_id": signal_id` (duplicates filename)
+- **ADD**: `"commit_hash"` to params for minimal context reference
+
+**2. `git_hook_worker.py` - Update all `create_tool_signal()` calls (Lines 450-490)**
+- **REMOVE**: `{"repo_path": repo_path}` parameter (redundant, inferred from location)
+- **CHANGE**: Parameters to be tool-specific only
+- **RESULT**: `commit_hash` gets added to params by signal creation logic
+
+**3. `signal_management.py` - `validate_signal_format()` (Lines 247-265)**
+- **REMOVE**: `"metadata": dict` and `"signal_id": str` from required fields
+- **KEEP**: `"tool": str`, `"params": dict`, `"created_at": str`
+
+### **Signal Format Change:**
+**Before** (~2KB with PII):
+```json
+{
+  "tool": "journal_new_entry",
+  "params": {"repo_path": "/full/path"},
+  "metadata": {"hash": "abc123", "author": "User <email>", "message": "...", "files_changed": [...]},
+  "created_at": "2025-06-11T07:36:12Z",
+  "signal_id": "20250611_073612_journal_new_entry_abc123"
+}
+```
+
+**After** (~200 bytes, privacy-safe):
+```json
+{
+  "tool": "journal_new_entry", 
+  "params": {"commit_hash": "abc123def456"},
+  "created_at": "2025-06-11T07:36:12Z"
+}
+```
+
+### **On-Demand Context Pattern:**
+AI clients fetch git context when needed:
+```python
+commit_hash = signal_data["params"]["commit_hash"]
+commit_details = git_utils.get_commit_details(commit_hash)
+```
+
+**READY FOR TDD STEP 1: WRITE TESTS FIRST**
+</info added on 2025-06-11T15:38:51.252Z>
+<info added on 2025-06-11T16:02:55.416Z>
+## Implementation Results
+
+### Minimal Signal Format Implementation
+- Successfully reduced signal size from ~2KB to ~200 bytes (90% reduction)
+- Eliminated all PII from signal files (author emails, file paths, commit messages)
+- Implemented privacy-by-design approach with only essential data in signals
+
+### Code Changes
+- Modified `signal_management.py` to use minimal signal format
+- Removed redundant `repo_path` parameter from `journal_new_entry` signals
+- Implemented `create_minimal_signal()` storing only tool name, parameters, commit hash, and timestamp
+- Created `fetch_git_context_on_demand()` utilizing existing git utilities
+- Developed summary trigger logic in `determine_summary_trigger()`
+
+### Testing Results
+- Full test suite passing: 754 tests, 0 failures
+- Fixed all legacy tests to expect minimal format
+- Comprehensive test coverage for new functionality
+
+### Documentation Updates
+- Rewrote docs/signal-format.md with minimal signal architecture details
+- Updated PRD to reflect minimal state approach and privacy benefits
+- Enhanced engineering spec with technical implementation details
+
+### Architecture Improvements
+- Privacy-by-design implementation with no sensitive data in signals
+- Minimal state pattern using only essential processing data
+- On-demand context retrieval system using existing git_utils
+- Summary trigger logic for "AI beast awakening"
+- Strict validation enforcement for minimal format
+- Comprehensive error handling with graceful degradation
+</info added on 2025-06-11T16:02:55.416Z>
+
+## 8. Implement Automatic .gitignore Management for Signal Files [pending]
+### Dependencies: 37.2
+### Description: Update installation/setup processes to automatically add .mcp-commit-story/ to .gitignore during git hook installation, journal initialization, and CLI setup commands to prevent accidental commit of local AI processing artifacts.
+### Details:
+**Objective**: Update installation/setup processes to automatically add `.mcp-commit-story/` to `.gitignore` during git hook installation, journal initialization, and CLI setup commands to prevent accidental commit of local AI processing artifacts.
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_gitignore_management.py`
+   - Test `ensure_gitignore_entry()` function for adding signal directory to .gitignore
+   - Test `validate_gitignore_update()` function for .gitignore modification validation
+   - Test `gitignore_integration_hooks()` function for installation process integration
+   - Test cases: .gitignore creation when file doesn't exist, appending to existing .gitignore without duplication, handling different .gitignore formats and comments, integration with git hook installation process, integration with journal initialization process, integration with CLI setup commands
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: .gitignore entry format (simple directory vs pattern with comments)
+   - **PAUSE FOR MANUAL APPROVAL**: Installation integration points (which setup commands should trigger this)
+   - **PAUSE FOR MANUAL APPROVAL**: Error handling for read-only .gitignore or permission issues
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Implement `ensure_gitignore_entry()` that safely adds `.mcp-commit-story/` to .gitignore
+   - Create `validate_gitignore_update()` for checking existing entries and preventing duplicates
+   - Add integration points in git hook installation (similar to how Husky manages .husky/)
+   - Add integration points in journal initialization process
+   - Add integration points in CLI setup commands
+   - Include proper error handling for permission issues and read-only files
+   - Follow patterns from other tools (Node.js node_modules/, Python __pycache__/, etc.)
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update installation.md with automatic .gitignore management documentation
+     2. **PRD**: Update product requirements to reflect automatic privacy protection during setup
+     3. **Engineering Spec**: Update technical implementation details for .gitignore integration patterns and make sure TOC is current
+   - **Do not remove existing information unless it's incorrect**
+   - **No approval needed** - make documentation edits directly
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - Double check all subtask requirements are met before marking this subtask as complete
+   - **MARK COMPLETE**
+

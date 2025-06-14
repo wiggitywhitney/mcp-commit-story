@@ -1,0 +1,142 @@
+# Task ID: 53
+# Title: Refactor Daily Summary Generation
+# Status: pending
+# Dependencies: 50
+# Priority: high
+# Description: Convert daily summary generation from MCP-based to background, non-MCP generation using the same standalone approach as journal entries.
+# Details:
+This task refactors the daily summary functionality to use the new background generation pattern instead of MCP tools:
+
+1. **Create Standalone Daily Summary Generator Function**:
+```python
+def generate_daily_summary_standalone(date=None, git_context=None):
+    """
+    Generate daily summaries without requiring MCP server or signals.
+    
+    Args:
+        date: Optional date to generate summary for (defaults to today)
+        git_context: Optional git context dictionary (if None, will be collected)
+        
+    Returns:
+        dict: Generated summary data
+    """
+    # Set default date to today if not provided
+    if date is None:
+        date = datetime.now().strftime("%Y-%m-%d")
+        
+    # Collect git context if not provided
+    if git_context is None:
+        git_context = collect_git_context()
+    
+    # Collect recent journal entries for the specified date
+    journal_entries = collect_recent_journal_entries(date)
+    
+    # Prepare prompt for AI
+    prompt = prepare_daily_summary_prompt(date, journal_entries, git_context)
+    
+    # Generate summary using AI (similar pattern to journal generator)
+    summary_content = generate_ai_content(
+        prompt=prompt,
+        model_config=get_model_config("daily_summary")
+    )
+    
+    # Format and save the summary
+    formatted_summary = format_daily_summary(summary_content, date)
+    save_daily_summary(formatted_summary, date)
+    
+    return formatted_summary
+```
+
+2. **Implement Helper Functions**:
+```python
+def collect_recent_journal_entries(date):
+    """Collect journal entries for the specified date"""
+    # Implementation to read journal entries from the file system
+    # for the given date or a configurable window around it
+    
+def prepare_daily_summary_prompt(date, journal_entries, git_context):
+    """Prepare prompt for daily summary generation"""
+    # Format journal entries and git context into a prompt
+    # that instructs the AI to generate a meaningful daily summary
+    
+def format_daily_summary(content, date):
+    """Format the AI-generated summary into the required structure"""
+    # Parse and structure the AI output into the expected format
+    
+def save_daily_summary(summary, date):
+    """Save the generated summary to the appropriate location"""
+    # Write the summary to the correct file based on date
+```
+
+3. **Implement Git Hook Integration**:
+```python
+def setup_daily_summary_git_hooks():
+    """Configure git hooks to trigger daily summary generation"""
+    # Similar to journal entry hooks, but for daily summaries
+    # Typically would run on post-commit or scheduled basis
+```
+
+4. **Update Configuration**:
+```python
+def get_model_config(generation_type):
+    """Get the appropriate model configuration based on generation type"""
+    # Return different configurations for journal vs. summary generation
+```
+
+5. **Remove MCP Dependencies**:
+- Identify and remove all MCP-dependent code in the current daily summary generation
+- Ensure all necessary context is collected directly without MCP signals
+- Maintain the same output format and quality as the MCP-based version
+
+6. **Implement Scheduling Logic**:
+```python
+def should_generate_daily_summary():
+    """Determine if a daily summary should be generated"""
+    # Logic to decide if it's appropriate to generate a summary
+    # Based on time of day, existing entries, etc.
+```
+
+The implementation should follow the same patterns established in the standalone journal generator (Task 50), adapting them specifically for daily summaries. This completes the transition of all AI generation functionality to background processes that don't require the MCP server.
+
+# Test Strategy:
+To verify the correct implementation of the daily summary refactoring:
+
+1. **Unit Testing**:
+   - Create unit tests for each helper function (collect_recent_journal_entries, prepare_daily_summary_prompt, etc.)
+   - Test the main generate_daily_summary_standalone function with mocked dependencies
+   - Verify proper error handling for missing journal entries or AI generation failures
+
+2. **Integration Testing**:
+   - Test the complete flow from git hook trigger to summary generation
+   - Verify that summaries are generated correctly with the same quality as the MCP version
+   - Test with various date inputs and journal entry scenarios
+
+3. **Comparison Testing**:
+   - Generate summaries using both the old MCP-based approach and the new standalone approach
+   - Compare outputs to ensure consistency and quality
+   - Document any differences and ensure they're acceptable or improvements
+
+4. **Git Hook Testing**:
+   - Verify that git hooks correctly trigger the summary generation
+   - Test with different git operations (commit, push, etc.)
+   - Ensure hooks don't significantly impact git operation performance
+
+5. **Offline Testing**:
+   - Verify summaries can be generated without MCP server running
+   - Test in environments with limited connectivity
+   - Ensure all necessary context is collected directly
+
+6. **Manual Review**:
+   - Manually review several generated summaries for quality and completeness
+   - Compare with previous MCP-generated summaries
+   - Ensure the AI prompting produces equivalent or better results
+
+7. **Edge Case Testing**:
+   - Test with empty journal entries
+   - Test with very large numbers of journal entries
+   - Test with unusual date ranges or formats
+
+8. **Performance Testing**:
+   - Measure and compare generation time with the MCP-based approach
+   - Ensure the background process doesn't consume excessive resources
+   - Verify that git operations remain responsive during summary generation

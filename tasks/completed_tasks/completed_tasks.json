@@ -1496,6 +1496,18 @@
       "subtasks": [],
       "completed_date": "2025-06-14",
       "archived_from_main": true
+    },
+    {
+      "id": 37,
+      "title": "Implement File Watcher Pattern for MCP Tool Signaling in Git Hook Worker",
+      "description": "Replace the placeholder call_mcp_tool() function in git_hook_worker.py with a file-based signaling mechanism that allows AI clients to autonomously discover and execute MCP tools for journal generation. Additionally, implement the MCP server entry point in __main__.py to support the python -m mcp_commit_story command.",
+      "status": "done",
+      "dependencies": [13, 29],
+      "priority": "high",
+      "details": "Archived due to architectural pivot from signal-based to standalone journal generation approach. Task represented old architecture that was replaced by Tasks 48-52 which implement direct git hook → journal generation without MCP signaling.",
+      "completed_date": "2025-06-14",
+      "archived_from_main": true,
+      "archival_reason": "Architectural change - replaced by standalone journal generation system (Tasks 48-52)"
     }
   ]
 }

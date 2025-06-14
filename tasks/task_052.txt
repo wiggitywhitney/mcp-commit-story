@@ -1,0 +1,113 @@
+# Task ID: 52
+# Title: Add Machine-Readable Journal Format
+# Status: pending
+# Dependencies: 50
+# Priority: medium
+# Description: Enhance journal entries with structured metadata for future AI parsing and analysis by implementing YAML frontmatter with standardized fields.
+# Details:
+This task enhances the journal entry format to include machine-readable metadata while maintaining human readability:
+
+1. **Design YAML Frontmatter Structure**:
+   - Define a standard set of metadata fields including:
+     - `timestamp`: ISO 8601 format (YYYY-MM-DDTHH:MM:SS+TZ)
+     - `commit_hash`: Git commit SHA that triggered the journal entry
+     - `tags`: Array of relevant keywords/topics
+     - `entry_type`: Categorization (e.g., "commit", "refactor", "bugfix", "feature")
+     - `files_changed`: List of modified files
+     - `semantic_topics`: Higher-level themes detected in the change
+
+2. **Update Journal Generation Function**:
+   - Modify the standalone journal generator from Task 50 to include frontmatter:
+   ```python
+   def generate_journal_entry(git_context, chat_context=None):
+       """Generate a journal entry with YAML frontmatter and markdown content"""
+       # Extract metadata from contexts
+       timestamp = datetime.now().isoformat()
+       commit_hash = git_context.get('commit_hash', 'unknown')
+       files_changed = git_context.get('files_changed', [])
+       
+       # Detect entry type and tags based on commit message and changes
+       entry_type = detect_entry_type(git_context)
+       tags = extract_tags(git_context, chat_context)
+       semantic_topics = analyze_semantic_content(git_context, chat_context)
+       
+       # Create YAML frontmatter
+       frontmatter = {
+           'timestamp': timestamp,
+           'commit_hash': commit_hash,
+           'entry_type': entry_type,
+           'files_changed': files_changed,
+           'tags': tags,
+           'semantic_topics': semantic_topics
+       }
+       
+       # Format as YAML
+       yaml_content = yaml.dump(frontmatter, default_flow_style=False)
+       
+       # Generate the actual journal content (using existing logic)
+       journal_content = format_journal_content(git_context, chat_context)
+       
+       # Combine with proper YAML frontmatter delimiters
+       return f"---\n{yaml_content}---\n\n{journal_content}"
+   ```
+
+3. **Implement Helper Functions**:
+   - Create `detect_entry_type()` to categorize changes based on commit message and files
+   - Create `extract_tags()` to generate relevant keywords
+   - Create `analyze_semantic_content()` to identify higher-level themes
+
+4. **Ensure Backward Compatibility**:
+   - Add a parser function to handle both new and old format entries:
+   ```python
+   def parse_journal_entry(entry_text):
+       """Parse a journal entry, handling both new and legacy formats"""
+       if entry_text.startswith('---'):
+           # New format with frontmatter
+           parts = entry_text.split('---', 2)
+           if len(parts) >= 3:
+               try:
+                   metadata = yaml.safe_load(parts[1])
+                   content = parts[2].strip()
+                   return {'metadata': metadata, 'content': content}
+               except yaml.YAMLError:
+                   pass
+       
+       # Legacy format or parsing error - return as content only
+       return {'metadata': {}, 'content': entry_text.strip()}
+   ```
+
+5. **Update Documentation**:
+   - Document the new journal format structure
+   - Provide examples of both reading and writing the new format
+   - Include migration notes for handling existing journal entries
+
+# Test Strategy:
+1. **Unit Tests for YAML Frontmatter Generation**:
+   - Create test cases with various git contexts and verify the generated YAML frontmatter contains all required fields
+   - Test with edge cases like empty commit messages, binary files, etc.
+   - Verify timestamp format conforms to ISO 8601
+
+2. **Backward Compatibility Tests**:
+   - Test the parser with both new format entries and legacy entries
+   - Verify that legacy entries are correctly handled without metadata
+   - Ensure malformed YAML is gracefully handled
+
+3. **Integration Tests**:
+   - Test the complete journal generation pipeline with the new format
+   - Verify that git hooks correctly generate entries with proper frontmatter
+   - Check that entries are correctly stored in the journal file
+
+4. **Validation Tests**:
+   - Create a validation script that checks all generated entries against the schema
+   - Verify that all required fields are present and correctly formatted
+   - Test with a variety of commit types to ensure proper entry_type detection
+
+5. **AI Parsing Test**:
+   - Create a simple script that uses the structured data for analysis
+   - Verify that metadata can be easily extracted and processed
+   - Test aggregation of entries by tags, types, and semantic topics
+
+6. **Manual Review**:
+   - Visually inspect generated journal entries to ensure they remain human-readable
+   - Verify that markdown formatting in the content section is preserved
+   - Check that the YAML frontmatter is properly delimited and doesn't interfere with content rendering
