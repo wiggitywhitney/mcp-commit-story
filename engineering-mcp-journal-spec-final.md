@@ -1366,6 +1366,58 @@ telemetry:
 - **No external file access required** - AI uses its own conversation context
 - **Decision excerpts**: May include relevant conversation snippets in Discussion Notes section
 
+#### **SQLite Database Integration Architecture**
+The system includes robust SQLite database access for extracting chat history from Cursor's local workspace databases:
+
+**Platform Detection Module** (`src/mcp_commit_story/cursor_db/platform.py`):
+- Cross-platform workspace path detection for Windows, macOS, Linux, and WSL
+- Environment variable override support (`CURSOR_WORKSPACE_PATH`)
+- Automatic fallback path discovery with validation
+- Custom exception handling for path resolution failures
+
+**Database Connection Module** (`src/mcp_commit_story/cursor_db/connection.py`):
+- **Connection Strategy**: No caching - lightweight connections for each operation
+- **Auto-Discovery**: Aggressive scanning for `state.vscdb` files in workspace directories
+- **Recency Filter**: Only connects to databases modified within last 48 hours
+- **Resource Management**: Context manager support with automatic connection cleanup
+- **Error Handling**: Comprehensive recovery for connection failures, corrupted databases, and permission issues
+- **Security**: Parameterized queries with SQL injection protection
+- **Result Format**: Raw tuple results for maximum flexibility
+
+**Key Functions**:
+```python
+# Primary connection function
+get_cursor_chat_database(user_override_path=None) -> sqlite3.Connection
+
+# Query execution with error handling
+query_cursor_chat_database(database_path, sql, parameters=None) -> List[Tuple]
+
+# Context manager for resource cleanup
+cursor_chat_database_context() -> ContextManager[sqlite3.Connection]
+
+# Convenience functions for multiple databases
+get_all_cursor_databases() -> List[Path]
+query_all_cursor_databases(sql, parameters=None) -> List[Tuple[Path, List[Tuple]]]
+```
+
+**Performance Characteristics**:
+- No persistent connections or caching to maintain simplicity
+- Each query operation creates a new connection and closes it immediately
+- 48-hour modification time filter reduces database discovery overhead
+- Context managers prevent resource leaks during query operations
+
+**Error Recovery Strategy**:
+- `CursorDatabaseConnectionError`: Database file access issues (missing, permissions, corruption)
+- `CursorDatabaseQueryError`: SQL execution failures (syntax, schema mismatches)
+- Graceful degradation when databases are unavailable or inaccessible
+- Comprehensive logging for troubleshooting connection issues
+
+**Cross-Platform Support**:
+- **macOS**: `~/Library/Application Support/Cursor/User/workspaceStorage/`
+- **Windows**: `%APPDATA%\Cursor\User\workspaceStorage\`
+- **Linux**: `~/.config/Cursor/User/workspaceStorage/`
+- **WSL**: Windows path mounting with `/mnt/c/` detection and fallback to Linux paths
+
 ### Data Sources
 #### Required:
 - Git commit message and metadata

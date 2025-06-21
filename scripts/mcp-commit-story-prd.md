@@ -124,10 +124,18 @@
 - **Optional dependency**: Core functionality works without MCP server running
 
 #### **Cursor Integration**
-- **SQLite database access**: Extract chat history from Cursor's local database
+- **SQLite database access**: Extract chat history from Cursor's local database with robust connection management
 - **Cross-platform support**: Work on macOS, Linux, Windows with different Cursor installations
 - **Workspace detection**: Automatically find relevant chat history for current repository
 - **Privacy respect**: Only access chat data that relates to current development work
+- **Performance characteristics**: 
+  - No connection caching - lightweight connections for each operation
+  - 48-hour recency filter to focus on recent workspace activity
+  - Aggressive auto-discovery of `state.vscdb` files across workspace directories
+  - Context manager support for automatic resource cleanup
+  - Parameterized queries with SQL injection protection
+- **Error handling**: Comprehensive error recovery for connection failures, corrupted databases, and permission issues
+- **Resource management**: Automatic connection cleanup with no persistent database connections
 
 #### **Development Environment Compatibility**
 - **Cross-platform**: Work on macOS, Linux, Windows
