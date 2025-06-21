@@ -1,298 +1,207 @@
-# Cursor Database Setup Guide
+# Cursor Database Setup and Configuration
 
-This guide provides platform-specific instructions for setting up Cursor SQLite database integration with MCP Commit Story.
+This guide explains how to set up and configure access to Cursor's chat database for automated journal generation.
 
 ## Overview
 
-MCP Commit Story automatically detects and reads Cursor's SQLite workspace databases (`state.vscdb` files) to extract chat history for journal generation. The system supports Windows, macOS, Linux, and WSL environments with automatic platform detection and focuses on recently active workspaces (modified within the last 48 hours).
+The MCP Commit Story project reads Cursor's chat history from SQLite databases to generate journal entries. The system automatically discovers and connects to recent Cursor workspace databases across different platforms.
 
-## Platform-Specific Locations
+## Platform-Specific Database Locations
 
 ### macOS
-**Default Location:**
-```
-~/Library/Application Support/Cursor/User/workspaceStorage/
-```
-
-**Setup Requirements:**
-- Cursor must be installed via the standard installer
-- No additional configuration required
-- System automatically detects the standard location
+- **Default Path**: `~/Library/Application Support/Cursor/User/workspaceStorage/[workspace-hash]/state.vscdb`
+- **Environment Override**: Set `CURSOR_WORKSPACE_PATH` to specify a custom directory
 
 ### Windows
-**Default Locations:**
-```
-%APPDATA%\Cursor\User\workspaceStorage\
-C:\Users\{username}\AppData\Roaming\Cursor\User\workspaceStorage\
-```
-
-**Setup Requirements:**
-- Cursor installed in standard location
-- Ensure APPDATA environment variable is set (default on Windows)
-- No additional configuration required
+- **Default Path**: `%APPDATA%\Cursor\User\workspaceStorage\[workspace-hash]\state.vscdb`
+- **Environment Override**: Set `CURSOR_WORKSPACE_PATH` to specify a custom directory
 
 ### Linux
-**Default Locations:**
-```
-~/.config/Cursor/User/workspaceStorage/
-$XDG_CONFIG_HOME/Cursor/User/workspaceStorage/
-```
-
-**Setup Requirements:**
-- Cursor installed via AppImage, Snap, or package manager
-- Standard XDG configuration directory structure
-- No additional configuration required
+- **Default Path**: `~/.config/Cursor/User/workspaceStorage/[workspace-hash]/state.vscdb`
+- **Environment Override**: Set `CURSOR_WORKSPACE_PATH` to specify a custom directory
 
 ### WSL (Windows Subsystem for Linux)
-**Default Locations:**
-```
-/mnt/c/Users/{username}/AppData/Roaming/Cursor/User/workspaceStorage/
-/mnt/C/Users/{username}/AppData/Roaming/Cursor/User/workspaceStorage/
-~/.config/Cursor/User/workspaceStorage/ (if Cursor installed in WSL)
-```
+- **Automatic Detection**: The system detects WSL and searches Windows paths from within the Linux environment
+- **Fallback**: Falls back to Linux paths if Windows paths are not accessible
 
-**Setup Requirements:**
-- Windows drives mounted under `/mnt/c/` (standard WSL configuration)
-- Cursor installed on Windows host system
-- Read permissions for Windows user directories
+## Database Discovery Process
 
-## Custom Configuration
+The system automatically discovers recent Cursor databases using the following process:
 
-### Environment Variable Override
-Set a custom workspace path using the environment variable:
+1. **Platform Detection**: Identifies the current operating system and WSL status
+2. **Path Resolution**: Determines appropriate search directories based on platform
+3. **Database Search**: Looks for `state.vscdb` files in workspace storage directories
+4. **Recency Filter**: Only considers databases modified within the last 48 hours
+5. **Validation**: Verifies each database is readable and contains valid SQLite data
+6. **Selection**: Returns the most recently modified valid database
 
+### Example Commands
+
+Test database discovery:
 ```bash
-export CURSOR_WORKSPACE_PATH="/path/to/custom/workspace"
+# Check if databases can be found
+python -c "from mcp_commit_story.cursor_db.connection import get_cursor_chat_database; print(get_cursor_chat_database())"
+
+# List all recent workspace databases
+python -c "from mcp_commit_story.cursor_db.connection import query_multiple_databases; print([db[0] for db in query_multiple_databases('SELECT name FROM sqlite_master LIMIT 1')])"
 ```
 
-This takes priority over all platform-specific default locations.
-
-### Manual Path Configuration
-If automatic detection fails, you can override the workspace path programmatically:
-
-```python
-from mcp_commit_story.cursor_db.connection import get_cursor_chat_database
-
-# Connect to specific database file
-conn = get_cursor_chat_database(user_override_path="/path/to/specific/state.vscdb")
+Expected output when databases are found:
+```
+/Users/username/Library/Application Support/Cursor/User/workspaceStorage/abc123def456/state.vscdb
 ```
 
-**Note**: The system expects `state.vscdb` files specifically, not general SQLite databases.
+## Error Handling and Troubleshooting
 
-## Database Connection Troubleshooting
+The system provides comprehensive error handling with context-rich error messages and troubleshooting guidance.
 
-### Connection Issues
+### Common Error Types
 
-**No Valid Databases Found**
-If you receive the error "No valid Cursor workspace databases found":
+#### Database Not Found Errors
+**Symptoms**: `CursorDatabaseNotFoundError` with messages about no valid databases found
 
-1. **Check Recent Activity**: The system only connects to `state.vscdb` files modified within the last 48 hours
-   ```python
-   from mcp_commit_story.cursor_db.connection import get_all_cursor_databases
-   
-   # List all discovered databases
-   databases = get_all_cursor_databases()
-   print(f"Found {len(databases)} recent databases")
-   for db in databases:
-       print(f"  {db}")
-   ```
-   
-   **Example successful output:**
-   ```
-   Found 3 recent databases
-     /Users/username/Library/Application Support/Cursor/User/workspaceStorage/abc123def456/state.vscdb
-     /Users/username/Library/Application Support/Cursor/User/workspaceStorage/def789ghi012/state.vscdb
-     /Users/username/Library/Application Support/Cursor/User/workspaceStorage/ghi345jkl678/state.vscdb
-   ```
+**Common Causes**:
+- Cursor hasn't been run recently in any workspace (48+ hours)
+- No workspaces contain chat history
+- Database files are in unexpected locations
+- Incorrect environment variable configuration
 
-2. **Verify Database Files**: Ensure `state.vscdb` files exist in workspace directories and have been modified recently
+**Troubleshooting Steps**:
+1. **Verify Cursor Usage**: Ensure Cursor has been run recently in a workspace with chat activity
+2. **Check Workspace Activity**: Open a workspace in Cursor and have some chat interactions
+3. **Verify Paths**: Check that the expected database locations exist:
    ```bash
-   # Search for recent Cursor database files (macOS)
-   find ~/Library/Application\ Support/Cursor/User/workspaceStorage/ -name "state.vscdb" -type f -mtime -2
+   # macOS
+   ls -la ~/Library/Application\ Support/Cursor/User/workspaceStorage/*/state.vscdb
    
-   # Search for recent Cursor database files (Linux)
-   find ~/.config/Cursor/User/workspaceStorage/ -name "state.vscdb" -type f -mtime -2
-   ```
+   # Linux
+   ls -la ~/.config/Cursor/User/workspaceStorage/*/state.vscdb
    
-   **Example successful output:**
+   # Windows (PowerShell)
+   Get-ChildItem "$env:APPDATA\Cursor\User\workspaceStorage\*\state.vscdb"
    ```
-   /Users/username/Library/Application Support/Cursor/User/workspaceStorage/abc123def456/state.vscdb
-   /Users/username/Library/Application Support/Cursor/User/workspaceStorage/def789ghi012/state.vscdb
+4. **Environment Override**: Set `CURSOR_WORKSPACE_PATH` if databases are in non-standard locations
+5. **File Permissions**: Ensure the process has read access to Cursor's data directories
+
+#### Database Access Errors
+**Symptoms**: `CursorDatabaseAccessError` with permission or file access messages
+
+**Common Causes**:
+- Insufficient file permissions
+- Database locked by another process
+- Cursor currently running and using the database
+- File system permissions issues
+
+**Troubleshooting Steps**:
+1. **Check Permissions**: Verify read access to database files
+2. **Close Cursor**: Ensure Cursor is not actively using the database
+3. **Process Check**: Look for other processes accessing the database files
+4. **User Permissions**: Ensure the current user has access to Cursor's data directory
+
+#### Database Schema Errors
+**Symptoms**: `CursorDatabaseSchemaError` with messages about missing tables or columns
+
+**Common Causes**:
+- Database from different Cursor version
+- Corrupted or incomplete database
+- Database doesn't contain chat data
+
+**Troubleshooting Steps**:
+1. **Version Check**: Ensure Cursor is up to date
+2. **Database Integrity**: Try a different workspace database
+3. **Recreate Data**: Open Cursor and have new chat interactions to create fresh data
+4. **Manual Inspection**: Use SQLite tools to examine database structure:
+   ```bash
+   sqlite3 path/to/state.vscdb ".schema"
    ```
 
-3. **Use Explicit Path**: Override auto-discovery with a specific database path
-   ```python
-   from mcp_commit_story.cursor_db.connection import get_cursor_chat_database
-   
-   # Connect to specific database
-   conn = get_cursor_chat_database(user_override_path="/path/to/state.vscdb")
+#### Query Errors
+**Symptoms**: `CursorDatabaseQueryError` with SQL syntax or parameter errors
+
+**Common Causes**:
+- Invalid SQL syntax in queries
+- Parameter count mismatch
+- Database corruption
+
+**Troubleshooting Steps**:
+1. **Syntax Check**: Verify SQL query syntax is valid SQLite
+2. **Parameter Count**: Ensure parameter count matches placeholders (?)
+3. **Database Test**: Try simple queries first:
+   ```bash
+   sqlite3 path/to/state.vscdb "SELECT COUNT(*) FROM sqlite_master;"
    ```
 
-**Database Connection Errors**
-Common connection error patterns and solutions:
+### Environment Variable Configuration
 
-- **"Database file not found"**: Verify file path and permissions
-- **"Permission denied"**: Ensure read access to the database file
-- **"Database corrupted or invalid"**: File may be locked by Cursor or corrupted
+Set `CURSOR_WORKSPACE_PATH` to override default search locations:
 
-**Query Execution Errors**
-When executing queries against Cursor databases:
-
-- **"Query execution failed: syntax error"**: Check SQL syntax
-- **"Query execution failed: no such table"**: Database schema may be different than expected
-- **SQL injection protection**: All queries use parameterized statements automatically
-
-### Performance Considerations
-
-**Connection Management**
-- No connection caching implemented - each query creates a new connection
-- Connections are automatically closed after each operation
-- Use context managers for multiple operations:
-
-```python
-from mcp_commit_story.cursor_db.connection import cursor_chat_database_context
-
-with cursor_chat_database_context() as conn:
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM messages")
-    results = cursor.fetchall()
-    # Connection automatically closed
-```
-
-**Large Result Sets**
-For queries returning large amounts of data:
-- Results are returned as lists of tuples for maximum flexibility
-- Consider using LIMIT clauses for large tables
-- Monitor memory usage with very large datasets
-
-### Testing Database Connectivity
-
-**Basic Connection Test**
-```python
-from mcp_commit_story.cursor_db.connection import (
-    get_cursor_chat_database,
-    CursorDatabaseConnectionError
-)
-
-try:
-    conn = get_cursor_chat_database()
-    print("✅ Successfully connected to Cursor database")
-    
-    # Test basic query
-    cursor = conn.cursor()
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' LIMIT 5")
-    tables = cursor.fetchall()
-    print(f"Found {len(tables)} tables in database")
-    
-    conn.close()
-except CursorDatabaseConnectionError as e:
-    print(f"❌ Connection failed: {e}")
-```
-
-**Query All Databases**
-```python
-from mcp_commit_story.cursor_db.connection import query_all_cursor_databases
-
-# Query across all discovered databases
-results = query_all_cursor_databases(
-    "SELECT COUNT(*) FROM sqlite_master WHERE type='table'"
-)
-
-print(f"Queried {len(results)} databases:")
-for db_path, query_results in results:
-    table_count = query_results[0][0] if query_results else 0
-    print(f"  {db_path}: {table_count} tables")
-```
-
-### Troubleshooting Commands
-
-**Verify Database Discovery**
-```python
-from mcp_commit_story.cursor_db.connection import _discover_cursor_databases
-
-# Check internal discovery process
-databases = _discover_cursor_databases()
-print(f"Discovery found {len(databases)} valid databases")
-```
-
-**Check Database Age Filter**
-The system only considers `state.vscdb` files modified within 48 hours. To check file modification times:
 ```bash
-# Check modification times (macOS/Linux)
-find ~/Library/Application\ Support/Cursor/User/workspaceStorage/ -name "state.vscdb" -exec ls -la {} \;
+# Point to specific directory containing workspace folders
+export CURSOR_WORKSPACE_PATH="/custom/path/to/cursor/workspaces"
 
-# Check if files are within 48-hour window
-find ~/Library/Application\ Support/Cursor/User/workspaceStorage/ -name "state.vscdb" -mtime -2
+# Point to specific database file
+export CURSOR_WORKSPACE_PATH="/path/to/specific/state.vscdb"
 ```
 
-**Example output showing recent activity:**
-```
--rw-r--r--  1 username  staff  2048000 Dec 21 14:30 .../abc123def456/state.vscdb
--rw-r--r--  1 username  staff  1536000 Dec 21 09:15 .../def789ghi012/state.vscdb
-```
+### Logging and Debugging
 
-## Troubleshooting
+Enable debug logging to see detailed discovery process:
 
-### Common Issues
-
-**Database Not Found**
-```bash
-# Check if Cursor is installed and has been used
-ls -la ~/Library/Application\ Support/Cursor/User/workspaceStorage/  # macOS
-ls -la ~/.config/Cursor/User/workspaceStorage/                       # Linux
-dir %APPDATA%\Cursor\User\workspaceStorage\                         # Windows
-```
-
-**Permission Denied**
-- Ensure the user running MCP Commit Story has read access to Cursor directories
-- On WSL, verify Windows drive mount permissions
-- Check file system permissions for the workspace directories
-
-**Multiple Cursor Installations**
-If you have multiple Cursor installations (stable, insiders, portable), the system will detect multiple workspace paths. The first valid path found will be used.
-
-**WSL Detection Issues**
-If WSL detection fails:
-```bash
-# Check WSL environment detection
-cat /proc/version  # Should contain "Microsoft" or "WSL"
-echo $WSL_DISTRO_NAME  # Should be set in WSL2
-```
-
-### Validation Commands
-
-**Test Platform Detection:**
 ```python
-from mcp_commit_story.cursor_db.platform import detect_platform, get_cursor_workspace_paths
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
-# Check detected platform
-platform = detect_platform()
-print(f"Detected platform: {platform}")
-
-# Check discovered workspace paths
-paths = get_cursor_workspace_paths()
-print(f"Found {len(paths)} potential workspace paths:")
-for path in paths:
-    print(f"  {path}")
+from mcp_commit_story.cursor_db.connection import get_cursor_chat_database
+db_path = get_cursor_chat_database()
 ```
 
-**Validate Workspace Access:**
-```python
-from mcp_commit_story.cursor_db.platform import find_valid_workspace_paths
+### Advanced Troubleshooting
 
-# Check accessible workspace paths
-valid_paths = find_valid_workspace_paths()
-print(f"Found {len(valid_paths)} accessible workspace paths:")
-for path in valid_paths:
-    print(f"  {path}")
+#### Manual Database Inspection
+```bash
+# Check database file validity
+sqlite3 path/to/state.vscdb "PRAGMA integrity_check;"
+
+# List available tables
+sqlite3 path/to/state.vscdb ".tables"
+
+# Check for chat-related tables
+sqlite3 path/to/state.vscdb "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%chat%';"
 ```
+
+#### Platform-Specific Issues
+
+**WSL Users**: If auto-detection fails, manually set the Windows path:
+```bash
+export CURSOR_WORKSPACE_PATH="/mnt/c/Users/username/AppData/Roaming/Cursor/User/workspaceStorage"
+```
+
+**macOS Users**: If databases aren't found, check for permission issues with Application Support:
+```bash
+ls -la ~/Library/Application\ Support/Cursor/
+```
+
+**Linux Users**: Verify XDG config directory setup:
+```bash
+echo $XDG_CONFIG_HOME
+ls -la ~/.config/Cursor/
+```
+
+## Performance Considerations
+
+- **No Caching**: Database connections are created fresh each time for data consistency
+- **48-Hour Filter**: Only recent databases are considered to improve discovery speed
+- **Auto-Discovery**: Platform detection and path search add minimal overhead
+- **Connection Pooling**: Not implemented - SQLite connections are lightweight
+
+For high-frequency usage, consider caching the discovered database path in your application rather than running discovery repeatedly.
 
 ## Security Considerations
 
-- MCP Commit Story only reads from Cursor databases, never writes
-- Chat history data is processed locally and not transmitted externally
-- Sensitive information in chat history is sanitized before journal generation
-- Database connections use read-only access patterns
+- **Read-Only Access**: The system only reads from Cursor databases, never modifies them
+- **Sensitive Data**: Error messages automatically redact sensitive information like passwords and API keys
+- **File Permissions**: Respects system file permissions and fails gracefully when access is denied
+- **No Network Access**: All operations are local file system access only
 
 ## Supported Cursor Versions
 
