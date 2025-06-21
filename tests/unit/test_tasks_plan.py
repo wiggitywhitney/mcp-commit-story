@@ -3,11 +3,19 @@ def test_tasks_plan_no_operational_cli_commands():
     import json
     with open("tasks/tasks.json") as f:
         data = json.load(f)
-        if isinstance(data, dict) and "tasks" in data:
+        # Handle the current nested structure with "master" -> "tasks"
+        if isinstance(data, dict) and "master" in data and "tasks" in data["master"]:
+            tasks = data["master"]["tasks"]
+        elif isinstance(data, dict) and "tasks" in data:
             tasks = data["tasks"]
         else:
             tasks = data
+        
         for task in tasks:
+            # Ensure task is a dictionary
+            if not isinstance(task, dict):
+                continue
+                
             if any(str(task.get("id")) == str(tid) for tid in [7, 9, 10, 11, 22]):
                 desc = json.dumps(task).lower()
                 # Check for CLI command patterns, not MCP operations
