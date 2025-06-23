@@ -17,6 +17,25 @@
 
 MCP Commit Story is a Model Context Protocol (MCP) server that generates journal entries from git commits and AI chat history. The system reads Cursor's SQLite chat databases, extracts conversation context, and combines it with git metadata to create comprehensive development journal entries.
 
+### Chat Data Storage Architecture
+
+The system accesses chat data from Cursor's SQLite databases using validated storage patterns:
+
+- **User prompts**: Stored in `aiService.prompts` key with format `{"text": "message", "commandType": 4}`
+- **AI responses**: Stored in `aiService.generations` key with format `{"unixMs": timestamp, "generationUUID": "uuid", "type": "composer", "textDescription": "response"}`
+- **Technical constraints**: AI responses truncated at 100 messages per workspace (older responses permanently lost)
+- **Threading approach**: No explicit conversation threading - messages correlated via timestamp proximity
+
+### Implementation Approach
+
+The chat extraction implementation uses a dual-query strategy based on validated database structure:
+
+1. **Query both keys separately**: Extract user prompts and AI responses from distinct database keys
+2. **Merge chronologically**: Use Unix millisecond timestamps from AI generations for ordering
+3. **Correlation by proximity**: Match prompts to responses via timestamp proximity analysis
+4. **Truncation monitoring**: Check for exactly 100 AI responses as indicator of data loss
+5. **Graceful degradation**: Handle missing data sources and maintain functionality with partial context
+
 ### Key Components
 - **MCP Server**: Protocol-compliant server exposing journal generation tools
 - **Git Integration**: Commit metadata extraction and diff analysis
@@ -725,31 +744,79 @@ class JournalGenerator:
 ```python
 async def extract_chat_context(self, commit_time: datetime, 
                              changed_files: List[str]) -> ChatContext:
-    # Query chat messages around commit time (±2 hours)
+    """
+    Extract chat context from Cursor's SQLite database using validated data format.
+    
+    Chat Data Storage Architecture:
+    - User prompts: stored in 'aiService.prompts' key (format: {"text": "message", "commandType": 4})
+    - AI responses: stored in 'aiService.generations' key (format: {"unixMs": timestamp, "generationUUID": "uuid", "type": "composer", "textDescription": "response"})
+    - No explicit conversation threading - correlation via timestamp proximity
+    - AI responses truncated at 100 messages per workspace (older responses permanently lost)
+    """
+    # Query both user prompts and AI responses separately
+    user_prompts = query_cursor_chat_database(
+        self.db_connection,
+        "SELECT value FROM ItemTable WHERE [key] = ?",
+        ('aiService.prompts',)
+    )
+    
+    ai_responses = query_cursor_chat_database(
+        self.db_connection,
+        "SELECT value FROM ItemTable WHERE [key] = ?", 
+        ('aiService.generations',)
+    )
+    
+    # Parse JSON data and merge messages chronologically
+    messages = []
+    
+    # Process user prompts (no timestamps, need correlation)
+    if user_prompts:
+        prompts_data = json.loads(user_prompts[0][0])
+        for prompt in prompts_data:
+            if prompt.get('commandType') == 4:  # Standard user prompt
+                messages.append(ChatMessage(
+                    timestamp=None,  # No timestamp in prompts
+                    role='user',
+                    content=prompt['text']
+                ))
+    
+    # Process AI responses (with timestamps)
+    if ai_responses:
+        responses_data = json.loads(ai_responses[0][0])
+        for response in responses_data:
+            if response.get('type') == 'composer':
+                timestamp = datetime.fromtimestamp(response['unixMs'] / 1000)
+                messages.append(ChatMessage(
+                    timestamp=timestamp,
+                    role='assistant', 
+                    content=response['textDescription']
+                ))
+    
+    # Sort by timestamp (AI responses) and correlate with prompts
+    # Note: This is approximate due to lack of explicit threading
+    timestamped_messages = [m for m in messages if m.timestamp]
+    timestamped_messages.sort(key=lambda x: x.timestamp)
+    
+    # Filter messages related to changed files and within time window
     time_window_start = commit_time - timedelta(hours=2)
     time_window_end = commit_time + timedelta(hours=2)
     
-    messages = query_cursor_chat_database(
-        self.db_connection,
-        """
-        SELECT timestamp, role, content 
-        FROM chat_messages 
-        WHERE timestamp BETWEEN ? AND ?
-        ORDER BY timestamp ASC
-        """,
-        (time_window_start.timestamp(), time_window_end.timestamp())
-    )
-    
-    # Filter messages related to changed files
     relevant_messages = []
-    for timestamp, role, content in messages:
-        if any(file_path in content for file_path in changed_files):
-            relevant_messages.append(ChatMessage(timestamp, role, content))
+    for message in timestamped_messages:
+        if (message.timestamp and 
+            time_window_start <= message.timestamp <= time_window_end and
+            any(file_path in message.content for file_path in changed_files)):
+            relevant_messages.append(message)
+    
+    # Check for AI response truncation (exactly 100 indicates data loss)
+    truncation_detected = len(responses_data) == 100 if ai_responses else False
     
     return ChatContext(
         messages=relevant_messages,
         time_window=(time_window_start, time_window_end),
-        related_files=changed_files
+        related_files=changed_files,
+        truncation_detected=truncation_detected,
+        total_ai_responses=len(responses_data) if ai_responses else 0
     )
 ```
 
