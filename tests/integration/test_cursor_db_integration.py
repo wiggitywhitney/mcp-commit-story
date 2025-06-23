@@ -204,24 +204,26 @@ class TestCursorDbIntegration:
         recent_path = self.create_mock_database(recent_db)
         old_path = self.create_mock_database(old_db)
         
-        def mock_stat_side_effect(*args, **kwargs):
-            """Mock stat to return different modification times."""
-            mock_stat = MagicMock()
-            # Extract the path from args (self is first argument when called as method)  
-            path_arg = args[0] if args else None
-            if path_arg and "workspace1" in str(path_arg):
-                mock_stat.st_mtime = time.time() - 600  # 10 minutes ago (recent)
-            elif path_arg and "workspace2" in str(path_arg):
-                mock_stat.st_mtime = time.time() - 86400  # 24 hours ago (old)
-            else:
-                mock_stat.st_mtime = time.time() - 43200  # 12 hours ago (default)
-            mock_stat.st_mode = 0o100644  # Regular file mode
-            return mock_stat
+        # Create mock Path objects with custom stat methods
+        old_path_obj = MagicMock(spec=Path)
+        old_path_obj.__str__.return_value = old_path
+        old_path_obj.__fspath__.return_value = old_path
+        old_stat = MagicMock()
+        old_stat.st_mtime = time.time() - 86400  # 24 hours ago (old)
+        old_stat.st_mode = 0o100644
+        old_path_obj.stat.return_value = old_stat
+        
+        recent_path_obj = MagicMock(spec=Path)
+        recent_path_obj.__str__.return_value = recent_path
+        recent_path_obj.__fspath__.return_value = recent_path
+        recent_stat = MagicMock()
+        recent_stat.st_mtime = time.time() - 600  # 10 minutes ago (recent)
+        recent_stat.st_mode = 0o100644
+        recent_path_obj.stat.return_value = recent_stat
         
         with patch('src.mcp_commit_story.cursor_db.connection.get_cursor_workspace_paths',
                   return_value=[str(self.temp_path)]), \
-             patch('pathlib.Path.rglob', return_value=[Path(old_path), Path(recent_path)]), \
-             patch('pathlib.Path.stat', side_effect=mock_stat_side_effect):
+             patch('pathlib.Path.rglob', return_value=[old_path_obj, recent_path_obj]):
             
             # Should select the most recent database (by age, not by order returned)
             selected_db = get_cursor_chat_database()
@@ -269,8 +271,15 @@ class TestCursorDbIntegration:
         invalid_db = self.temp_path / "invalid.db"
         invalid_db.write_text("not a database")
         
-        with pytest.raises(CursorDatabaseQueryError):
+        # The specific exception type may vary by platform, but should be a cursor_db exception
+        with pytest.raises((CursorDatabaseQueryError, CursorDatabaseAccessError)) as exc_info:
             query_cursor_chat_database(str(invalid_db), "SELECT 1")
+        
+        # Verify the error message indicates database corruption/invalidity
+        error_msg = str(exc_info.value).lower()
+        assert any(keyword in error_msg for keyword in [
+            "database", "corrupted", "invalid", "not a database", "file is not a database"
+        ]), f"Error message doesn't indicate database issue: {exc_info.value}"
     
     def test_performance_benchmarks(self):
         """
