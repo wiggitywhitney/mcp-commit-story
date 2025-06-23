@@ -3,9 +3,9 @@
 # Status: pending
 # Dependencies: 45
 # Priority: medium
-# Description: Create a function to query the Cursor chat database and extract complete conversation history with proper parsing and error handling.
+# Description: Create a function to query the Cursor chat database and extract complete conversation history with proper parsing and error handling, based on validated research findings.
 # Details:
-This task implements a robust database query function that extracts comprehensive chat data from Cursor's SQLite database:
+This task implements a robust database query function that extracts comprehensive chat data from Cursor's SQLite database, following the validated research findings in `docs/cursor-chat-database-research.md`:
 
 1. **Core Query Function Implementation**:
 ```python
@@ -31,25 +31,19 @@ def query_cursor_chat_database(workspace_path=None):
         connection = sqlite3.connect(db_path)
         cursor = connection.cursor()
         
-        # Query all potential chat data locations
-        conversations = []
+        # Query the confirmed active keys based on research findings
+        user_prompts = _query_table_by_key(cursor, "ItemTable", "aiService.prompts")
+        ai_responses = _query_table_by_key(cursor, "ItemTable", "aiService.generations")
+        metadata = _query_table_by_key(cursor, "ItemTable", "composer.composerData")
         
-        # Legacy format
-        legacy_data = _query_table_by_key(cursor, "ItemTable", "aiService.prompts")
-        if legacy_data:
-            conversations.extend(_parse_legacy_format(legacy_data))
-            
-        # Standard format
-        standard_data = _query_table_by_key(cursor, "ItemTable", 
-                                          "workbench.panel.aichat.view.aichat.chatdata")
-        if standard_data:
-            conversations.extend(_parse_standard_format(standard_data))
-            
-        # New format
-        new_data = _query_table_by_key(cursor, "ItemTable", "composerData")
-        if new_data:
-            conversations.extend(_parse_new_format(new_data))
-            
+        # Process the data into conversations
+        conversations = _process_cursor_chat_data(user_prompts, ai_responses, metadata)
+        
+        # Check for potential truncation (100-message limit)
+        if len(ai_responses) >= 100:
+            logger.warning("Detected 100 AI responses - data may be truncated due to Cursor's message limit")
+            conversations[0]["truncation_warning"] = True
+        
         connection.close()
         return conversations
         
@@ -72,40 +66,95 @@ def _query_table_by_key(cursor, table_name, key_value):
         return []
 ```
 
-3. **Format-Specific Parsing Functions**:
+3. **Data Processing Function**:
 ```python
 @trace_mcp_operation
-def _parse_legacy_format(data_rows):
-    """Parse legacy format chat data into structured conversation objects."""
-    conversations = []
-    
-    for _, value in data_rows:
+def _process_cursor_chat_data(user_prompts, ai_responses, metadata):
+    """Process the raw database data into structured conversations."""
+    # Parse the raw data
+    parsed_prompts = []
+    for _, value in user_prompts:
         try:
-            # Legacy format typically stores JSON string in the value column
-            chat_data = json.loads(value)
-            
-            # Extract messages with proper threading
-            messages = []
-            for msg in chat_data.get("messages", []):
-                messages.append({
-                    "role": msg.get("role", "unknown"),
-                    "content": msg.get("content", ""),
-                    "id": msg.get("id", str(uuid.uuid4())),
-                    "parent_id": msg.get("parent_id", None)
+            prompt_data = json.loads(value)
+            if isinstance(prompt_data, list):
+                for item in prompt_data:
+                    if item.get("commandType") == 4:  # User prompt
+                        parsed_prompts.append({
+                            "text": item.get("text", ""),
+                            "timestamp": item.get("unixMs", 0)
+                        })
+            elif prompt_data.get("commandType") == 4:  # Single user prompt
+                parsed_prompts.append({
+                    "text": prompt_data.get("text", ""),
+                    "timestamp": prompt_data.get("unixMs", 0)
                 })
-            
-            conversations.append({
-                "id": chat_data.get("id", str(uuid.uuid4())),
-                "title": chat_data.get("title", "Untitled Conversation"),
-                "messages": messages,
-                "format": "legacy"
-            })
         except json.JSONDecodeError:
-            logger.warning(f"Failed to parse legacy format chat data")
-            
-    return conversations
-
-# Similar functions for _parse_standard_format and _parse_new_format
+            logger.warning("Failed to parse user prompt data")
+    
+    parsed_responses = []
+    for _, value in ai_responses:
+        try:
+            response_data = json.loads(value)
+            if isinstance(response_data, list):
+                for item in response_data:
+                    if item.get("type") == "composer":
+                        parsed_responses.append({
+                            "text": item.get("textDescription", ""),
+                            "timestamp": item.get("unixMs", 0),
+                            "uuid": item.get("generationUUID", str(uuid.uuid4()))
+                        })
+            elif response_data.get("type") == "composer":
+                parsed_responses.append({
+                    "text": response_data.get("textDescription", ""),
+                    "timestamp": response_data.get("unixMs", 0),
+                    "uuid": response_data.get("generationUUID", str(uuid.uuid4()))
+                })
+        except json.JSONDecodeError:
+            logger.warning("Failed to parse AI response data")
+    
+    # Sort all messages by timestamp
+    all_messages = []
+    for prompt in parsed_prompts:
+        all_messages.append({
+            "role": "user",
+            "content": prompt["text"],
+            "timestamp": prompt["timestamp"],
+            "id": str(uuid.uuid4())
+        })
+    
+    for response in parsed_responses:
+        all_messages.append({
+            "role": "assistant",
+            "content": response["text"],
+            "timestamp": response["timestamp"],
+            "id": response["uuid"]
+        })
+    
+    # Sort by timestamp
+    all_messages.sort(key=lambda x: x["timestamp"])
+    
+    # Assign parent_id based on message sequence
+    for i in range(1, len(all_messages)):
+        all_messages[i]["parent_id"] = all_messages[i-1]["id"]
+    
+    # Extract workspace metadata if available
+    workspace_title = "Cursor Workspace"
+    if metadata:
+        try:
+            metadata_json = json.loads(metadata[0][1])
+            workspace_title = metadata_json.get("workspaceName", workspace_title)
+        except (json.JSONDecodeError, IndexError):
+            logger.warning("Failed to parse workspace metadata")
+    
+    # Create a single conversation object
+    conversation = {
+        "id": str(uuid.uuid4()),
+        "title": workspace_title,
+        "messages": all_messages,
+        "truncation_warning": False  # Will be set to True if 100-message limit detected
+    }
+    
+    return [conversation]
 ```
 
 4. **Error Handling and Custom Exceptions**:
@@ -140,7 +189,8 @@ def query_cursor_chat_database_with_telemetry(workspace_path=None):
             {
                 "duration_ms": (time.time() - start_time) * 1000,
                 "conversation_count": len(result),
-                "message_count": sum(len(conv["messages"]) for conv in result)
+                "message_count": sum(len(conv["messages"]) for conv in result),
+                "truncation_warning": any(conv.get("truncation_warning", False) for conv in result)
             }
         )
         return result
@@ -157,13 +207,14 @@ def query_cursor_chat_database_with_telemetry(workspace_path=None):
 ```
 
 Implementation Considerations:
-- Focus on robust error handling with clear error messages
+- Focus on the VALIDATED database structure from research findings
+- Query ONLY the confirmed active keys: `aiService.prompts`, `aiService.generations`, `composer.composerData`
+- Handle the 100-message truncation limit with appropriate warnings
+- Use Unix millisecond timestamps for chronological ordering
+- Implement prompt-to-response correlation via timestamp matching
+- Provide robust error handling with clear error messages
 - Implement comprehensive logging for debugging
-- Use Python's built-in sqlite3 module for database access
 - Apply caching for performance optimization where appropriate
-- Handle all three known data formats (legacy, standard, new)
-- Ensure proper message threading and conversation context preservation
-- Extract metadata for intelligent boundary detection
 
 # Test Strategy:
 The implementation will be verified through a comprehensive testing approach:
@@ -172,7 +223,7 @@ The implementation will be verified through a comprehensive testing approach:
 ```python
 def test_query_cursor_chat_database():
     """Test the main query function with a mock database."""
-    # Setup mock database with test data
+    # Setup mock database with test data based on validated structure
     mock_db_path = setup_mock_cursor_database()
     
     # Test with explicit path
@@ -185,43 +236,88 @@ def test_query_cursor_chat_database():
         assert "id" in conv
         assert "title" in conv
         assert "messages" in conv
-        assert "format" in conv
+        assert "truncation_warning" in conv
         
         # Verify message structure
         for msg in conv["messages"]:
             assert "role" in msg
             assert "content" in msg
             assert "id" in msg
+            assert "timestamp" in msg
+            if msg != conv["messages"][0]:  # All but first message should have parent_id
+                assert "parent_id" in msg
             
     # Test error handling with invalid path
     with pytest.raises(CursorDatabaseError):
         query_cursor_chat_database("/invalid/path")
 ```
 
-2. **Format-Specific Tests**:
+2. **Data Processing Tests**:
 ```python
-def test_parse_legacy_format():
-    """Test parsing of legacy format data."""
-    mock_data = [(
+def test_process_cursor_chat_data():
+    """Test processing of raw database data into structured conversations."""
+    # Mock data based on validated structure
+    mock_prompts = [(
         "aiService.prompts", 
-        json.dumps({
-            "id": "test-conv-1",
-            "title": "Test Conversation",
-            "messages": [
-                {"role": "user", "content": "Hello", "id": "msg1"},
-                {"role": "assistant", "content": "Hi there", "id": "msg2", "parent_id": "msg1"}
-            ]
-        })
+        json.dumps([{
+            "text": "Hello", 
+            "commandType": 4,
+            "unixMs": 1620000000000
+        }])
     )]
     
-    result = _parse_legacy_format(mock_data)
+    mock_responses = [(
+        "aiService.generations", 
+        json.dumps([{
+            "textDescription": "Hi there", 
+            "type": "composer",
+            "unixMs": 1620000010000,
+            "generationUUID": "test-uuid-1"
+        }])
+    )]
+    
+    mock_metadata = [(
+        "composer.composerData", 
+        json.dumps({"workspaceName": "Test Workspace"})
+    )]
+    
+    result = _process_cursor_chat_data(mock_prompts, mock_responses, mock_metadata)
     assert len(result) == 1
-    assert result[0]["id"] == "test-conv-1"
+    assert result[0]["title"] == "Test Workspace"
     assert len(result[0]["messages"]) == 2
-    assert result[0]["messages"][1]["parent_id"] == "msg1"
+    assert result[0]["messages"][0]["role"] == "user"
+    assert result[0]["messages"][1]["role"] == "assistant"
+    assert result[0]["messages"][1]["parent_id"] == result[0]["messages"][0]["id"]
+    assert result[0]["messages"][0]["timestamp"] < result[0]["messages"][1]["timestamp"]
 ```
 
-3. **Integration Tests**:
+3. **Truncation Detection Tests**:
+```python
+def test_truncation_detection():
+    """Test detection of the 100-message truncation limit."""
+    # Generate exactly 100 AI responses
+    mock_responses = []
+    for i in range(100):
+        mock_responses.append((
+            "aiService.generations", 
+            json.dumps({
+                "textDescription": f"Response {i}", 
+                "type": "composer",
+                "unixMs": 1620000000000 + (i * 1000),
+                "generationUUID": f"test-uuid-{i}"
+            })
+        ))
+    
+    # Process with minimal other data
+    result = _process_cursor_chat_data([], mock_responses, [])
+    assert result[0]["truncation_warning"] == True
+    
+    # Test with fewer messages
+    result = _process_cursor_chat_data([], mock_responses[:50], [])
+    assert result[0]["truncation_warning"] == False
+```
+
+4. **Integration Tests**:
 ```python
 def test_integration_with_sqlite_reader():
     """Test integration with the SQLite reader function."""
@@ -235,7 +331,7 @@ def test_integration_with_sqlite_reader():
         assert len(conversations) > 0
 ```
 
-4. **Telemetry Tests**:
+5. **Telemetry Tests**:
 ```python
 def test_telemetry_integration():
     """Test telemetry integration in the database query function."""
@@ -244,7 +340,12 @@ def test_telemetry_integration():
     
     # Mock database to return test data
     with patch("mcp.cursor_db.query_cursor_chat_database") as mock_query:
-        mock_query.return_value = [{"id": "test", "title": "Test", "messages": []}]
+        mock_query.return_value = [{
+            "id": "test", 
+            "title": "Test", 
+            "messages": [],
+            "truncation_warning": True
+        }]
         
         # Call the function with telemetry
         result = query_cursor_chat_database_with_telemetry()
@@ -252,6 +353,8 @@ def test_telemetry_integration():
         # Verify telemetry events
         events = collector.get_events()
         assert any(e["name"] == "cursor_db_query_success" for e in events)
+        success_event = next(e for e in events if e["name"] == "cursor_db_query_success")
+        assert success_event["properties"]["truncation_warning"] == True
         
     # Test failure case
     with patch("mcp.cursor_db.query_cursor_chat_database") as mock_query:
@@ -266,12 +369,16 @@ def test_telemetry_integration():
         assert any(e["name"] == "cursor_db_query_failure" for e in events)
 ```
 
-5. **Performance Tests**:
+6. **Performance Tests**:
 ```python
 def test_performance_with_large_dataset():
     """Test performance with a large chat history dataset."""
-    # Generate large mock dataset
-    large_db_path = setup_large_mock_cursor_database(conversation_count=100, messages_per_conversation=50)
+    # Generate large mock dataset based on validated structure
+    large_db_path = setup_large_mock_cursor_database(
+        prompt_count=50,
+        response_count=50,
+        with_timestamps=True
+    )
     
     # Measure execution time
     start_time = time.time()
@@ -279,16 +386,18 @@ def test_performance_with_large_dataset():
     execution_time = time.time() - start_time
     
     # Verify results
-    assert len(conversations) == 100
-    assert all(len(conv["messages"]) == 50 for conv in conversations)
+    assert len(conversations) == 1
+    assert len(conversations[0]["messages"]) == 100
     
     # Performance assertion (adjust threshold as needed)
     assert execution_time < 2.0, f"Query took too long: {execution_time} seconds"
 ```
 
-6. **Manual Testing Checklist**:
+7. **Manual Testing Checklist**:
 - Verify function works with actual Cursor installations on different platforms
 - Test with different Cursor versions to ensure compatibility
-- Validate parsing of all three data formats with real-world examples
+- Validate parsing with real-world examples from the research document
 - Check memory usage with large chat histories
 - Verify error messages are clear and actionable
+- Confirm truncation warnings appear when appropriate
+- Validate timestamp-based message ordering matches actual conversation flow
