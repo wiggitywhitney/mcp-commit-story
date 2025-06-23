@@ -196,6 +196,60 @@ ls -la ~/.config/Cursor/
 
 For high-frequency usage, consider caching the discovered database path in your application rather than running discovery repeatedly.
 
+## Integration Testing
+
+The cursor_db package includes comprehensive integration tests to verify end-to-end functionality across platforms and scenarios.
+
+### Running Integration Tests
+
+```bash
+# Run all cursor_db integration tests
+python -m pytest tests/integration/test_cursor_db_integration.py -v
+
+# Run specific test categories
+python -m pytest tests/integration/test_cursor_db_integration.py::TestCursorDbIntegration::test_end_to_end_chat_data_extraction_workflow -v
+python -m pytest tests/integration/test_cursor_db_integration.py::TestCursorDbPerformance -v
+```
+
+### Test Coverage Areas
+
+**End-to-End Workflows**:
+- Complete database discovery → validation → query workflows
+- Cross-platform platform detection and path resolution
+- Multiple database discovery and selection logic
+- Context manager resource cleanup and lifecycle
+
+**Performance Benchmarks**:
+- Query execution time < 100ms
+- Database connection time < 50ms  
+- Batch query execution < 200ms
+- Large workspace discovery < 1000ms
+- Concurrent access simulation < 500ms
+
+**Error Handling**:
+- Platform detection failures
+- Database not found scenarios
+- Access permission issues
+- Schema validation errors
+
+**Integration Points**:
+- Platform detection → workspace path resolution
+- Database discovery → validation → connection
+- SQL querying → result processing
+- Error propagation through complete call stack
+
+### Mock Testing Framework
+
+The integration tests use a comprehensive mock testing framework that:
+
+- Creates realistic SQLite databases with chat data structure
+- Simulates cross-platform environment scenarios
+- Mocks file system operations without requiring real Cursor installation
+- Provides performance benchmarking with controlled database sizes
+- Tests error conditions and edge cases safely
+
+This allows thorough testing of integration workflows without dependencies on actual Cursor installations or workspace databases.
+
 ## Security Considerations
 
 - **Read-Only Access**: The system only reads from Cursor databases, never modifies them
