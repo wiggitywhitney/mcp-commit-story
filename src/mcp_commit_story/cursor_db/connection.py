@@ -273,6 +273,9 @@ def query_cursor_chat_database(database_path: str, sql: str, parameters: Optiona
     logger.debug(f"SQL: {sql}")
     logger.debug(f"Parameters: {parameters}")
     
+    # Validate database file first
+    _validate_database_file(Path(database_path))
+    
     try:
         with sqlite3.connect(database_path) as conn:
             cursor = conn.cursor()

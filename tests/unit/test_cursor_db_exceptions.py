@@ -239,13 +239,13 @@ class TestConnectionFunctionIntegration:
             # Remove read permissions
             os.chmod(temp_path, 0o000)
             
-            # The function catches OperationalError with "unable to open database file" 
-            # at the outer level and treats it as corruption, not access error
-            with pytest.raises(CursorDatabaseQueryError) as exc_info:  # Changed from CursorDatabaseAccessError
+            # The function should detect permission issues and raise CursorDatabaseAccessError
+            with pytest.raises(CursorDatabaseAccessError) as exc_info:
                 query_cursor_chat_database(temp_path, "SELECT 1")
             
-            assert "corruption" in exc_info.value.message.lower()  # Changed assertion
+            assert "permission" in exc_info.value.message.lower()
             assert exc_info.value.context["path"] == temp_path
+            assert exc_info.value.context["permission_type"] == "read"
         finally:
             # Restore permissions and clean up
             os.chmod(temp_path, 0o644)
