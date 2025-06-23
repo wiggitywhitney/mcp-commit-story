@@ -647,3 +647,116 @@ Add comprehensive telemetry instrumentation to the platform detection module fol
 - Test telemetry behavior under high-load scenarios (large workspace enumeration)
 </info added on 2025-06-21T10:31:13.911Z>
 
+## 7. Cursor Chat Data Format Research [pending]
+### Dependencies: 45.1, 45.2, 45.3
+### Description: Deep analysis of Cursor chat data storage to verify completeness and format before Task 46 implementation.
+### Details:
+1. Enhanced exploration script to analyze:
+   - Message count and date ranges
+   - Role indicators (user vs assistant)
+   - Conversation threading/structure
+   - Potential truncation patterns
+
+2. Multi-key investigation:
+   - aiService.prompts (current focus)
+   - aiService.generations (might contain AI responses?)
+   - composer.composerData (could be conversation state?)
+
+3. Validation requirements:
+   - Verify full conversation capture
+   - Document message structure definitively
+   - Test across different Cursor versions/workspaces
+   - Create implementation specification for Task 46
+   - Compare findings against original research assumptions
+   - Update research doc (docs/cursor-chat-database-research.md), only changing relevant parts
+   - Be careful not to delete relevant research
+
+4. Critical questions to answer:
+   - Is aiService.prompts ALL chat history or just user prompts?
+   - What's the actual message count and date range in each workspace?
+   - Where are the AI responses stored?
+   - Is there any truncation happening based on size/age?
+<info added on 2025-06-23T10:37:59.537Z>
+# Implementation Plan for Subtask 45.7: Cursor Chat Data Format Research
+
+## Objective
+Deep analysis of Cursor chat data storage to verify completeness and format before Task 46 implementation
+
+### TDD Steps:
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_chat_data_analysis.py`
+   - Test `analyze_chat_data_completeness(conn)` function
+   - Test cases: message counting, role detection, timestamp analysis
+   - Test `compare_storage_keys(conn)` for multi-key investigation
+   - Test `detect_conversation_structure(messages)` for threading analysis
+   - Test `validate_message_format(message_data)` for structure verification
+   - Mock real database responses with sample chat data
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **GET APPROVAL FOR DESIGN CHOICES**
+   - **PAUSE FOR MANUAL APPROVAL**: Analysis scope and depth level
+   - **PAUSE FOR MANUAL APPROVAL**: Which storage keys to investigate beyond aiService.prompts
+   - **PAUSE FOR MANUAL APPROVAL**: Message structure assumptions and validation criteria
+
+3. **IMPLEMENT FUNCTIONALITY**
+   - Create `src/mcp_commit_story/cursor_db/chat_analysis.py`
+   - Implement `analyze_chat_data_completeness()` with message counting and date analysis
+   - Add `investigate_storage_keys()` to check aiService.prompts, aiService.generations, composer.composerData
+   - Implement `detect_conversation_patterns()` for role identification and threading
+   - Add `validate_chat_format()` to verify message structure and completeness
+   - Create `generate_analysis_report()` for comprehensive findings documentation
+   - Integrate with existing exception system for clear error reporting
+   - **RUN TESTS - VERIFY THEY PASS**
+
+4. **DOCUMENT AND COMPLETE**
+   - Add documentation IF NEEDED in three places:
+     1. **Docs directory**: Update cursor-chat-database-research.md with validated findings
+     2. **PRD**: Update chat integration requirements based on actual data format
+     3. **Engineering Spec**: Add definitive chat data extraction specifications
+   - **Compare findings against original research assumptions**
+   - **Update research doc carefully, preserving existing relevant content**
+   - **Run the entire test suite and make sure all tests are passing**
+   - **Make sure pyproject.toml is updated as needed**
+   - **MARK COMPLETE**
+</info added on 2025-06-23T10:37:59.537Z>
+<info added on 2025-06-23T10:41:00.819Z>
+# Implementation Plan for Subtask 45.7: Cursor Chat Data Format Research
+
+## Objective
+Deep analysis of Cursor chat data storage to verify completeness and format before Task 46 implementation
+
+### Research Investigation Steps:
+1. **ENHANCE EXPLORATION SCRIPT**
+   - Modify existing `scripts/explore_cursor_databases.py` (no new production code)
+   - Add message counting and date range analysis functions
+   - Add multi-key investigation (aiService.prompts, aiService.generations, composer.composerData)
+   - Add message structure analysis (role indicators, conversation threading)
+   - Add truncation pattern detection
+
+2. **GATHER REAL DATA**
+   - Run enhanced script against multiple Cursor databases
+   - Collect findings from different workspaces and usage patterns
+   - Document message counts, date ranges, and data completeness
+   - Investigate all three potential storage keys thoroughly
+   - Analyze actual message structure and format variations
+
+3. **ANSWER CRITICAL QUESTIONS**
+   - Is aiService.prompts ALL chat history or just user prompts?
+   - What's the actual message count and date range in each workspace?
+   - Where are the AI responses stored? (Check aiService.generations specifically)
+   - Is there any truncation happening based on size/age?
+   - Do messages have role indicators or threading information?
+
+4. **DOCUMENT FINDINGS**
+   - Update `docs/cursor-chat-database-research.md` with validated findings
+   - Compare against original research assumptions
+   - Be careful to preserve existing relevant research content
+   - Provide definitive answers for Task 46 implementation
+   - Include specific examples and data samples
+   - Document any variations found across different databases
+
+**Deliverable**: Updated research document that definitively answers chat data format questions
+
+**No Production Code**: This is investigative work with throwaway scripts only
+</info added on 2025-06-23T10:41:00.819Z>
+
