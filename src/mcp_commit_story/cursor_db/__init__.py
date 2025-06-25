@@ -17,6 +17,7 @@ from .message_extraction import (
     extract_prompts_data,
     extract_generations_data
 )
+from .message_reconstruction import reconstruct_chat_history
 
 __all__ = [
     'PlatformType',
@@ -26,5 +27,6 @@ __all__ = [
     'validate_workspace_path',
     'execute_cursor_query',
     'extract_prompts_data',
-    'extract_generations_data'
+    'extract_generations_data',
+    'reconstruct_chat_history'
 ] 
