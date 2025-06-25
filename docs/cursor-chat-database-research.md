@@ -181,6 +181,38 @@ def get_cursor_workspace_paths():
     return [p for p in paths if p.exists()]
 ```
 
+### Core Query Executor Implementation ✅ **IMPLEMENTED (Task 46.1)**
+
+**Module**: `src/mcp_commit_story/cursor_db/query_executor.py`  
+**Function**: `execute_cursor_query(db_path: str, query: str, parameters: Optional[Tuple[Any, ...]] = None) -> List[Tuple[Any, ...]]`
+
+**Design Specifications**:
+- **Fixed 5-second timeout** for database connections
+- **Context manager usage** for automatic connection cleanup
+- **Comprehensive error handling** with custom exceptions:
+  - `CursorDatabaseAccessError` for file/permission/lock issues
+  - `CursorDatabaseQueryError` for SQL syntax/parameter issues
+- **SQL injection prevention** through parameterized queries
+- **Returns native SQLite format**: `List[Tuple[Any, ...]]`
+
+**Key Features**:
+- Exception type detection by name for test compatibility
+- Proper error wrapping with contextual information
+- No connection pooling (one connection per query)
+- Extensive test coverage (17 test cases)
+
+**Usage Example**:
+```python
+from mcp_commit_story.cursor_db import execute_cursor_query
+
+# Query chat data from Cursor database
+results = execute_cursor_query(
+    db_path="/path/to/state.vscdb",
+    query="SELECT rowid, [key], value FROM ItemTable WHERE [key] = ?",
+    parameters=("aiService.prompts",)
+)
+```
+
 ### Database Query Function
 ```python
 import sqlite3
