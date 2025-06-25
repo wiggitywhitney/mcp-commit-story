@@ -1,7 +1,7 @@
 # Task ID: 43
 # Title: Research Architecture Questions and Terminal Commands Value
 # Status: pending
-# Dependencies: 42, 45
+# Dependencies: 42
 # Priority: medium
 # Description: Research critical architecture questions about chat parsing location and terminal commands value to inform system design and implementation decisions.
 # Details:

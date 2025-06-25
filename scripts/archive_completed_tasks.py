@@ -15,7 +15,15 @@ def find_complete_task_units(tasks_data):
     """Find main tasks that are complete units (main + all subtasks done)."""
     complete_units = []
     
-    for task in tasks_data['tasks']:
+    # Handle both old format (tasks_data['tasks']) and new format (tasks_data['master']['tasks'])
+    if 'master' in tasks_data and 'tasks' in tasks_data['master']:
+        tasks_list = tasks_data['master']['tasks']
+    elif 'tasks' in tasks_data:
+        tasks_list = tasks_data['tasks']
+    else:
+        raise ValueError("Unable to find tasks in the provided data structure")
+    
+    for task in tasks_list:
         # Check if main task is done
         if task['status'] != 'done':
             continue
@@ -100,7 +108,17 @@ def main():
     archived_ids = []
     remaining_tasks = []
     
-    for task in tasks_data['tasks']:
+    # Handle both old format and new format
+    if 'master' in tasks_data and 'tasks' in tasks_data['master']:
+        tasks_list = tasks_data['master']['tasks']
+        tasks_key = ['master', 'tasks']
+    elif 'tasks' in tasks_data:
+        tasks_list = tasks_data['tasks']
+        tasks_key = ['tasks']
+    else:
+        raise ValueError("Unable to find tasks in the provided data structure")
+    
+    for task in tasks_list:
         if any(unit['id'] == task['id'] for unit in complete_units):
             archived_id = archive_task_unit(task, archive_dir, completed_tasks_json_path)
             archived_ids.append(archived_id)
@@ -108,7 +126,10 @@ def main():
             remaining_tasks.append(task)
     
     # Update main tasks.json with remaining tasks
-    tasks_data['tasks'] = remaining_tasks
+    if len(tasks_key) == 2:
+        tasks_data[tasks_key[0]][tasks_key[1]] = remaining_tasks
+    else:
+        tasks_data[tasks_key[0]] = remaining_tasks
     with open(tasks_json_path, 'w') as f:
         json.dump(tasks_data, f, indent=2)
     

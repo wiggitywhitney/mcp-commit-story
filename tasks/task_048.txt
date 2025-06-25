@@ -1,7 +1,7 @@
 # Task ID: 48
 # Title: Implement Working Chat Collection
 # Status: pending
-# Dependencies: 45, 46, 47
+# Dependencies: 46, 47
 # Priority: high
 # Description: Refactor the existing collect_chat_history() implementation in context_collection.py with actual Cursor SQLite extraction functionality to retrieve chat data from the database.
 # Details:

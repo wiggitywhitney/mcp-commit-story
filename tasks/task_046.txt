@@ -1,7 +1,7 @@
 # Task ID: 46
 # Title: Implement Direct Database Query Function
 # Status: pending
-# Dependencies: 45
+# Dependencies: None
 # Priority: medium
 # Description: Create a function to query the Cursor chat database and extract complete conversation history with proper parsing and error handling, based on validated research findings.
 # Details:
@@ -401,3 +401,231 @@ def test_performance_with_large_dataset():
 - Verify error messages are clear and actionable
 - Confirm truncation warnings appear when appropriate
 - Validate timestamp-based message ordering matches actual conversation flow
+
+# Subtasks:
+## 1. Create Core Query Execution Module [pending]
+### Dependencies: None
+### Description: Implement the fundamental database query execution functionality with proper connection management and error handling.
+### Details:
+TDD Steps:
+
+**WRITE TESTS FIRST**
+- Create tests/unit/test_cursor_db_query_executor.py
+- Test execute_cursor_query(db_path, query, params) function
+- Test parameterized query safety (SQL injection prevention)
+- Test connection timeout handling (default 5s)
+- Test error cases: invalid db path, malformed query, locked database
+- Mock sqlite3 connections and cursors
+- RUN TESTS - VERIFY THEY FAIL
+
+**GET APPROVAL FOR DESIGN CHOICES**
+- PAUSE FOR MANUAL APPROVAL: Query timeout strategy (5s default, configurable?)
+- PAUSE FOR MANUAL APPROVAL: Return format (list of tuples vs dict vs custom type)
+- PAUSE FOR MANUAL APPROVAL: Connection pooling needs (or keep it simple?)
+
+**IMPLEMENT FUNCTIONALITY**
+- Create src/mcp_commit_story/cursor_db/query_executor.py
+- Implement execute_cursor_query() with parameterized query support
+- Add connection management with proper cleanup
+- Implement query timeout handling
+- Add comprehensive error wrapping in custom exceptions
+- RUN TESTS - VERIFY THEY PASS
+
+**DOCUMENT AND COMPLETE**
+- Add documentation to cursor-chat-database-research.md if needed
+- Update module docstrings
+- Run the entire test suite
+- MARK COMPLETE
+<info added on 2025-06-25T08:53:53.602Z>
+**Design Choice Decisions for 46.1 - Core Query Execution Module:**
+
+✅ **Query Timeout Strategy: Use a fixed 5-second timeout (not configurable)**
+- Rationale: This is just a local SQLite query. If it takes > 5s, something is seriously wrong
+- No need for configuration complexity
+
+✅ **Return Format: Use list of tuples - SQLite's native format**
+- Include type hints for clarity: List[Tuple[Any, ...]]
+- No dict conversion or custom types at this low level
+- Let higher-level functions handle any formatting needs
+
+✅ **Connection Pooling: No pooling - keep it simple**
+- One connection per query with proper cleanup
+- SQLite handles concurrent reads well
+- Avoids unnecessary complexity for a local database
+
+These decisions are documented and ready for implementation when resuming work.
+</info added on 2025-06-25T08:53:53.602Z>
+
+## 2. Implement Message Data Extraction [pending]
+### Dependencies: 46.1
+### Description: Create functions to extract and parse chat data from the ItemTable key-value structure.
+### Details:
+TDD Steps:
+
+**WRITE TESTS FIRST**
+- Create tests/unit/test_message_extraction.py
+- Test extract_prompts_data(db_path) function
+- Test extract_generations_data(db_path) function
+- Test JSON parsing with malformed data handling
+- Test handling of missing keys (aiService.prompts/generations not found)
+- Mock database responses with real-world data structures
+- RUN TESTS - VERIFY THEY FAIL
+
+**GET APPROVAL FOR DESIGN CHOICES**
+- PAUSE FOR MANUAL APPROVAL: Handling of malformed JSON (skip, error, or attempt repair?)
+- PAUSE FOR MANUAL APPROVAL: Memory strategy for large chat histories
+- PAUSE FOR MANUAL APPROVAL: Batch processing approach for 100+ messages
+
+**IMPLEMENT FUNCTIONALITY**
+- Create src/mcp_commit_story/cursor_db/message_extraction.py
+- Implement extract_prompts_data() to get user messages
+- Implement extract_generations_data() to get AI responses
+- Add robust JSON parsing with error recovery
+- Handle edge cases (empty data, missing keys)
+- RUN TESTS - VERIFY THEY PASS
+
+**DOCUMENT AND COMPLETE**
+- Document data structures found
+- Note any format variations discovered
+- Run the entire test suite
+- MARK COMPLETE
+
+## 3. Create Message Reconstruction Logic [pending]
+### Dependencies: 46.2
+### Description: Implement the logic to combine prompts and generations into chronologically ordered conversations.
+### Details:
+TDD Steps:
+
+**WRITE TESTS FIRST**
+- Create tests/unit/test_message_reconstruction.py
+- Test reconstruct_chat_history(prompts, generations) function
+- Test chronological ordering by unixMs timestamps
+- Test message pairing (prompt → generation matching)
+- Test handling of orphaned messages (prompt without generation)
+- Test truncation detection (generations count = 100)
+- RUN TESTS - VERIFY THEY FAIL
+
+**GET APPROVAL FOR DESIGN CHOICES**
+- PAUSE FOR MANUAL APPROVAL: Message format structure (dict with role, content, timestamp)
+- PAUSE FOR MANUAL APPROVAL: Handling of unpaired messages (include with warning?)
+- PAUSE FOR MANUAL APPROVAL: Truncation warning strategy
+
+**IMPLEMENT FUNCTIONALITY**
+- Create src/mcp_commit_story/cursor_db/message_reconstruction.py
+- Implement reconstruct_chat_history() with timestamp ordering
+- Add prompt-to-generation pairing logic
+- Implement truncation detection and warnings
+- Create standardized message format with role indicators
+- RUN TESTS - VERIFY THEY PASS
+
+**DOCUMENT AND COMPLETE**
+- Document message pairing algorithm
+- Add examples of reconstructed conversations
+- Run the entire test suite
+- MARK COMPLETE
+
+## 4. Add Telemetry Instrumentation [pending]
+### Dependencies: 46.3
+### Description: Add comprehensive telemetry to all query operations following telemetry standards.
+### Details:
+TDD Steps:
+
+**WRITE TESTS FIRST**
+- Create tests/unit/test_query_telemetry.py
+- Test @trace_mcp_operation decorator integration on all public functions
+- Test performance metrics collection for query operations
+- Test error categorization for query-specific failures
+- Test memory tracking for large result sets
+- Test truncation detection metrics
+- Mock telemetry backends to verify instrumentation calls
+- RUN TESTS - VERIFY THEY FAIL
+
+**GET APPROVAL FOR DESIGN CHOICES**
+- PAUSE FOR MANUAL APPROVAL: Performance thresholds for query operations
+- PAUSE FOR MANUAL APPROVAL: Query-specific telemetry attributes
+- PAUSE FOR MANUAL APPROVAL: Sampling strategy for high-frequency queries
+
+**IMPLEMENT FUNCTIONALITY**
+- Add @trace_mcp_operation to all public functions
+- Implement performance tracking with thresholds
+- Add query result metrics (message count, date range, truncation)
+- Track memory usage for large extractions
+- Add cache hit/miss tracking if caching implemented
+- Follow error categorization patterns from platform telemetry
+- RUN TESTS - VERIFY THEY PASS
+
+**DOCUMENT AND COMPLETE**
+- Update telemetry documentation if needed
+- Add query-specific metric examples
+- Run the entire test suite
+- MARK COMPLETE
+
+## 5. Implement High-Level Query Function [pending]
+### Dependencies: 46.4
+### Description: Create the main query_cursor_chat_database() function that orchestrates all components.
+### Details:
+TDD Steps:
+
+**WRITE TESTS FIRST**
+- Create tests/unit/test_query_cursor_chat_database.py
+- Test full workflow: connection → extraction → reconstruction
+- Test with real-world database structures
+- Test performance with large chat histories
+- Test comprehensive error handling
+- Test optional parameters (workspace_path, time_range)
+- RUN TESTS - VERIFY THEY FAIL
+
+**GET APPROVAL FOR DESIGN CHOICES**
+- PAUSE FOR MANUAL APPROVAL: Function signature and optional parameters
+- PAUSE FOR MANUAL APPROVAL: Return format for chat history
+- PAUSE FOR MANUAL APPROVAL: Performance optimization strategies
+
+**IMPLEMENT FUNCTIONALITY**
+- Update src/mcp_commit_story/cursor_db/__init__.py with main function
+- Implement query_cursor_chat_database() orchestrating all components
+- Add workspace path resolution integration
+- Add performance optimization (lazy loading, pagination?)
+- Implement comprehensive telemetry
+- RUN TESTS - VERIFY THEY PASS
+
+**DOCUMENT AND COMPLETE**
+- Update cursor-database-setup.md with usage examples
+- Document performance characteristics
+- Run the entire test suite
+- MARK COMPLETE
+
+## 6. Integration Testing and Documentation [pending]
+### Dependencies: 46.5
+### Description: Comprehensive integration testing and final documentation completion.
+### Details:
+TDD Steps:
+
+**WRITE TESTS FIRST**
+- Create tests/integration/test_cursor_db_full_integration.py
+- Test complete flow with real Cursor database files
+- Test edge cases: empty chats, corrupted data, large histories
+- Test error recovery and graceful degradation
+- Test telemetry data quality across full integration
+- RUN TESTS - VERIFY THEY FAIL
+
+**GET APPROVAL FOR DESIGN CHOICES**
+- PAUSE FOR MANUAL APPROVAL: Final documentation structure
+- PAUSE FOR MANUAL APPROVAL: Example usage patterns for users
+- PAUSE FOR MANUAL APPROVAL: Performance benchmark expectations
+
+**IMPLEMENT FUNCTIONALITY**
+- Create integration test fixtures with real data
+- Implement any missing error handling discovered in integration
+- Add final optimizations based on real-world testing
+- Verify telemetry data quality
+- RUN TESTS - VERIFY THEY PASS
+
+**DOCUMENT AND COMPLETE**
+- Create comprehensive usage examples in docs/
+- Document known limitations and edge cases
+- Add troubleshooting guide
+- Create performance benchmarks documentation
+- Update main README with new functionality
+- Run complete test suite (unit + integration)
+- MARK COMPLETE
+

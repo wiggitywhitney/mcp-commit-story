@@ -2,7 +2,7 @@
 # Title: Implement MCP Info Command for Diagnostics
 # Status: pending
 # Dependencies: None
-# Priority: high
+# Priority: low
 # Description: Add a new 'info' tool to the MCP server that provides diagnostic information to help users troubleshoot issues, including version, telemetry status, configuration details, and dependency availability.
 # Details:
 Implement the MCP info command in `src/mcp_commit_story/server.py` with the following features:
