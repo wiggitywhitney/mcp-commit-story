@@ -1,6 +1,6 @@
 # Task ID: 46
 # Title: Implement Direct Database Query Function
-# Status: pending
+# Status: in-progress
 # Dependencies: None
 # Priority: medium
 # Description: Create a function to query the Cursor chat database and extract complete conversation history with proper parsing and error handling, based on validated research findings.
@@ -403,7 +403,7 @@ def test_performance_with_large_dataset():
 - Validate timestamp-based message ordering matches actual conversation flow
 
 # Subtasks:
-## 1. Create Core Query Execution Module [pending]
+## 1. Create Core Query Execution Module [done]
 ### Dependencies: None
 ### Description: Implement the fundamental database query execution functionality with proper connection management and error handling.
 ### Details:
@@ -455,8 +455,48 @@ TDD Steps:
 
 These decisions are documented and ready for implementation when resuming work.
 </info added on 2025-06-25T08:53:53.602Z>
+<info added on 2025-06-25T21:41:01.267Z>
+**IMPLEMENTATION COMPLETE**
 
-## 2. Implement Message Data Extraction [pending]
+**Final Implementation Summary:**
+
+1. **Created comprehensive test suite** (tests/unit/test_cursor_db_query_executor.py):
+   - 17 test cases covering all scenarios
+   - Success cases: simple queries, parameterized queries, empty results
+   - Error handling: invalid paths, malformed SQL, locked database, parameter mismatches 
+   - Parameter safety: SQL injection prevention, None handling, empty tuples
+   - Return format validation: List[Tuple[Any, ...]] compliance
+   - Connection management: 5-second timeout, context manager cleanup
+
+2. **Implemented core query executor** (src/mcp_commit_story/cursor_db/query_executor.py):
+   - Function signature: `execute_cursor_query(db_path, query, parameters=None) -> List[Tuple[Any, ...]]`
+   - Fixed 5-second timeout as per approved design
+   - Proper context manager usage for connection cleanup
+   - Comprehensive error wrapping in custom exceptions (CursorDatabaseAccessError, CursorDatabaseQueryError)
+   - Exception type detection by name to handle mocked tests
+   - SQL injection prevention through parameterized queries
+
+3. **Integration completed**:
+   - Added to cursor_db package __init__.py exports
+   - All 17 new tests pass ✅
+   - Full test suite passes (867 tests) with no regressions ✅
+   - Function successfully importable from package ✅
+
+4. **Documentation updated**:
+   - Added implementation section to docs/cursor-chat-database-research.md ✅
+   - Comprehensive module docstrings included ✅
+   - Usage examples provided ✅
+
+**Key Implementation Details:**
+- Uses sqlite3.connect() with context manager for automatic cleanup
+- Exception handling detects SQLite error types by name for test compatibility  
+- Returns raw SQLite results (List[Tuple[Any, ...]]) as specified
+- Follows approved design choices exactly: no connection pooling, fixed timeout, comprehensive error wrapping
+
+**Ready for use by subsequent subtasks 46.2, 46.3, etc.**
+</info added on 2025-06-25T21:41:01.267Z>
+
+## 2. Implement Message Data Extraction [done]
 ### Dependencies: 46.1
 ### Description: Create functions to extract and parse chat data from the ItemTable key-value structure.
 ### Details:

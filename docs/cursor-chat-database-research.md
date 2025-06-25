@@ -198,6 +198,27 @@ def get_cursor_workspace_paths():
 **Key Features**:
 - Exception type detection by name for test compatibility
 - Proper error wrapping with contextual information
+
+### Message Data Extraction Implementation ✅ **IMPLEMENTED (Task 46.2)**
+
+**Module**: `src/mcp_commit_story/cursor_db/message_extraction.py`  
+**Functions**: 
+- `extract_prompts_data(db_path: str) -> List[Dict[str, Any]]`
+- `extract_generations_data(db_path: str) -> List[Dict[str, Any]]`
+
+**Design Choices Applied**:
+- **Malformed JSON Handling**: Skip and log approach for resilience
+  - Continue processing other messages when JSON parsing fails
+  - Log warnings for skipped messages so users know data was omitted
+  - Don't fail the entire operation due to one bad message
+- **Memory Strategy**: Load everything into memory (100 messages isn't a concern)
+- **No Batching**: 100 messages is trivial for SQLite to handle
+
+**Key Features**:
+- Uses `execute_cursor_query()` from Task 46.1 as foundation
+- Returns raw parsed JSON data structures (not interpreted messages)
+- Comprehensive test coverage (14 test cases)
+- Proper error propagation from underlying query executor
 - No connection pooling (one connection per query)
 - Extensive test coverage (17 test cases)
 

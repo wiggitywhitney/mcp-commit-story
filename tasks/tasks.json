@@ -566,7 +566,7 @@
             "title": "Implement Message Data Extraction",
             "description": "Create functions to extract and parse chat data from the ItemTable key-value structure.",
             "details": "TDD Steps:\n\n**WRITE TESTS FIRST**\n- Create tests/unit/test_message_extraction.py\n- Test extract_prompts_data(db_path) function\n- Test extract_generations_data(db_path) function\n- Test JSON parsing with malformed data handling\n- Test handling of missing keys (aiService.prompts/generations not found)\n- Mock database responses with real-world data structures\n- RUN TESTS - VERIFY THEY FAIL\n\n**GET APPROVAL FOR DESIGN CHOICES**\n- PAUSE FOR MANUAL APPROVAL: Handling of malformed JSON (skip, error, or attempt repair?)\n- PAUSE FOR MANUAL APPROVAL: Memory strategy for large chat histories\n- PAUSE FOR MANUAL APPROVAL: Batch processing approach for 100+ messages\n\n**IMPLEMENT FUNCTIONALITY**\n- Create src/mcp_commit_story/cursor_db/message_extraction.py\n- Implement extract_prompts_data() to get user messages\n- Implement extract_generations_data() to get AI responses\n- Add robust JSON parsing with error recovery\n- Handle edge cases (empty data, missing keys)\n- RUN TESTS - VERIFY THEY PASS\n\n**DOCUMENT AND COMPLETE**\n- Document data structures found\n- Note any format variations discovered\n- Run the entire test suite\n- MARK COMPLETE",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               "46.1"
             ],
@@ -783,7 +783,7 @@
     ],
     "metadata": {
       "created": "2025-06-21T07:52:11.612Z",
-      "updated": "2025-06-25T21:41:08.603Z",
+      "updated": "2025-06-25T22:13:37.989Z",
       "description": "Tasks for master context"
     }
   }

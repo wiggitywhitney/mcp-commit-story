@@ -13,6 +13,10 @@ from .platform import (
     validate_workspace_path
 )
 from .query_executor import execute_cursor_query
+from .message_extraction import (
+    extract_prompts_data,
+    extract_generations_data
+)
 
 __all__ = [
     'PlatformType',
@@ -20,5 +24,7 @@ __all__ = [
     'detect_platform',
     'get_cursor_workspace_paths',
     'validate_workspace_path',
-    'execute_cursor_query'
+    'execute_cursor_query',
+    'extract_prompts_data',
+    'extract_generations_data'
 ] 
