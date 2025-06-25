@@ -196,6 +196,128 @@ ls -la ~/.config/Cursor/
 
 For high-frequency usage, consider caching the discovered database path in your application rather than running discovery repeatedly.
 
+## Telemetry and Monitoring
+
+The platform detection system includes comprehensive telemetry instrumentation for monitoring performance, errors, and system behavior.
+
+### Telemetry Features
+
+**Performance Monitoring**:
+- Function-level performance thresholds (50ms - 1000ms depending on operation complexity)
+- Duration tracking with threshold breach detection
+- Memory usage monitoring for large workspace enumeration operations
+- Performance overhead constraint validation (under 5% impact)
+
+**Error Categorization**:
+- **Platform Detection**: `platform_detection.detection_failure`
+- **Path Operations**: `path_operations.path_not_found`, `path_operations.invalid_path_format`, `path_operations.permission_denied`
+- **Workspace Validation**: `workspace_validation.workspace_corrupted`, `workspace_validation.database_missing`, `workspace_validation.no_valid_workspaces`
+
+**Cache Performance**:
+- Cache hit/miss ratios for path validation
+- Cache effectiveness monitoring
+
+**Workspace Metrics**:
+- Database presence and count tracking
+- Valid database validation metrics
+- Workspace enumeration efficiency
+
+### Telemetry Configuration Examples
+
+**Enable Telemetry Monitoring**:
+```python
+import logging
+from mcp_commit_story.telemetry import configure_telemetry
+
+# Enable telemetry with OpenTelemetry
+configure_telemetry(
+    service_name="cursor-platform-detection",
+    endpoint="http://localhost:4317"  # OTLP endpoint
+)
+
+# Enable debug logging to see telemetry data
+logging.basicConfig(level=logging.DEBUG)
+logging.getLogger("mcp_commit_story.cursor_db.platform").setLevel(logging.DEBUG)
+```
+
+**Monitor Platform Detection Performance**:
+```python
+from mcp_commit_story.cursor_db.platform import detect_platform, get_cursor_workspace_paths
+from mcp_commit_story.telemetry import get_mcp_metrics
+
+# Platform operations are automatically instrumented
+platform = detect_platform()  # Monitored: duration, errors, platform type
+paths = get_cursor_workspace_paths()  # Monitored: workspace count, memory usage
+
+# Access metrics programmatically
+metrics = get_mcp_metrics()
+print(f"Platform detection calls: {metrics.get('platform_detection_calls', 0)}")
+```
+
+**Performance Threshold Configuration**:
+```python
+# Default thresholds (in milliseconds):
+TELEMETRY_THRESHOLDS = {
+    "detect_platform": 50,           # Platform identification
+    "get_cursor_workspace_paths": 100,  # Workspace path enumeration  
+    "validate_workspace_path": 200,     # Individual path validation
+    "find_valid_workspace_paths": 1000, # Full workspace discovery
+    "get_primary_workspace_path": 200   # Primary workspace selection
+}
+```
+
+### Monitoring Integration
+
+**OpenTelemetry Integration**:
+The platform detection module exports traces and metrics in OpenTelemetry format, compatible with:
+- Jaeger for distributed tracing
+- Prometheus for metrics collection
+- Grafana for dashboards and alerts
+- DataDog, New Relic, and other APM tools
+
+**Custom Metrics Dashboard**:
+Key metrics to monitor:
+- `platform_detection_duration_ms`: Platform identification time
+- `workspace_discovery_duration_ms`: Workspace enumeration time
+- `workspace_count`: Number of workspaces discovered
+- `valid_workspace_count`: Number of valid workspaces found
+- `cache_hit_ratio`: Path validation cache effectiveness
+- `memory_usage_mb`: Memory consumption during operations
+- `error_rate_by_category`: Error frequency by type
+
+**Alerting Recommendations**:
+- Alert on detection duration > 1000ms (indicates performance issues)
+- Alert on error_rate > 5% (indicates systematic problems)
+- Alert on valid_workspace_count = 0 (indicates no accessible workspaces)
+- Alert on memory_usage_mb > 100MB (indicates memory leak potential)
+
+### Troubleshooting with Telemetry
+
+**Performance Issues**:
+```python
+# Check performance metrics
+from mcp_commit_story.telemetry import get_tracer
+
+tracer = get_tracer()
+with tracer.start_as_current_span("debug_platform_detection") as span:
+    # Your platform detection code here
+    span.set_attribute("debug.enabled", True)
+```
+
+**Error Investigation**:
+Telemetry provides detailed error context:
+- Platform type and version information
+- File system access patterns
+- Memory usage during failures
+- Performance degradation indicators
+
+**Production Monitoring**:
+In production environments, monitor these key indicators:
+- Workspace discovery success rate > 95%
+- Average detection time < 200ms
+- Cache hit ratio > 80%
+- Memory growth patterns stable
+
 ## Integration Testing
 
 The cursor_db package includes comprehensive integration tests to verify end-to-end functionality across platforms and scenarios.
