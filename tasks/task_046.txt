@@ -734,7 +734,7 @@ Implementation Pattern: Follow Task 45.6 telemetry patterns
 - Reference completed Task 45.6 implementation for consistent patterns
 </info added on 2025-06-25T23:38:06.532Z>
 
-## 5. Implement High-Level Query Function [pending]
+## 5. Implement High-Level Query Function [done]
 ### Dependencies: 46.4
 ### Description: Create the main query_cursor_chat_database() function that orchestrates all components.
 ### Details:
@@ -767,6 +767,125 @@ TDD Steps:
 - Document performance characteristics
 - Run the entire test suite
 - MARK COMPLETE
+<info added on 2025-06-26T00:25:29.272Z>
+## Complete Implementation Plan for Task 46.5
+
+### Design Decisions
+
+**Function Purpose & Context:**
+- Function designed for Python interpreter execution (git hooks, background processes), not AI assistant interaction
+- Provides programmatic access to cursor chat data for automation workflows
+- First user-facing API function in cursor_db package
+
+**Function Signature:**
+- Minimal signature: `def query_cursor_chat_database() -> Dict` (no parameters)
+- No workspace path parameter - function will auto-detect workspace using existing platform detection
+- Returns Dict format for easy JSON serialization and programmatic consumption
+
+**Return Format Enhancement:**
+- Extends reconstruct_chat_history() format with workspace_info metadata
+- Structure:
+  ```python
+  {
+    "workspace_info": {
+      "workspace_path": str,
+      "database_path": str, 
+      "last_updated": str,
+      "total_messages": int
+    },
+    "chat_history": [...] # existing reconstruct_chat_history format
+  }
+  ```
+
+**Performance & Caching:**
+- No caching for initial implementation (keep simple)
+- Performance threshold: 500ms (sum of component thresholds: 50+100+100+200+overhead)
+- Will orchestrate existing components: execute_cursor_query + extract functions + reconstruct
+
+**Error Handling:**
+- Graceful handling of missing workspace/database
+- Return empty structure with error indicators rather than raising exceptions
+- Maintain telemetry tracking for all error scenarios
+
+### TDD Implementation Steps
+
+1. **Write Tests First:**
+   - Create tests/unit/test_query_cursor_chat_database.py
+   - Test successful data retrieval with workspace_info
+   - Test missing database graceful handling
+   - Test empty database scenarios
+   - Test telemetry instrumentation (@trace_mcp_operation decorator)
+   - Test performance threshold tracking (500ms)
+
+2. **Run Tests to Verify Failure:**
+   - Confirm tests fail for the right reasons (function doesn't exist)
+
+3. **Implement Core Functionality:**
+   - Add function to cursor_db/__init__.py for easy import
+   - Orchestrate existing components:
+     - Use platform detection to find workspace
+     - Call extract_prompts_data() and extract_generations_data()
+     - Call reconstruct_chat_history()
+     - Add workspace_info metadata wrapper
+   - Handle all error scenarios gracefully
+
+4. **Add Telemetry Instrumentation:**
+   - Apply @trace_mcp_operation("cursor_db.query_chat_database") decorator
+   - Track telemetry attributes:
+     - workspace_path, database_path, total_messages
+     - query_duration_ms, threshold_exceeded (500ms)
+     - error.type, error.category for failure cases
+
+5. **Run Tests to Verify Success:**
+   - All tests should pass
+   - Verify telemetry data collection
+   - Confirm graceful error handling
+
+6. **Add Comprehensive Documentation:**
+   - Detailed docstring with usage examples
+   - Document return format structure
+   - Explain error scenarios and return values
+   - Include performance considerations
+
+7. **Mark Task Complete:**
+   - Verify all requirements met
+   - Update task status to 'done'
+
+### Documentation Strategy
+
+**Code Documentation Focus:**
+- Comprehensive function docstring as primary documentation
+- First user-facing API function requires exemplary documentation
+- Include practical usage examples for Python interpreter context
+- Document return format with type hints and structure examples
+- Explain error scenarios and expected return values
+- Note performance characteristics and thresholds
+
+**Documentation Scope:**
+- Code documentation only for this task (docstrings and comments)
+- No updates to Docs/PRD/Engineering Spec (deferred to Task 46.8)
+- Focus on making function self-documenting for developers
+
+**Docstring Requirements:**
+- Usage examples showing typical import and call patterns
+- Complete return format documentation with example output
+- Error handling scenarios and return values
+- Performance notes about 500ms threshold
+- Integration notes for git hooks and automation contexts
+
+**Example Usage Documentation:**
+```python
+# Example for docstring:
+from mcp_commit_story.cursor_db import query_cursor_chat_database
+
+# Get complete chat history with workspace metadata
+result = query_cursor_chat_database()
+if result['workspace_info']['total_messages'] > 0:
+    # Process chat history
+    for message in result['chat_history']:
+        # Handle message data
+```
+</info added on 2025-06-26T00:25:29.272Z>
 
 ## 6. Integration Testing and Documentation [pending]
 ### Dependencies: 46.5
@@ -856,4 +975,29 @@ Cannot merge chronologically due to missing prompt timestamps. Return fragmented
 2. Reuse extract_prompts_data() and extract_generations_data() from Task 46.2
 3. Return simple list structure with database source tracking
 4. Add comprehensive error handling with partial result support
+
+## 8. Comprehensive Documentation [pending]
+### Dependencies: 46.5
+### Description: Create comprehensive documentation for the cursor_db package now that the implementation is complete.
+### Details:
+Create docs/cursor-db-api-guide.md with:
+
+API usage examples for query_cursor_chat_database()
+Complete workflow examples
+Troubleshooting common issues
+Performance considerations
+
+
+Update docs/cursor-chat-database-research.md with:
+
+Architecture overview of the implemented cursor_db package
+How all the components work together
+Integration patterns
+
+
+Update Engineering Spec with:
+
+cursor_db package architecture
+API design decisions
+Error handling strategy
 

@@ -79,6 +79,7 @@ PERFORMANCE_THRESHOLDS = {
     "extract_prompts_data": 100,       # Query + JSON parsing (milliseconds)
     "extract_generations_data": 100,   # Query + JSON parsing (milliseconds)
     "reconstruct_chat_history": 200,   # Processing + sorting (milliseconds)
+    "query_chat_database": 500,        # High-level orchestration function (milliseconds)
 }
 
 # Config sampling rates (approved specifications)
