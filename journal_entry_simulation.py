@@ -1,7 +1,26 @@
 #!/usr/bin/env python3
 """
-Simulate the journal entry generation for commit 8729764
-This recreates what the MCP tool would do by following the exact patterns.
+Journal Entry Simulation Script
+
+IMPORTANT: This script contains hardcoded content that must be updated for each new commit!
+
+FOR AI EXECUTORS:
+1. Update commit_hash variable (line ~20) to the target commit hash
+2. Update all hardcoded content in create_journal_entry_for_commit() to match actual commit:
+   - summary: What was actually accomplished in the commit
+   - technical_synopsis: Technical details of what was implemented/changed
+   - accomplishments: List of what was actually achieved
+   - frustrations: Real challenges encountered (or "None" if applicable)
+   - discussion_notes: Actual conversation excerpts from the session
+   - terminal_commands: Commands that were actually run
+   - tone_mood: Actual mood and indicators from the work session
+
+The script will automatically:
+- Get real commit metadata from git (author, timestamp, message)
+- Determine today's date for the journal file
+- Format the entry properly
+
+DO NOT use the existing hardcoded content - it's from a different commit entirely!
 """
 
 import sys
@@ -14,11 +33,23 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 def create_journal_entry_for_commit():
     """
-    Simulate the journal generation process for commit 8729764
-    following the exact patterns from the AI functions.
+    Generate journal entry for the specified commit.
+    
+    CRITICAL: All content below is hardcoded and MUST be updated for each new commit!
+    The existing content is from an old commit and should be completely replaced.
+    
+    Update these variables with actual commit content:
+    - summary: High-level description of what was accomplished
+    - technical_synopsis: Detailed technical breakdown of changes
+    - accomplishments: Bullet points of what was achieved
+    - frustrations: Real challenges (or empty list if none)
+    - discussion_notes: Actual conversation snippets from the session
+    - terminal_commands: Commands that were actually executed
+    - tone_mood: Actual mood assessment from the work
     """
     
     # Get commit metadata from git
+    # TODO: UPDATE THIS for each new commit!
     commit_hash = "c40a402"
     
     # Get commit details from git
@@ -58,12 +89,14 @@ def create_journal_entry_for_commit():
     ]
     
     # Summary - based on commit and implementation work
+    # TODO: REPLACE with actual summary of what was accomplished in the target commit
     summary = ("Successfully documented and preserved a critical performance optimization insight for the cursor_db package. "
                "Identified inefficiency in current database processing where all data is extracted from all databases every time functions are called. "
                "Created Task 46.9 with comprehensive implementation plan for incremental database processing using modification time tracking. "
                "Added reflection to journal documenting the discovery and strategic approach to address the optimization opportunity.")
     
     # Technical Synopsis - detailed implementation
+    # TODO: REPLACE with actual technical details of what was implemented/changed in the target commit
     technical_synopsis = """**Performance Optimization Discovery:**
 - Identified critical inefficiency in current cursor_db database processing approach
 - Current implementation extracts ALL data from ALL databases on every function call
@@ -96,6 +129,7 @@ def create_journal_entry_for_commit():
 **Implementation Results:** Successfully preserved critical performance optimization insight with detailed implementation plan and reflection documentation for future development work"""
 
     # Accomplishments
+    # TODO: REPLACE with actual accomplishments from the target commit work
     accomplishments = [
         "✅ **Identified critical performance bottleneck** in cursor_db database processing where all data is extracted every time",
         "✅ **Created Task 46.9 with comprehensive optimization plan** for incremental database processing using modification times", 
@@ -110,6 +144,7 @@ def create_journal_entry_for_commit():
     ]
     
     # Frustrations - implementation challenges
+    # TODO: REPLACE with actual frustrations from the target commit work (or empty list if none)
     frustrations = [
         "Time pressure of needing to leave while having important optimization insight - rushing to preserve the discovery properly",
         "Balancing comprehensive task planning with limited time to implement - ensuring Task 46.9 has enough detail for future work", 
@@ -118,7 +153,7 @@ def create_journal_entry_for_commit():
     ]
     
     # Discussion notes - simulate extracting from chat context  
-    # Based on performance optimization discovery conversation
+    # TODO: REPLACE with actual conversation excerpts from the target commit session
     discussion_notes = [
         '> **Human:** "Please read ALL of this journal file and give me a high level, succinct overview of everything I\'ve accomplished today"',
         '',
@@ -141,6 +176,7 @@ def create_journal_entry_for_commit():
     ]
     
     # Terminal commands - the actual commands run
+    # TODO: REPLACE with actual terminal commands executed during the target commit work
     terminal_commands = [
         "find ~/.cursor -name \"state.vscdb\" -exec ls -la {} \\; 2>/dev/null | head -10",
         "python -c \"import os; print('Database metadata available:', hasattr(os.path, 'getmtime'))\"",
@@ -153,6 +189,7 @@ def create_journal_entry_for_commit():
     ]
     
     # Tone and mood
+    # TODO: REPLACE with actual mood and indicators from the target commit work session
     tone_mood = {
         "mood": "Insightful and proactive",
         "indicators": ("The recognition of database processing inefficiency demonstrates analytical thinking and performance awareness. "
