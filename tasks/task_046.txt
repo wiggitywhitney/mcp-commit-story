@@ -1168,4 +1168,100 @@ Update Engineering Spec with:
 cursor_db package architecture
 API design decisions
 Error handling strategy
+<info added on 2025-06-26T01:45:37.944Z>
+# Implementation Plan for Task 46.8: Comprehensive Documentation
+
+## Implementation Checklist
+
+### 1. Remove ALL Signal File References ❌
+
+**Files to clean:**
+- `docs/signal-format.md` - DELETE ENTIRE FILE (obsolete signal architecture)
+- `tasks.json` - Remove tasks 37.1-37.5 (signal file tasks)
+- `completed_tasks.json` - Remove signal file implementation history
+- `docs/cursor-chat-discovery.md` - Remove "signal-based workflow" references
+- `docs/architecture.md` - Update workflow descriptions to remove signal mentions
+
+**Search terms to find and remove:**
+- "signal file", "signal_management", "create_tool_signal"
+- ".mcp-commit-story/signals", "signal-based", "signal architecture"
+- "call_mcp_tool" (old placeholder function)
+
+### 2. Rename and Refactor Cursor Documentation ✏️
+
+**Action:** Rename `docs/cursor-chat-database-research.md` → `docs/cursor-database-implementation.md`
+
+**Required sections:**
+- Overview
+- Background Research
+- Implementation Architecture
+- Technical Details
+- Design Decisions
+- Limitations & Considerations
+- API Reference link
+
+### 3. Create Comprehensive API Guide 📚
+
+**Create `docs/cursor-db-api-guide.md`**
+
+**Sections to include:**
+- Overview with value proposition
+- Quick start with working example
+- Complete API reference for all public functions
+- Common workflows with 5+ real-world examples
+- Performance considerations with metrics
+- Troubleshooting guide
+- Integration examples
+
+### 4. Update Core Project Documentation 📝
+
+**Engineering Spec Updates:**
+- Add "Cursor DB Package Architecture" section under SQLite Database Integration
+- Document component architecture with data flow diagrams
+- Document all design trade-offs
+- Update TOC
+
+### 5. Remove Outdated Content 🗑️
+
+- Merge valuable content from `cursor-chat-discovery.md` then delete
+- Remove all "research" framing - change to "implementation"
+- Update `architecture.md` to show current flow (no signals)
+- Remove prototype/experimental code references
+
+### 6. Verify Documentation Consistency ✅
+
+- Test all code examples
+- Verify all function signatures match actual code
+- Check performance numbers
+- Test all internal documentation links
+- Ensure consistent terminology
+
+### 7. Final Cleanup Verification 🔍
+
+**Run these checks and fix any findings:**
+```bash
+grep -r "signal" docs/ --include="*.md" | grep -v "# signal"
+grep -r "call_mcp_tool" . --include="*.py" --include="*.md"
+grep -r "research" docs/ --include="*.md" | grep -i cursor
+grep -r "\[.*\](.*\.md)" docs/ --include="*.md"
+```
+
+## Implementation Order:
+
+1. Delete signal-format.md and clean references
+2. Rename and fully rewrite cursor documentation
+3. Create comprehensive API guide
+4. Update Engineering Spec with complete cursor_db details
+5. Clean up outdated content
+6. Verification pass with fixes
+
+## Success Criteria:
+
+- Zero signal file references remain
+- Cursor documentation is complete implementation guide
+- API guide has working, tested examples for all functions
+- Engineering spec fully documents cursor_db architecture
+- All documentation is consistent and accurate
+- All code examples actually run without errors
+</info added on 2025-06-26T01:45:37.944Z>
 
