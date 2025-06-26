@@ -975,6 +975,94 @@ Cannot merge chronologically due to missing prompt timestamps. Return fragmented
 2. Reuse extract_prompts_data() and extract_generations_data() from Task 46.2
 3. Return simple list structure with database source tracking
 4. Add comprehensive error handling with partial result support
+<info added on 2025-06-26T00:55:09.732Z>
+## Complete Implementation Plan for Task 46.7 - Handle Multiple Database Discovery
+
+### TDD Steps:
+
+**WRITE TESTS FIRST**
+
+Create tests/unit/test_multiple_database_discovery.py
+
+Test discover_all_cursor_databases(workspace_path) function
+- Test finding multiple state.vscdb files in subdirectories
+- Test recursive search through .cursor directory structure
+- Test handling of permission errors and inaccessible directories
+
+Test extract_from_multiple_databases(database_paths) function
+- Test partial success (some databases fail, others succeed)
+- Test empty results when no databases found
+
+**RUN TESTS - VERIFY THEY FAIL**
+
+**GET APPROVAL FOR DESIGN CHOICES** Here are my approved design choices:
+
+✅ **Function Signatures:**
+
+```python
+def discover_all_cursor_databases(workspace_path: str) -> List[str]:
+    """
+    Discover all state.vscdb files in the workspace's .cursor directory.
+    
+    Returns:
+        List of absolute paths to state.vscdb files
+    """
+
+def extract_from_multiple_databases(database_paths: List[str]) -> List[Dict[str, Any]]:
+    """
+    Extract prompts and generations from multiple databases.
+    
+    Returns:
+        List of dicts, each containing:
+        - database_path: str
+        - prompts: List[Dict] (from extract_prompts_data)
+        - generations: List[Dict] (from extract_generations_data)
+    """
+```
+
+✅ **Search Strategy:**
+- Start at workspace_path/.cursor/
+- Recursively search ALL subdirectories (no depth limit - keep it simple)
+- Look for files named exactly state.vscdb
+- Skip permission errors, continue searching
+
+✅ **Error Handling:**
+- Log warnings for inaccessible directories
+- Skip corrupted/locked databases
+- Return partial results (don't fail everything)
+- Empty list if no databases found
+
+✅ **Telemetry (add as part of implementation):**
+- Add @trace_mcp_operation decorators to both functions
+- Performance thresholds:
+  - discover_all_cursor_databases: 100ms
+  - extract_from_multiple_databases: 500ms (multiple extractions)
+- Telemetry attributes:
+  - databases_discovered: count
+  - databases_processed: count
+  - search_duration_ms: discovery time
+  - extraction_duration_ms: total time
+  - errors_encountered: count
+
+**IMPLEMENT FUNCTIONALITY**
+
+Create src/mcp_commit_story/cursor_db/multiple_database_discovery.py
+- Implement discover_all_cursor_databases() with recursive search
+- Add proper filtering for state.vscdb files only
+- Implement extract_from_multiple_databases() reusing Task 46.2 functions
+- Add comprehensive error handling with skip-and-continue pattern
+- Include telemetry with @trace_mcp_operation decorators
+
+**RUN TESTS - VERIFY THEY PASS**
+
+**DOCUMENT AND COMPLETE**
+- Add docstrings explaining database rotation scenario
+- Document that no chronological merging is attempted
+- Note this addresses Cursor's 100-generation limit
+- Run the entire test suite
+
+**MARK COMPLETE**
+</info added on 2025-06-26T00:55:09.732Z>
 
 ## 8. Comprehensive Documentation [pending]
 ### Dependencies: 46.5
