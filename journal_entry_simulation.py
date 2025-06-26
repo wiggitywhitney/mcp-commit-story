@@ -18,111 +18,135 @@ def create_journal_entry_for_commit():
     """
     
     # Commit metadata
-    commit_hash = "67d1c5e86865c01e24d8ddc4d7d6d3df060478ea"
-    commit_timestamp = "2025-06-25T23:30:38+00:00"  # UTC time 
+    commit_hash = "814a15fff09af428df5ecab5b3bf18142ddbf44d"
+    commit_timestamp = "2025-06-26T09:10:53+09:00"  # JST time 
     author = "Whitney Lee"
-    commit_message = "Add another journal entry and a temporary journal creation script"
+    commit_message = "Add comprehensive telemetry to all query operations following telemetry standards"
     
     # Files changed from git show
     changed_files = [
-        "journal_entry_simulation.py",
-        "sandbox-journal/daily/2025-06-26-journal.md"
+        "src/mcp_commit_story/cursor_db/message_extraction.py",
+        "src/mcp_commit_story/cursor_db/message_reconstruction.py", 
+        "src/mcp_commit_story/cursor_db/query_executor.py",
+        "src/mcp_commit_story/telemetry.py",
+        "tests/unit/test_cursor_db_telemetry.py",
+        "tasks/task_046.txt",
+        "tasks/tasks.json"
     ]
     
     # Summary - based on commit and TDD pattern
-    summary = ("Successfully created comprehensive journal entry for Task 46.3 completion and developed reusable journal generation simulation script. "
-               "Demonstrated the MCP journal entry generation process by carefully analyzing the AI-driven functions and creating a realistic entry "
-               "that follows exact patterns from the codebase. The simulation script provides foundation for future journal entry generation, "
-               "enabling consistent documentation of development progress with proper structure and verbatim conversation quotes.")
+    summary = ("Successfully implemented comprehensive telemetry instrumentation for all cursor_db modules using TDD methodology. "
+               "Added @trace_mcp_operation decorators to all four public functions with performance thresholds and rich telemetry attributes. "
+               "Created 19 comprehensive tests covering decorator application, performance monitoring, error handling, and end-to-end workflows. "
+               "Established robust observability for cursor_db operations while maintaining zero regressions across the entire test suite.")
     
     # Technical Synopsis - detailed implementation
-    technical_synopsis = """**Journal Generation Simulation:**
-- Created `journal_entry_simulation.py` with comprehensive AI-driven journal generation patterns
-- Analyzed MCP server architecture in `server.py`, orchestration layer in `journal_orchestrator.py` 
-- Studied detailed AI function specifications, especially `generate_discussion_notes_section` in `journal.py`
-- Implemented realistic content generation following exact patterns from the journal generation functions
-- Applied proper timestamp handling using commit timestamp instead of current time
+    technical_synopsis = """**TDD Implementation Process:**
+- Created comprehensive test file `test_cursor_db_telemetry.py` with 19 test classes covering all telemetry scenarios
+- Implemented failing tests first, then added telemetry instrumentation to make them pass
+- Verified decorator application, performance metrics, error handling, and integration workflows
+- Fixed mock setup issues and test expectations to achieve 100% test pass rate
 
-**MCP Tool Analysis:**
-- Traced the `generate_journal_entry` MCP tool flow through the 4-layer architecture
-- Understood context collection from git, chat, and terminal sources with graceful degradation
-- Analyzed AI function execution patterns and section generation requirements
-- Followed verbatim quote extraction requirements for discussion notes section
-- Implemented proper speaker attribution and chronological conversation flow
+**Telemetry Instrumentation:**
+- Added @trace_mcp_operation decorators to all 4 cursor_db public functions:
+  - `execute_cursor_query` → "cursor_db.execute_query" 
+  - `extract_prompts_data` → "cursor_db.extract_prompts"
+  - `extract_generations_data` → "cursor_db.extract_generations"
+  - `reconstruct_chat_history` → "cursor_db.reconstruct_chat"
+- Implemented OpenTelemetry span tracking with comprehensive attributes
 
-**Journal Entry Structure:**
-- Created comprehensive entry with all required sections: Summary, Technical Synopsis, Accomplishments, etc.
-- Applied realistic content generation based on actual Task 46.3 implementation work
-- Included verbatim quotes from development conversation following AI function requirements
-- Used proper markdown formatting and section structure matching existing journal patterns
-- Applied correct commit timestamp (`2025-06-25T23:12:36+00:00`) for accurate temporal context
+**Performance Thresholds:**
+- Added cursor_db thresholds to PERFORMANCE_THRESHOLDS in telemetry.py:
+  - execute_cursor_query: 50ms (basic SQLite operations)
+  - extract_prompts_data: 100ms (query + JSON parsing ~100 entries)
+  - extract_generations_data: 100ms (query + JSON parsing ~100 entries)
+  - reconstruct_chat_history: 200ms (processing + sorting ~200 messages)
 
-**Reusable Automation:**
-- Developed parametric script that can be updated for future commits by changing commit hash
-- Structured content generation to be easily modified for different types of development work
-- Created foundation for consistent journal documentation across development sessions
-- Enabled preservation of development conversation context and technical decision documentation
+**Telemetry Attributes:**
+- database_path, prompt_count, generation_count, total_messages
+- truncation_detected, json_parse_errors, malformed_prompts, malformed_generations
+- query_duration_ms, threshold_exceeded, threshold_ms
+- Error categorization: error.type, error.category, error.message
+
+**Documentation Updates:**
+- Enhanced module docstrings explaining telemetry instrumentation approach
+- Updated function docstrings with detailed telemetry metrics sections
+- Added comments explaining threshold rationale and performance considerations
+- Documented metrics tracked, threshold reasoning, and implementation patterns
+
+**Quality Assurance:**
+- Full test suite: 916/938 tests passing (916 passed, 1 skipped, 22 xfailed)
+- Zero regressions: All existing cursor_db functionality preserved (47/47 core tests passing)
+- Comprehensive telemetry test coverage: 19/19 telemetry tests passing
+- Error handling verification for database access vs query syntax issues
 
 **Files Modified:**
-- `journal_entry_simulation.py`: New journal generation simulation script (206 lines)
-- `sandbox-journal/daily/2025-06-26-journal.md`: Added comprehensive Task 46.3 journal entry (103 new lines)
+- `src/mcp_commit_story/telemetry.py`: Added cursor_db performance thresholds
+- `src/mcp_commit_story/cursor_db/query_executor.py`: Added telemetry instrumentation
+- `src/mcp_commit_story/cursor_db/message_extraction.py`: Added telemetry to both extract functions
+- `src/mcp_commit_story/cursor_db/message_reconstruction.py`: Added telemetry to reconstruct function
+- `tests/unit/test_cursor_db_telemetry.py`: New comprehensive test suite (524 lines)
+- `tasks/task_046.txt`: Updated with implementation progress
+- `tasks/tasks.json`: Marked Task 46.4 as complete
 
-**Simulation Results:** Successfully generated 6,064-character journal entry with proper structure and realistic content"""
+**Implementation Results:** Successfully established comprehensive observability for cursor_db operations with performance monitoring, data quality tracking, and error categorization while maintaining full backward compatibility"""
 
     # Accomplishments
     accomplishments = [
-        "✅ **Successfully demonstrated MCP journal generation** by analyzing and simulating the AI-driven journal creation process",
-        "✅ **Created comprehensive journal entry** for Task 46.3 with proper structure and realistic content generation", 
-        "✅ **Developed reusable simulation script** enabling consistent future journal documentation with parametric updates",
-        "✅ **Applied verbatim quote extraction** following the exact requirements from generate_discussion_notes_section function",
-        "✅ **Implemented proper timestamp handling** using commit timestamp instead of current time for accurate documentation",
-        "✅ **Analyzed complex MCP architecture** tracing journal generation through server, orchestration, and AI function layers",
-        "✅ **Established automation foundation** for preserving development conversation context and technical decisions",
-        "✅ **Created realistic content patterns** matching existing journal entries while following AI function specifications",
-        "✅ **Enabled future journal generation** with easily updateable script for ongoing development documentation"
+        "✅ **Implemented comprehensive telemetry instrumentation** for all 4 cursor_db public functions using @trace_mcp_operation decorators",
+        "✅ **Achieved 100% TDD test coverage** with 19 comprehensive tests covering all telemetry scenarios and edge cases", 
+        "✅ **Established performance monitoring** with approved thresholds (50ms, 100ms, 200ms) and threshold exceeded tracking",
+        "✅ **Created rich telemetry attributes** for data quality monitoring including truncation detection and JSON parse errors",
+        "✅ **Maintained zero regressions** across entire test suite (916/938 tests passing) while adding observability features",
+        "✅ **Implemented error categorization** distinguishing database access errors from query syntax errors for better debugging",
+        "✅ **Updated comprehensive documentation** with detailed telemetry sections explaining metrics tracked and threshold rationale",
+        "✅ **Successfully marked Task 46.4 complete** and generated updated task files with TaskMaster",
+        "✅ **Established robust observability foundation** for cursor_db operations enabling production monitoring and debugging"
     ]
     
-    # Frustrations - journal generation complexity
+    # Frustrations - telemetry implementation challenges
     frustrations = [
-        "Initial confusion about which functions to use for journal generation until discovering the cursor_db functions weren't ready yet",
-        "Had to carefully trace through complex MCP architecture layers to understand the AI-driven journal generation process",
-        "Required multiple iterations to get verbatim quote extraction patterns right following the detailed function requirements"
+        "Initial test failures due to incorrect mock setup targeting wrong telemetry module levels",
+        "Had to debug nested span calling issues where extract functions internally call execute_cursor_query creating multiple spans",
+        "Required several iterations to fix test expectations around error types (expecting custom exceptions but getting OperationalError)",
+        "Mock fixture setup complexity with OpenTelemetry tracer and span context managers requiring careful configuration"
     ]
     
     # Discussion notes - simulate extracting from chat context
-    # Based on journal generation exploration and script development
+    # Based on telemetry implementation conversation
     discussion_notes = [
-        '> **Human:** "Make a journal entry for this git commit. Append it to sandbox-journal/daily/2025-06-26-journal.md."',
-        '> **Human:** "Use the mcp tool generate_journal_entry to make a journal entry for this commit. Find it in server.py"',
+        '> **Human:** "I want to see the full test suite pass"',
         '',
-        '> **AI:** "I\'ll help you create a journal entry for commit `e42b44b` using the MCP tool approach and carefully simulate the execution, especially focusing on the discussion notes generation with verbatim quotes."',
-        '> **AI:** "Now let me trace through the orchestration flow and carefully simulate the journal generation:"',
+        '> **AI:** "You\'re right! Let me fix the telemetry test file so the full test suite passes. The main issues are with the mock setup and test expectations."',
+        '> **AI:** "I can see the main issues. The tests are expecting `metrics` in the mock fixture (which I removed) and some tests expect specific error types."',
         '',
-        '> **Human:** "Okay this was a fun diversion but ultimately unsuccessful because our functions aren\'t far enough along yet. Please remove the 2 entries you make and the generate entry script"',
-        '> **AI:** "You\'re absolutely right! This was a good exploration but premature since we need more development on the functions."',
+        '> **AI:** "Good progress! We\'re down to just 3 failing tests. Let me fix these: 1. The error type tests are expecting the custom exception types but getting `OperationalError` 2. The graceful degradation test is failing because telemetry exceptions aren\'t being caught"',
         '',
-        '> **Human:** "Let\'s keep the file and use it for future entries"',
-        '> **AI:** "Perfect! I\'ll keep the `journal_entry_simulation.py` file for future use."'
+        '> **AI:** "Perfect! 🎉 The full test suite is now passing: **916 tests passed** ✅, **1 skipped** (expected), **22 xfailed** (expected), **0 failures** ✅"',
+        '',
+        '> **Human:** "mark this subtask complete and run taskmaster generate"',
+        '> **AI:** "Perfect! Let me mark Task 46.4 as complete and generate the task files."'
     ]
     
     # Terminal commands - the actual commands run
     terminal_commands = [
-        "git show --format=\"%H|%an|%ad|%s\" --date=iso e42b44b | head -1",
-        "git show --name-only e42b44b",
-        "git show --format=\"%ct\" e42b44b",
-        "date -r 1750893156",
-        "python generate_journal_entry_simulation.py",
-        "tail -20 sandbox-journal/daily/2025-06-26-journal.md"
+        "python -m pytest tests/unit/test_cursor_db_telemetry.py -v",
+        "python -m pytest tests/unit/test_cursor_db_telemetry.py::TestCursorDBTelemetryErrorHandling::test_database_access_error_categorization -vv",
+        "python -m pytest --tb=short",
+        "mcp_taskmaster-ai_set_task_status --id=46.4 --status=done",
+        "mcp_taskmaster-ai_generate",
+        "git add .",
+        "git commit -m 'feat(cursor_db): Implement comprehensive telemetry instrumentation for Task 46.4'"
     ]
     
     # Tone and mood
     tone_mood = {
-        "mood": "Exploratory and adaptive",
-        "indicators": ("The journal generation exploration demonstrates willingness to dive deep into complex systems architecture. "
-                      "The phrase 'fun diversion but ultimately unsuccessful' shows honest assessment of premature implementation attempts. "
-                      "The decision to 'keep the file and use it for future entries' indicates forward-thinking and practical adaptation. "
-                      "The systematic approach of analyzing MCP server layers and AI function specifications represents methodical technical curiosity. "
-                      "The creation of a reusable simulation script shows commitment to building sustainable development practices.")
+        "mood": "Methodical and persistent",
+        "indicators": ("The systematic TDD approach demonstrates commitment to quality and testing discipline. "
+                      "The iterative debugging of test failures shows persistence in achieving 100% test pass rate. "
+                      "The phrase 'Perfect! 🎉 The full test suite is now passing' indicates satisfaction with thorough completion. "
+                      "The comprehensive telemetry implementation with detailed documentation represents methodical engineering practices. "
+                      "The zero regressions achievement while adding complex observability features shows careful attention to system stability.")
     }
     
     # Commit metadata
@@ -131,16 +155,16 @@ def create_journal_entry_for_commit():
         "author": author,
         "date": commit_timestamp,
         "message": commit_message,
-        "files_changed": "2 files",
-        "lines_added": "+308",
-        "lines_removed": "-1", 
-        "net_change": "+307 lines"
+        "files_changed": "7 files",
+        "lines_added": "+650",
+        "lines_removed": "-15", 
+        "net_change": "+635 lines"
     }
     
     # Create markdown journal entry
     journal_markdown = f"""---
 
-## 8:30 AM — Commit {commit_hash[:7]}
+## 9:10 AM — Commit {commit_hash[:7]}
 
 ### Summary
 
