@@ -1264,6 +1264,28 @@ grep -r "\[.*\](.*\.md)" docs/ --include="*.md"
 - All documentation is consistent and accurate
 - All code examples actually run without errors
 </info added on 2025-06-26T01:45:37.944Z>
+<info added on 2025-06-26T22:12:08.930Z>
+## Implementation Checklist
+
+### 3. Create Comprehensive API Guide 📚
+
+**Create `docs/cursor-db-api-guide.md`**
+
+**Sections to include:**
+- Overview with value proposition
+- Quick start with working example
+- Complete API reference for all public functions
+- **Performance optimization section:**
+  - Document the 48-hour optimization behavior in cursor-db-api-guide.md
+  - Add performance section explaining how recent database filtering works
+  - Include examples showing performance improvements with before/after metrics
+  - Explain configuration options for time-window adjustments
+  - Document edge cases and fallback behavior
+- Common workflows with 5+ real-world examples
+- Performance considerations with metrics
+- Troubleshooting guide
+- Integration examples
+</info added on 2025-06-26T22:12:08.930Z>
 
 ## 9. Optimize Database Processing with Incremental Updates [pending]
 ### Dependencies: None
@@ -1345,4 +1367,46 @@ Implement modification time tracking and incremental processing to only extract 
 **Dependencies:**
 - Requires completed Task 46.7 (Multiple Database Discovery)
 - Should integrate with existing telemetry for performance tracking
+<info added on 2025-06-26T22:10:53.500Z>
+**Task 46.9 Implementation Plan - Optimize Database Processing with Incremental Updates**
+
+**TDD Steps:**
+
+**WRITE TESTS FIRST**
+- Create tests/unit/test_cursor_db_incremental_processing.py
+- Test filtering databases by modification time (48-hour window)
+- Test get_recent_databases() returns only databases modified in last 2 days
+- Test backward compatibility - existing API unchanged
+- Test edge cases: no recent databases, all databases recent, databases with future timestamps
+- Test performance improvement: benchmark with 10 databases (8 old, 2 recent)
+- Test graceful handling of permission errors during os.path.getmtime()
+- RUN TESTS - VERIFY THEY FAIL
+
+**APPROVED DESIGN CHOICES**
+- Metadata Storage: In-memory only, no persistent storage
+- Recent Definition: Fixed 48-hour window (databases modified in last 2 days)
+- No Caching: Keep it simple and stateless
+- No API Changes: query_cursor_chat_database() signature remains unchanged
+- Implementation: Simple modification time filtering before processing
+
+**IMPLEMENT FUNCTIONALITY**
+- Create get_recent_databases(all_databases: List[str]) -> List[str]
+  - Filter databases where os.path.getmtime(db) > (now - 48 hours)
+  - Handle OSError gracefully (skip inaccessible databases)
+- Update discover_all_cursor_databases() to call get_recent_databases()
+- Update extract_from_multiple_databases() to only process recent databases
+- Add telemetry attributes: databases_filtered_out, time_window_hours
+- Add debug logging showing which databases were skipped as "too old"
+- RUN TESTS - VERIFY THEY PASS
+
+**DOCUMENT AND COMPLETE**
+- Documentation Strategy: Follow pattern from other cursor_db tasks
+  - Add docstring to get_recent_databases() explaining 48-hour window rationale
+  - Update module docstring with performance optimization note
+  - Do NOT create new documentation files or modify docs/ directory
+  - Let Task 46.8 handle any needed documentation updates
+- Add inline comments explaining why 48 hours was chosen
+- Run the entire test suite
+- MARK COMPLETE
+</info added on 2025-06-26T22:10:53.500Z>
 
