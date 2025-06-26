@@ -19,7 +19,7 @@ def create_journal_entry_for_commit():
     """
     
     # Get commit metadata from git
-    commit_hash = "911d9ba"
+    commit_hash = "c40a402"
     
     # Get commit details from git
     try:
@@ -164,7 +164,7 @@ def create_journal_entry_for_commit():
     
     # Commit metadata
     commit_metadata = {
-        "commit_hash": "911d9ba",
+        "commit_hash": "c40a402",
         "author": author,
         "date": "2025-06-26T11:05:24+09:00",
         "message": commit_message,
@@ -237,7 +237,10 @@ def create_journal_entry_for_commit():
 def append_to_journal():
     """Append the journal entry to the sandbox journal file."""
     journal_entry = create_journal_entry_for_commit()
-    journal_file = "sandbox-journal/daily/2025-06-26-journal.md"
+    
+    # Dynamically determine today's date for the journal file
+    today = datetime.now().strftime("%Y-%m-%d")
+    journal_file = f"sandbox-journal/daily/{today}-journal.md"
     
     with open(journal_file, "a", encoding="utf-8") as f:
         f.write(journal_entry)
