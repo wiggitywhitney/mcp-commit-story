@@ -1265,3 +1265,84 @@ grep -r "\[.*\](.*\.md)" docs/ --include="*.md"
 - All code examples actually run without errors
 </info added on 2025-06-26T01:45:37.944Z>
 
+## 9. Optimize Database Processing with Incremental Updates [pending]
+### Dependencies: None
+### Description: Implement incremental database processing by tracking modification times to avoid re-extracting unchanged database files
+### Details:
+**Problem:**
+Current implementation extracts ALL data from ALL discovered databases every time functions are called, which is inefficient for repeated queries (journal generation, git hooks, etc.).
+
+**Solution:**
+Implement modification time tracking and incremental processing to only extract data from databases that have changed since the last extraction.
+
+**Implementation Plan:**
+
+1. **Add Database Metadata Tracking:**
+   ```python
+   def get_database_metadata(database_paths: List[str]) -> Dict[str, Dict]:
+       \"\"\"Get modification times and sizes for database files.\"\"\"
+       metadata = {}
+       for db_path in database_paths:
+           try:
+               stat = os.stat(db_path)
+               metadata[db_path] = {
+                   'modified_time': stat.st_mtime,
+                   'size': stat.st_size,
+                   'last_extracted': None  # Track when we last processed this DB
+               }
+           except OSError:
+               continue
+       return metadata
+   ```
+
+2. **Implement Incremental Extraction:**
+   ```python
+   def extract_from_modified_databases(database_paths: List[str], 
+                                      last_extraction_time: float = None) -> List[Dict]:
+       \"\"\"Only extract from databases modified since last_extraction_time.\"\"\"
+       if last_extraction_time is None:
+           # First run - extract from all
+           return extract_from_multiple_databases(database_paths)
+       
+       modified_databases = []
+       for db_path in database_paths:
+           try:
+               if os.path.getmtime(db_path) > last_extraction_time:
+                   modified_databases.append(db_path)
+           except OSError:
+               continue
+       
+       if modified_databases:
+           logger.info(f\"Processing {len(modified_databases)} modified databases\")
+           return extract_from_multiple_databases(modified_databases)
+       else:
+           logger.info(\"No modified databases found\")
+           return []
+   ```
+
+3. **Add Caching Layer (Optional):**
+   - Store extracted results with timestamps
+   - Merge cached results with newly extracted data
+   - Implement cache invalidation on database changes
+
+4. **Update High-Level Functions:**
+   - Modify `query_cursor_chat_database()` to use incremental processing
+   - Add optional `since_timestamp` parameter for incremental queries
+   - Maintain backward compatibility with existing API
+
+**Benefits:**
+- **Performance**: 10x+ faster for unchanged databases
+- **Resource efficiency**: Reduced CPU, memory, and I/O usage
+- **Scalability**: Better performance as chat history grows
+- **Real-time updates**: Ideal for frequent polling (journal generation, git hooks)
+
+**Test Strategy:**
+- Test with mix of modified/unmodified databases
+- Verify performance improvements with benchmarks
+- Test edge cases (clock changes, file operations)
+- Ensure backward compatibility
+
+**Dependencies:**
+- Requires completed Task 46.7 (Multiple Database Discovery)
+- Should integrate with existing telemetry for performance tracking
+
