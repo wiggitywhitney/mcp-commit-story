@@ -74,6 +74,11 @@ PERFORMANCE_THRESHOLDS = {
     "config_reload_duration_warning_ms": 500.0,
     "config_load_duration_warning_ms": 250.0,
     "config_validation_duration_warning_ms": 100.0,
+    # Cursor DB thresholds (approved specifications for Task 46.4)
+    "execute_cursor_query": 50,        # Basic SQL query (milliseconds)
+    "extract_prompts_data": 100,       # Query + JSON parsing (milliseconds)
+    "extract_generations_data": 100,   # Query + JSON parsing (milliseconds)
+    "reconstruct_chat_history": 200,   # Processing + sorting (milliseconds)
 }
 
 # Config sampling rates (approved specifications)

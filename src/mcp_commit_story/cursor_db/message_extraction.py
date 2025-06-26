@@ -3,23 +3,45 @@ Message data extraction module for cursor database operations.
 
 Provides functions to extract and parse user prompts and AI responses from Cursor's
 ItemTable key-value structure with robust JSON parsing and error handling.
+
+Telemetry instrumentation tracks:
+- Query + JSON parsing performance against 100ms thresholds
+- Data counts (prompts, generations) and quality metrics
+- JSON parse error tracking for data quality monitoring
+- Truncation detection for generation limits (100 items = potential capacity limit)
 """
 
 import json
 import logging
+import time
 from typing import List, Dict, Any
 
+from opentelemetry import trace
+
 from .query_executor import execute_cursor_query
+from ..telemetry import trace_mcp_operation, PERFORMANCE_THRESHOLDS
 
 logger = logging.getLogger(__name__)
 
 
+@trace_mcp_operation("cursor_db.extract_prompts")
 def extract_prompts_data(db_path: str) -> List[Dict[str, Any]]:
     """
     Extract user prompts data from the cursor database.
     
     Queries the 'aiService.prompts' key from ItemTable and returns parsed JSON data
     containing user messages with their command types.
+    
+    Telemetry Metrics Tracked:
+        - database_path: Which database file was queried
+        - query_duration_ms: Total time for query + JSON parsing
+        - prompt_count: Number of prompts successfully extracted
+        - json_parse_errors: Count of malformed JSON entries skipped
+        - threshold_exceeded: Boolean if duration > 100ms threshold
+    
+    Threshold Rationale:
+        100ms accounts for SQLite query + JSON parsing of ~100 prompt entries.
+        Higher than basic query due to JSON deserialization overhead.
     
     Args:
         db_path: Path to the cursor database file
@@ -37,7 +59,14 @@ def extract_prompts_data(db_path: str) -> List[Dict[str, Any]]:
     - Log warnings for skipped messages so users know data was omitted
     - Don't fail the entire operation due to one bad message
     """
+    start_time = time.time()
+    span = trace.get_current_span()
+    json_parse_errors = 0
+    
     try:
+        # Set initial telemetry attributes
+        span.set_attribute("database_path", db_path)
+        
         # Query the database for prompts data
         raw_data = execute_cursor_query(
             db_path,
@@ -70,11 +99,24 @@ def extract_prompts_data(db_path: str) -> List[Dict[str, Any]]:
                 all_prompts.extend(parsed_data)
                 
             except (json.JSONDecodeError, UnicodeDecodeError) as e:
+                json_parse_errors += 1
                 logger.warning(
                     f"Failed to parse JSON for aiService.prompts in database {db_path}: {e}. "
                     f"Skipping malformed entry."
                 )
                 continue
+        
+        # Calculate duration and set final telemetry attributes
+        duration_ms = (time.time() - start_time) * 1000
+        span.set_attribute("query_duration_ms", duration_ms)
+        span.set_attribute("prompt_count", len(all_prompts))
+        span.set_attribute("json_parse_errors", json_parse_errors)
+        
+        # Check performance threshold
+        threshold = PERFORMANCE_THRESHOLDS["extract_prompts_data"]
+        span.set_attribute("threshold_exceeded", duration_ms > threshold)
+        if duration_ms > threshold:
+            span.set_attribute("threshold_ms", threshold)
         
         return all_prompts
         
@@ -84,12 +126,25 @@ def extract_prompts_data(db_path: str) -> List[Dict[str, Any]]:
         raise
 
 
+@trace_mcp_operation("cursor_db.extract_generations")
 def extract_generations_data(db_path: str) -> List[Dict[str, Any]]:
     """
     Extract AI generations data from the cursor database.
     
     Queries the 'aiService.generations' key from ItemTable and returns parsed JSON data
     containing AI responses with timestamps, UUIDs, and text content.
+    
+    Telemetry Metrics Tracked:
+        - database_path: Which database file was queried
+        - query_duration_ms: Total time for query + JSON parsing
+        - generation_count: Number of generations successfully extracted
+        - json_parse_errors: Count of malformed JSON entries skipped
+        - truncation_detected: Boolean if generation_count == 100 (database limit)
+        - threshold_exceeded: Boolean if duration > 100ms threshold
+    
+    Threshold Rationale:
+        100ms accounts for SQLite query + JSON parsing of ~100 generation entries.
+        Generations contain more text data than prompts, requiring similar threshold.
     
     Args:
         db_path: Path to the cursor database file
@@ -107,7 +162,14 @@ def extract_generations_data(db_path: str) -> List[Dict[str, Any]]:
     - Memory strategy: Load everything into memory (100 messages isn't a concern)
     - No batching needed (100 messages is trivial for SQLite)
     """
+    start_time = time.time()
+    span = trace.get_current_span()
+    json_parse_errors = 0
+    
     try:
+        # Set initial telemetry attributes
+        span.set_attribute("database_path", db_path)
+        
         # Query the database for generations data
         raw_data = execute_cursor_query(
             db_path,
@@ -140,11 +202,27 @@ def extract_generations_data(db_path: str) -> List[Dict[str, Any]]:
                 all_generations.extend(parsed_data)
                 
             except (json.JSONDecodeError, UnicodeDecodeError) as e:
+                json_parse_errors += 1
                 logger.warning(
                     f"Failed to parse JSON for aiService.generations in database {db_path}: {e}. "
                     f"Skipping malformed entry."
                 )
                 continue
+        
+        # Calculate duration and set final telemetry attributes
+        duration_ms = (time.time() - start_time) * 1000
+        span.set_attribute("query_duration_ms", duration_ms)
+        span.set_attribute("generation_count", len(all_generations))
+        span.set_attribute("json_parse_errors", json_parse_errors)
+        
+        # Check for truncation (100 generations indicates potential database capacity limit)
+        span.set_attribute("truncation_detected", len(all_generations) == 100)
+        
+        # Check performance threshold
+        threshold = PERFORMANCE_THRESHOLDS["extract_generations_data"]
+        span.set_attribute("threshold_exceeded", duration_ms > threshold)
+        if duration_ms > threshold:
+            span.set_attribute("threshold_ms", threshold)
         
         return all_generations
         

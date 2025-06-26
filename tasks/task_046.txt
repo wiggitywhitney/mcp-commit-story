@@ -662,7 +662,7 @@ def reconstruct_chat_history(prompts, generations):
 Ready for integration with downstream journal generation!
 </info added on 2025-06-25T23:08:39.793Z>
 
-## 4. Add Telemetry Instrumentation [pending]
+## 4. Add Telemetry Instrumentation [done]
 ### Dependencies: 46.3
 ### Description: Add comprehensive telemetry to all query operations following telemetry standards.
 ### Details:
@@ -697,6 +697,42 @@ TDD Steps:
 - Add query-specific metric examples
 - Run the entire test suite
 - MARK COMPLETE
+<info added on 2025-06-25T23:38:06.532Z>
+**DESIGN CHOICES APPROVED**
+
+Performance Thresholds (milliseconds):
+```python
+TELEMETRY_THRESHOLDS = {
+    "execute_cursor_query": 50,        # Basic SQL query
+    "extract_prompts_data": 100,       # Query + JSON parsing
+    "extract_generations_data": 100,   # Query + JSON parsing  
+    "reconstruct_chat_history": 200,   # Processing + sorting
+}
+```
+
+Query-Specific Telemetry Attributes:
+- database_path: Which database was queried
+- prompt_count: Number of prompts extracted
+- generation_count: Number of generations extracted
+- truncation_detected: Boolean if generation_count == 100
+- json_parse_errors: Count of skipped malformed entries
+- query_duration_ms: Time taken for each operation
+
+Sampling Strategy: No sampling initially
+- These are local operations, not high-frequency
+- Start with full telemetry to understand usage patterns
+- Can add sampling later if needed
+
+Documentation: Code documentation only
+- Add docstrings explaining what metrics are tracked
+- Include comments about why certain thresholds were chosen
+- No updates to Docs/PRD/Engineering Spec needed (internal telemetry)
+
+Implementation Pattern: Follow Task 45.6 telemetry patterns
+- Use @trace_mcp_operation decorator on all public functions
+- Apply to three modules: query_executor.py, message_extraction.py, message_reconstruction.py
+- Reference completed Task 45.6 implementation for consistent patterns
+</info added on 2025-06-25T23:38:06.532Z>
 
 ## 5. Implement High-Level Query Function [pending]
 ### Dependencies: 46.4
