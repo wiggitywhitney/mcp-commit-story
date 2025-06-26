@@ -80,6 +80,9 @@ PERFORMANCE_THRESHOLDS = {
     "extract_generations_data": 100,   # Query + JSON parsing (milliseconds)
     "reconstruct_chat_history": 200,   # Processing + sorting (milliseconds)
     "query_chat_database": 500,        # High-level orchestration function (milliseconds)
+    # Multiple database discovery thresholds (approved specifications for Task 46.7)
+    "discover_all_cursor_databases": 100,     # Database file discovery (milliseconds)
+    "extract_from_multiple_databases": 500,   # Multi-database extraction (milliseconds)
 }
 
 # Config sampling rates (approved specifications)
