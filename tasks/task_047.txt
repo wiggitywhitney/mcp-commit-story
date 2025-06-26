@@ -3,364 +3,305 @@
 # Status: pending
 # Dependencies: 46
 # Priority: medium
-# Description: Create intelligent boundary detection for chat context using complete conversation history access with configurable limits and content-based topic change detection.
+# Description: Add configurable message count limits to prevent overwhelming the AI with excessive chat history during journal generation and other operations.
 # Details:
-This task implements smart boundary detection for chat conversations with the following components:
+This task implements a simplified approach to manage chat history size with configurable message limits:
 
-1. **Core Boundary Detection Class**:
+1. **Message Limit Function**:
 ```python
 @trace_mcp_operation
-class ChatBoundaryDetector:
-    """Intelligent boundary detection for chat context"""
-    
-    def __init__(self, config=None):
-        """
-        Initialize boundary detector with optional configuration
-        
-        Args:
-            config: Dictionary with configuration parameters
-                - max_messages: Maximum number of messages to include (default: 50)
-                - topic_change_threshold: Sensitivity for topic change detection (default: 0.7)
-                - session_break_minutes: Minutes of inactivity to consider a session break (default: 30)
-        """
-        self.config = config or {}
-        self.max_messages = self.config.get('max_messages', 50)
-        self.topic_change_threshold = self.config.get('topic_change_threshold', 0.7)
-        # Note: We can't use session_break_minutes reliably since timestamps aren't available
-        
-        # Initialize caches
-        self._topic_cache = {}
-        
-    @lru_cache(maxsize=100)
-    def detect_boundaries(self, messages, context_type='auto'):
-        """
-        Detect conversation boundaries in a list of messages
-        
-        Args:
-            messages: List of message dictionaries from the database
-            context_type: Type of boundary detection ('auto', 'topic', 'session', 'manual')
-            
-        Returns:
-            List of message groups with boundaries
-        """
-        if context_type == 'manual':
-            return self._detect_manual_boundaries(messages)
-        elif context_type == 'topic':
-            return self._detect_topic_boundaries(messages)
-        elif context_type == 'session':
-            return self._detect_session_boundaries(messages)
-        else:  # 'auto' - use the best available method
-            return self._detect_auto_boundaries(messages)
-    
-    def _detect_manual_boundaries(self, messages):
-        """Detect boundaries based on manual delimiters in messages"""
-        # Implementation for detecting manual delimiters like "---" or "NEW TOPIC"
-        # ...
-    
-    def _detect_topic_boundaries(self, messages):
-        """Detect boundaries based on topic changes"""
-        boundaries = []
-        current_group = []
-        current_topic = None
-        
-        for message in messages:
-            message_topic = self._extract_topic(message['content'])
-            
-            # If this is a significant topic change
-            if current_topic and self._is_topic_change(current_topic, message_topic):
-                if current_group:
-                    boundaries.append(current_group)
-                current_group = [message]
-                current_topic = message_topic
-            else:
-                current_group.append(message)
-                if not current_topic:
-                    current_topic = message_topic
-        
-        if current_group:
-            boundaries.append(current_group)
-            
-        return boundaries
-    
-    def _detect_session_boundaries(self, messages):
-        """
-        Detect boundaries based on conversation breaks
-        Note: Since reliable timestamps aren't available, we use message
-        ordering and content analysis as proxies for session breaks
-        """
-        # Implementation for detecting conversation breaks
-        # ...
-    
-    def _detect_auto_boundaries(self, messages):
-        """Use the best available method to detect boundaries"""
-        # Try manual boundaries first
-        manual_boundaries = self._detect_manual_boundaries(messages)
-        if len(manual_boundaries) > 1:
-            return manual_boundaries
-            
-        # Then try topic boundaries
-        topic_boundaries = self._detect_topic_boundaries(messages)
-        if len(topic_boundaries) > 1:
-            return topic_boundaries
-            
-        # Fall back to session boundaries
-        return self._detect_session_boundaries(messages)
-    
-    @lru_cache(maxsize=200)
-    def _extract_topic(self, content):
-        """Extract the main topic from message content"""
-        # Simple keyword extraction for topic identification
-        # In a real implementation, this could use NLP techniques
-        words = content.lower().split()
-        # Remove common words, keep important ones
-        keywords = [w for w in words if len(w) > 3 and w not in COMMON_WORDS]
-        return " ".join(keywords[:10])  # Use top 10 keywords as topic
-    
-    def _is_topic_change(self, topic1, topic2):
-        """Determine if there's a significant topic change"""
-        # Simple implementation using word overlap
-        words1 = set(topic1.split())
-        words2 = set(topic2.split())
-        
-        if not words1 or not words2:
-            return False
-            
-        overlap = len(words1.intersection(words2))
-        similarity = overlap / max(len(words1), len(words2))
-        
-        return similarity < self.topic_change_threshold
-```
-
-2. **Integration with Database Query Function**:
-```python
-@trace_mcp_operation
-def get_chat_context(query=None, max_messages=50, boundary_type='auto'):
+def limit_chat_messages(chat_history: dict, max_messages: int) -> dict:
     """
-    Get relevant chat context with intelligent boundary detection
+    Limit the number of messages in chat history to prevent context overflow
     
     Args:
-        query: Optional search query to find relevant messages
-        max_messages: Maximum number of messages to include
-        boundary_type: Type of boundary detection ('auto', 'topic', 'session', 'manual')
+        chat_history: Dictionary containing chat history with 'messages' list
+        max_messages: Maximum number of messages to keep (most recent)
         
     Returns:
-        List of message groups with detected boundaries
+        Dictionary with truncated messages list and metadata about truncation
     """
-    # Get complete conversation history
-    messages = query_cursor_chat_database()
+    if not chat_history or 'messages' not in chat_history:
+        return chat_history
+        
+    messages = chat_history.get('messages', [])
+    original_count = len(messages)
     
-    # Filter messages if query is provided
-    if query:
-        messages = [m for m in messages if query.lower() in m['content'].lower()]
+    # No truncation needed if under the limit
+    if original_count <= max_messages:
+        result = chat_history.copy()
+        result['metadata'] = result.get('metadata', {}).copy()
+        result['metadata']['truncated'] = False
+        result['metadata']['removed_messages'] = 0
+        return result
     
-    # Apply boundary detection
-    detector = ChatBoundaryDetector({'max_messages': max_messages})
-    message_groups = detector.detect_boundaries(messages, boundary_type)
+    # Keep the most recent messages up to max_messages
+    truncated_messages = messages[-max_messages:]
+    removed_count = original_count - len(truncated_messages)
     
-    # Apply message limit if needed
-    if max_messages and sum(len(group) for group in message_groups) > max_messages:
-        # Prioritize most recent messages while preserving group boundaries
-        # ...
+    # Create result with truncation metadata
+    result = chat_history.copy()
+    result['messages'] = truncated_messages
+    result['metadata'] = result.get('metadata', {}).copy()
+    result['metadata']['truncated'] = True
+    result['metadata']['removed_messages'] = removed_count
+    result['metadata']['original_message_count'] = original_count
     
-    return message_groups
+    return result
 ```
 
-3. **Telemetry Implementation**:
+2. **Integration with Chat Collection Pipeline**:
 ```python
-def _log_boundary_detection_telemetry(messages, groups, boundary_type):
-    """Log telemetry data for boundary detection"""
-    telemetry = {
-        'boundary_type': boundary_type,
-        'total_messages': len(messages),
-        'group_count': len(groups),
-        'avg_group_size': sum(len(g) for g in groups) / max(1, len(groups)),
-        'largest_group': max(len(g) for g in groups) if groups else 0,
-        'smallest_group': min(len(g) for g in groups) if groups else 0,
-    }
+@trace_mcp_operation
+def get_chat_history(max_messages=1000):
+    """
+    Get chat history with configurable message limits
     
-    log_telemetry('chat_boundary_detection', telemetry)
+    Args:
+        max_messages: Maximum number of messages to include (default: 1000)
+        
+    Returns:
+        Dictionary containing limited chat history
+    """
+    # Get chat history from database (already filtered to last 48 hours by Task 46.9)
+    chat_history = query_cursor_chat_database()
+    
+    # Apply message limit
+    limited_history = limit_chat_messages(chat_history, max_messages)
+    
+    # Log telemetry for truncation events
+    if limited_history.get('metadata', {}).get('truncated', False):
+        log_telemetry('chat_history_truncation', {
+            'original_count': limited_history['metadata']['original_message_count'],
+            'removed_count': limited_history['metadata']['removed_messages'],
+            'final_count': len(limited_history['messages']),
+            'max_messages': max_messages
+        })
+    
+    return limited_history
+```
+
+3. **Configuration Options**:
+```python
+# Default configuration in config.py
+CHAT_CONFIG = {
+    'max_messages': 1000,  # Default message limit
+    'enable_truncation': True,  # Whether to apply message limits
+}
+
+# Function to get configuration
+def get_chat_config():
+    """Get chat configuration with defaults"""
+    # Load from settings or use defaults
+    return CHAT_CONFIG.copy()
 ```
 
 4. **Error Handling and Validation**:
 ```python
-def validate_boundary_config(config):
-    """Validate boundary detection configuration"""
-    if not isinstance(config, dict):
-        raise ValueError("Configuration must be a dictionary")
-        
-    if 'max_messages' in config and not isinstance(config['max_messages'], int):
+def validate_message_limit(max_messages):
+    """Validate message limit parameter"""
+    if not isinstance(max_messages, int):
         raise ValueError("max_messages must be an integer")
         
-    if 'topic_change_threshold' in config:
-        threshold = config['topic_change_threshold']
-        if not isinstance(threshold, (int, float)) or threshold < 0 or threshold > 1:
-            raise ValueError("topic_change_threshold must be a float between 0 and 1")
+    if max_messages <= 0:
+        raise ValueError("max_messages must be greater than zero")
     
-    # Additional validation...
     return True
 ```
 
 Implementation Notes:
-- Since Cursor chat data lacks reliable timestamps, the implementation focuses on message ordering and content analysis
-- Simple heuristics are used for topic change detection through keyword analysis
-- The system supports both automatic and manual boundary configuration
-- LRU caching is applied to expensive operations like topic extraction
-- Clear error messages are provided to help with debugging
-- Comprehensive telemetry is implemented as defined in docs/telemetry.md
+- This simplified approach focuses on message count limits rather than complex boundary detection
+- The implementation leverages existing 48-hour filtering from Task 46.9
+- Message truncation keeps the most recent messages up to the configured limit
+- Metadata is added to indicate if truncation occurred and how many messages were removed
+- Telemetry is implemented to track truncation events and message statistics
+- The default limit of 1000 messages provides a reasonable balance between context and performance
+- The AI can use its intelligence during journal generation to identify relevant content within the provided messages
 
 # Test Strategy:
-The testing strategy for the Chat Boundary Detection Logic will include:
+The testing strategy for the Chat Message Limiting Logic will include:
 
-1. **Unit Tests for Core Components**:
+1. **Unit Tests for Message Limiting Function**:
 ```python
-def test_boundary_detector_initialization():
-    """Test that the ChatBoundaryDetector initializes with correct defaults"""
-    detector = ChatBoundaryDetector()
-    assert detector.max_messages == 50
-    assert detector.topic_change_threshold == 0.7
+def test_limit_chat_messages_under_limit():
+    """Test that messages under the limit are not truncated"""
+    chat_history = {
+        'messages': [{'content': f'Message {i}'} for i in range(10)]
+    }
     
-    custom_detector = ChatBoundaryDetector({'max_messages': 100, 'topic_change_threshold': 0.5})
-    assert custom_detector.max_messages == 100
-    assert custom_detector.topic_change_threshold == 0.5
+    result = limit_chat_messages(chat_history, 20)
+    
+    assert len(result['messages']) == 10
+    assert result['metadata']['truncated'] == False
+    assert result['metadata']['removed_messages'] == 0
 
-def test_topic_extraction():
-    """Test that topics are correctly extracted from message content"""
-    detector = ChatBoundaryDetector()
-    topic1 = detector._extract_topic("How do I implement a binary search tree in Python?")
-    topic2 = detector._extract_topic("Can you help with my binary search tree implementation?")
-    topic3 = detector._extract_topic("How do I deploy a Flask application to Heroku?")
+def test_limit_chat_messages_over_limit():
+    """Test that messages over the limit are truncated correctly"""
+    chat_history = {
+        'messages': [{'content': f'Message {i}'} for i in range(100)]
+    }
     
-    # Similar topics should have significant overlap
-    assert not detector._is_topic_change(topic1, topic2)
-    # Different topics should be detected as a change
-    assert detector._is_topic_change(topic1, topic3)
+    result = limit_chat_messages(chat_history, 50)
+    
+    assert len(result['messages']) == 50
+    assert result['metadata']['truncated'] == True
+    assert result['metadata']['removed_messages'] == 50
+    assert result['metadata']['original_message_count'] == 100
+    
+    # Verify we kept the most recent messages
+    assert result['messages'][0]['content'] == 'Message 50'
+    assert result['messages'][-1]['content'] == 'Message 99'
 
-def test_manual_boundary_detection():
-    """Test detection of manual boundaries in messages"""
-    detector = ChatBoundaryDetector()
-    messages = [
-        {"id": 1, "content": "First message"},
-        {"id": 2, "content": "Second message"},
-        {"id": 3, "content": "---NEW TOPIC---"},
-        {"id": 4, "content": "Message after boundary"}
-    ]
+def test_limit_chat_messages_empty_history():
+    """Test handling of empty chat history"""
+    chat_history = {'messages': []}
+    result = limit_chat_messages(chat_history, 50)
     
-    boundaries = detector._detect_manual_boundaries(messages)
-    assert len(boundaries) == 2
-    assert len(boundaries[0]) == 2
-    assert len(boundaries[1]) == 1
+    assert len(result['messages']) == 0
+    assert result['metadata']['truncated'] == False
+    assert result['metadata']['removed_messages'] == 0
+    
+    # Test with missing messages key
+    chat_history = {}
+    result = limit_chat_messages(chat_history, 50)
+    assert result == {}
+
+def test_limit_chat_messages_exact_limit():
+    """Test when message count exactly matches the limit"""
+    chat_history = {
+        'messages': [{'content': f'Message {i}'} for i in range(50)]
+    }
+    
+    result = limit_chat_messages(chat_history, 50)
+    
+    assert len(result['messages']) == 50
+    assert result['metadata']['truncated'] == False
+    assert result['metadata']['removed_messages'] == 0
 ```
 
 2. **Integration Tests with Mock Data**:
 ```python
 @patch('mcp.chat.query_cursor_chat_database')
-def test_get_chat_context_with_boundaries(mock_query):
-    """Test that get_chat_context correctly applies boundary detection"""
+def test_get_chat_history_with_limits(mock_query):
+    """Test that get_chat_history correctly applies message limits"""
     # Setup mock database response
-    mock_query.return_value = [
-        {"id": 1, "content": "Question about Python classes"},
-        {"id": 2, "content": "How do I define a class method?"},
-        {"id": 3, "content": "Thanks for the explanation"},
-        {"id": 4, "content": "---NEW QUESTION---"},
-        {"id": 5, "content": "How do I deploy to AWS?"},
-        {"id": 6, "content": "What EC2 instance should I use?"}
-    ]
+    mock_query.return_value = {
+        'messages': [{'content': f'Message {i}'} for i in range(2000)]
+    }
     
-    # Test auto boundary detection
-    context = get_chat_context(boundary_type='auto')
-    assert len(context) == 2  # Should detect the manual boundary
+    # Test with default limit
+    history = get_chat_history()
+    assert len(history['messages']) == 1000
+    assert history['metadata']['truncated'] == True
+    assert history['metadata']['removed_messages'] == 1000
     
-    # Test topic boundary detection
-    context = get_chat_context(boundary_type='topic')
-    assert len(context) >= 1  # Should detect at least one topic boundary
+    # Test with custom limit
+    history = get_chat_history(max_messages=500)
+    assert len(history['messages']) == 500
+    assert history['metadata']['truncated'] == True
+    assert history['metadata']['removed_messages'] == 1500
 ```
 
 3. **Telemetry Validation Tests**:
 ```python
+@patch('mcp.chat.query_cursor_chat_database')
 @patch('mcp.telemetry.log_telemetry')
-def test_boundary_detection_telemetry(mock_log_telemetry):
-    """Test that telemetry is correctly logged for boundary detection"""
-    messages = [{"id": i, "content": f"Message {i}"} for i in range(10)]
-    groups = [[messages[0:3]], [messages[3:7]], [messages[7:10]]]
+def test_truncation_telemetry(mock_log_telemetry, mock_query):
+    """Test that telemetry is correctly logged for message truncation"""
+    # Setup mock database response
+    mock_query.return_value = {
+        'messages': [{'content': f'Message {i}'} for i in range(1500)]
+    }
     
-    _log_boundary_detection_telemetry(messages, groups, 'auto')
+    # Get chat history with default limit (1000)
+    history = get_chat_history()
     
     # Verify telemetry was logged with correct data
     mock_log_telemetry.assert_called_once()
     call_args = mock_log_telemetry.call_args[0]
-    assert call_args[0] == 'chat_boundary_detection'
-    assert call_args[1]['boundary_type'] == 'auto'
-    assert call_args[1]['total_messages'] == 10
-    assert call_args[1]['group_count'] == 3
+    assert call_args[0] == 'chat_history_truncation'
+    assert call_args[1]['original_count'] == 1500
+    assert call_args[1]['removed_count'] == 500
+    assert call_args[1]['final_count'] == 1000
+    assert call_args[1]['max_messages'] == 1000
 ```
 
-4. **Edge Case Tests**:
+4. **Configuration Validation Tests**:
 ```python
-def test_empty_message_list():
-    """Test boundary detection with empty message list"""
-    detector = ChatBoundaryDetector()
-    boundaries = detector.detect_boundaries([])
-    assert boundaries == []
-
-def test_single_message():
-    """Test boundary detection with a single message"""
-    detector = ChatBoundaryDetector()
-    messages = [{"id": 1, "content": "Single message"}]
-    boundaries = detector.detect_boundaries(messages)
-    assert len(boundaries) == 1
-    assert boundaries[0] == messages
-
-def test_max_message_limit():
-    """Test that max_messages limit is respected"""
-    detector = ChatBoundaryDetector({'max_messages': 5})
-    messages = [{"id": i, "content": f"Message {i}"} for i in range(10)]
+def test_validate_message_limit():
+    """Test validation of message limit parameter"""
+    # Valid limits should pass
+    assert validate_message_limit(100)
+    assert validate_message_limit(1)
     
-    # When using get_chat_context, the limit should be applied
-    with patch('mcp.chat.query_cursor_chat_database', return_value=messages):
-        context = get_chat_context(max_messages=5)
-        total_messages = sum(len(group) for group in context)
-        assert total_messages <= 5
+    # Invalid limits should raise appropriate errors
+    with pytest.raises(ValueError, match="max_messages must be an integer"):
+        validate_message_limit("100")
+        
+    with pytest.raises(ValueError, match="max_messages must be greater than zero"):
+        validate_message_limit(0)
+        
+    with pytest.raises(ValueError, match="max_messages must be greater than zero"):
+        validate_message_limit(-10)
 ```
 
-5. **Performance Tests**:
+5. **Edge Case Tests**:
 ```python
-def test_boundary_detection_performance():
-    """Test performance of boundary detection with large message sets"""
+def test_limit_chat_messages_with_existing_metadata():
+    """Test that existing metadata is preserved during truncation"""
+    chat_history = {
+        'messages': [{'content': f'Message {i}'} for i in range(100)],
+        'metadata': {
+            'source': 'test',
+            'timestamp': 123456789
+        }
+    }
+    
+    result = limit_chat_messages(chat_history, 50)
+    
+    # Verify truncation metadata was added
+    assert result['metadata']['truncated'] == True
+    assert result['metadata']['removed_messages'] == 50
+    
+    # Verify existing metadata was preserved
+    assert result['metadata']['source'] == 'test'
+    assert result['metadata']['timestamp'] == 123456789
+```
+
+6. **Performance Tests**:
+```python
+def test_message_limiting_performance():
+    """Test performance of message limiting with large message sets"""
     # Generate a large set of test messages
-    messages = []
-    for i in range(1000):
-        if i % 100 == 0:
-            messages.append({"id": i, "content": f"---NEW TOPIC--- Topic {i//100}"})
-        else:
-            messages.append({"id": i, "content": f"Message {i} in topic {i//100}"})
-    
-    detector = ChatBoundaryDetector()
+    chat_history = {
+        'messages': [{'content': f'Message {i}', 'data': 'x' * 1000} for i in range(10000)]
+    }
     
     # Measure performance
     start_time = time.time()
-    boundaries = detector.detect_boundaries(messages)
+    result = limit_chat_messages(chat_history, 1000)
     end_time = time.time()
     
-    # Verify performance is acceptable (should be under 1 second for 1000 messages)
-    assert end_time - start_time < 1.0
+    # Verify performance is acceptable (should be under 50ms for 10000 messages)
+    assert end_time - start_time < 0.05
     
-    # Verify correct boundary detection
-    assert len(boundaries) == 10  # Should detect all 10 topic changes
+    # Verify correct truncation
+    assert len(result['messages']) == 1000
+    assert result['metadata']['removed_messages'] == 9000
 ```
 
-6. **Configuration Validation Tests**:
-```python
-def test_boundary_config_validation():
-    """Test validation of boundary detection configuration"""
-    # Valid configurations should pass
-    assert validate_boundary_config({'max_messages': 50, 'topic_change_threshold': 0.7})
-    
-    # Invalid configurations should raise appropriate errors
-    with pytest.raises(ValueError, match="max_messages must be an integer"):
-        validate_boundary_config({'max_messages': 'fifty'})
-        
-    with pytest.raises(ValueError, match="topic_change_threshold must be a float between 0 and 1"):
-        validate_boundary_config({'topic_change_threshold': 1.5})
-```
+The test suite will be executed as part of the CI/CD pipeline to ensure the message limiting logic works correctly across different scenarios and edge cases.
 
-The test suite will be executed as part of the CI/CD pipeline to ensure the boundary detection logic works correctly across different scenarios and edge cases.
+# Subtasks:
+## 1. Add Message Limit Function [pending]
+### Dependencies: None
+### Description: Create `limit_chat_messages()` function in appropriate cursor_db module. Function signature: `limit_chat_messages(chat_history: dict, max_messages: int) -> dict`. Takes chat_history dict and max_messages parameter. Returns dict with truncated messages list (keeping most recent messages). Add metadata flags indicating if truncation occurred and how many messages were removed. Include comprehensive test coverage for edge cases (empty history, limits larger than message count).
+### Details:
+
+
+## 2. Integration and Configuration [pending]
+### Dependencies: None
+### Description: Wire `limit_chat_messages()` into the chat collection pipeline. Add configuration option for max_messages with suggested default of 1000. Update relevant functions to respect message limits. Document that this is a simple safety limit, not intelligent boundary detection. Add telemetry tracking for truncation events and message count statistics.
+### Details:
+
+
