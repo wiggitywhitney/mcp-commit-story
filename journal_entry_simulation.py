@@ -19,7 +19,7 @@ def create_journal_entry_for_commit():
     """
     
     # Get commit metadata from git
-    commit_hash = "30d06ce"
+    commit_hash = "5ad967a"
     
     # Get commit details from git
     try:
@@ -164,7 +164,7 @@ def create_journal_entry_for_commit():
     
     # Commit metadata
     commit_metadata = {
-        "commit_hash": "30d06ce",
+        "commit_hash": "5ad967a",
         "author": author,
         "date": "2025-06-26T11:05:24+09:00",
         "message": commit_message,
