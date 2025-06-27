@@ -1,0 +1,67 @@
+# Task ID: 55
+# Title: Implement collect_journal_context() for Reading Existing Journal Entries
+# Status: pending
+# Dependencies: 51
+# Priority: high
+# Description: Create a function to extract reflections and manual context from the current day's journal file that were added after the last journal entry, enabling iterative journaling where each commit builds upon new insights.
+# Details:
+Implement the `collect_journal_context(journal_date=None)` function in `context_collection.py` with the following specifications:
+
+1. Function signature:
+```python
+def collect_journal_context(journal_date=None):
+    """
+    Extract reflections and manual context added after the last journal entry.
+    
+    Args:
+        journal_date (str, optional): Date in YYYY-MM-DD format. Defaults to today.
+        
+    Returns:
+        dict: Structured data containing reflections and manual context
+    """
+```
+
+2. Implementation steps:
+   - If journal_date is None, use the current date
+   - Construct the path to the journal file: `journal/daily/YYYY-MM-DD-journal.md`
+   - Check if the file exists; if not, return empty context
+   - Read the journal file content
+   - Identify the last journal entry marker (likely a timestamp or specific header)
+   - Extract only content that appears after the last journal entry
+   - Parse this content to identify:
+     - Reflection sections (added via journal/add-reflection tool)
+     - Manual context sections (added via journal/capture-context tool)
+   - Structure the extracted data into a dictionary with appropriate categories
+   - Ensure the function handles edge cases (no previous entries, malformed content)
+
+3. Helper functions that may be needed:
+   - A parser for reflection sections
+   - A parser for manual context sections
+   - A function to identify the last journal entry marker
+
+4. Integration with existing code:
+   - Ensure compatibility with the journal generation process
+   - Maintain consistent data structures with other context collection functions
+
+# Test Strategy:
+1. Unit tests:
+   - Create test_collect_journal_context.py with the following test cases:
+     - Test with a journal file containing no entries (should return empty context)
+     - Test with a journal file containing one entry but no post-entry content
+     - Test with a journal file containing one entry followed by reflections
+     - Test with a journal file containing one entry followed by manual context
+     - Test with a journal file containing one entry followed by both reflections and manual context
+     - Test with a journal file containing multiple entries with content between them
+     - Test with invalid/malformed journal content
+     - Test with non-existent date
+
+2. Integration tests:
+   - Verify the function works with the journal generation process
+   - Test a complete workflow: add journal entry, add reflection, add manual context, generate new entry
+   - Verify that only new content is incorporated into subsequent journal entries
+
+3. Manual testing:
+   - Create a sample journal file with multiple entries and post-entry content
+   - Run the function and verify the output matches expectations
+   - Test with real user journal files (if available)
+   - Verify the function correctly handles different formatting styles

@@ -1,7 +1,7 @@
 # Task ID: 50
 # Title: Create Standalone Journal Generator
 # Status: pending
-# Dependencies: 48, 49
+# Dependencies: None
 # Priority: high
 # Description: Refactor the existing git_hook_worker.py to call journal_workflow.generate_journal_entry() directly instead of creating signals, enabling journal generation to run from git hooks without requiring signals or MCP server.
 # Details:

@@ -1,0 +1,80 @@
+# Task ID: 56
+# Title: Remove Terminal Command Collection Infrastructure
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Remove all terminal command collection code and references from the codebase since this functionality is no longer feasible in the current architecture and provides limited value.
+# Details:
+This task involves systematically removing all terminal command collection infrastructure from the codebase:
+
+1. First, identify all references to terminal-related code:
+   - Use grep to search for "collect_ai_terminal_commands", "TerminalContext", "TerminalCommand", "TerminalCommandsSection", "generate_terminal_commands", and "journal_context.terminal"
+   - Document all locations for systematic removal
+
+2. Remove from Type System in src/mcp_commit_story/context_types.py:
+   - Remove TerminalCommand TypedDict
+   - Remove TerminalContext TypedDict
+   - Remove TerminalCommandsSection TypedDict
+   - Update JournalContext to remove terminal: Optional[TerminalContext] field
+
+3. Remove Collection Function from src/mcp_commit_story/context_collection.py:
+   - Remove entire collect_ai_terminal_commands() function
+   - Remove related imports
+
+4. Remove from Journal Generation in src/mcp_commit_story/journal.py:
+   - Remove generate_terminal_commands_section() function
+   - Remove related imports
+   - Remove any calls to terminal generation
+
+5. Update Integration Points:
+   - Fix any code that constructs JournalContext to not include terminal field
+   - Update any journal workflow code that expects terminal context
+   - Ensure clean removal with no dangling references
+
+6. Update Tests:
+   - Remove tests specifically for terminal functionality
+   - Update any integration tests that construct JournalContext
+   - Fix any test fixtures that include terminal data
+
+7. Documentation Cleanup:
+   - Update docs/context-collection.md
+   - Remove terminal command references from all documentation
+   - Add removal note to architecture docs
+
+8. Add architecture decision note to context_collection.py:
+```python
+# Architecture Decision: Terminal Command Collection Removed (2025-06-27)
+# Terminal commands were originally designed to be collected by Cursor's AI with
+# access to its execution context. With the shift to external journal generation,
+# we no longer have access. Git diffs and chat context provide sufficient narrative.
+```
+
+# Test Strategy:
+1. Before making changes:
+   - Run full test suite to establish baseline: `python -m pytest tests/ -x --tb=short`
+   - Note any tests that currently reference terminal functionality
+   - Document current test count for comparison after removal
+
+2. After making changes:
+   - Run full test suite again: `python -m pytest tests/ -x --tb=short`
+   - Verify same number of tests pass (minus any terminal-specific tests removed)
+   - Re-run grep commands from identification step - all should return empty:
+     ```
+     grep -r "collect_ai_terminal_commands" src/ tests/
+     grep -r "TerminalContext" src/ tests/
+     grep -r "TerminalCommand" src/ tests/
+     grep -r "TerminalCommandsSection" src/ tests/
+     grep -r "generate_terminal_commands" src/ tests/
+     grep -r "journal_context.terminal" src/ tests/
+     ```
+   - Manually verify that journal generation still works by running the journal generation process
+   - Check that no references to terminal commands appear in generated journals
+   - Verify documentation is updated and consistent with the removal of terminal command functionality
+
+3. Final verification checklist:
+   - All terminal-related types removed
+   - All terminal-related functions removed
+   - All references in other code updated
+   - Tests updated and passing
+   - Documentation updated
+   - Architecture decision documented
