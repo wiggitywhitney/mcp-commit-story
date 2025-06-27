@@ -1,18 +1,21 @@
 """
-Git hook worker module for daily summary triggering.
+Git hook worker module for daily summary triggering and background journal generation.
 
 This module is called by the enhanced git post-commit hook to handle:
 - File-creation-based daily summary triggering
 - Period summary boundary detection  
 - MCP server communication for summary generation
+- Background journal generation with detached processes (Task 57.4)
 - Graceful error handling that never blocks git operations
 
-Based on approved design decisions for subtask 27.3.
+Based on approved design decisions for subtask 27.3 and Task 57.4.
 """
 
 import sys
 import os
 import logging
+import subprocess
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any
@@ -476,6 +479,173 @@ def create_tool_signal_safe(tool_name: str, parameters: Dict[str, Any], commit_m
         log_hook_activity(f"Signal creation validation error for {tool_name}: {str(e)}", "error", repo_path)
         signal_creation_telemetry(tool_name, success=False, error_type="validation_error")
         return None
+
+
+@handle_errors_gracefully
+def spawn_background_journal_generation(commit_hash: str, repo_path: str = None) -> Dict[str, Any]:
+    """
+    Spawn background journal generation process for the given commit.
+    
+    Implements Task 57.4 approved design decisions:
+    - Detached background process execution
+    - Immediate return (no blocking)
+    - Silent failure with telemetry capture
+    - Emergency bypass mechanism via environment variable
+    - 30-second max delay (generous since background)
+    
+    Args:
+        commit_hash: Git commit hash to generate journal entry for
+        repo_path: Path to git repository (defaults to current directory)
+        
+    Returns:
+        Dict with status and process information:
+        - background_spawned: Normal background execution
+        - emergency_synchronous_complete: Emergency bypass completed
+        - error: Failed to spawn (should be rare)
+    """
+    if repo_path is None:
+        repo_path = os.getcwd()
+    
+    try:
+        # Check for emergency bypass mechanism
+        if os.environ.get('MCP_JOURNAL_EMERGENCY_BYPASS', '').lower() == 'true':
+            log_hook_activity("Emergency bypass activated - running synchronous journal generation", "info", repo_path)
+            return _run_emergency_synchronous_generation(commit_hash, repo_path)
+        
+        # Normal background execution path
+        log_hook_activity(f"Spawning background journal generation for commit {commit_hash[:8]}", "info", repo_path)
+        
+        # Create background process command
+        python_executable = sys.executable
+        script_path = os.path.join(os.path.dirname(__file__), 'background_journal_worker.py')
+        
+        # Command to run in background
+        cmd = [
+            python_executable,
+            script_path,
+            '--commit-hash', commit_hash,
+            '--repo-path', repo_path
+        ]
+        
+        # Spawn detached background process
+        if os.name == 'nt':  # Windows
+            # Windows detached process
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                stdin=subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
+            )
+        else:  # Unix/Linux/macOS
+            # Unix detached process
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                stdin=subprocess.DEVNULL,
+                preexec_fn=os.setsid  # Create new session
+            )
+        
+        log_hook_activity(f"Background journal generation spawned with PID {process.pid}", "info", repo_path)
+        
+        return {
+            'status': 'background_spawned',
+            'process_id': process.pid,
+            'commit_hash': commit_hash
+        }
+        
+    except Exception as e:
+        # Silent failure with telemetry
+        error_msg = f"Failed to spawn background journal generation: {str(e)}"
+        log_hook_activity(error_msg, "error", repo_path)
+        
+        # Record telemetry for monitoring
+        _record_background_spawn_telemetry(False, str(e))
+        
+        return {
+            'status': 'error',
+            'error': error_msg,
+            'commit_hash': commit_hash
+        }
+
+
+def _run_emergency_synchronous_generation(commit_hash: str, repo_path: str) -> Dict[str, Any]:
+    """
+    Run journal generation synchronously for emergency bypass.
+    
+    Args:
+        commit_hash: Git commit hash to generate journal entry for
+        repo_path: Path to git repository
+        
+    Returns:
+        Dict with emergency completion status
+    """
+    try:
+        start_time = time.time()
+        
+        # Import and run journal generation synchronously
+        from mcp_commit_story.journal_orchestrator import orchestrate_journal_generation
+        from mcp_commit_story.journal import get_journal_file_path
+        from datetime import datetime
+        
+        # Get journal file path
+        date_str = datetime.now().strftime("%Y-%m-%d")
+        journal_path = get_journal_file_path(date_str, "daily")
+        
+        # Run synchronous generation
+        result = orchestrate_journal_generation(commit_hash, str(journal_path))
+        
+        execution_time = time.time() - start_time
+        
+        if result.get('success'):
+            log_hook_activity(f"Emergency synchronous journal generation completed in {execution_time:.2f}s", "info", repo_path)
+            return {
+                'status': 'emergency_synchronous_complete',
+                'execution_time': execution_time,
+                'journal_path': str(journal_path)
+            }
+        else:
+            error_msg = result.get('error', 'Unknown error in emergency generation')
+            log_hook_activity(f"Emergency synchronous journal generation failed: {error_msg}", "error", repo_path)
+            return {
+                'status': 'emergency_synchronous_error',
+                'error': error_msg,
+                'execution_time': execution_time
+            }
+            
+    except Exception as e:
+        error_msg = f"Emergency synchronous generation failed: {str(e)}"
+        log_hook_activity(error_msg, "error", repo_path)
+        return {
+            'status': 'emergency_synchronous_error',
+            'error': error_msg
+        }
+
+
+def _record_background_spawn_telemetry(success: bool, error_type: str = None) -> None:
+    """
+    Record telemetry for background process spawning.
+    
+    Args:
+        success: Whether the spawn was successful
+        error_type: Type of error if spawn failed
+    """
+    try:
+        from mcp_commit_story.telemetry import get_mcp_metrics
+        
+        metrics = get_mcp_metrics()
+        if metrics:
+            metrics.record_counter(
+                'background_journal_spawn_total',
+                attributes={
+                    'success': str(success).lower(),
+                    'error_type': error_type or 'none'
+                }
+            )
+    except Exception:
+        # Silent failure for telemetry - don't let telemetry issues block operations
+        pass
 
 
 def main() -> None:
