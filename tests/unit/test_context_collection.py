@@ -94,8 +94,10 @@ def test_collect_git_context_bad_commit_hash(tmp_path):
         collect_git_context("deadbeef", repo=repo)
 
 def test_collect_chat_history_structure_raises_on_none():
-    with pytest.raises(ValueError):
-        collect_chat_history()  # since_commit and max_messages_back default to None
+    """Test that collect_chat_history raises ValueError for None parameters."""
+    # Function now validates parameters and raises ValueError for None
+    with pytest.raises(ValueError, match="since_commit and max_messages_back must not be None"):
+        collect_chat_history()
 
 def test_collect_ai_terminal_commands_structure_raises_on_none():
     with pytest.raises(ValueError):

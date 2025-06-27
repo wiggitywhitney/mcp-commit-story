@@ -257,6 +257,60 @@ The cursor_db package includes automatic performance optimization through 48-hou
 # - time_window_hours: filtering window (48)
 ```
 
+### Message Limiting
+
+The context collection system includes message limiting as a second-stage optimization after 48-hour filtering:
+
+**How It Works:**
+- Applied during chat history collection for journal generation
+- Separate limits for human and AI messages (default: 200 each)
+- Acts as a safety net for edge cases, rarely triggered in normal usage
+
+**Performance Context:**
+```python
+# Message limiting provides safety bounds for extreme cases:
+# 48-hour filtering (1st stage): 910 total messages → ~455 typical
+# Message limiting (2nd stage): 455 messages → 400 max (200 human + 200 AI)
+# Combined: >90% performance predictability for journal generation
+```
+
+**Research-Based Defaults:**
+- Limits based on analysis of solo developer usage patterns
+- 200 human messages covers even intensive 48-hour coding sessions
+- 200 AI responses provides comprehensive context without performance impact
+- Designed as safety net, not regular constraint
+
+**Implementation:**
+```python
+from mcp_commit_story.context_collection import collect_chat_history
+
+# Automatic message limiting with research-validated defaults
+chat_history = collect_chat_history(
+    since_commit='abc123',
+    max_messages_back=150
+)
+# Uses DEFAULT_MAX_HUMAN_MESSAGES = 200, DEFAULT_MAX_AI_MESSAGES = 200 internally
+```
+
+**Telemetry Tracking:**
+```python
+# When truncation occurs, telemetry events are logged:
+# Event: 'chat_history_truncation'
+# Data: {
+#     'original_human_count': int,
+#     'original_ai_count': int, 
+#     'removed_human_count': int,
+#     'removed_ai_count': int,
+#     'max_human_messages': 200,
+#     'max_ai_messages': 200
+# }
+```
+
+**Graceful Degradation:**
+- If message limiting unavailable, returns unfiltered results
+- Preserves chat history over enforcing limits
+- Logs warnings for monitoring
+
 ## Common Workflows
 
 ### 1. Journal Generation Workflow

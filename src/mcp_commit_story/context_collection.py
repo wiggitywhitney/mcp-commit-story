@@ -3,16 +3,13 @@ Context collection functions for MCP Commit Story.
 
 This module provides unified functions for collecting chat, terminal, and git context for journal entry generation.
 
-# Context Collection Module
-# 
-# MAJOR DISCOVERY (2025-06-10): Found that Cursor stores complete chat history in accessible
-# SQLite databases at ~/Library/Application Support/Cursor/User/workspaceStorage/[hash]/state.vscdb
-# 
-# Key: 'aiService.prompts' contains JSON array with complete conversation history
-# This eliminates need for cronjobs and provides full chat context for journal generation
-# 
-# TODO: Implement collect_cursor_chat_history() to replace the current chat collection
-# See docs/cursor-chat-discovery.md for complete implementation details
+TODO: Implement collect_journal_context() functionality
+This function should read from journal/daily/YYYY-MM-DD-journal.md files to extract:
+- Recent reflection sections that provide project insights
+- Manual context additions from daily entries
+- Cross-reference with git commits to understand development patterns
+This would complement chat history by providing structured, intentional context
+from the developer's own journaling and reflection process.
 """
 
 import os
@@ -29,42 +26,121 @@ from mcp_commit_story.telemetry import (
     _telemetry_circuit_breaker
 )
 
+# Import cursor_db for chat history collection
+from mcp_commit_story.cursor_db import query_cursor_chat_database
+
+# Import message limiting with defaults validated from Task 47.1 research
+try:
+    from mcp_commit_story.cursor_db.message_limiting import (
+        limit_chat_messages, 
+        DEFAULT_MAX_HUMAN_MESSAGES,
+        DEFAULT_MAX_AI_MESSAGES
+    )
+except ImportError:
+    # Fallback defaults if message limiting unavailable
+    DEFAULT_MAX_HUMAN_MESSAGES = 200
+    DEFAULT_MAX_AI_MESSAGES = 200
+    limit_chat_messages = None
+
 logger = logging.getLogger(__name__)
+
+# Message limits designed for solo developer usage patterns
+# Based on research from Task 47.1 analyze_message_counts.py
+# These values cover even intense 48-hour coding sessions
+# Acts as safety net for edge cases, not regular constraint
+# Research findings: typical usage ~35 human/35 AI messages per session
+# 200/200 limits provide significant safety margin without impacting normal workflows
 
 
 @trace_git_operation("chat_history", 
                     performance_thresholds={"duration": 1.0},
                     error_categories=["api", "network", "parsing"])
-def collect_chat_history(since_commit=None, max_messages_back=150) -> ChatHistory:
+def collect_chat_history(
+    since_commit=None, 
+    max_messages_back=150
+) -> ChatHistory:
     """
+    Collect relevant chat history for journal entry with message count limits.
+    
+    Uses hardcoded 200/200 message limits based on solo developer research.
+    These limits act as a safety net for edge cases without impacting normal workflows.
+
+    Args:
+        since_commit: Commit reference (validated for compatibility but unused - cursor_db handles filtering)
+        max_messages_back: Maximum messages to look back (validated for compatibility but unused - cursor_db handles filtering)
+
     Returns:
-        ChatHistory: Structured chat history as defined in context_types.py
+        ChatHistory: Dictionary with 'messages' array containing chat data.
+                    Each message has 'speaker' and 'text' fields.
+                    Returns empty ChatHistory on errors for graceful degradation.
 
-    Notes:
-    - The ChatHistory type is a TypedDict defined in context_types.py.
-    - All context is ephemeral and only persisted as part of the generated journal entry.
-    - This function enforces the in-memory-only rule for context data.
-
-    Collect relevant chat history for journal entry.
-
-    AI Prompt:
-    Collect ALL chat messages within the specified boundary for journal entry generation.
-
-    BOUNDARY DEFINITION:
-    - Search backward through the current conversation for the last time you invoked the mcp-commit-story new-entry command
-    - Collect EVERY message from that point forward to the current moment
-    - Do not filter or exclude any messages - return the complete raw chat history within the boundary
-
-    PURPOSE: Provide complete raw data for downstream processing. The filtering and intelligent extraction will be handled by generate_discussion_notes_section().
-
-    Return ALL messages within the boundary as ChatHistory with complete speaker attribution and content.
+    Note:
+        Message limits (200/200) are based on solo developer usage research.
+        These limits act as a safety net and are rarely triggered in practice
+        due to cursor_db's 48-hour filtering.
     """
-    # Validate that required parameters are provided
+    # Validate required parameters (keeping for compatibility even if unused)
     if since_commit is None or max_messages_back is None:
         raise ValueError("collect_chat_history: since_commit and max_messages_back must not be None")
     
-    # TODO: AI will replace this with actual chat analysis per the prompt above
-    return ChatHistory(messages=[])
+    try:
+        # Get chat history from cursor database
+        raw_chat_data = query_cursor_chat_database()
+        
+        # Apply message limiting with research-validated defaults
+        if limit_chat_messages is None:
+            logger.warning("Message limiting module not available")
+            limited_data = raw_chat_data
+        else:
+            try:
+                limited_data = limit_chat_messages(
+                    raw_chat_data,
+                    DEFAULT_MAX_HUMAN_MESSAGES,
+                    DEFAULT_MAX_AI_MESSAGES
+                )
+            except Exception as e:
+                logger.warning(f"Message limiting failed: {e}")
+                limited_data = raw_chat_data
+        
+        # Log telemetry if truncation occurred
+        if limited_data and isinstance(limited_data, dict):
+            metadata = limited_data.get('metadata', {})
+            if metadata.get('truncated_human') or metadata.get('truncated_ai'):
+                # Simple telemetry logging as specified in the plan
+                try:
+                    from mcp_commit_story.telemetry import get_mcp_metrics
+                    metrics = get_mcp_metrics()
+                    if metrics:
+                        metrics.record_counter('chat_history_truncation', attributes={
+                            'original_human_count': str(metadata.get('original_human_count', 0)),
+                            'original_ai_count': str(metadata.get('original_ai_count', 0)),
+                            'removed_human_count': str(metadata.get('removed_human_count', 0)),
+                            'removed_ai_count': str(metadata.get('removed_ai_count', 0)),
+                            'max_human_messages': str(DEFAULT_MAX_HUMAN_MESSAGES),
+                            'max_ai_messages': str(DEFAULT_MAX_AI_MESSAGES)
+                        })
+                except ImportError:
+                    logger.debug("Telemetry not available for truncation logging")
+                except Exception as e:
+                    logger.debug(f"Failed to log truncation telemetry: {e}")
+        
+        # Convert to ChatHistory format
+        messages = []
+        chat_history = limited_data.get('chat_history', []) if limited_data else []
+        for msg in chat_history:
+            messages.append({
+                'speaker': 'Human' if msg.get('role') == 'user' else 'Assistant',
+                'text': msg.get('content', '')
+            })
+        
+        return ChatHistory(messages=messages)
+        
+    except Exception as e:
+        logger.error(f"Chat history collection failed: {e}")
+        return ChatHistory(messages=[])
+
+
+
 
 
 @trace_git_operation("terminal_commands",

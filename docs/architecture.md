@@ -51,6 +51,7 @@ MCP Commit Story follows a **background generation architecture** with automatic
 - **Git-driven filtering**: Extract keywords and concepts from git diffs
 - **Relevance scoring**: Match chat content against code changes
 - **Boundary detection**: Identify relevant chat sessions and conversations
+- **Message limiting**: 200/200 limits act as safety net after 48-hour filtering
 - **Context optimization**: Return only chat segments related to the work
 
 ### 4. Fresh AI Generation
