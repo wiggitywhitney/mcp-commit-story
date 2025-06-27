@@ -1,6 +1,6 @@
 # Task ID: 59
 # Title: Fix pytest temporary directory cleanup warnings
-# Status: pending
+# Status: done
 # Dependencies: None
 # Priority: medium
 # Description: Resolve pytest warnings about failing to clean up temporary directories by fixing permission restoration issues and ensuring proper cleanup of resources in test files.
@@ -13,6 +13,8 @@ This task involves systematically addressing pytest warnings related to temporar
    - tests/unit/test_git_hook_installation.py: Restore hooks directory permissions after tests
    - tests/unit/test_journal_init.py: Fix directory permission tests to properly clean up
    - tests/unit/test_database_connection.py: Ensure file permission changes are reverted
+   - tests/unit/test_git_utils.py: Restore permissions for readonly hooks directory tests
+   - tests/unit/test_daily_summary_end_to_end.py: Handle permission errors properly
    - Integration tests: Review all uses of tempfile.TemporaryDirectory()
 
 2. Implement proper resource management patterns:
@@ -70,6 +72,8 @@ This task involves systematically addressing pytest warnings related to temporar
    pytest tests/unit/test_git_hook_installation.py -v
    pytest tests/unit/test_journal_init.py -v
    pytest tests/unit/test_database_connection.py -v
+   pytest tests/unit/test_git_utils.py -v
+   pytest tests/unit/test_daily_summary_end_to_end.py -v
    ```
 
 3. Run the tests with the `--keep-tempdir` flag to inspect the temporary directories after test execution and verify they're properly cleaned up:
@@ -97,3 +101,61 @@ This task involves systematically addressing pytest warnings related to temporar
 6. Monitor disk space before and after running the test suite multiple times to ensure no accumulation of temporary files.
 
 7. Verify that all tests still pass and maintain the same functionality after the fixes.
+
+8. Check for and clean up any accumulated garbage directories in the pytest temporary directory (e.g., `/var/folders/.../pytest-of-username/`).
+
+# Subtasks:
+## 1. Fix permission restoration in test_cli.py [completed]
+### Dependencies: None
+### Description: Added proper try/finally with original permission restoration in test_cli_journal_entry_permission_error()
+### Details:
+
+
+## 2. Fix permission restoration in test_cursor_db_exceptions.py [completed]
+### Dependencies: None
+### Description: Added proper try/finally with original permission restoration in test_query_database_access_error()
+### Details:
+
+
+## 3. Fix permission restoration in test_git_hook_installation.py [completed]
+### Dependencies: None
+### Description: Added proper try/finally with original permission restoration in test_install_post_commit_hook_permission_error_on_hooks_dir()
+### Details:
+
+
+## 4. Fix permission restoration in test_journal_init.py [completed]
+### Dependencies: None
+### Description: Added proper try/finally with original permission restoration in test_generate_default_config_permission_error() and test_validate_git_repository_permission_error()
+### Details:
+
+
+## 5. Fix permission restoration in test_database_connection.py [completed]
+### Dependencies: None
+### Description: Added proper try/finally with original permission restoration in test_get_cursor_chat_database_permission_denied()
+### Details:
+
+
+## 6. Fix permission restoration in test_git_utils.py [completed]
+### Dependencies: None
+### Description: Added proper try/finally with original permission restoration in test_install_post_commit_hook_readonly_hooks_dir()
+### Details:
+
+
+## 7. Fix permission restoration in test_daily_summary_end_to_end.py [completed]
+### Dependencies: None
+### Description: Added proper try/finally with original permission restoration in test_permission_errors_handling()
+### Details:
+
+
+## 8. Clean up accumulated garbage directories [completed]
+### Dependencies: None
+### Description: Manually fixed permissions on and removed 60+ accumulated garbage directories in /var/folders/.../pytest-of-wiggitywhitney/
+### Details:
+
+
+## 9. Verify all warnings are eliminated [completed]
+### Dependencies: None
+### Description: Run full test suite to confirm zero garbage/cleanup warnings and ensure all tests pass without any regressions
+### Details:
+
+

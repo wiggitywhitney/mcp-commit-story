@@ -824,17 +824,99 @@
         "id": 59,
         "title": "Fix pytest temporary directory cleanup warnings",
         "description": "Resolve pytest warnings about failing to clean up temporary directories by fixing permission restoration issues and ensuring proper cleanup of resources in test files.",
-        "details": "This task involves systematically addressing pytest warnings related to temporary directory cleanup failures across multiple test files. The implementation should:\n\n1. Review and fix each identified test file:\n   - tests/unit/test_cli.py: Add proper permission restoration in finally blocks after chmod operations\n   - tests/unit/test_cursor_db_exceptions.py: Ensure permission changes are properly reverted\n   - tests/unit/test_git_hook_installation.py: Restore hooks directory permissions after tests\n   - tests/unit/test_journal_init.py: Fix directory permission tests to properly clean up\n   - tests/unit/test_database_connection.py: Ensure file permission changes are reverted\n   - Integration tests: Review all uses of tempfile.TemporaryDirectory()\n\n2. Implement proper resource management patterns:\n   ```python\n   # Example pattern for permission changes\n   original_mode = os.stat(path).st_mode\n   try:\n       os.chmod(path, new_mode)\n       # Test code here\n   finally:\n       os.chmod(path, original_mode)\n   ```\n\n3. Replace direct tempfile usage with pytest fixtures where appropriate:\n   ```python\n   # Instead of\n   with tempfile.TemporaryDirectory() as tmpdir:\n       # test code\n   \n   # Use pytest fixtures\n   def test_something(tmp_path):\n       # test code using tmp_path\n   ```\n\n4. Ensure all file handles are properly closed by using context managers:\n   ```python\n   with open(file_path, 'w') as f:\n       f.write('content')\n   ```\n\n5. Add explicit cleanup for any subdirectories or files created during tests:\n   ```python\n   try:\n       # Create subdirectories/files\n       # Test code\n   finally:\n       # Clean up subdirectories/files\n       shutil.rmtree(subdir_path, ignore_errors=True)\n   ```\n\n6. Review and fix any tests that might be creating files with insufficient permissions for deletion.\n\n7. Consider implementing a custom pytest fixture that handles permission restoration automatically for tests that need to modify permissions.",
-        "testStrategy": "1. Run the pytest suite with the `-v` flag and verify no temporary directory cleanup warnings are generated:\n   ```\n   pytest -v\n   ```\n\n2. Add specific tests for each fixed file to ensure the functionality still works as expected:\n   ```\n   pytest tests/unit/test_cli.py -v\n   pytest tests/unit/test_cursor_db_exceptions.py -v\n   pytest tests/unit/test_git_hook_installation.py -v\n   pytest tests/unit/test_journal_init.py -v\n   pytest tests/unit/test_database_connection.py -v\n   ```\n\n3. Run the tests with the `--keep-tempdir` flag to inspect the temporary directories after test execution and verify they're properly cleaned up:\n   ```\n   pytest --keep-tempdir\n   ```\n\n4. Create a test that specifically checks for resource leaks:\n   ```python\n   def test_no_resource_leaks():\n       # Use psutil to check for open file handles before and after running tests\n       import psutil\n       process = psutil.Process()\n       handles_before = process.open_files()\n       # Run test operations\n       handles_after = process.open_files()\n       assert len(handles_after) <= len(handles_before)\n   ```\n\n5. Run the tests in a loop (e.g., 10 times) to ensure consistent cleanup:\n   ```\n   for i in {1..10}; do pytest tests/unit/test_cli.py; done\n   ```\n\n6. Monitor disk space before and after running the test suite multiple times to ensure no accumulation of temporary files.\n\n7. Verify that all tests still pass and maintain the same functionality after the fixes.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [],
         "priority": "medium",
-        "subtasks": []
+        "details": "This task involves systematically addressing pytest warnings related to temporary directory cleanup failures across multiple test files. The implementation should:\n\n1. Review and fix each identified test file:\n   - tests/unit/test_cli.py: Add proper permission restoration in finally blocks after chmod operations\n   - tests/unit/test_cursor_db_exceptions.py: Ensure permission changes are properly reverted\n   - tests/unit/test_git_hook_installation.py: Restore hooks directory permissions after tests\n   - tests/unit/test_journal_init.py: Fix directory permission tests to properly clean up\n   - tests/unit/test_database_connection.py: Ensure file permission changes are reverted\n   - tests/unit/test_git_utils.py: Restore permissions for readonly hooks directory tests\n   - tests/unit/test_daily_summary_end_to_end.py: Handle permission errors properly\n   - Integration tests: Review all uses of tempfile.TemporaryDirectory()\n\n2. Implement proper resource management patterns:\n   ```python\n   # Example pattern for permission changes\n   original_mode = os.stat(path).st_mode\n   try:\n       os.chmod(path, new_mode)\n       # Test code here\n   finally:\n       os.chmod(path, original_mode)\n   ```\n\n3. Replace direct tempfile usage with pytest fixtures where appropriate:\n   ```python\n   # Instead of\n   with tempfile.TemporaryDirectory() as tmpdir:\n       # test code\n   \n   # Use pytest fixtures\n   def test_something(tmp_path):\n       # test code using tmp_path\n   ```\n\n4. Ensure all file handles are properly closed by using context managers:\n   ```python\n   with open(file_path, 'w') as f:\n       f.write('content')\n   ```\n\n5. Add explicit cleanup for any subdirectories or files created during tests:\n   ```python\n   try:\n       # Create subdirectories/files\n       # Test code\n   finally:\n       # Clean up subdirectories/files\n       shutil.rmtree(subdir_path, ignore_errors=True)\n   ```\n\n6. Review and fix any tests that might be creating files with insufficient permissions for deletion.\n\n7. Consider implementing a custom pytest fixture that handles permission restoration automatically for tests that need to modify permissions.",
+        "testStrategy": "1. Run the pytest suite with the `-v` flag and verify no temporary directory cleanup warnings are generated:\n   ```\n   pytest -v\n   ```\n\n2. Add specific tests for each fixed file to ensure the functionality still works as expected:\n   ```\n   pytest tests/unit/test_cli.py -v\n   pytest tests/unit/test_cursor_db_exceptions.py -v\n   pytest tests/unit/test_git_hook_installation.py -v\n   pytest tests/unit/test_journal_init.py -v\n   pytest tests/unit/test_database_connection.py -v\n   pytest tests/unit/test_git_utils.py -v\n   pytest tests/unit/test_daily_summary_end_to_end.py -v\n   ```\n\n3. Run the tests with the `--keep-tempdir` flag to inspect the temporary directories after test execution and verify they're properly cleaned up:\n   ```\n   pytest --keep-tempdir\n   ```\n\n4. Create a test that specifically checks for resource leaks:\n   ```python\n   def test_no_resource_leaks():\n       # Use psutil to check for open file handles before and after running tests\n       import psutil\n       process = psutil.Process()\n       handles_before = process.open_files()\n       # Run test operations\n       handles_after = process.open_files()\n       assert len(handles_after) <= len(handles_before)\n   ```\n\n5. Run the tests in a loop (e.g., 10 times) to ensure consistent cleanup:\n   ```\n   for i in {1..10}; do pytest tests/unit/test_cli.py; done\n   ```\n\n6. Monitor disk space before and after running the test suite multiple times to ensure no accumulation of temporary files.\n\n7. Verify that all tests still pass and maintain the same functionality after the fixes.\n\n8. Check for and clean up any accumulated garbage directories in the pytest temporary directory (e.g., `/var/folders/.../pytest-of-username/`).",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Fix permission restoration in test_cli.py",
+            "description": "Added proper try/finally with original permission restoration in test_cli_journal_entry_permission_error()",
+            "status": "completed",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Fix permission restoration in test_cursor_db_exceptions.py",
+            "description": "Added proper try/finally with original permission restoration in test_query_database_access_error()",
+            "status": "completed",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Fix permission restoration in test_git_hook_installation.py",
+            "description": "Added proper try/finally with original permission restoration in test_install_post_commit_hook_permission_error_on_hooks_dir()",
+            "status": "completed",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Fix permission restoration in test_journal_init.py",
+            "description": "Added proper try/finally with original permission restoration in test_generate_default_config_permission_error() and test_validate_git_repository_permission_error()",
+            "status": "completed",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Fix permission restoration in test_database_connection.py",
+            "description": "Added proper try/finally with original permission restoration in test_get_cursor_chat_database_permission_denied()",
+            "status": "completed",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Fix permission restoration in test_git_utils.py",
+            "description": "Added proper try/finally with original permission restoration in test_install_post_commit_hook_readonly_hooks_dir()",
+            "status": "completed",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Fix permission restoration in test_daily_summary_end_to_end.py",
+            "description": "Added proper try/finally with original permission restoration in test_permission_errors_handling()",
+            "status": "completed",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Clean up accumulated garbage directories",
+            "description": "Manually fixed permissions on and removed 60+ accumulated garbage directories in /var/folders/.../pytest-of-wiggitywhitney/",
+            "status": "completed",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 9,
+            "title": "Verify all warnings are eliminated",
+            "description": "Run full test suite to confirm zero garbage/cleanup warnings and ensure all tests pass without any regressions",
+            "status": "completed",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-06-21T07:52:11.612Z",
-      "updated": "2025-06-27T13:08:19.946Z",
+      "updated": "2025-06-27T18:25:15.691Z",
       "description": "Tasks for master context"
     }
   }

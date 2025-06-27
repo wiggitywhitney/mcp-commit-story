@@ -394,12 +394,15 @@ def test_install_post_commit_hook_sets_executable(git_repo):
 
 def test_install_post_commit_hook_readonly_hooks_dir(git_repo):
     hooks_dir = os.path.join(git_repo.working_tree_dir, '.git', 'hooks')
-    os.chmod(hooks_dir, 0o500)  # Remove write permission
+    # Store original permissions
+    original_mode = os.stat(hooks_dir).st_mode
     try:
+        os.chmod(hooks_dir, 0o500)  # Remove write permission
         with pytest.raises(PermissionError):
             install_post_commit_hook(git_repo.working_tree_dir)
     finally:
-        os.chmod(hooks_dir, 0o700)  # Restore permissions
+        # Restore original permissions for proper cleanup
+        os.chmod(hooks_dir, original_mode)
 
 def test_install_post_commit_hook_missing_hooks_dir(git_repo):
     hooks_dir = os.path.join(git_repo.working_tree_dir, '.git', 'hooks')

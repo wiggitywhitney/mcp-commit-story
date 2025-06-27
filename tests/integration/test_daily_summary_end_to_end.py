@@ -358,6 +358,9 @@ class TestDailySummaryErrorRecovery:
         repo_dir = temp_git_repo_with_journal
         summaries_dir = repo_dir / "journal" / "summaries" / "daily"
         
+        # Store original permissions
+        original_mode = summaries_dir.stat().st_mode
+        
         # Make summaries directory read-only (if possible on this system)
         try:
             summaries_dir.chmod(0o444)
@@ -372,8 +375,8 @@ class TestDailySummaryErrorRecovery:
             # Result may be None due to permission error, which is acceptable
             
         finally:
-            # Restore permissions for cleanup
-            summaries_dir.chmod(0o755)
+            # Restore original permissions for cleanup
+            summaries_dir.chmod(original_mode)
     
     def test_missing_directories_handling(self, temp_git_repo_with_journal):
         """Test handling when journal or summary directories are missing."""

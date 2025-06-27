@@ -71,12 +71,15 @@ def test_install_post_commit_hook_permission_error_on_hooks_dir(tmp_path):
     repo_dir = tmp_path
     hooks_dir = repo_dir / '.git' / 'hooks'
     hooks_dir.mkdir(parents=True)
-    os.chmod(hooks_dir, 0o500)  # Remove write permission
+    # Store original permissions
+    original_mode = os.stat(hooks_dir).st_mode
     try:
+        os.chmod(hooks_dir, 0o500)  # Remove write permission
         with pytest.raises(PermissionError):
             install_post_commit_hook(str(repo_dir))
     finally:
-        os.chmod(hooks_dir, 0o700)
+        # Restore original permissions for proper cleanup
+        os.chmod(hooks_dir, original_mode)
 
 def test_install_post_commit_hook_missing_hooks_dir(tmp_path):
     repo_dir = tmp_path

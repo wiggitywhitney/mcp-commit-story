@@ -57,17 +57,20 @@ class TestDatabaseConnection:
     def test_get_cursor_chat_database_permission_denied(self):
         """Test database connection when permission is denied."""
         with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as temp_db:
-            # Create database file but remove read permissions
-            os.chmod(temp_db.name, 0o000)
+            # Store original permissions
+            original_mode = os.stat(temp_db.name).st_mode
             
             try:
+                # Create database file but remove read permissions
+                os.chmod(temp_db.name, 0o000)
+                
                 with pytest.raises(CursorDatabaseConnectionError) as exc_info:
                     get_cursor_chat_database(user_override_path=temp_db.name)
                 
                 assert "permission" in str(exc_info.value).lower()
             finally:
-                # Restore permissions and cleanup
-                os.chmod(temp_db.name, 0o644)
+                # Restore original permissions before cleanup
+                os.chmod(temp_db.name, original_mode)
                 os.unlink(temp_db.name)
     
     def test_get_cursor_chat_database_corrupted_database(self):

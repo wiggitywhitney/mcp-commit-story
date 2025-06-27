@@ -234,6 +234,8 @@ class TestConnectionFunctionIntegration:
         # Create a temporary file but make it unreadable
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
             temp_path = temp_file.name
+            # Store original permissions
+            original_mode = os.stat(temp_path).st_mode
         
         try:
             # Remove read permissions
@@ -247,8 +249,8 @@ class TestConnectionFunctionIntegration:
             assert exc_info.value.context["path"] == temp_path
             assert exc_info.value.context["permission_type"] == "read"
         finally:
-            # Restore permissions and clean up
-            os.chmod(temp_path, 0o644)
+            # Restore original permissions before cleanup
+            os.chmod(temp_path, original_mode)
             os.unlink(temp_path)
     
     def test_query_database_sql_syntax_error(self):

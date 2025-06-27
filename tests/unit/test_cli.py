@@ -142,16 +142,21 @@ def test_cli_journal_entry_permission_error(tmp_path):
     ], cwd=tmp_path, capture_output=True, text=True)
     data = json.loads(result.stdout)
     journal_dir = data["result"]["paths"]["journal"]
-    # Make journal_dir read-only
-    os.chmod(journal_dir, stat.S_IREAD)
-    nested_path = os.path.join(journal_dir, "daily", "2025-05-28-journal.md")
-    # Simulate CLI command to write entry (should fail)
+    
+    # Store original permissions before changing them
+    original_mode = os.stat(journal_dir).st_mode
+    
     try:
+        # Make journal_dir read-only
+        os.chmod(journal_dir, stat.S_IREAD)
+        nested_path = os.path.join(journal_dir, "daily", "2025-05-28-journal.md")
+        # Simulate CLI command to write entry (should fail)
         with pytest.raises(Exception):
             with open(nested_path, "w") as f:
                 f.write("Test entry")
     finally:
-        os.chmod(journal_dir, stat.S_IWRITE | stat.S_IREAD)
+        # Restore original permissions for proper cleanup
+        os.chmod(journal_dir, original_mode)
 
 # Remove or skip all tests for operational CLI commands (new-entry, add-reflection, summarize, etc)
 # Keep only tests for setup commands (journal-init, install-hook)

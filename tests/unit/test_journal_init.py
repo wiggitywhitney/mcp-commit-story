@@ -56,12 +56,16 @@ def test_generate_default_config_backup_naming(tmp_path):
 
 def test_generate_default_config_permission_error(tmp_path):
     config_path = tmp_path / ".mcp-commit-storyrc.yaml"
-    # Make directory read-only
-    os.chmod(tmp_path, stat.S_IREAD)
-    with pytest.raises(PermissionError):
-        generate_default_config(config_path, "journal/")
-    # Restore permissions for cleanup
-    os.chmod(tmp_path, stat.S_IWRITE)
+    # Store original permissions
+    original_mode = os.stat(tmp_path).st_mode
+    try:
+        # Make directory read-only
+        os.chmod(tmp_path, stat.S_IREAD)
+        with pytest.raises(PermissionError):
+            generate_default_config(config_path, "journal/")
+    finally:
+        # Restore original permissions for cleanup
+        os.chmod(tmp_path, original_mode)
 
 
 def test_validate_git_repository_valid(tmp_path):
@@ -85,14 +89,17 @@ def test_validate_git_repository_bare_repo(tmp_path):
 
 
 def test_validate_git_repository_permission_error(tmp_path):
-    # Make directory read-only
-    tmp_path.chmod(stat.S_IREAD)
+    # Store original permissions
+    original_mode = tmp_path.stat().st_mode
     try:
+        # Make directory read-only
+        tmp_path.chmod(stat.S_IREAD)
         # On some platforms, unreadable dirs may raise FileNotFoundError instead of PermissionError
         with pytest.raises((PermissionError, FileNotFoundError)):
             validate_git_repository(tmp_path)
     finally:
-        tmp_path.chmod(stat.S_IWRITE)
+        # Restore original permissions for cleanup
+        tmp_path.chmod(original_mode)
 
 
 def test_initialize_journal_success(tmp_path):
