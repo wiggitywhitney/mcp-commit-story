@@ -92,7 +92,7 @@ def invoke_ai(prompt, model="gpt-4", temperature=0.7, max_tokens=1000):
    - Verify any implemented caching mechanisms are working correctly
 
 # Subtasks:
-## 1. Research and Pick an AI Provider [pending]
+## 1. Research and Pick an AI Provider [in-progress]
 ### Dependencies: None
 ### Description: Quick evaluation to pick one AI provider that works well for the project
 ### Details:
@@ -130,6 +130,41 @@ def invoke_ai(prompt, model="gpt-4", temperature=0.7, max_tokens=1000):
 - Include simple setup instructions for chosen provider
 - Note Ollama as offline/free alternative
 - **MARK COMPLETE**
+<info added on 2025-06-27T12:23:02.487Z>
+## MVP APPROACH: OPENAI ONLY
+- No provider comparison or evaluation needed
+- Single provider: OpenAI with gpt-4o-mini model
+- Simple integration: just one API call function
+- Focus on working integration, not enterprise flexibility
+
+## WRITE TESTS FIRST
+- Create `tests/unit/test_openai_provider.py`
+- Test basic OpenAI API integration
+- Test timeout and error handling (graceful degradation)
+- Test with actual docstring from `generate_summary_section()`
+- Mock OpenAI calls for testing
+- **RUN TESTS - VERIFY THEY FAIL**
+
+## APPROVED DESIGN CHOICES
+- **PAUSE FOR MANUAL APPROVAL**: Use OpenAI gpt-4o-mini model (cheap, fast, good enough)
+- **PAUSE FOR MANUAL APPROVAL**: Simple interface - just `call(prompt, context)` method
+- **PAUSE FOR MANUAL APPROVAL**: Environment variable `OPENAI_API_KEY` for authentication
+
+## IMPLEMENT FUNCTIONALITY
+- Create `src/mcp_commit_story/ai_provider.py` with OpenAIProvider class
+- Implement single `call(prompt, context)` method
+- 30-second timeout with graceful degradation (return empty string on failure)
+- Use actual docstring from `generate_summary_section()` for testing
+- **RUN TESTS - VERIFY THEY PASS**
+
+## DOCUMENT AND COMPLETE
+- Add setup instructions to `docs/ai-provider-setup.md`
+- Include OpenAI API key setup instructions
+- Document the simple interface for other developers
+- **MARK COMPLETE**
+
+Implementation target: ~50 lines of code total for the AI provider.
+</info added on 2025-06-27T12:23:02.487Z>
 
 ## 2. Implement Basic AI Invocation [pending]
 ### Dependencies: 57.1

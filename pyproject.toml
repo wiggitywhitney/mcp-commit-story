@@ -28,7 +28,9 @@ dependencies = [
     "opentelemetry-instrumentation-requests>=0.41b0",
     "opentelemetry-instrumentation-aiohttp-client>=0.41b0",
     "opentelemetry-instrumentation-asyncio>=0.41b0",
-    "opentelemetry-instrumentation-logging>=0.41b0"
+    "opentelemetry-instrumentation-logging>=0.41b0",
+    # AI provider integration
+    "openai>=1.0.0"
 ]
 
 [project.optional-dependencies]

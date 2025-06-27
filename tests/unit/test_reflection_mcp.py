@@ -298,27 +298,46 @@ class TestReflectionCoreWithTelemetry:
             mock_metrics = MagicMock()
             mock_get_metrics.return_value = mock_metrics
             
-            with patch('opentelemetry.trace.get_current_span') as mock_get_span:
+            # Mock the tracer to avoid SpanContext issues
+            with patch('opentelemetry.trace.get_tracer') as mock_get_tracer:
+                mock_tracer = MagicMock()
                 mock_span = MagicMock()
-                mock_get_span.return_value = mock_span
                 
-                with patch('src.mcp_commit_story.reflection_core.load_config') as mock_load_config:
-                    mock_config = Mock()
-                    mock_config.journal_path = self.journal_path
-                    mock_load_config.return_value = mock_config
-                    
-                    result = add_manual_reflection("Test reflection", "2025-01-02")
-                    
-                    # Verify span attributes are set
-                    mock_span.set_attribute.assert_called()
-                    attribute_calls = mock_span.set_attribute.call_args_list
-                    
-                    # Check for expected attributes
-                    attribute_dict = {call[0][0]: call[0][1] for call in attribute_calls}
-                    
-                    assert 'reflection.date' in attribute_dict
-                    assert attribute_dict['reflection.date'] == '2025-01-02'
-                    assert 'reflection.content_length' in attribute_dict
-                    assert attribute_dict['reflection.content_length'] == len("Test reflection")
-                    # Note: file.type is not set by our implementation - it uses file.extension
-                    assert 'file.extension' in attribute_dict 
+                # Create a context manager that returns the mock span
+                mock_span_context = MagicMock()
+                mock_span_context.__enter__.return_value = mock_span
+                mock_span_context.__exit__.return_value = None
+                
+                mock_tracer.start_as_current_span.return_value = mock_span_context
+                mock_get_tracer.return_value = mock_tracer
+                
+                # Also mock get_current_span to capture attributes from within functions
+                with patch('opentelemetry.trace.get_current_span') as mock_get_current_span:
+                    mock_get_current_span.return_value = mock_span
+                
+                    with patch('src.mcp_commit_story.reflection_core.load_config') as mock_load_config:
+                        mock_config = Mock()
+                        mock_config.journal_path = self.journal_path
+                        mock_load_config.return_value = mock_config
+                        
+                        result = add_manual_reflection("Test reflection", "2025-01-02")
+                        
+                        # Verify span attributes are set
+                        mock_span.set_attribute.assert_called()
+                        attribute_calls = mock_span.set_attribute.call_args_list
+                        
+                        # Check for expected attributes - collect all attributes set across all spans
+                        attribute_dict = {call[0][0]: call[0][1] for call in attribute_calls}
+                        
+                        # Verify key attributes are present (from both manual reflection and nested journal operations)
+                        # Note: Due to multiple traced functions, attributes come from different spans
+                        expected_attributes = [
+                            ('reflection.date', '2025-01-02'),  # From add_manual_reflection 
+                            ('reflection.content_length', len("Test reflection")),  # From add_reflection_to_journal
+                            ('file.extension', '.md'),  # From add_reflection_to_journal
+                            ('content_type', 'reflection')  # From trace_mcp_operation decorator
+                        ]
+                        
+                        for attr_name, expected_value in expected_attributes:
+                            assert attr_name in attribute_dict, f"Missing attribute: {attr_name}. Available: {list(attribute_dict.keys())}"
+                            assert attribute_dict[attr_name] == expected_value, f"Wrong value for {attr_name}: got {attribute_dict[attr_name]}, expected {expected_value}" 
