@@ -77,26 +77,72 @@ If configured correctly, you should see all tests pass.
 
 ## API Interface
 
-The AI provider exposes a simple interface for journal generation:
+The AI integration provides two layers for journal generation:
 
-### Basic Usage
+### High-Level AI Invocation (Recommended)
+
+Use the `invoke_ai` function for production calls with retry logic:
+
+```python
+from src.mcp_commit_story.ai_invocation import invoke_ai
+
+# Make a robust call with retries and telemetry
+response = invoke_ai(
+    prompt="Summarize these changes", 
+    context={"commit": "abc123", "diff": "git diff content"}
+)
+```
+
+**Features:**
+- **Retry Logic**: 3 attempts with 1-second delays for temporary failures
+- **Smart Error Handling**: No retries for auth errors (they won't resolve)
+- **Graceful Degradation**: Returns empty string on all failures
+- **Telemetry**: Automatically traced with `@trace_mcp_operation("ai.invoke")`
+- **30-Second Timeout**: Per attempt, suitable for git hooks
+
+### Low-Level Provider (Direct Access)
+
+For specialized use cases, access the OpenAI provider directly:
 
 ```python
 from src.mcp_commit_story.ai_provider import OpenAIProvider
 
-# Initialize the provider (reads OPENAI_API_KEY from environment)
+# Direct provider access (no retries)
 provider = OpenAIProvider()
-
-# Make an AI call
 response = provider.call(prompt="Summarize these changes", context="git diff content")
 ```
 
-### Method Signature
+### Method Signatures
+
+#### High-Level Invocation Function
+
+```python
+def invoke_ai(prompt: str, context: Dict[str, Any]) -> str:
+    """
+    Call AI provider with retry logic and telemetry.
+    
+    Args:
+        prompt: The instruction/question for the AI
+        context: Dictionary with additional context data
+        
+    Returns:
+        AI-generated response as string, or empty string on failure
+        
+    Features:
+        - Retries up to 3 times on temporary failures
+        - No retries on auth errors 
+        - 30-second timeout per attempt
+        - Automatic telemetry tracing
+        - Graceful degradation logging
+    """
+```
+
+#### Direct Provider Method
 
 ```python
 def call(self, prompt: str, context: Union[str, Dict[str, Any]]) -> str:
     """
-    Call OpenAI's API with a prompt and context.
+    Call OpenAI's API directly with a prompt and context.
     
     Args:
         prompt: The instruction/question for the AI

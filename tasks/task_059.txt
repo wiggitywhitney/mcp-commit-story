@@ -1,0 +1,99 @@
+# Task ID: 59
+# Title: Fix pytest temporary directory cleanup warnings
+# Status: pending
+# Dependencies: None
+# Priority: medium
+# Description: Resolve pytest warnings about failing to clean up temporary directories by fixing permission restoration issues and ensuring proper cleanup of resources in test files.
+# Details:
+This task involves systematically addressing pytest warnings related to temporary directory cleanup failures across multiple test files. The implementation should:
+
+1. Review and fix each identified test file:
+   - tests/unit/test_cli.py: Add proper permission restoration in finally blocks after chmod operations
+   - tests/unit/test_cursor_db_exceptions.py: Ensure permission changes are properly reverted
+   - tests/unit/test_git_hook_installation.py: Restore hooks directory permissions after tests
+   - tests/unit/test_journal_init.py: Fix directory permission tests to properly clean up
+   - tests/unit/test_database_connection.py: Ensure file permission changes are reverted
+   - Integration tests: Review all uses of tempfile.TemporaryDirectory()
+
+2. Implement proper resource management patterns:
+   ```python
+   # Example pattern for permission changes
+   original_mode = os.stat(path).st_mode
+   try:
+       os.chmod(path, new_mode)
+       # Test code here
+   finally:
+       os.chmod(path, original_mode)
+   ```
+
+3. Replace direct tempfile usage with pytest fixtures where appropriate:
+   ```python
+   # Instead of
+   with tempfile.TemporaryDirectory() as tmpdir:
+       # test code
+   
+   # Use pytest fixtures
+   def test_something(tmp_path):
+       # test code using tmp_path
+   ```
+
+4. Ensure all file handles are properly closed by using context managers:
+   ```python
+   with open(file_path, 'w') as f:
+       f.write('content')
+   ```
+
+5. Add explicit cleanup for any subdirectories or files created during tests:
+   ```python
+   try:
+       # Create subdirectories/files
+       # Test code
+   finally:
+       # Clean up subdirectories/files
+       shutil.rmtree(subdir_path, ignore_errors=True)
+   ```
+
+6. Review and fix any tests that might be creating files with insufficient permissions for deletion.
+
+7. Consider implementing a custom pytest fixture that handles permission restoration automatically for tests that need to modify permissions.
+
+# Test Strategy:
+1. Run the pytest suite with the `-v` flag and verify no temporary directory cleanup warnings are generated:
+   ```
+   pytest -v
+   ```
+
+2. Add specific tests for each fixed file to ensure the functionality still works as expected:
+   ```
+   pytest tests/unit/test_cli.py -v
+   pytest tests/unit/test_cursor_db_exceptions.py -v
+   pytest tests/unit/test_git_hook_installation.py -v
+   pytest tests/unit/test_journal_init.py -v
+   pytest tests/unit/test_database_connection.py -v
+   ```
+
+3. Run the tests with the `--keep-tempdir` flag to inspect the temporary directories after test execution and verify they're properly cleaned up:
+   ```
+   pytest --keep-tempdir
+   ```
+
+4. Create a test that specifically checks for resource leaks:
+   ```python
+   def test_no_resource_leaks():
+       # Use psutil to check for open file handles before and after running tests
+       import psutil
+       process = psutil.Process()
+       handles_before = process.open_files()
+       # Run test operations
+       handles_after = process.open_files()
+       assert len(handles_after) <= len(handles_before)
+   ```
+
+5. Run the tests in a loop (e.g., 10 times) to ensure consistent cleanup:
+   ```
+   for i in {1..10}; do pytest tests/unit/test_cli.py; done
+   ```
+
+6. Monitor disk space before and after running the test suite multiple times to ensure no accumulation of temporary files.
+
+7. Verify that all tests still pass and maintain the same functionality after the fixes.

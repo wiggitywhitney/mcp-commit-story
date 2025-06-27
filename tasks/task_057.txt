@@ -92,7 +92,7 @@ def invoke_ai(prompt, model="gpt-4", temperature=0.7, max_tokens=1000):
    - Verify any implemented caching mechanisms are working correctly
 
 # Subtasks:
-## 1. Research and Pick an AI Provider [in-progress]
+## 1. Research and Pick an AI Provider [done]
 ### Dependencies: None
 ### Description: Quick evaluation to pick one AI provider that works well for the project
 ### Details:
@@ -165,8 +165,40 @@ def invoke_ai(prompt, model="gpt-4", temperature=0.7, max_tokens=1000):
 
 Implementation target: ~50 lines of code total for the AI provider.
 </info added on 2025-06-27T12:23:02.487Z>
+<info added on 2025-06-27T12:36:33.132Z>
+## IMPLEMENTATION DETAILS
 
-## 2. Implement Basic AI Invocation [pending]
+- Create `src/mcp_commit_story/ai_provider.py` with OpenAIProvider class
+- Implement simple `call(prompt, context)` method with following features:
+  - Uses gpt-4o-mini model for cost-effectiveness and speed
+  - Authenticates via OPENAI_API_KEY environment variable
+  - Includes 30-second timeout for git hook compatibility
+  - Implements graceful degradation (returns empty strings on failure)
+  - Handles both string and dictionary context types
+  - Raises ValueError if API key is missing
+  - Total implementation: ~50 lines of code
+
+## TEST IMPLEMENTATION
+
+- Created `tests/unit/test_openai_provider.py` with 10 comprehensive test cases:
+  - API key validation and missing key handling
+  - Successful API call scenarios
+  - Failure and timeout handling
+  - Different context type handling (string/dict)
+  - Various error scenarios (network errors, API errors)
+  - Graceful degradation verification
+
+## DEPENDENCIES
+
+- Added openai>=1.0.0 to requirements.txt
+
+## BONUS IMPROVEMENTS
+
+- Fixed unrelated test failure in `test_reflection_mcp.py` (SpanContext mocking issue)
+- Verified all 674 unit tests pass (with 14 expected AI-dependent xfails)
+</info added on 2025-06-27T12:36:33.132Z>
+
+## 2. Implement Basic AI Invocation [done]
 ### Dependencies: 57.1
 ### Description: Create simple function to call chosen AI provider with basic retry logic
 ### Details:
@@ -222,6 +254,73 @@ def invoke_ai(prompt: str, context: dict) -> str:
 - **PAUSE FOR MANUAL APPROVAL**: Should we use async or sync API calls?
 - **PAUSE FOR MANUAL APPROVAL**: How to format the context with the prompt?
 </info added on 2025-06-27T11:44:57.258Z>
+<info added on 2025-06-27T12:56:42.603Z>
+## APPROVED DESIGN CHOICES (FINAL)
+- ✅ **Retry count**: 3 attempts (simple, proven default for git hooks)
+- ✅ **Timeout duration**: 30 seconds (already implemented in OpenAIProvider from Task 57.1)  
+- ✅ **Environment variable name**: OPENAI_API_KEY (already established in Task 57.1)
+- ✅ **Async vs sync API calls**: Sync (keep it simple - Task 57.1 uses sync, git hooks are synchronous)
+- ✅ **Context formatting**: str(context) as user message, prompt as system message (already established in Task 57.1)
+
+## IMPLEMENTATION APPROACH
+- Reuse existing OpenAIProvider from Task 57.1 as the foundation
+- Wrap it with retry logic for temporary network failures (3 attempts with 1-second delays)
+- Don't retry on auth errors (they won't resolve with retries)
+- Maintain same graceful degradation approach (return empty strings on all failures)
+- Keep 30-second timeout per attempt (already built into OpenAIProvider)
+
+## DESIGN SIMPLIFICATIONS
+- Build on solid foundation from 57.1 rather than reinventing
+- Leverage existing error handling and timeout logic
+- Focus on adding retry layer only where beneficial
+</info added on 2025-06-27T12:56:42.603Z>
+<info added on 2025-06-27T13:08:09.814Z>
+## COMPLETION VERIFICATION
+
+✅ **ALL REQUIREMENTS VERIFIED AND COMPLETED**
+
+**TESTS WRITTEN FIRST AND VERIFIED:**
+- ✅ Created comprehensive `tests/unit/test_ai_invocation.py` with 10 test cases
+- ✅ Verified initial test failures (import error as expected)
+- ✅ All 10 tests now passing after implementation
+
+**APPROVED DESIGN CHOICES IMPLEMENTED:**
+- ✅ Retry count: 3 attempts with 1-second delays
+- ✅ Timeout: 30 seconds (inherited from OpenAIProvider)
+- ✅ Environment variable: OPENAI_API_KEY (from Task 57.1)
+- ✅ Sync API calls (not async, for git hook compatibility)
+- ✅ Context formatting: str(context) as user message, prompt as system
+
+**FUNCTIONALITY IMPLEMENTED:**
+- ✅ Created `src/mcp_commit_story/ai_invocation.py` with `invoke_ai(prompt, context)` function
+- ✅ @trace_mcp_operation("ai.invoke") decorator for telemetry
+- ✅ Retry logic: 3 attempts with 1-second delays for temporary failures
+- ✅ Smart error handling: No retries for auth errors
+- ✅ Graceful degradation: Empty string returns on all failures
+- ✅ Comprehensive logging for troubleshooting
+
+**ERROR HANDLING COMPLETE:**
+- ✅ Missing API key: Logs warning, returns empty string
+- ✅ Network errors: Retries 3x then returns empty string
+- ✅ Auth errors: No retry, immediate empty string return
+- ✅ Timeouts: 30-second timeout per attempt, returns empty string
+- ✅ All exceptions: Graceful degradation with detailed logging
+
+**DOCUMENTATION COMPLETE:**
+- ✅ Comprehensive docstring with usage examples in code
+- ✅ Environment variable setup documented in `docs/ai-provider-setup.md`
+- ✅ Added AI invocation layer to engineering documentation
+- ✅ Updated API interface section with high-level vs low-level usage patterns
+- ✅ Documented retry logic, telemetry, and error handling features
+
+**VERIFICATION:**
+- ✅ All 10 tests passing for ai_invocation module
+- ✅ Full test suite still passing (989 passed, 1 skipped, 22 xfailed)
+- ✅ No regressions introduced
+- ✅ Documentation updated and complete
+
+**TASK 57.2 IS FULLY COMPLETE AND READY FOR PRODUCTION USE.**
+</info added on 2025-06-27T13:08:09.814Z>
 
 ## 3. Create Docstring Executor [pending]
 ### Dependencies: 57.2
