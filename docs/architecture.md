@@ -80,81 +80,164 @@ The MCP server provides **interactive tools only**:
 
 **Key Point**: The MCP server is NOT required for core journal generation - it runs independently in the background.
 
-## 4-Layer Background Generation Architecture
+## 5-Layer Standalone Journal Generator Architecture
 
-The journal generation process still follows a **4-layer architecture**, but with git hooks replacing the MCP server as the trigger:
+The journal generation process follows a **5-layer architecture** that separates concerns between data collection, AI processing, and content generation:
 
-### Layer 1: Git Hook Trigger (Replaces MCP Server)
-- **Entry Point**: Post-commit git hook
-- **Responsibility**: Detect commits and trigger standalone journal generator
-- **Key Function**: Direct execution of `generate_journal_entry(commit_hash)`
-
-### Layer 2: Orchestration (Coordination + Context Collection)
-- **Module**: Standalone journal generator
-- **Responsibility**: Coordinate all phases of journal generation
+### Layer 1: Context Collection (Programmatic)
+- **Responsibility**: Gather raw data without AI interpretation
 - **Key Functions**:
-  - `generate_journal_entry()` - Main orchestration function
-  - `collect_git_context()` - Git metadata and diff extraction
-  - `collect_and_filter_chat_history()` - Intelligent chat extraction
-  - `load_recent_journal_entries()` - Journal context loading
-  - `load_project_overview()` - README/project context loading
+  - `collect_git_context(commit_hash)` - Git metadata, diffs, and commit info
+  - `collect_chat_history()` - Raw prompts/responses from cursor_db (separate databases)
+  - `collect_journal_context()` - Existing journal entries, reflections, and manual context
 
-### Layer 3: Context Processing (Data Filtering & Preparation)
-- **Responsibility**: Process and filter collected context for AI consumption
+These functions are pure data extraction with no AI involved.
+
+### Layer 2: Conversation Reconstruction (AI-Powered)
+- **Responsibility**: Intelligently merge separate chat databases using AI
 - **Key Functions**:
-  - `extract_keywords_from_diff()` - Git diff analysis for chat filtering
-  - `filter_by_relevance()` - Chat relevance scoring and filtering
-  - `prepare_ai_context()` - Context assembly and optimization
+  - `reconstruct_conversation(raw_chat_data)` - Uses AI to merge user prompts and AI responses
+  - Handles mismatched counts, missing responses, multiple prompts
+  - Returns unified conversation flow for downstream generators
+  - **First AI invocation** in the pipeline
 
-### Layer 4: Content Generation (Fresh AI Invocation)
-- **Responsibility**: Generate journal entry using fresh AI agent
+### Layer 3: Orchestration (Coordination)
+- **Module**: `standalone_generator.py`
+- **Responsibility**: Coordinate the entire journal generation flow
 - **Key Functions**:
-  - `invoke_ai_generation()` - Fresh AI agent with comprehensive context
-  - `write_journal_entry()` - File writing and formatting
-  - `generate_daily_summary()` - Summary generation when needed
+  - `generate_journal_entry_standalone()` - Main orchestration function
+  - Calls all context collectors to gather raw data
+  - Invokes conversation reconstruction (Layer 2) to unify chat data
+  - Builds the `JournalContext` structure with all collected data
+  - Determines which generators need AI vs programmatic execution
+  - Assembles complete journal entry from generated sections
+  - Handles errors gracefully - if one section fails, others continue
 
-### Standalone Journal Generator (Layer 2 Implementation)
-```python
-def generate_journal_entry(commit_hash: str) -> None:
-    """Main entry point called by git hook"""
-    # 1. Collect git context
-    git_context = collect_git_context(commit_hash)
-    
-    # 2. Extract relevant chat history  
-    chat_history = collect_and_filter_chat_history(git_context)
-    
-    # 3. Load recent journal context
-    journal_context = load_recent_journal_entries()
-    
-    # 4. Load project overview (README by default)
-    project_context = load_project_overview()  # Ensures AI understands project goals
-    
-    # 5. Generate journal entry with fresh AI
-    entry = invoke_ai_generation({
-        'git': git_context,
-        'chat': chat_history, 
-        'journals': journal_context,
-        'project': project_context
-    })
-    
-    # 6. Write journal entry
-    write_journal_entry(entry)
+### Layer 4: Section Generators (Mixed AI and Programmatic)
+- **Responsibility**: Generate specific journal entry sections
+- **Mixed Execution Model**:
+
+**Programmatic Generators** (no AI required):
+- `generate_commit_metadata_section()` - Pure git data extraction
+- `generate_technical_synopsis_section()` - Code change analysis
+- `generate_file_changes_section()` - Git diff analysis
+
+**AI-Powered Generators** (require AI interpretation):
+- `generate_summary_section()` - Narrative summary of changes
+- `generate_accomplishments_section()` - Achievement interpretation
+- `generate_frustrations_section()` - Challenge identification
+- `generate_tone_mood_section()` - Emotional indicator detection
+- `generate_discussion_notes_section()` - Key conversation excerpts
+- `generate_decision_points_section()` - **NEW** - Decision moment identification
+
+Each AI generator has a docstring prompt and returns a placeholder for AI execution.
+
+### Layer 5: AI Invocation (Infrastructure)
+- **Responsibility**: Execute AI-powered components with graceful degradation
+- **Two AI Invocation Points**:
+
+1. **Conversation Reconstruction** (Layer 2):
+   - AI analyzes separate prompt/response databases
+   - Intelligently matches and merges them chronologically
+   - Handles edge cases and data mismatches
+
+2. **Section Generation** (Layer 4):
+   - `execute_ai_function(func, context)` - Executes AI-powered generators
+   - Reads docstring prompts and formats context
+   - Sends to AI provider and parses responses
+   - Provides graceful degradation (returns empty sections if AI unavailable)
+
+## Complete Data Flow
+
+```
+1. Git hook triggers → process_git_hook()
+2. Orchestrator called → generate_journal_entry_standalone()
+3. Context collectors gather → git data, chat history (raw), journal content
+4. **AI Call #1**: Conversation reconstruction → unified chat from separate databases
+5. Build JournalContext with reconstructed conversation
+6. For each generator:
+   - Programmatic ones: execute directly
+   - **AI Call #2+**: AI generators via executor
+7. Assembly → sections combined into complete journal entry
+8. Save → journal entry written to daily file
 ```
 
-### Chat Collection & Filtering (Layer 3 Implementation)
+### Standalone Journal Generator (Layer 3 Implementation)
 ```python
-def collect_and_filter_chat_history(git_context: GitContext) -> ChatHistory:
-    """Intelligent chat extraction based on git changes"""
-    # 1. Extract keywords from git diff
-    keywords = extract_keywords_from_diff(git_context.diff)
-    
-    # 2. Query Cursor SQLite database
-    raw_chat = query_cursor_database()
-    
-    # 3. Score relevance against git changes
-    relevant_chat = filter_by_relevance(raw_chat, keywords)
-    
-    return relevant_chat
+def generate_journal_entry_standalone(commit_hash: Optional[str] = None, hook_type: str = 'post-commit') -> bool:
+    """Main orchestration function using 5-layer architecture"""
+    try:
+        # Layer 1: Collect all raw context
+        git_context = collect_git_context(commit_hash)
+        raw_chat_data = collect_chat_history()
+        journal_context = collect_journal_context()
+        
+        # Layer 2: Reconstruct conversation from raw chat data
+        conversation_history = []
+        if raw_chat_data:
+            try:
+                conversation_history = reconstruct_conversation(raw_chat_data)  # AI Call #1
+            except Exception as e:
+                log_error(f"Failed to reconstruct conversation: {str(e)}")
+                # Continue with empty conversation history
+        
+        # Build the complete journal context
+        context = JournalContext(
+            git_context=git_context,
+            conversation_history=conversation_history,
+            journal_context=journal_context,
+            hook_type=hook_type
+        )
+        
+        # Layer 4: Generate all sections using mixed execution
+        journal_sections = {}
+        
+        # Execute programmatic generators directly
+        for section_name, generator_func in PROGRAMMATIC_GENERATORS.items():
+            try:
+                journal_sections[section_name] = generator_func(context)
+            except Exception as e:
+                log_error(f"Failed to generate {section_name} section: {str(e)}")
+                journal_sections[section_name] = {}
+        
+        # Execute AI generators via Layer 5 (AI invocation infrastructure)
+        for section_name, generator_func in AI_GENERATORS.items():
+            try:
+                if is_ai_available():
+                    journal_sections[section_name] = execute_ai_function(generator_func, context)  # AI Calls #2+
+                else:
+                    log_info(f"AI unavailable, skipping {section_name} section")
+                    journal_sections[section_name] = {}
+            except Exception as e:
+                log_error(f"Failed to generate {section_name} section: {str(e)}")
+                journal_sections[section_name] = {}
+        
+        # Save the complete journal entry
+        save_journal_entry(journal_sections)
+        return True
+        
+    except Exception as e:
+        log_error(f"Journal generation failed: {str(e)}")
+        return False
+```
+
+### Generator Registry (Layer 4 Implementation)
+```python
+# Define which generators are AI-powered vs programmatic
+PROGRAMMATIC_GENERATORS = {
+    'metadata': generate_commit_metadata_section,
+    'technical_synopsis': generate_technical_synopsis_section,
+    'file_changes': generate_file_changes_section,
+}
+
+AI_GENERATORS = {
+    'summary': generate_summary_section,
+    'accomplishments': generate_accomplishments_section,
+    'frustrations': generate_frustrations_section,
+    'tone_mood': generate_tone_mood_section,
+    'discussion_notes': generate_discussion_notes_section,
+    'decision_points': generate_decision_points_section,  # NEW
+}
 ```
 
 ## Benefits of This Architecture
@@ -164,18 +247,27 @@ def collect_and_filter_chat_history(git_context: GitContext) -> ChatHistory:
 - **No Workflow Disruption**: Background generation never interrupts work
 - **Full Control**: Add context when needed, ignore when focused
 - **Rich Context**: Every entry has comprehensive, relevant information
+- **Decision Capture**: New decision points section captures architectural and design choices
 
 ### For Quality
 - **Fresh Perspective**: Each entry generated by new AI instance with full context
 - **Grounded Content**: All entries based on real git changes and conversations  
-- **Intelligent Filtering**: Only relevant chat history included
+- **Intelligent Conversation Reconstruction**: AI merges separate chat databases chronologically
+- **Mixed Execution**: Programmatic sections provide reliable data, AI sections add interpretation
 - **Consistent Format**: Standardized structure across all entries
 
 ### For Reliability
-- **Simple Flow**: Linear execution path with clear error boundaries
+- **Layered Concerns**: Clear separation between data collection, AI processing, and content generation
+- **Graceful Degradation**: System works even when AI unavailable (programmatic sections continue)
+- **Error Isolation**: If one section fails, others continue processing
 - **No Dependencies**: Core functionality works without MCP server
-- **Graceful Degradation**: Works even if some context sources fail
-- **Fast Execution**: Optimized for quick background processing
+- **Fast Execution**: Optimized with programmatic processing where possible
+
+### For Maintainability
+- **Separation of Concerns**: Each layer has a single, well-defined responsibility
+- **Testable Components**: Layers can be tested independently with appropriate mocks
+- **Extensible Design**: New generators can be added to either programmatic or AI categories
+- **Clear Data Flow**: Linear progression through layers with explicit boundaries
 
 ## User Experience Patterns
 

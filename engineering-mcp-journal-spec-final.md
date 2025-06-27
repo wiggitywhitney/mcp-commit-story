@@ -53,6 +53,84 @@ The chat extraction implementation uses a dual-query strategy based on validated
 
 ## Architecture
 
+### 5-Layer Standalone Journal Generator Architecture
+
+The core journal generation system implements a layered architecture that separates concerns between data collection, AI processing, and content generation. This architecture enables reliable background generation with graceful degradation when AI services are unavailable.
+
+#### Layer 1: Context Collection (Programmatic)
+Three context collectors that gather raw data without AI interpretation:
+- `collect_git_context(commit_hash)` - Extracts git metadata, diffs, and commit info
+- `collect_chat_history()` - Queries cursor_db for raw prompts/responses (returns separate databases)
+- `collect_journal_context()` - Reads existing journal entries, reflections, and manual context
+
+These functions are pure data extraction with no AI dependencies.
+
+#### Layer 2: Conversation Reconstruction (AI-Powered)
+Since cursor_db returns user prompts and AI responses in separate collections with mismatched timestamps:
+- `reconstruct_conversation(raw_chat_data)` - Uses AI to intelligently merge the separate databases
+- Handles mismatched counts, missing responses, multiple prompts
+- Returns unified conversation flow that generators can use
+- **First AI invocation** in the pipeline
+
+#### Layer 3: Orchestration (Coordination)
+The orchestration layer in `standalone_generator.py` coordinates the entire flow:
+1. Calls all context collectors to gather raw data
+2. Invokes conversation reconstruction (Layer 2) to unify chat data using AI
+3. Builds the `JournalContext` structure with all collected data
+4. Iterates through section generators, determining which need AI
+5. For programmatic generators: calls directly
+6. For AI generators: uses AI function executor (Layer 5)
+7. Assembles the complete journal entry from generated sections
+8. Handles errors gracefully - if one section fails, others continue
+9. Saves the final journal entry to the appropriate file
+
+#### Layer 4: Section Generators (Mixed AI and Programmatic)
+Seven generator functions with different execution patterns:
+
+**Programmatic Generators** (can be implemented without AI):
+- `generate_commit_metadata_section()` - Pure git data extraction
+- `generate_technical_synopsis_section()` - Code change analysis
+- `generate_file_changes_section()` - Git diff analysis
+
+**AI-Powered Generators** (require AI interpretation):
+- `generate_summary_section()` - Creates narrative summary of changes
+- `generate_accomplishments_section()` - Interprets what was achieved
+- `generate_frustrations_section()` - Identifies challenges from context
+- `generate_tone_mood_section()` - Detects emotional indicators
+- `generate_discussion_notes_section()` - Extracts key conversation excerpts
+- `generate_decision_points_section()` - **NEW** - Identifies moments where decisions were made
+
+Each AI generator has an AI prompt in its docstring and returns a placeholder for AI execution.
+
+#### Layer 5: AI Invocation (Infrastructure)
+The AI invocation happens at two points:
+
+1. **Conversation Reconstruction**: AI analyzes separate prompt/response databases and intelligently matches and merges them
+2. **Section Generation**: `execute_ai_function(func, context)` executes AI-powered generators, reads docstring prompts, formats context, sends to AI provider, parses responses, and provides graceful degradation
+
+#### Data Flow
+```
+1. Git hook triggers → process_git_hook()
+2. Orchestrator called → generate_journal_entry_standalone()
+3. Context collectors gather → git data, chat history (raw), journal content
+4. **AI Call #1**: Conversation reconstruction → unified chat from separate databases
+5. Build JournalContext with reconstructed conversation
+6. For each generator:
+   - Programmatic ones: execute directly
+   - **AI Call #2+**: AI generators via executor
+7. Assembly → sections combined into complete journal entry
+8. Save → journal entry written to daily file
+```
+
+This architecture provides:
+- **Error Isolation**: Failed sections don't prevent others from generating
+- **Graceful Degradation**: System works when AI unavailable (programmatic sections continue)
+- **Performance Optimization**: AI only used where interpretation is needed
+- **Testability**: Each layer can be tested independently
+- **Maintainability**: Clear separation of concerns and responsibilities
+
+## System Architecture
+
 ### System Architecture
 
 ```

@@ -3,40 +3,218 @@
 # Status: pending
 # Dependencies: 57, 58
 # Priority: high
-# Description: Refactor the existing git_hook_worker.py to call journal_workflow.generate_journal_entry() directly instead of creating signals, enabling journal generation to run from git hooks without requiring signals or MCP server.
+# Description: Implement a standalone journal generator that runs from git hooks without requiring the MCP server, using a layered architecture that separates concerns between context collection, conversation reconstruction, orchestration, section generation, and AI invocation.
 # Details:
-This task refactors the existing git hook worker to enable standalone journal generation that operates independently of the MCP server architecture:
+# Standalone Journal Generator Architecture
 
-1. **Refactor git_hook_worker.py to Call Journal Generation Directly**:
+This task implements a layered architecture for journal generation that can operate independently of the MCP server:
+
+## Layer 1: Context Collection (Programmatic)
+Three context collectors that gather raw data without AI:
+- `collect_git_context(commit_hash)` - Extracts git metadata, diffs, and commit info
+- `collect_chat_history()` - Queries cursor_db for raw prompts/responses (returns separate databases)
+- `collect_journal_context()` - Reads existing journal entries, reflections, and manual context (Task 55)
+
+## Layer 2: Conversation Reconstruction (AI-Powered, Task 58)
+- `reconstruct_conversation(raw_chat_data)` - Uses AI to intelligently merge separate databases
+- Handles mismatched counts, missing responses, multiple prompts
+- Returns unified conversation flow that generators can use
+
+## Layer 3: Orchestration (Coordination)
+The orchestration layer in `standalone_generator.py` coordinates the entire flow:
+1. Calls all context collectors to gather raw data
+2. Invokes conversation reconstruction to unify chat data using AI
+3. Builds the `JournalContext` structure with all collected data
+4. Iterates through section generators, determining which need AI
+5. For programmatic generators: calls directly
+6. For AI generators: uses AI function executor (Task 57)
+7. Assembles the complete journal entry from generated sections
+8. Handles errors gracefully - if one section fails, others continue
+9. Saves the final journal entry to the appropriate file
+
+## Layer 4: Section Generators (Mixed AI and Programmatic)
+Seven generator functions in `journal.py` with different execution patterns:
+
+**Programmatic Generators** (can be implemented without AI):
+- `generate_commit_metadata_section()` - Pure git data extraction
+- `generate_technical_synopsis_section()` - Could analyze code changes programmatically
+- `generate_file_changes_section()` - Git diff analysis
+
+**AI-Powered Generators** (require AI interpretation):
+- `generate_summary_section()` - Creates narrative summary of changes
+- `generate_accomplishments_section()` - Interprets what was achieved
+- `generate_frustrations_section()` - Identifies challenges from context
+- `generate_tone_mood_section()` - Detects emotional indicators
+- `generate_discussion_notes_section()` - Extracts key conversation excerpts
+- `generate_decision_points_section()` - Identifies moments where decisions were made
+
+## Layer 5: AI Invocation (Task 57)
+The AI invocation happens at two points:
+
+1. **Conversation Reconstruction**:
+   - AI analyzes separate prompt/response databases
+   - Intelligently matches and merges them
+   - Handles edge cases and mismatches
+
+2. **Section Generation**:
+   - `execute_ai_function(func, context)` - Executes AI-powered generators
+   - Reads the docstring prompt
+   - Formats context and sends to AI provider
+   - Parses AI response into expected return type
+   - Provides graceful degradation (returns empty section if AI unavailable)
+
+## Complete Data Flow
+1. Git hook triggers → `process_git_hook()`
+2. Orchestrator called → `generate_journal_entry_standalone()`
+3. Context collectors gather → git data, chat history (raw), journal content
+4. **AI Call #1**: Conversation reconstruction → unified chat from separate databases
+5. Build JournalContext with reconstructed conversation
+6. For each generator:
+   - Programmatic ones: execute directly
+   - **AI Call #2+**: AI generators via executor
+7. Assembly → sections combined into complete journal entry
+8. Save → journal entry written to daily file
+
+## Implementation Example: Standalone Generator Orchestration
+
 ```python
-# Current implementation (to be refactored):
-def process_git_hook(hook_type):
-    """Process a git hook event by creating appropriate signals"""
-    try:
-        git_context = collect_git_context()
-        # Create signal for journal generation
-        create_tool_signal('journal_generation', {
-            'git_context': git_context,
-            'hook_type': hook_type
-        })
-        return True
-    except Exception as e:
-        log_error(f"Git hook processing failed: {str(e)}")
-        return False
+# src/mcp_commit_story/standalone_generator.py
 
-# Refactored implementation:
-def process_git_hook(hook_type):
-    """Process a git hook event by directly generating journal entries"""
+from typing import Dict, List, Optional, TypedDict, Any
+from journal import (
+    generate_commit_metadata_section,
+    generate_technical_synopsis_section,
+    generate_file_changes_section,
+    generate_summary_section,
+    generate_accomplishments_section,
+    generate_frustrations_section,
+    generate_tone_mood_section,
+    generate_discussion_notes_section,
+    generate_decision_points_section,
+    save_journal_entry
+)
+from context_collection import collect_git_context, collect_chat_history, collect_journal_context
+from conversation_reconstruction import reconstruct_conversation
+from ai_function_executor import execute_ai_function, is_ai_available
+from logging_utils import log_error, log_info
+
+
+class JournalContext(TypedDict):
+    """Structure containing all context needed for journal generation"""
+    git_context: Dict
+    conversation_history: List[Dict]
+    journal_context: Dict
+    hook_type: str
+
+
+# Define which generators are AI-powered vs programmatic
+PROGRAMMATIC_GENERATORS = {
+    'metadata': generate_commit_metadata_section,
+    'technical_synopsis': generate_technical_synopsis_section,
+    'file_changes': generate_file_changes_section,
+}
+
+AI_GENERATORS = {
+    'summary': generate_summary_section,
+    'accomplishments': generate_accomplishments_section,
+    'frustrations': generate_frustrations_section,
+    'tone_mood': generate_tone_mood_section,
+    'discussion_notes': generate_discussion_notes_section,
+    'decision_points': generate_decision_points_section,
+}
+
+
+def generate_journal_entry_standalone(commit_hash: Optional[str] = None, hook_type: str = 'post-commit') -> bool:
+    """Generate a journal entry using the standalone architecture
+    
+    Args:
+        commit_hash: Optional commit hash to use (defaults to HEAD)
+        hook_type: Type of git hook that triggered this (or 'manual')
+        
+    Returns:
+        bool: True if journal generation was successful, False otherwise
+    """
     try:
-        git_context = collect_git_context()
+        # Layer 1: Collect all raw context
+        git_context = collect_git_context(commit_hash)
+        raw_chat_data = collect_chat_history()
+        journal_context = collect_journal_context()
         
-        # Import journal workflow and call directly instead of creating a signal
-        from journal_workflow import generate_journal_entry
+        # Layer 2: Reconstruct conversation from raw chat data
+        conversation_history = []
+        if raw_chat_data:
+            try:
+                conversation_history = reconstruct_conversation(raw_chat_data)
+            except Exception as e:
+                log_error(f"Failed to reconstruct conversation: {str(e)}")
+                # Continue with empty conversation history
         
-        # Call journal generation directly with git context
-        success = generate_journal_entry(git_context=git_context, hook_type=hook_type)
+        # Build the complete journal context
+        context = JournalContext(
+            git_context=git_context,
+            conversation_history=conversation_history,
+            journal_context=journal_context,
+            hook_type=hook_type
+        )
+        
+        # Layer 3 & 4: Generate all sections
+        journal_sections = {}
+        
+        # Execute programmatic generators directly
+        for section_name, generator_func in PROGRAMMATIC_GENERATORS.items():
+            try:
+                journal_sections[section_name] = generator_func(context)
+            except Exception as e:
+                log_error(f"Failed to generate {section_name} section: {str(e)}")
+                journal_sections[section_name] = {}
+        
+        # Execute AI generators via the AI function executor
+        for section_name, generator_func in AI_GENERATORS.items():
+            try:
+                if is_ai_available():
+                    journal_sections[section_name] = execute_ai_function(generator_func, context)
+                else:
+                    log_info(f"AI unavailable, skipping {section_name} section")
+                    journal_sections[section_name] = {}
+            except Exception as e:
+                log_error(f"Failed to generate {section_name} section: {str(e)}")
+                journal_sections[section_name] = {}
+        
+        # Save the complete journal entry
+        save_journal_entry(journal_sections)
+        return True
+        
+    except Exception as e:
+        log_error(f"Journal generation failed: {str(e)}")
+        return False
+```
+
+## Implementation Example: Git Hook Worker Update
+
+```python
+# src/mcp_commit_story/git_hook_worker.py
+
+from standalone_generator import generate_journal_entry_standalone
+from context_collection import collect_git_context
+from logging_utils import log_error, log_telemetry
+import argparse
+import os
+
+def process_git_hook(hook_type):
+    """Process a git hook event by directly generating journal entries
+    
+    Args:
+        hook_type: Type of git hook that triggered this
+        
+    Returns:
+        bool: True if processing was successful, False otherwise
+    """
+    try:
+        # Call standalone journal generator directly
+        success = generate_journal_entry_standalone(hook_type=hook_type)
         
         # Log telemetry for the direct call
+        git_context = collect_git_context()
         log_telemetry('git_hook_journal_generation', {
             'success': success,
             'hook_type': hook_type,
@@ -47,34 +225,8 @@ def process_git_hook(hook_type):
     except Exception as e:
         log_error(f"Git hook processing failed: {str(e)}")
         return False
-```
 
-2. **Update Import Statements**:
-```python
-# Add these imports at the top of git_hook_worker.py
-from journal_workflow import generate_journal_entry
-from context_collection import collect_git_context
-from logging_utils import log_error, log_telemetry
-```
 
-3. **Ensure Error Handling is Preserved**:
-```python
-# Make sure all existing error handling is maintained
-def safe_journal_generation(git_context, hook_type):
-    """Safely generate journal entries with proper error handling"""
-    try:
-        from journal_workflow import generate_journal_entry
-        return generate_journal_entry(git_context=git_context, hook_type=hook_type)
-    except ImportError as e:
-        log_error(f"Failed to import journal_workflow: {str(e)}")
-        return False
-    except Exception as e:
-        log_error(f"Journal generation failed: {str(e)}")
-        return False
-```
-
-4. **Update CLI Command Handler**:
-```python
 def handle_cli_commands():
     """Handle CLI commands for git hook management"""
     parser = argparse.ArgumentParser(description='Git hook management and journal generation')
@@ -88,28 +240,13 @@ def handle_cli_commands():
         print(f"Git hooks installation {'successful' if success else 'failed'}")
     
     if args.generate_now:
-        git_context = collect_git_context()
-        from journal_workflow import generate_journal_entry
-        success = generate_journal_entry(git_context=git_context, hook_type='manual')
+        success = generate_journal_entry_standalone(hook_type='manual')
         print(f"Journal generation {'successful' if success else 'failed'}")
         
     if not args.install_hooks and not args.generate_now:
         parser.print_help()
-```
 
-5. **Update Post-Commit Hook Template**:
-```python
-def get_hook_template(hook_type):
-    """Get the template for a specific git hook type"""
-    if hook_type == 'post-commit':
-        return """#!/bin/sh
-# Auto-generated journal hook
-python -m git_hook_worker --hook-type=post-commit
-"""
-    # Other hook templates...
-    return """"""
 
-# Update the hook handler to support direct execution
 def main():
     """Main entry point for git hook worker"""
     parser = argparse.ArgumentParser(description='Git hook worker')
@@ -121,267 +258,395 @@ def main():
         process_git_hook(args.hook_type)
     else:
         handle_cli_commands()
+
+
+if __name__ == "__main__":
+    main()
 ```
 
-6. **Ensure Compatibility with Existing Journal Workflow**:
-```python
-# Add this function to check if we can use the direct approach
-def can_use_direct_journal_generation():
-    """Check if we can use direct journal generation"""
-    try:
-        from journal_workflow import generate_journal_entry
-        return True
-    except ImportError:
-        return False
+## Implementation Example: Decision Points Section Generator
 
-# Fallback mechanism if needed
-def process_git_hook_with_fallback(hook_type):
-    """Process git hook with fallback to signal if direct approach fails"""
-    try:
-        git_context = collect_git_context()
+```python
+# In journal.py
+
+def generate_decision_points_section(context: JournalContext) -> List[Dict]:
+    """Generate a section that identifies key decision points from the conversation.
+    
+    Analyze the conversation history to identify moments where architectural, design, 
+    or implementation decisions were made. Look for:
+    
+    1. Explicit decisions: "I decided to...", "We chose to...", "Let's go with..."
+    2. Trade-off discussions: "Option A has X benefit but Y drawback..."
+    3. Reasoning for choices: "I'm using X because...", "This approach is better because..."
+    4. Pivots or changes in approach: "Instead of X, let's try Y", "I changed my mind about..."
+    
+    For each decision point, extract:
+    - The decision made
+    - The context or problem it addresses
+    - The reasoning or justification
+    - Alternatives that were considered (if mentioned)
+    
+    Return a list of decision points, each containing the above information.
+    
+    Args:
+        context: Complete journal context including git data and conversation history
         
-        # Try direct approach first
-        if can_use_direct_journal_generation():
-            from journal_workflow import generate_journal_entry
-            success = generate_journal_entry(git_context=git_context, hook_type=hook_type)
-            if success:
-                return True
-        
-        # Fallback to signal approach if direct approach fails or isn't available
-        from signal_utils import create_tool_signal
-        create_tool_signal('journal_generation', {
-            'git_context': git_context,
-            'hook_type': hook_type
-        })
-        return True
-    except Exception as e:
-        log_error(f"Git hook processing failed: {str(e)}")
-        return False
+    Returns:
+        List of decision points, each as a dictionary with keys:
+        - decision: The actual decision that was made
+        - context: The problem or situation being addressed
+        - reasoning: Why this decision was made
+        - alternatives: Other options that were considered (if any)
+    """
+    # This is a placeholder that will be replaced by AI execution
+    return []
 ```
 
-7. **Update Tests for Direct Journal Generation**:
+# Test Strategy:
+# Testing Strategy for Standalone Journal Generator
+
+## 1. Unit Tests for Each Layer
+
+### Layer 1: Context Collection Tests
 ```python
-def test_direct_journal_generation():
-    """Test direct journal generation from git hook"""
-    # Mock git context collection
-    with patch('context_collection.collect_git_context') as mock_collect, \
-         patch('journal_workflow.generate_journal_entry') as mock_generate:
-        
-        # Configure mocks
-        mock_collect.return_value = {'commit_hash': 'test123'}
-        mock_generate.return_value = True
+def test_collect_git_context():
+    # Test with mock git repository
+    with mock_git_repo() as repo:
+        # Create a test commit
+        create_test_commit(repo)
         
         # Call the function
-        result = process_git_hook('post-commit')
+        context = collect_git_context()
         
-        # Verify correct function calls
-        mock_collect.assert_called_once()
-        mock_generate.assert_called_once_with(
-            git_context={'commit_hash': 'test123'}, 
-            hook_type='post-commit'
-        )
+        # Verify expected fields
+        assert 'commit_hash' in context
+        assert 'branch' in context
+        assert 'commit_message' in context
+        assert 'diff' in context
+        assert 'author' in context
+        assert 'timestamp' in context
+
+def test_collect_chat_history():
+    # Mock cursor_db with test data
+    with mock_cursor_db() as db:
+        # Add test prompts and responses
+        add_test_chat_data(db)
+        
+        # Call the function
+        chat_data = collect_chat_history()
+        
+        # Verify structure
+        assert 'prompts' in chat_data
+        assert 'responses' in chat_data
+        assert len(chat_data['prompts']) > 0
+        assert len(chat_data['responses']) > 0
+
+def test_collect_journal_context():
+    # Create test journal entries
+    with temp_journal_directory() as journal_dir:
+        create_test_journal_entries(journal_dir)
+        
+        # Call the function
+        journal_context = collect_journal_context()
+        
+        # Verify structure
+        assert 'recent_entries' in journal_context
+        assert 'reflections' in journal_context
+        assert 'manual_context' in journal_context
+```
+
+### Layer 2: Conversation Reconstruction Tests
+```python
+def test_reconstruct_conversation():
+    # Create test raw chat data with mismatches
+    raw_chat_data = {
+        'prompts': [
+            {'text': 'First prompt', 'id': 1},
+            {'text': 'Second prompt', 'id': 2},
+        ],
+        'responses': [
+            {'text': 'First response', 'prompt_id': 1},
+            {'text': 'Second response', 'prompt_id': 2},
+            {'text': 'Extra response', 'prompt_id': 3},
+        ]
+    }
+    
+    # Mock AI function executor
+    with patch('ai_function_executor.execute_ai_function') as mock_ai:
+        # Configure mock to return a reconstructed conversation
+        mock_ai.return_value = [
+            {'role': 'user', 'content': 'First prompt'},
+            {'role': 'assistant', 'content': 'First response'},
+            {'role': 'user', 'content': 'Second prompt'},
+            {'role': 'assistant', 'content': 'Second response'},
+        ]
+        
+        # Call the function
+        conversation = reconstruct_conversation(raw_chat_data)
+        
+        # Verify structure
+        assert len(conversation) == 4
+        assert conversation[0]['role'] == 'user'
+        assert conversation[1]['role'] == 'assistant'
+        assert conversation[2]['role'] == 'user'
+        assert conversation[3]['role'] == 'assistant'
+```
+
+### Layer 3: Orchestration Tests
+```python
+def test_generate_journal_entry_standalone():
+    # Mock all dependencies
+    with patch('context_collection.collect_git_context') as mock_git, \
+         patch('context_collection.collect_chat_history') as mock_chat, \
+         patch('context_collection.collect_journal_context') as mock_journal, \
+         patch('conversation_reconstruction.reconstruct_conversation') as mock_reconstruct, \
+         patch('journal.save_journal_entry') as mock_save:
+        
+        # Configure mocks
+        mock_git.return_value = {'commit_hash': 'test123'}
+        mock_chat.return_value = {'prompts': [], 'responses': []}
+        mock_journal.return_value = {'recent_entries': []}
+        mock_reconstruct.return_value = []
+        
+        # Mock all generators
+        for generator_name in list(PROGRAMMATIC_GENERATORS.keys()) + list(AI_GENERATORS.keys()):
+            with patch(f'journal.generate_{generator_name}_section', return_value={}):
+                pass
+        
+        # Call the function
+        result = generate_journal_entry_standalone()
+        
+        # Verify all context collectors were called
+        mock_git.assert_called_once()
+        mock_chat.assert_called_once()
+        mock_journal.assert_called_once()
+        
+        # Verify journal was saved
+        mock_save.assert_called_once()
         
         assert result is True
 ```
 
-# Test Strategy:
-To verify the refactored git hook worker is functioning correctly:
+### Layer 4: Section Generator Tests
+```python
+def test_programmatic_generators():
+    # Create test context
+    context = JournalContext(
+        git_context={'commit_hash': 'test123', 'diff': 'test diff'},
+        conversation_history=[],
+        journal_context={},
+        hook_type='post-commit'
+    )
+    
+    # Test each programmatic generator
+    metadata = generate_commit_metadata_section(context)
+    assert 'commit_hash' in metadata
+    
+    synopsis = generate_technical_synopsis_section(context)
+    assert 'files_changed' in synopsis
+    
+    file_changes = generate_file_changes_section(context)
+    assert len(file_changes) >= 0
 
-1. **Unit Testing Direct Journal Generation**:
-   - Create unit tests for the refactored process_git_hook function:
-     ```python
-     def test_process_git_hook_direct_call():
-         # Mock dependencies
-         with patch('git_hook_worker.collect_git_context') as mock_git, \
-              patch('journal_workflow.generate_journal_entry') as mock_generate, \
-              patch('git_hook_worker.log_telemetry') as mock_telemetry:
-             
-             # Configure mocks
-             mock_git.return_value = {'commit_hash': 'abc123'}
-             mock_generate.return_value = True
-             
-             # Call function
-             result = process_git_hook('post-commit')
-             
-             # Verify direct call to journal generation
-             mock_git.assert_called_once()
-             mock_generate.assert_called_once_with(
-                 git_context={'commit_hash': 'abc123'},
-                 hook_type='post-commit'
-             )
-             mock_telemetry.assert_called_once()
-             
-             assert result is True
-     ```
+def test_ai_generators():
+    # Create test context
+    context = JournalContext(
+        git_context={'commit_hash': 'test123', 'diff': 'test diff'},
+        conversation_history=[{'role': 'user', 'content': 'Test prompt'}],
+        journal_context={},
+        hook_type='post-commit'
+    )
+    
+    # Mock AI function executor
+    with patch('ai_function_executor.execute_ai_function') as mock_ai:
+        # Configure mock to return test data
+        mock_ai.return_value = {'content': 'Test summary'}
+        
+        # Test with one AI generator
+        with patch('standalone_generator.execute_ai_function', mock_ai):
+            result = generate_summary_section(context)
+            assert 'content' in result
+```
 
-2. **Test Error Handling**:
-   - Verify that errors are properly handled:
-     ```python
-     def test_process_git_hook_error_handling():
-         # Test with journal generation raising an exception
-         with patch('git_hook_worker.collect_git_context') as mock_git, \
-              patch('journal_workflow.generate_journal_entry', side_effect=Exception("Test error")), \
-              patch('git_hook_worker.log_error') as mock_log:
-             
-             mock_git.return_value = {'commit_hash': 'abc123'}
-             
-             result = process_git_hook('post-commit')
-             
-             # Verify error was logged but not raised
-             mock_log.assert_called_once()
-             assert "Test error" in mock_log.call_args[0][0]
-             assert result is False
-     ```
+### Layer 5: AI Invocation Tests
+```python
+def test_execute_ai_function():
+    # Create test function with docstring prompt
+    def test_function(context):
+        """Test prompt for AI function."""
+        return {}
+    
+    # Create test context
+    context = {'test': 'data'}
+    
+    # Mock AI provider
+    with patch('ai_provider.generate_completion') as mock_ai:
+        # Configure mock to return test data
+        mock_ai.return_value = '{"result": "Test result"}'
+        
+        # Call the function
+        result = execute_ai_function(test_function, context)
+        
+        # Verify AI was called with correct prompt
+        mock_ai.assert_called_once()
+        assert 'Test prompt for AI function' in mock_ai.call_args[0][0]
+        
+        # Verify result was parsed correctly
+        assert result == {'result': 'Test result'}
+```
 
-3. **Test CLI Integration**:
-   - Test the command-line interface:
-     ```python
-     def test_cli_generate_now():
-         # Mock dependencies
-         with patch('git_hook_worker.collect_git_context') as mock_git, \
-              patch('journal_workflow.generate_journal_entry') as mock_generate, \
-              patch('sys.argv', ['git_hook_worker.py', '--generate-now']), \
-              patch('builtins.print') as mock_print:
-             
-             mock_git.return_value = {'commit_hash': 'abc123'}
-             mock_generate.return_value = True
-             
-             # Call main function
-             main()
-             
-             # Verify journal generation was called
-             mock_git.assert_called_once()
-             mock_generate.assert_called_once()
-             mock_print.assert_called_with("Journal generation successful")
-     ```
+## 2. Integration Tests
 
-4. **Test Hook Execution**:
-   - Test the hook execution path:
-     ```python
-     def test_hook_execution():
-         # Mock dependencies
-         with patch('git_hook_worker.process_git_hook') as mock_process, \
-              patch('sys.argv', ['git_hook_worker.py', '--hook-type=post-commit']):
-             
-             mock_process.return_value = True
-             
-             # Call main function
-             main()
-             
-             # Verify process_git_hook was called with correct hook type
-             mock_process.assert_called_once_with('post-commit')
-     ```
+```python
+def test_integration_with_real_git_repo():
+    # Create a real git repository
+    with temp_git_repo() as repo_path:
+        # Set up the repo with test files
+        setup_test_repo(repo_path)
+        
+        # Make a commit
+        make_test_commit(repo_path)
+        
+        # Run the standalone generator
+        with working_directory(repo_path):
+            result = generate_journal_entry_standalone()
+        
+        # Verify journal file was created
+        journal_path = get_latest_journal_path()
+        assert os.path.exists(journal_path)
+        
+        # Verify journal content
+        with open(journal_path, 'r') as f:
+            content = f.read()
+            assert 'Commit Metadata' in content
+            assert 'Technical Synopsis' in content
+            assert 'Summary' in content
 
-5. **Integration Test with Actual Journal Workflow**:
-   - Create an integration test that verifies the actual journal generation:
-     ```python
-     def test_integration_with_journal_workflow():
-         # Create a test git context
-         test_git_context = {
-             'commit_hash': 'test123',
-             'branch': 'test-branch',
-             'commit_message': 'Test commit',
-             'diff': 'test diff content',
-             'author': 'Test User',
-             'timestamp': '1609459200'
-         }
-         
-         # Mock git context collection but use real journal generation
-         with patch('git_hook_worker.collect_git_context', return_value=test_git_context):
-             # Create a temporary journal directory
-             with tempfile.TemporaryDirectory() as temp_dir:
-                 # Configure journal output to use temp directory
-                 with patch('journal.get_journal_directory', return_value=temp_dir):
-                     # Run the hook processing
-                     result = process_git_hook('post-commit')
-                     
-                     # Verify journal file was created
-                     today = datetime.now().strftime('%Y-%m-%d')
-                     journal_path = os.path.join(temp_dir, f"{today}.md")
-                     
-                     assert os.path.exists(journal_path)
-                     with open(journal_path, 'r') as f:
-                         content = f.read()
-                         assert 'Test commit' in content
-                     
-                     assert result is True
-     ```
+def test_integration_with_real_ai():
+    # Skip if no AI credentials available
+    if not os.environ.get('AI_API_KEY'):
+        pytest.skip("AI API key not available")
+    
+    # Create test context
+    context = JournalContext(
+        git_context={'commit_hash': 'test123', 'diff': 'test diff'},
+        conversation_history=[{'role': 'user', 'content': 'Test prompt'}],
+        journal_context={},
+        hook_type='post-commit'
+    )
+    
+    # Call one AI generator directly
+    result = execute_ai_function(generate_summary_section, context)
+    
+    # Verify result structure
+    assert isinstance(result, dict)
+    assert 'content' in result
+    assert len(result['content']) > 0
+```
 
-6. **Test Compatibility Check**:
-   - Test the compatibility check function:
-     ```python
-     def test_can_use_direct_journal_generation():
-         # Test when journal_workflow is available
-         with patch.dict('sys.modules', {'journal_workflow': MagicMock()}):
-             assert can_use_direct_journal_generation() is True
-         
-         # Test when journal_workflow is not available
-         with patch.dict('sys.modules', {}, clear=True):
-             with patch('builtins.__import__', side_effect=ImportError):
-                 assert can_use_direct_journal_generation() is False
-     ```
+## 3. End-to-End Tests
 
-7. **Test Fallback Mechanism**:
-   - Test the fallback to signal approach:
-     ```python
-     def test_process_git_hook_with_fallback():
-         # Mock dependencies
-         with patch('git_hook_worker.collect_git_context') as mock_git, \
-              patch('git_hook_worker.can_use_direct_journal_generation', return_value=False), \
-              patch('signal_utils.create_tool_signal') as mock_signal:
-             
-             mock_git.return_value = {'commit_hash': 'abc123'}
-             
-             # Call function
-             result = process_git_hook_with_fallback('post-commit')
-             
-             # Verify fallback to signal
-             mock_git.assert_called_once()
-             mock_signal.assert_called_once_with('journal_generation', {
-                 'git_context': {'commit_hash': 'abc123'},
-                 'hook_type': 'post-commit'
-             })
-             
-             assert result is True
-     ```
+```python
+def test_end_to_end_with_git_hook():
+    # Create a test git repository
+    with temp_git_repo() as repo_path:
+        # Install git hooks
+        with working_directory(repo_path):
+            install_git_hooks()
+        
+        # Create test files and make a commit
+        create_test_file(repo_path, 'test.py', 'print("Hello world")')
+        with working_directory(repo_path):
+            subprocess.run(['git', 'add', 'test.py'])
+            subprocess.run(['git', 'commit', '-m', 'Test commit'])
+        
+        # Wait for hook to complete
+        time.sleep(2)
+        
+        # Verify journal file was created
+        journal_path = get_latest_journal_path()
+        assert os.path.exists(journal_path)
+```
 
-8. **Manual Testing with Git Commits**:
-   1. Install the refactored git hooks using the CLI tool
-   2. Make a small code change and commit it
-   3. Verify that a journal entry was generated in the journal directory
-   4. Check that the journal entry contains relevant information about the commit
-   5. Verify no signals were created in the process
+## 4. Performance Tests
 
-9. **Performance Testing**:
-   - Measure execution time to ensure it's suitable for a git hook:
-     ```python
-     def test_performance():
-         start_time = time.time()
-         process_git_hook('post-commit')
-         execution_time = time.time() - start_time
-         
-         # Should complete in a reasonable time for a git hook
-         assert execution_time < 5.0  # 5 seconds max
-     ```
+```python
+def test_performance():
+    # Measure execution time
+    start_time = time.time()
+    generate_journal_entry_standalone()
+    execution_time = time.time() - start_time
+    
+    # Should complete in a reasonable time
+    assert execution_time < 10.0  # 10 seconds max
+```
 
-10. **Verify No Signal Dependencies**:
-    - Create a test that ensures no signals are created:
-      ```python
-      def test_no_signals_created():
-          # Mock dependencies including signal creation
-          with patch('git_hook_worker.collect_git_context') as mock_git, \
-               patch('journal_workflow.generate_journal_entry') as mock_generate, \
-               patch('signal_utils.create_tool_signal') as mock_signal:
-              
-              mock_git.return_value = {'commit_hash': 'abc123'}
-              mock_generate.return_value = True
-              
-              # Call function
-              process_git_hook('post-commit')
-              
-              # Verify signal creation was not called
-              mock_signal.assert_not_called()
-      ```
+## 5. Graceful Degradation Tests
+
+```python
+def test_graceful_degradation_without_ai():
+    # Mock AI availability to be False
+    with patch('ai_function_executor.is_ai_available', return_value=False):
+        # Run the generator
+        result = generate_journal_entry_standalone()
+        
+        # Verify it still succeeds
+        assert result is True
+        
+        # Verify journal was created with programmatic sections only
+        journal_path = get_latest_journal_path()
+        with open(journal_path, 'r') as f:
+            content = f.read()
+            assert 'Commit Metadata' in content  # Programmatic section
+            assert 'Technical Synopsis' in content  # Programmatic section
+            # AI sections should be minimal or empty
+```
+
+## 6. Mixed Execution Tests
+
+```python
+def test_mixed_execution():
+    # Mock some AI generators to fail
+    with patch('ai_function_executor.execute_ai_function') as mock_ai:
+        # Configure mock to succeed for some generators and fail for others
+        def side_effect(func, context):
+            if func.__name__ == 'generate_summary_section':
+                return {'content': 'Test summary'}
+            elif func.__name__ == 'generate_accomplishments_section':
+                raise Exception("Test failure")
+            else:
+                return {}
+        
+        mock_ai.side_effect = side_effect
+        
+        # Run the generator
+        result = generate_journal_entry_standalone()
+        
+        # Verify it still succeeds overall
+        assert result is True
+        
+        # Verify journal contains successful sections
+        journal_path = get_latest_journal_path()
+        with open(journal_path, 'r') as f:
+            content = f.read()
+            assert 'Test summary' in content  # Successful AI section
+```
+
+## 7. Manual Testing Checklist
+
+1. Install git hooks using the CLI tool
+2. Make a small code change and commit it
+3. Verify that a journal entry was generated in the journal directory
+4. Check that the journal entry contains:
+   - Commit metadata (hash, author, timestamp)
+   - Technical synopsis of changes
+   - File changes section
+   - Summary section (if AI available)
+   - Other AI-generated sections (if AI available)
+5. Verify the new decision points section captures key decisions
+6. Test with AI unavailable to verify graceful degradation
+7. Test with large commits to verify performance
+8. Test with commits that have associated conversation history
 
 # Subtasks:
 ## 1. Refactor git_hook_worker.py to Call Journal Generation Directly [pending]
@@ -419,4 +684,40 @@ Develop comprehensive tests for the refactored git_hook_worker.py, including uni
 ### Description: Ensure the refactored git hook worker integrates correctly with the existing journal workflow.
 ### Details:
 Perform integration testing to verify that the refactored git hook worker correctly calls the journal workflow and generates journal entries. Test with actual git commits to ensure the end-to-end flow works as expected. Verify that no signals are created in the process.
+
+## 7. Create Layered Architecture for Standalone Journal Generator [pending]
+### Dependencies: None
+### Description: Implement the layered architecture with separate context collection, conversation reconstruction, orchestration, section generation, and AI invocation layers.
+### Details:
+Create the standalone_generator.py file with the main orchestration logic that coordinates all layers. Implement the JournalContext structure and the generate_journal_entry_standalone function that follows the layered architecture design. Ensure proper separation of concerns between programmatic and AI-powered components.
+
+## 8. Implement Context Collection Layer [pending]
+### Dependencies: None
+### Description: Create the three context collectors that gather raw data without AI: git context, chat history, and journal context.
+### Details:
+Implement the collect_git_context, collect_chat_history, and collect_journal_context functions that extract raw data from their respective sources. Ensure these functions are pure data extraction without AI interpretation. The chat history collector should return separate databases for prompts and responses.
+
+## 9. Implement Section Generators [pending]
+### Dependencies: None
+### Description: Create the seven section generators with appropriate execution patterns for programmatic and AI-powered generation.
+### Details:
+Implement the programmatic generators (commit_metadata, technical_synopsis, file_changes) and the AI-powered generators (summary, accomplishments, frustrations, tone_mood, discussion_notes, decision_points). Each AI generator should have a docstring prompt describing what to generate and return a placeholder that will be replaced by AI execution.
+
+## 10. Implement Decision Points Section Generator [pending]
+### Dependencies: None
+### Description: Create a new generator for capturing moments where architectural, design, or implementation decisions were made.
+### Details:
+Implement the generate_decision_points_section function that extracts decision moments from the conversation history. The generator should look for explicit decisions, trade-off discussions, reasoning for choices, and pivots or changes in approach. For each decision point, it should extract the decision made, the context or problem it addresses, the reasoning or justification, and alternatives that were considered.
+
+## 11. Implement Graceful Degradation for AI Unavailability [pending]
+### Dependencies: None
+### Description: Ensure the system degrades gracefully if AI is unavailable, still generating programmatic sections.
+### Details:
+Add logic to the orchestration layer to check AI availability before attempting to execute AI-powered generators. If AI is unavailable, the system should still generate programmatic sections and provide empty or minimal placeholders for AI sections. Implement the is_ai_available function to check if AI can be used.
+
+## 12. Integrate with Tasks 57 and 58 [pending]
+### Dependencies: None
+### Description: Integrate with the AI invocation infrastructure (Task 57) and conversation reconstruction (Task 58) components.
+### Details:
+Ensure the standalone generator correctly uses the execute_ai_function from Task 57 for AI-powered generators and the reconstruct_conversation function from Task 58 for merging chat databases. Update import statements and function calls to match the interfaces provided by these components.
 
