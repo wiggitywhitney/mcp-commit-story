@@ -248,4 +248,138 @@ This MVP implementation focuses on OpenAI integration. Future enhancements could
 - Response caching to reduce API calls
 - Cost optimization through prompt engineering
 
-For now, the simple OpenAI integration provides reliable, cost-effective AI capabilities for journal generation. 
+For now, the simple OpenAI integration provides reliable, cost-effective AI capabilities for journal generation.
+
+## AI Function Executor
+
+The AI Function Executor provides a powerful abstraction for executing journal generation functions using their docstrings as AI prompts. This allows for automatic conversion from stubbed functions to AI-powered implementations.
+
+### Key Features
+
+- **Docstring-Based Execution**: Uses function docstrings as AI prompts automatically
+- **JSON Context Injection**: Provides journal context as structured JSON
+- **Minimal Parsing Strategy**: Trusts AI responses with light parsing
+- **Graceful Degradation**: Returns appropriate defaults on failures
+- **Type-Safe Returns**: Returns correct TypedDict structures for each section
+
+### Usage
+
+#### Basic Execution
+
+```python
+from src.mcp_commit_story.ai_function_executor import execute_ai_function
+from src.mcp_commit_story.journal import generate_summary_section
+
+# Execute any journal function using its docstring as prompt
+result = execute_ai_function(generate_summary_section, journal_context)
+# Returns: SummarySection(summary="AI-generated summary")
+```
+
+#### Supported Function Types
+
+The executor automatically handles all journal section types:
+
+```python
+# String sections
+generate_summary_section -> SummarySection(summary: str)
+generate_technical_synopsis_section -> TechnicalSynopsisSection(technical_synopsis: str)
+
+# List sections  
+generate_accomplishments_section -> AccomplishmentsSection(accomplishments: List[str])
+generate_frustrations_section -> FrustrationsSection(frustrations: List[str])
+generate_discussion_notes_section -> DiscussionNotesSection(discussion_notes: List[str])
+
+# Complex sections
+generate_tone_mood_section -> ToneMoodSection(mood: str, indicators: str)
+generate_commit_metadata_section -> CommitMetadataSection(commit_metadata: Dict[str, str])
+```
+
+### Context Injection Format
+
+The executor uses **JSON format** for context injection, providing clean object structure access:
+
+```python
+# Context is automatically formatted as:
+context_json = json.dumps(journal_context, indent=2, default=str)
+full_prompt = f"""{docstring}
+
+The journal_context object has the following structure:
+```json
+{context_json}
+```"""
+```
+
+This allows AI prompts to reference fields directly like `journal_context.git.metadata.message`.
+
+### Parsing Strategy
+
+The executor uses **minimal parsing** that trusts AI responses:
+
+- **Single strings**: Use entire AI response (summary, technical_synopsis)
+- **Lists**: Split by newlines with minimal cleanup (accomplishments, frustrations)
+- **Complex types**: Simple pattern matching (tone_mood looks for "Mood:" and "Indicators:")
+- **Metadata**: Parse key-value pairs separated by colons
+
+### Default Values
+
+On any failure, the executor returns **empty defaults** matching existing stub implementations:
+
+```python
+# Default return values for graceful degradation
+SummarySection(summary="")
+AccomplishmentsSection(accomplishments=[])
+FrustrationsSection(frustrations=[])
+ToneMoodSection(mood="", indicators="")
+DiscussionNotesSection(discussion_notes=[])
+CommitMetadataSection(commit_metadata={})
+```
+
+### Integration Example
+
+Replace stub implementations with AI-powered versions:
+
+```python
+# Before: Stub implementation
+def generate_summary_section(journal_context) -> SummarySection:
+    return SummarySection(summary="")
+
+# After: AI-powered implementation
+def generate_summary_section(journal_context) -> SummarySection:
+    """
+    AI Prompt for Summary Section Generation
+    
+    Generate a narrative paragraph that captures the essential story
+    of what changed and why, using conversational language.
+    
+    [Detailed AI prompt continues...]
+    """
+    from .ai_function_executor import execute_ai_function
+    return execute_ai_function(generate_summary_section, journal_context)
+```
+
+### Error Handling
+
+The executor provides comprehensive error handling:
+
+- **Missing docstring**: Returns appropriate default for function type
+- **AI invocation failure**: Returns default value, logs warning
+- **Parse errors**: Returns default value, logs warning  
+- **Unknown function types**: Returns empty dict, logs warning
+
+All errors are gracefully handled to ensure journal generation continues.
+
+### Performance
+
+- **Single AI call** per function execution
+- **30-second timeout** per call (from underlying invoke_ai)
+- **Structured context** minimizes prompt size
+- **Minimal parsing** reduces processing overhead
+
+### Development Workflow
+
+1. **Write detailed docstring** with AI prompt instructions
+2. **Add function signature** with appropriate return type annotation
+3. **Call execute_ai_function** from within the function
+4. **Test with real context** to verify AI responses
+
+This pattern enables rapid development of AI-powered journal functions while maintaining type safety and error resilience. 
