@@ -21,8 +21,7 @@ import git
 
 from mcp_commit_story.context_collection import (
     collect_git_context, 
-    collect_chat_history, 
-    collect_ai_terminal_commands
+    collect_chat_history
 )
 from mcp_commit_story.telemetry import get_mcp_metrics, setup_telemetry, shutdown_telemetry
 
@@ -197,16 +196,8 @@ class TestContextCollectionSuccessFailureRates:
         # Just verify basic operation tracking
         assert isinstance(counter_data, dict)
     
-    def test_terminal_commands_collection_metrics(self, setup_telemetry_for_tests):
-        """Test that terminal command collection is tracked."""
-        metrics = get_mcp_metrics()
-        
-        result = collect_ai_terminal_commands(since_commit='dummy', max_messages_back=10)
-        
-        # Should track terminal collection metrics - our implementation now works!
-        counter_data = metrics.get_counter_values()
-        # Just verify basic operation tracking
-        assert isinstance(counter_data, dict)
+    # Terminal command collection removed per architectural decision
+    # See Task 56: Remove Terminal Command Collection Infrastructure
 
 
 class TestContextFlowTracing:

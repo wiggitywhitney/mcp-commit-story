@@ -50,7 +50,6 @@ from mcp_commit_story.telemetry import (
 from mcp_commit_story.context_types import (
     JournalContext,
     ChatHistory,
-    TerminalContext,
     GitContext,
 )
 from mcp_commit_story.journal import (
@@ -496,12 +495,7 @@ def large_journal_context():
                 for i in range(100)
             ]
         ),
-        terminal_context=TerminalContext(
-            commands=[
-                f"complex_command_{i} --with-many-args --and-long-output"
-                for i in range(50)
-            ]
-        ),
+
         git_context=GitContext(
             commit_metadata={"hash": "abc123", "message": "Large commit message " * 20},
             changed_files=[
@@ -521,7 +515,7 @@ def small_journal_context():
         chat_history=ChatHistory(
             messages=[{"role": "user", "content": "Simple message"}]
         ),
-        terminal_context=TerminalContext(commands=["ls -la"]),
+
         git_context=GitContext(
             commit_metadata={"hash": "def456", "message": "Small change"},
             changed_files=["README.md"],

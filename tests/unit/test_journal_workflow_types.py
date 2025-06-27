@@ -20,7 +20,7 @@ from mcp_commit_story.journal_workflow_types import (
     CollectedJournalContext,
     ContextCollectionResult
 )
-from mcp_commit_story.context_types import GitContext, ChatHistory, TerminalContext
+from mcp_commit_story.context_types import GitContext, ChatHistory
 
 
 class TestGenerateJournalEntryTypes:
@@ -179,17 +179,14 @@ class TestContextCollectionTypes:
         context: CollectedJournalContext = {
             "git_context": git_context,
             "chat_context": chat_context,
-            "terminal_context": None,
             "config": {"journal": {"path": "journal/"}},
             "collection_timestamp": "2025-06-04T10:00:00Z"
         }
         
         assert "git_context" in context
         assert "chat_context" in context
-        assert "terminal_context" in context
         assert "config" in context
         assert "collection_timestamp" in context
-        assert context["terminal_context"] is None
 
     def test_context_collection_result_success(self):
         """Test ContextCollectionResult for successful collection."""

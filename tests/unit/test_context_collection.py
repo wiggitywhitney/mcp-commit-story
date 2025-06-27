@@ -3,8 +3,8 @@ import git
 import os
 from pathlib import Path
 from typing import get_type_hints
-from mcp_commit_story.context_types import ChatMessage, ChatHistory, TerminalCommand, TerminalContext
-from mcp_commit_story.context_collection import collect_chat_history, collect_ai_terminal_commands, collect_git_context
+from mcp_commit_story.context_types import ChatMessage, ChatHistory
+from mcp_commit_story.context_collection import collect_chat_history, collect_git_context
 
 # Assume these will be imported from the journal module
 # from mcp_commit_story.journal import collect_commit_metadata, extract_code_diff, gather_discussion_notes, capture_file_changes, collect_chat_history, collect_ai_terminal_commands
@@ -56,29 +56,16 @@ def test_collect_chat_history_thoroughness_and_boundary():
     # all relevant notes are included, and filtering/formatting is correct.
     pass
 
-def test_collect_ai_terminal_commands_thoroughness_and_boundary():
-    """
-    collect_ai_terminal_commands should:
-    - Search backward for the last mcp-commit-story new-entry command (or similar)
-    - If not found, review all available terminal command history
-    - Review ALL terminal commands within this boundary
-    - Be thorough and not skip or summarize large portions
-    - Exclude routine git commands, journal creation commands, and sensitive data
-    - Format output as a chronological list of commands
-    """
-    # This test would mock a terminal history and check that only the correct boundary is used,
-    # all relevant commands are included, and filtering/formatting is correct.
-    pass
+# Architecture Decision: Terminal Command Collection Removed (2025-06-27)
+# Terminal command collection tests removed as functionality no longer supported
 
 def test_collect_chat_history_type_hint():
     hints = get_type_hints(collect_chat_history)
     assert 'return' in hints
     assert hints['return'].__name__ == 'ChatHistory'
 
-def test_collect_ai_terminal_commands_type_hint():
-    hints = get_type_hints(collect_ai_terminal_commands)
-    assert 'return' in hints
-    assert hints['return'].__name__ == 'TerminalContext'
+# Architecture Decision: Terminal Command Collection Removed (2025-06-27)
+# Terminal command type hint tests removed as functionality no longer supported
 
 def test_collect_git_context_invalid_repo(tmp_path):
     # Create a directory that is not a git repo
@@ -99,9 +86,8 @@ def test_collect_chat_history_structure_raises_on_none():
     with pytest.raises(ValueError, match="since_commit and max_messages_back must not be None"):
         collect_chat_history()
 
-def test_collect_ai_terminal_commands_structure_raises_on_none():
-    with pytest.raises(ValueError):
-        collect_ai_terminal_commands()  # since_commit and max_messages_back default to None
+# Architecture Decision: Terminal Command Collection Removed (2025-06-27)
+# Terminal command structure tests removed as functionality no longer supported
 
 def test_collect_chat_history_structure_valid():
     # Use dummy values for since_commit and max_messages_back
@@ -111,9 +97,5 @@ def test_collect_chat_history_structure_valid():
     for msg in result['messages']:
         assert set(msg.keys()) == set(ChatMessage.__annotations__.keys())
 
-def test_collect_ai_terminal_commands_structure_valid():
-    result = collect_ai_terminal_commands(since_commit='dummy_commit', max_messages_back=10)
-    assert isinstance(result, dict)
-    assert set(result.keys()) == set(TerminalContext.__annotations__.keys())
-    for cmd in result['commands']:
-        assert set(cmd.keys()) == set(TerminalCommand.__annotations__.keys()) 
+# Architecture Decision: Terminal Command Collection Removed (2025-06-27)
+# Terminal command structure validation tests removed as functionality no longer supported 

@@ -3,7 +3,7 @@ import logging
 from typing import List, Optional, Dict, Union, Any
 from pathlib import Path
 import os
-from mcp_commit_story.context_types import ChatHistory, TerminalContext, SummarySection, TechnicalSynopsisSection, JournalContext, AccomplishmentsSection, FrustrationsSection, ToneMoodSection, DiscussionNotesSection, TerminalCommandsSection, CommitMetadataSection
+from mcp_commit_story.context_types import ChatHistory, SummarySection, TechnicalSynopsisSection, JournalContext, AccomplishmentsSection, FrustrationsSection, ToneMoodSection, DiscussionNotesSection, CommitMetadataSection
 from .telemetry import (
     trace_mcp_operation, 
     get_mcp_metrics, 
@@ -49,8 +49,7 @@ def _add_ai_generation_telemetry(section_type: str, journal_context, start_time:
         if journal_context:
             if hasattr(journal_context, 'chat_history') and journal_context.get('chat_history'):
                 context_size += len(journal_context['chat_history'].get('messages', []))
-            if hasattr(journal_context, 'terminal_context') and journal_context.get('terminal_context'):
-                context_size += len(journal_context['terminal_context'].get('commands', []))
+
             if hasattr(journal_context, 'file_changes') and journal_context.get('file_changes'):
                 context_size += len(journal_context['file_changes'])
         
@@ -165,7 +164,7 @@ class JournalEntry:
         technical_synopsis: Optional[str] = None,
         accomplishments: Optional[List[str]] = None,
         frustrations: Optional[List[str]] = None,
-        terminal_commands: Optional[List[str]] = None,
+
         discussion_notes: Optional[List[Union[str, Dict[str, str]]]] = None,
         tone_mood: Optional[Dict[str, str]] = None,  # {'mood': str, 'indicators': str}
         commit_metadata: Optional[Dict[str, str]] = None,
@@ -176,7 +175,7 @@ class JournalEntry:
         self.technical_synopsis = technical_synopsis
         self.accomplishments = accomplishments or []
         self.frustrations = frustrations or []
-        self.terminal_commands = terminal_commands or []
+
         self.discussion_notes = discussion_notes or []
         self.tone_mood = tone_mood
         self.commit_metadata = commit_metadata or {}
@@ -278,12 +277,7 @@ class JournalEntry:
                             dn_lines.append(f"> {l}")
                 lines += section("Discussion Notes (from chat)", dn_lines)
 
-            # 7. Terminal Commands (AI Session)
-            if self.terminal_commands:
-                tc_lines = ["Commands executed by AI during this work session:", "```bash"]
-                tc_lines.extend(self.terminal_commands)
-                tc_lines.append("```")
-                lines += section("Terminal Commands (AI Session)", tc_lines)
+
 
             # 8. Commit Metadata
             if self.commit_metadata:
@@ -424,21 +418,6 @@ class JournalParser:
                         elif l.startswith('> '):
                             discussion_notes.append(l[2:])
                 
-                # Terminal Commands
-                terminal_commands = []
-                tc_section = extract_section("Terminal Commands (AI Session)")
-                if tc_section:
-                    in_block = False
-                    for l in tc_section.splitlines():
-                        if l.strip() == '```bash':
-                            in_block = True
-                            continue
-                        if l.strip() == '```':
-                            in_block = False
-                            continue
-                        if in_block:
-                            terminal_commands.append(l)
-                
                 # Commit Metadata
                 commit_metadata = {}
                 cm_section = extract_section("Commit Metadata")
@@ -457,7 +436,7 @@ class JournalParser:
                     1 if frustrations else 0,
                     1 if tone_mood else 0,
                     1 if discussion_notes else 0,
-                    1 if terminal_commands else 0,
+
                     1 if commit_metadata else 0
                 ])
                 
@@ -489,7 +468,7 @@ class JournalParser:
                     frustrations=frustrations,
                     tone_mood=tone_mood,
                     discussion_notes=discussion_notes,
-                    terminal_commands=terminal_commands,
+
                     commit_metadata=commit_metadata,
                 )
             
@@ -1425,118 +1404,12 @@ def generate_discussion_notes_section(journal_context: JournalContext) -> Discus
 # Section Generator: Terminal Commands
 # Purpose: Generates the Terminal Commands section for a journal entry using AI.
 # This function extracts and lists all relevant terminal commands executed during the commit, focusing on commands that demonstrate problem-solving, technical approach, or challenges. Only includes commands with explicit evidence in terminal context; does not paraphrase or invent content. Returns a placeholder until the AI agent executes the docstring prompt.
-@trace_mcp_operation("journal.generate_terminal_commands", attributes={"operation_type": "ai_generation", "section_type": "terminal_commands"})
-def generate_terminal_commands_section(journal_context: JournalContext) -> TerminalCommandsSection:
-    """
-    AI Prompt for Terminal Commands Section Generation
-
-    Purpose
-    Extract and list all relevant terminal commands executed during this commit, focusing on commands that demonstrate problem-solving, technical approach, or challenges.
-
-    Instructions
-    Extract terminal commands from terminal context to create a chronological list of meaningful commands executed during the work session. Focus on commands that provide insight into the technical process and decision-making approach.
-
-    Priority for Content Sources
-    1. Terminal context from journal_context.terminal - the authoritative source for executed commands
-    2. No other sources - work exclusively with the provided terminal context
-
-    Terminal Command Extraction
-    Look for commands that provide technical insight, such as:
-    - Commands that demonstrate problem-solving steps
-    - Commands that show the technical approach taken
-    - Failed commands that highlight challenges or errors
-    - Repetitive commands that might indicate frustrations or iteration
-    - Build, test, or deployment commands that show progress
-    - Debugging or investigation commands
-
-    Filtering Guidelines
-    Exclude commands that don't add narrative value:
-    - Routine git commands (add, status, commit) unless they are significant to the narrative
-    - Commands run specifically as part of journal entry creation or extraction
-    - Commands containing passwords, API keys, tokens, or other sensitive information
-    - Commands that reveal personal identifiable information (PII)
-    - Basic navigation commands (cd, ls, pwd) unless part of a meaningful sequence
-    - Obviously invalid commands: typos, malformed syntax, incomplete commands that add no technical insight
-
-    Include meaningful failures that demonstrate problem-solving:
-    - Commands that failed due to missing dependencies (shows environment setup process)
-    - Commands that failed due to configuration issues (shows troubleshooting approach)
-    - Commands that revealed errors leading to solutions (shows debugging process)
-    - Failed attempts that led to successful alternatives (shows iteration and learning)
-
-    Deduplication Rules
-    - Apply adjacent identical command deduplication: compress consecutive identical commands with count notation (e.g., "npm test x3")
-    - Preserve chronological order of distinct commands
-    - Do not deduplicate non-adjacent commands even if identical
-
-    ANTI-HALLUCINATION RULES
-    - Do NOT invent, infer, or summarize commands that are not explicitly present in the terminal context
-    - Only include commands that are directly supported by the terminal transcript
-    - If no terminal context is available, return an empty list and omit the section
-    - Never speculate about commands that might have been run
-    - If a command is not present in the context, do NOT fill in gaps or assume it happened
-
-    Output Format
-    - List of strings, each representing a single terminal command
-    - Return empty list if no relevant commands are found and omit the section
-    - Maintain chronological order as they appeared in the terminal context
-    - Apply deduplication formatting where appropriate (e.g., "command x3")
-
-    CHECKLIST
-    - [ ] Extracted commands exclusively from journal_context.terminal
-    - [ ] Focused on commands that demonstrate problem-solving, technical approach, or challenges
-    - [ ] Excluded routine git commands unless significant to the narrative
-    - [ ] Excluded journal entry creation commands
-    - [ ] Excluded commands containing sensitive information or PII
-    - [ ] Excluded obviously invalid commands (typos, malformed syntax) while preserving meaningful failures
-    - [ ] Included meaningful failures that demonstrate debugging and problem-solving process
-    - [ ] Applied adjacent identical command deduplication with count notation
-    - [ ] Preserved chronological order of distinct commands
-    - [ ] Did NOT invent, infer, or speculate about commands not present in context
-    - [ ] Returned empty list if no relevant commands found
-    - [ ] Verified all commands are grounded in actual terminal context evidence
-    """
-    import time
-    
-    start_time = time.time()
-    _add_ai_generation_telemetry("terminal_commands", journal_context, start_time)
-    
-    try:
-        # Generate realistic stub content based on terminal context
-        # Handle None journal_context
-        if journal_context is None:
-            return TerminalCommandsSection(terminal_commands=[])
-        
-        terminal_context = journal_context.get('terminal') if journal_context else None
-        commands = []
-        
-        if terminal_context and terminal_context.get('commands'):
-            # Extract commands from terminal context 
-            terminal_commands = terminal_context.get('commands', [])
-            for cmd_obj in terminal_commands[:5]:  # Limit to first 5 commands
-                if isinstance(cmd_obj, dict) and 'command' in cmd_obj:
-                    command = cmd_obj['command'].strip()
-                    # Filter out basic journal and git commands
-                    if not any(skip in command for skip in ['git add', 'git commit', 'journal', 'mcp-commit-story']):
-                        commands.append(command)
-        
-        # Don't add generic stub if we have no actual terminal context
-        # Only return empty list when no meaningful commands found
-        result = TerminalCommandsSection(terminal_commands=commands)
-        
-        duration = time.time() - start_time
-        _record_ai_generation_metrics("terminal_commands", duration, True)
-        
-        return result
-        
-    except Exception as e:
-        duration = time.time() - start_time
-        _record_ai_generation_metrics("terminal_commands", duration, False, "ai_generation_failed")
-        raise
-
-# Section Generator: Commit Metadata
-# Purpose: Generates the Commit Metadata section for a journal entry using AI.
-# This function extracts and formats relevant commit metadata from git context, providing key statistics and classifications that support the journal entry narrative. Only includes metadata fields directly supported by the git context data; does not invent or speculate. Returns a placeholder until the AI agent executes the docstring prompt.
+# Architecture Decision: Terminal Command Collection Removed (2025-06-27)
+# The generate_terminal_commands_section function has been removed as part of terminal
+# infrastructure cleanup. Terminal commands were originally designed to be collected
+# by Cursor's AI with access to its execution context. With the shift to external
+# journal generation, we no longer have access. Git diffs and chat context provide
+# sufficient narrative.
 @trace_mcp_operation("journal.generate_commit_metadata", attributes={"operation_type": "ai_generation", "section_type": "commit_metadata"})
 def generate_commit_metadata_section(journal_context: JournalContext) -> CommitMetadataSection:
     """

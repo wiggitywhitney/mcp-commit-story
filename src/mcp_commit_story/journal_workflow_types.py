@@ -16,7 +16,8 @@ else:
     from typing_extensions import TypedDict
 
 # Import existing context types for reference
-from .context_types import GitContext, ChatHistory, TerminalContext
+# Architecture Decision: Terminal Command Collection Removed (2025-06-27)
+from .context_types import GitContext, ChatHistory
 
 
 # =============================================================================
@@ -75,7 +76,6 @@ class CollectedJournalContext(TypedDict):
     """Fully assembled context data for journal generation."""
     git_context: GitContext
     chat_context: Optional[ChatHistory]
-    terminal_context: Optional[TerminalContext]
     config: Dict[str, Any]
     collection_timestamp: str  # ISO timestamp when context was collected
 

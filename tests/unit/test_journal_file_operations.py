@@ -206,7 +206,6 @@ class TestJournalFileOperationsIntegration:
                 frustrations="Test frustrations",
                 tone_mood={"mood": "positive", "indicators": "good progress"},
                 discussion_notes=["Test discussion"],
-                terminal_commands=["test command"],
                 commit_metadata={"author": "test", "files": 2}
             )
             

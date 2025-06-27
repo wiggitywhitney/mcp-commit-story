@@ -35,12 +35,12 @@ def generate_journal_entry(commit, config, debug=False) -> Optional[JournalEntry
     Returns:
         JournalEntry: Complete journal entry object, or None if commit should be skipped
     """
-    from .context_collection import collect_chat_history, collect_ai_terminal_commands, collect_git_context
+    from .context_collection import collect_chat_history, collect_git_context
     from .journal import (
         generate_summary_section, generate_technical_synopsis_section,
         generate_accomplishments_section, generate_frustrations_section,
         generate_tone_mood_section, generate_discussion_notes_section,
-        generate_terminal_commands_section, generate_commit_metadata_section
+        generate_commit_metadata_section
     )
     
     if debug:
@@ -69,14 +69,8 @@ def generate_journal_entry(commit, config, debug=False) -> Optional[JournalEntry
         logger.error(f"Failed to collect chat history: {e}")
         context_data['chat_history'] = None
     
-    # Collect AI terminal commands - fixed function signature  
-    try:
-        if debug:
-            logger.debug("Collecting AI terminal commands context")
-        context_data['terminal_context'] = collect_ai_terminal_commands(since_commit=commit.hexsha, max_messages_back=150)
-    except Exception as e:
-        logger.error(f"Failed to collect AI terminal commands: {e}")
-        context_data['terminal_context'] = None
+    # Terminal command collection removed per architectural decision
+    # See Task 56: Remove Terminal Command Collection Infrastructure
     
     # Collect git context - fixed function signature
     try:
@@ -99,20 +93,19 @@ def generate_journal_entry(commit, config, debug=False) -> Optional[JournalEntry
             'commit_context': {}
         }
     
-    # Build JournalContext using correct 3-field structure: chat, terminal, git
+    # Build JournalContext using correct 2-field structure: chat, git (terminal removed)
     journal_context = JournalContext(
         chat=context_data['chat_history'],
-        terminal=context_data['terminal_context'],
         git=context_data['git_context']
     )
     
     if debug:
-        logger.debug(f"Built journal context with git context and optional chat/terminal data")
+        logger.debug(f"Built journal context with git context and optional chat data")
     
     # Step 3: Generate all sections with graceful degradation
     sections = {}
     
-    # List of all section generators and their corresponding fields
+    # List of all section generators and their corresponding fields (7 total, down from 8)
     section_generators = [
         ('summary', generate_summary_section),
         ('technical_synopsis', generate_technical_synopsis_section),
@@ -120,7 +113,6 @@ def generate_journal_entry(commit, config, debug=False) -> Optional[JournalEntry
         ('frustrations', generate_frustrations_section),
         ('tone_mood', generate_tone_mood_section),
         ('discussion_notes', generate_discussion_notes_section),
-        ('terminal_commands', generate_terminal_commands_section),
         ('commit_metadata', generate_commit_metadata_section)
     ]
     
@@ -149,8 +141,6 @@ def generate_journal_entry(commit, config, debug=False) -> Optional[JournalEntry
                     }
             elif section_name == 'discussion_notes':
                 sections[section_name] = section_content.get('discussion_notes', [])
-            elif section_name == 'terminal_commands':
-                sections[section_name] = section_content.get('terminal_commands', [])
             elif section_name == 'commit_metadata':
                 sections[section_name] = section_content.get('commit_metadata', {})
                 
@@ -168,7 +158,7 @@ def generate_journal_entry(commit, config, debug=False) -> Optional[JournalEntry
     if debug:
         logger.debug(f"Creating journal entry with {len(sections)} successful sections")
     
-    # Create the journal entry using the approved section ordering
+    # Create the journal entry using the approved section ordering (terminal_commands removed)
     journal_entry = JournalEntry(
         timestamp=timestamp,
         commit_hash=commit.hexsha,  # Use GitPython commit object property
@@ -178,7 +168,6 @@ def generate_journal_entry(commit, config, debug=False) -> Optional[JournalEntry
         frustrations=sections.get('frustrations'),
         tone_mood=sections.get('tone_mood'),
         discussion_notes=sections.get('discussion_notes'),
-        terminal_commands=sections.get('terminal_commands'),
         commit_metadata=sections.get('commit_metadata')
     )
     
@@ -337,7 +326,6 @@ def handle_journal_entry_creation(commit, config, debug=False):
                     journal_entry.frustrations,
                     journal_entry.tone_mood,
                     journal_entry.discussion_notes,
-                    journal_entry.terminal_commands,
                     journal_entry.commit_metadata
                 ] if s
             ])

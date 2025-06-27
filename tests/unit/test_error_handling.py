@@ -1,6 +1,6 @@
 import pytest
 from mcp_commit_story import context_collection, journal
-from mcp_commit_story.context_types import ChatHistory, TerminalContext, GitContext, JournalContext
+from mcp_commit_story.context_types import ChatHistory, GitContext, JournalContext
 from unittest.mock import patch
 
 # --- Context Collection Edge Cases ---
@@ -9,10 +9,8 @@ def test_collect_chat_history_none():
     with pytest.raises(Exception):
         context_collection.collect_chat_history(since_commit=None, max_messages_back=None)
 
-def test_collect_ai_terminal_commands_none():
-    # Should handle None gracefully (return empty TerminalContext or raise ValueError)
-    with pytest.raises(Exception):
-        context_collection.collect_ai_terminal_commands(since_commit=None, max_messages_back=None)
+# Terminal command collection removed per architectural decision
+# See Task 56: Remove Terminal Command Collection Infrastructure
 
 def test_collect_git_context_invalid_commit():
     # Should raise on invalid commit hash

@@ -6,19 +6,17 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import TypedDict
 
+# Architecture Decision: Terminal Command Collection Removed (2025-06-27)
+# Terminal commands were originally designed to be collected by Cursor's AI with
+# access to its execution context. With the shift to external journal generation,
+# we no longer have access. Git diffs and chat context provide sufficient narrative.
+
 class ChatMessage(TypedDict):
     speaker: str
     text: str
 
 class ChatHistory(TypedDict):
     messages: List[ChatMessage]
-
-class TerminalCommand(TypedDict):
-    command: str
-    executed_by: str  # "user" or "ai"
-
-class TerminalContext(TypedDict):
-    commands: List[TerminalCommand]
 
 class GitMetadata(TypedDict):
     hash: str
@@ -35,7 +33,6 @@ class GitContext(TypedDict):
 
 class JournalContext(TypedDict):
     chat: Optional[ChatHistory]
-    terminal: Optional[TerminalContext]
     git: GitContext
 
 class SummarySection(TypedDict):
@@ -56,9 +53,6 @@ class ToneMoodSection(TypedDict):
 
 class DiscussionNotesSection(TypedDict):
     discussion_notes: List[Union[str, Dict[str, str]]]  # Discussion points, with optional speaker attribution
-
-class TerminalCommandsSection(TypedDict):
-    terminal_commands: List[str]  # List of terminal commands executed during the session
 
 class CommitMetadataSection(TypedDict):
     commit_metadata: Dict[str, str]  # Key-value pairs of commit statistics and metadata 

@@ -2,12 +2,12 @@ import pytest
 from mcp_commit_story.journal import (
     JournalEntry, generate_summary_section, generate_technical_synopsis_section,
     generate_frustrations_section, generate_tone_mood_section, generate_discussion_notes_section,
-    generate_terminal_commands_section, generate_commit_metadata_section
+    generate_commit_metadata_section
 )
 from mcp_commit_story.context_types import (
     SummarySection, TechnicalSynopsisSection, JournalContext,
     FrustrationsSection, ToneMoodSection, DiscussionNotesSection,
-    TerminalCommandsSection, CommitMetadataSection
+    CommitMetadataSection
 )
 from fixtures.summary_test_data import (
     mock_context_with_explicit_purpose,
@@ -26,17 +26,8 @@ def test_header_includes_timestamp_and_commit_hash():
     assert md.startswith("### 2025-05-20 08:10 — Commit 2cc11c5")
 
 
-def test_terminal_commands_rendered_as_code_block():
-    entry = JournalEntry(
-        timestamp="2025-05-20 08:10",
-        commit_hash="abc123",
-        terminal_commands=["pytest tests/", "git status"]
-    )
-    md = entry.to_markdown()
-    assert "```bash" in md
-    assert "pytest tests/" in md
-    assert "git status" in md
-    assert "Commands executed by AI during this work session:" in md
+# Architecture Decision: Terminal Command Collection Removed (2025-06-27)
+# Terminal command tests removed as terminal infrastructure is no longer supported
 
 
 def test_discussion_notes_with_speaker_attribution():
@@ -131,7 +122,7 @@ def test_very_long_entry_formatting():
         technical_synopsis="B" * 500,
         accomplishments=[f"Accomplishment {i}" for i in range(50)],
         frustrations=[f"Frustration {i}" for i in range(50)],
-        terminal_commands=[f"cmd_{i}" for i in range(50)],
+
         discussion_notes=[{"speaker": "Human", "text": f"Note {i}"} for i in range(50)],
         tone_mood={"mood": "Relieved", "indicators": "All tests passed."},
         commit_metadata={"files_changed": "10", "insertions": "100", "deletions": "5"}
@@ -143,7 +134,7 @@ def test_very_long_entry_formatting():
     assert "#### Summary" in md
     assert "#### Accomplishments" in md
     assert "#### Frustrations or Roadblocks" in md
-    assert "cmd_0" in md
+
     assert "> **Human:** Note 0" in md
     assert "> Relieved" in md
     assert "> All tests passed." in md
@@ -181,7 +172,7 @@ def test_omit_empty_sections():
     assert "Only summary" in md
     assert "Accomplishments" not in md
     assert "Frustrations" not in md
-    assert "Terminal Commands" not in md
+
     assert "Discussion Notes" not in md
     assert "Tone/Mood" not in md
     assert "Technical Synopsis" not in md
@@ -254,19 +245,8 @@ def test_spacing_after_section_headers():
     assert "#### Frustrations or Roadblocks\n\n- B" in md
 
 
-def test_terminal_commands_as_code_block():
-    entry = JournalEntry(
-        timestamp="2025-05-20 08:10",
-        commit_hash="abc123",
-        terminal_commands=["ls", "pwd"]
-    )
-    md = entry.to_markdown()
-    assert "```bash" in md
-    assert "ls" in md
-    assert "pwd" in md
-    assert md.count("```bash") == 1
-    # There should be one opening and one closing code block (total 2)
-    assert md.count("```") == 2  # One opening, one closing
+# Architecture Decision: Terminal Command Collection Removed (2025-06-27)
+# Terminal command formatting tests removed as functionality no longer supported
 
 
 def test_spacing_between_bullet_points():
@@ -308,7 +288,7 @@ def test_integration_multiple_formatting_rules():
         summary="Integration summary",
         accomplishments=["A", "B"],
         frustrations=["C"],
-        terminal_commands=["ls", "pwd"],
+
         discussion_notes=notes,
         tone_mood={"mood": "Happy", "indicators": "All good."},
         commit_metadata={"files_changed": "2", "insertions": "10", "deletions": "1"}
@@ -319,7 +299,7 @@ def test_integration_multiple_formatting_rules():
     assert "#### Summary" in md
     assert "#### Accomplishments" in md
     assert "#### Frustrations or Roadblocks" in md
-    assert "```bash" in md
+
     assert "- A\n\n- B" in md
     assert "> **Human:** First.\n\n> **Agent:** Second.\n\n> **Human:** Third." in md
     assert "> Happy" in md
@@ -345,7 +325,7 @@ def empty_context():
 # Only test that the placeholder is returned. Full content tests should be run in an AI-invoked or integration environment.
 
 def test_generate_summary_section_returns_placeholder():
-    ctx = {"chat": None, "git": None, "terminal": None}
+    ctx = {"chat": None, "git": None}
     result = generate_summary_section(ctx)
     assert isinstance(result, dict)
     assert "summary" in result
@@ -480,18 +460,8 @@ def test_generate_discussion_notes_section_ai_content():
     result = generate_discussion_notes_section(ctx)
     assert any('auth' in str(note).lower() for note in result['discussion_notes'])
 
-# --- Terminal Commands Section Generator ---
-def test_generate_terminal_commands_section_returns_placeholder():
-    ctx = mock_context_with_explicit_purpose()
-    result = generate_terminal_commands_section(ctx)
-    assert isinstance(result, dict)
-    assert 'terminal_commands' in result
-    assert isinstance(result['terminal_commands'], list)
-
-def test_generate_terminal_commands_section_ai_content():
-    ctx = mock_context_no_chat()
-    result = generate_terminal_commands_section(ctx)
-    assert isinstance(result['terminal_commands'], list)
+# Architecture Decision: Terminal Command Collection Removed (2025-06-27)
+# Terminal command generator tests removed as functionality no longer supported
 
 # --- Commit Metadata Section Generator ---
 def test_generate_commit_metadata_section_returns_placeholder():

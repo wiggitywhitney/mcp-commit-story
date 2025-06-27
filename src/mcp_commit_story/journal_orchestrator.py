@@ -18,8 +18,8 @@ from typing import Dict, Any, Optional
 from pathlib import Path
 
 from mcp_commit_story.telemetry import trace_mcp_operation, get_mcp_metrics
-from mcp_commit_story.context_types import JournalContext, ChatHistory, TerminalContext, GitContext
-from mcp_commit_story.context_collection import collect_git_context, collect_chat_history, collect_ai_terminal_commands
+from mcp_commit_story.context_types import JournalContext, ChatHistory, GitContext
+from mcp_commit_story.context_collection import collect_git_context, collect_chat_history
 from mcp_commit_story.journal import (
     JournalEntry,
     generate_summary_section,
@@ -28,7 +28,7 @@ from mcp_commit_story.journal import (
     generate_frustrations_section,
     generate_tone_mood_section,
     generate_discussion_notes_section,
-    generate_terminal_commands_section,
+
     generate_commit_metadata_section
 )
 from mcp_commit_story.git_utils import get_repo
@@ -57,7 +57,7 @@ VALID_AI_FUNCTIONS = {
     'generate_frustrations_section',
     'generate_tone_mood_section',
     'generate_discussion_notes_section',
-    'generate_terminal_commands_section',
+
     'generate_commit_metadata_section'
 }
 
@@ -69,7 +69,7 @@ AI_FUNCTION_MAP = {
     'generate_frustrations_section': generate_frustrations_section,
     'generate_tone_mood_section': generate_tone_mood_section,
     'generate_discussion_notes_section': generate_discussion_notes_section,
-    'generate_terminal_commands_section': generate_terminal_commands_section,
+
     'generate_commit_metadata_section': generate_commit_metadata_section
 }
 
@@ -241,7 +241,6 @@ def collect_all_context_data(
     # Initialize context components
     git_context = None
     chat_context = None
-    terminal_context = None
     
     # 1. Git context (Python implementation - most reliable)
     try:
@@ -266,19 +265,13 @@ def collect_all_context_data(
         logger.warning(f"Chat history collection failed: {e}")
         chat_context = None
     
-    # 3. Terminal commands (AI implementation - may fail)
-    try:
-        terminal_context = collect_ai_terminal_commands(since_commit, max_messages_back)
-        logger.info("Terminal context collection successful")
-    except Exception as e:
-        logger.warning(f"Terminal context collection failed: {e}")
-        terminal_context = None
+    # Architecture Decision: Terminal Command Collection Removed (2025-06-27)
+    # Terminal command collection removed as it's no longer feasible or valuable
     
     # Assemble context with whatever succeeded
     return {
         'git': git_context,
-        'chat': chat_context,
-        'terminal': terminal_context
+        'chat': chat_context
     }
 
 
@@ -304,7 +297,7 @@ def validate_section_result(section_name: str, result: Dict[str, Any]) -> Dict[s
         'frustrations': 'generate_frustrations_section',
         'tone_mood': 'generate_tone_mood_section',
         'discussion_notes': 'generate_discussion_notes_section',
-        'terminal_commands': 'generate_terminal_commands_section',
+
         'commit_metadata': 'generate_commit_metadata_section'
     }
     
@@ -337,10 +330,7 @@ def validate_section_result(section_name: str, result: Dict[str, Any]) -> Dict[s
             'required_keys': ['items'],
             'fallback': {'items': [], 'metadata': {}}
         },
-        'terminal_commands': {
-            'required_keys': ['items'],
-            'fallback': {'items': [], 'metadata': {}}
-        },
+
         'commit_metadata': {
             'required_keys': ['metadata'],
             'fallback': {'metadata': {}}
@@ -373,10 +363,7 @@ def validate_section_result(section_name: str, result: Dict[str, Any]) -> Dict[s
             'required_keys': ['discussion_notes'],
             'fallback': {'discussion_notes': [], 'metadata': {}}
         },
-        'generate_terminal_commands_section': {
-            'required_keys': ['terminal_commands'],
-            'fallback': {'terminal_commands': [], 'metadata': {}}
-        },
+
         'generate_commit_metadata_section': {
             'required_keys': ['commit_metadata'],
             'fallback': {'commit_metadata': {}}
@@ -462,8 +449,7 @@ def assemble_journal_entry(sections: Dict[str, Dict[str, Any]], commit_hash: str
     discussion_result = validate_section_result('discussion_notes',
                                                sections.get('discussion_notes', sections.get('generate_discussion_notes_section', {})))
     
-    terminal_result = validate_section_result('terminal_commands',
-                                            sections.get('terminal_commands', sections.get('generate_terminal_commands_section', {})))
+
     
     metadata_result = validate_section_result('commit_metadata',
                                             sections.get('commit_metadata', sections.get('generate_commit_metadata_section', {})))
@@ -481,6 +467,6 @@ def assemble_journal_entry(sections: Dict[str, Dict[str, Any]], commit_hash: str
         frustrations=frustrations_result.get('items', frustrations_result.get('frustrations', [])),
         tone_mood=None if tone_result.get('content') is None and tone_result.get('mood', '') == '' else {'mood': tone_result.get('content', tone_result.get('mood', '')), 'indicators': tone_result.get('indicators', '')},
         discussion_notes=discussion_result.get('items', discussion_result.get('discussion_notes', [])),
-        terminal_commands=terminal_result.get('items', terminal_result.get('terminal_commands', [])),
+
         commit_metadata=metadata_result.get('metadata', metadata_result.get('commit_metadata', {}))
     ) 

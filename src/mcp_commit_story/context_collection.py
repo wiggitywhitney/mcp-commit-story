@@ -1,7 +1,12 @@
 """
 Context collection functions for MCP Commit Story.
 
-This module provides unified functions for collecting chat, terminal, and git context for journal entry generation.
+This module provides unified functions for collecting chat and git context for journal entry generation.
+
+Architecture Decision: Terminal Command Collection Removed (2025-06-27)
+Terminal commands were originally designed to be collected by Cursor's AI with
+access to its execution context. With the shift to external journal generation,
+we no longer have access. Git diffs and chat context provide sufficient narrative.
 
 TODO: Implement collect_journal_context() functionality
 This function should read from journal/daily/YYYY-MM-DD-journal.md files to extract:
@@ -15,7 +20,7 @@ from the developer's own journaling and reflection process.
 import os
 import time
 import logging
-from mcp_commit_story.context_types import ChatHistory, TerminalContext, GitContext
+from mcp_commit_story.context_types import ChatHistory, GitContext
 from mcp_commit_story.git_utils import get_repo, get_current_commit, get_commit_details, get_commit_diff_summary, classify_file_type, classify_commit_size, NULL_TREE
 from mcp_commit_story.telemetry import (
     trace_git_operation, 
@@ -138,45 +143,6 @@ def collect_chat_history(
     except Exception as e:
         logger.error(f"Chat history collection failed: {e}")
         return ChatHistory(messages=[])
-
-
-
-
-
-@trace_git_operation("terminal_commands",
-                    performance_thresholds={"duration": 1.0},
-                    error_categories=["api", "network", "parsing"])
-def collect_ai_terminal_commands(since_commit=None, max_messages_back=150) -> TerminalContext:
-    """
-    Returns:
-        TerminalContext: Structured terminal commands as defined in context_types.py
-
-    Notes:
-    - The TerminalContext type is a TypedDict defined in context_types.py.
-    - All context is ephemeral and only persisted as part of the generated journal entry.
-    - This function enforces the in-memory-only rule for context data.
-
-    Collect relevant terminal commands for journal entry.
-
-    AI Prompt:
-    Please analyze the terminal command history within the specified boundary and extract ALL relevant commands for the journal entry.
-    - Search through the terminal history from the specified commit point forward to now.
-    - Extract all commands that contributed to the development process: git commands, file operations, test runs, build commands, package installs, etc.
-    - Include the command itself, any relevant output or errors, and timestamp if available.
-    - Focus on commands that show the development workflow: testing, debugging, file manipulation, environment setup, etc.
-    - Exclude routine commands like "ls" or "cd" unless they're part of a significant debugging or exploration session.
-    - Include failed commands and their errors - these often show problem-solving attempts.
-    - Capture sequences of related commands that tell a story (e.g., test failure -> investigation -> fix -> retest).
-    - Include any npm/pip installs, git operations, file moves/copies, permission changes, etc.
-    - Record both successful and failed attempts to provide context about the development process.
-    - Return commands in chronological order to preserve the development narrative.
-    """
-    # Validate that required parameters are provided
-    if since_commit is None or max_messages_back is None:
-        raise ValueError("collect_ai_terminal_commands: since_commit and max_messages_back must not be None")
-    
-    # Return empty structure for now
-    return TerminalContext(commands=[])
 
 
 @trace_git_operation("git_context",

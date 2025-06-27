@@ -3,7 +3,7 @@ import os
 import pytest
 from mcp_commit_story import journal
 from mcp_commit_story.context_types import JournalContext, AccomplishmentsSection, FrustrationsSection, ToneMoodSection, DiscussionNotesSection
-from mcp_commit_story.context_collection import collect_chat_history, collect_ai_terminal_commands
+from mcp_commit_story.context_collection import collect_chat_history
 
 # Sample markdown for a daily note entry
 DAILY_NOTE_MD = '''
@@ -80,7 +80,6 @@ def test_handle_malformed_entry():
 def test_generate_summary_section_basic_commit():
     ctx = JournalContext(
         chat=None,
-        terminal=None,
         git={
             'metadata': {
                 'hash': 'abc123',
@@ -111,7 +110,6 @@ def test_generate_summary_section_with_chat_reasoning():
             {'speaker': 'Human', 'text': 'We need to add authentication to protect user data.'},
             {'speaker': 'Agent', 'text': 'Agreed, this will improve security.'},
         ]},
-        terminal=None,
         git={
             'metadata': {
                 'hash': 'abc123',
@@ -131,7 +129,7 @@ def test_generate_summary_section_with_chat_reasoning():
 
 
 def test_generate_summary_section_handles_missing_git():
-    ctx = JournalContext(chat=None, terminal=None, git=None)  # type: ignore
+    ctx = JournalContext(chat=None, git=None)  # type: ignore
     result = journal.generate_summary_section(ctx)
     assert isinstance(result, dict)
     assert 'summary' in result
@@ -524,7 +522,7 @@ def test_generate_discussion_notes_section_format():
     ctx = JournalContext(chat={'messages': [
         {'speaker': 'Human', 'text': 'First line.'},
         {'speaker': 'Agent', 'text': 'Second line.'}
-    ]}, terminal=None, git=None)
+    ]}, git=None)
     result = journal.generate_discussion_notes_section(ctx)
     notes = result['discussion_notes']
     assert isinstance(notes, list)
@@ -532,51 +530,8 @@ def test_generate_discussion_notes_section_format():
     assert any(isinstance(n, dict) and n.get('speaker') == 'Agent' for n in notes)
 
 
-def test_generate_terminal_commands_section_happy_path():
-    ctx = JournalContext(
-        chat=None,
-        terminal={
-            'commands': [
-                {'command': 'pytest', 'executed_by': 'ai'},
-                {'command': 'git status', 'executed_by': 'ai'},
-            ]
-        },
-        git={
-            'metadata': {'hash': 'abc', 'author': 'me', 'date': 'today', 'message': 'msg'},
-            'diff_summary': '', 'changed_files': [], 'file_stats': {}, 'commit_context': {}
-        }
-    )
-    result = journal.generate_terminal_commands_section(ctx)
-    assert isinstance(result, dict)
-    assert 'terminal_commands' in result
-    assert isinstance(result['terminal_commands'], list)
-    assert all(isinstance(cmd, str) for cmd in result['terminal_commands'])
-    assert 'pytest' in result['terminal_commands'][0]
-
-
-def test_generate_terminal_commands_section_empty_context():
-    """Test terminal commands section generation with empty context."""
-    empty_context = {'terminal': {'commands': []}}
-    result = journal.generate_terminal_commands_section(empty_context)
-    assert isinstance(result, dict)
-    assert 'terminal_commands' in result
-
-
-def test_generate_terminal_commands_section_malformed_terminal():
-    """Test terminal commands section generation with malformed terminal context."""
-    malformed_context = {'terminal': None}
-    result = journal.generate_terminal_commands_section(malformed_context)
-    assert isinstance(result, dict)
-    assert 'terminal_commands' in result
-
-
-def test_generate_terminal_commands_section_type_safety():
-    """Test that terminal commands section maintains type safety."""
-    ctx = {'terminal': {'commands': [{'command': 'ls -la', 'output': 'file1 file2'}]}}
-    result = journal.generate_terminal_commands_section(ctx)
-    assert isinstance(result, dict)
-    assert 'terminal_commands' in result
-    assert isinstance(result['terminal_commands'], list)
+# Terminal commands section tests removed per architectural decision
+# See Task 56: Remove Terminal Command Collection Infrastructure
 
 
 def test_append_to_journal_file_creates_directories(tmp_path):

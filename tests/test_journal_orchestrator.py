@@ -19,7 +19,7 @@ from mcp_commit_story.journal_orchestrator import (
     assemble_journal_entry,
     validate_section_result
 )
-from mcp_commit_story.context_types import JournalContext, ChatHistory, TerminalContext, GitContext
+from mcp_commit_story.context_types import JournalContext, ChatHistory, GitContext
 from mcp_commit_story.journal import JournalEntry
 
 
@@ -35,7 +35,6 @@ class TestAIFunctionExecution:
         """Verify execute_ai_function instructs AI to call specific functions."""
         mock_context = JournalContext(
             chat=None,
-            terminal=None, 
             git=GitContext(commit_hash="abc123", message="Test commit")
         )
         
@@ -52,7 +51,6 @@ class TestAIFunctionExecution:
         """Verify execute_ai_function validates function names."""
         mock_context = JournalContext(
             chat=None,
-            terminal=None,
             git=GitContext(commit_hash="abc123", message="Test commit")
         )
         
@@ -64,7 +62,6 @@ class TestAIFunctionExecution:
         """Verify execute_ai_function handles AI execution failures gracefully."""
         mock_context = JournalContext(
             chat=None,
-            terminal=None,
             git=GitContext(commit_hash="abc123", message="Test commit") 
         )
         
@@ -88,68 +85,58 @@ class TestContextCollection:
     
     @patch('mcp_commit_story.journal_orchestrator.collect_git_context')
     @patch('mcp_commit_story.journal_orchestrator.collect_chat_history')  
-    @patch('mcp_commit_story.journal_orchestrator.collect_ai_terminal_commands')
-    def test_collect_all_context_data_success(self, mock_terminal, mock_chat, mock_git):
-        """Test successful context collection from all three sources."""
+    def test_collect_all_context_data_success(self, mock_chat, mock_git):
+        """Test successful context collection from git and chat sources."""
         # Setup mocks
         mock_git.return_value = GitContext(commit_hash="abc123", message="Test commit")
         mock_chat.return_value = ChatHistory(messages=["Hello", "World"])
-        mock_terminal.return_value = TerminalContext(commands=["git status", "ls -la"])
         
         # Execute
         result = collect_all_context_data("abc123", "since_commit_123", 100, Path("/repo"), Path("/journal"))
         
-                # Verify (TypedDict doesn't support isinstance, so check structure)
+        # Verify (TypedDict doesn't support isinstance, so check structure)
         assert isinstance(result, dict)
-        assert 'git' in result and 'chat' in result and 'terminal' in result
+        assert 'git' in result and 'chat' in result
         assert result['git'] is not None
         assert result['chat'] is not None 
-        assert result['terminal'] is not None
         
         # Verify individual functions were called with correct parameters
         mock_git.assert_called_once_with("abc123", Path("/repo"), Path("/journal"))
         mock_chat.assert_called_once_with("since_commit_123", 100)
-        mock_terminal.assert_called_once_with("since_commit_123", 100)
     
     @patch('mcp_commit_story.journal_orchestrator.collect_git_context')
     @patch('mcp_commit_story.journal_orchestrator.collect_chat_history')
-    @patch('mcp_commit_story.journal_orchestrator.collect_ai_terminal_commands')
-    def test_collect_all_context_data_partial_failure(self, mock_terminal, mock_chat, mock_git):
+    def test_collect_all_context_data_partial_failure(self, mock_chat, mock_git):
         """Test graceful degradation when some context collection fails."""
-        # Setup mocks - chat fails but others succeed
+        # Setup mocks - chat fails but git succeeds
         mock_git.return_value = GitContext(commit_hash="abc123", message="Test commit")
         mock_chat.side_effect = Exception("Chat collection failed")
-        mock_terminal.return_value = TerminalContext(commands=["git status"])
         
         # Execute
         result = collect_all_context_data("abc123", "since_commit_123", 100, Path("/repo"), Path("/journal"))
         
         # Verify graceful degradation (TypedDict doesn't support isinstance, so check structure)
         assert isinstance(result, dict)
-        assert 'git' in result and 'chat' in result and 'terminal' in result
+        assert 'git' in result and 'chat' in result
         assert result['git'] is not None  # Git succeeded
         assert result['chat'] is None     # Chat failed, should be None
-        assert result['terminal'] is not None  # Terminal succeeded
     
     @patch('mcp_commit_story.journal_orchestrator.collect_git_context')
     @patch('mcp_commit_story.journal_orchestrator.collect_chat_history')
-    @patch('mcp_commit_story.journal_orchestrator.collect_ai_terminal_commands')
-    def test_collect_all_context_data_git_only_fallback(self, mock_terminal, mock_chat, mock_git):
-        """Test fallback to git-only context when AI functions fail."""
+    def test_collect_all_context_data_git_only_fallback(self, mock_chat, mock_git):
+        """Test fallback to git-only context when chat collection fails."""
         # Setup mocks - only git succeeds
         mock_git.return_value = GitContext(commit_hash="abc123", message="Test commit")
         mock_chat.side_effect = Exception("Chat failed")
-        mock_terminal.side_effect = Exception("Terminal failed")
         
         # Execute
         result = collect_all_context_data("abc123", "since_commit_123", 100, Path("/repo"), Path("/journal"))
         
         # Verify git-only fallback (TypedDict doesn't support isinstance, so check structure)
         assert isinstance(result, dict)
-        assert 'git' in result and 'chat' in result and 'terminal' in result
+        assert 'git' in result and 'chat' in result
         assert result['git'] is not None
         assert result['chat'] is None
-        assert result['terminal'] is None
 
 
 class TestSectionValidation:
@@ -227,7 +214,7 @@ class TestJournalAssembly:
             'frustrations': {'items': []},
             'tone_mood': {'content': 'productive'},
             'discussion_notes': {'items': ['Note 1', 'Note 2']},
-            'terminal_commands': {'items': ['git status', 'ls -la']},
+
             'commit_metadata': {'author': 'test', 'timestamp': '2025-06-08'}
         }
         
@@ -255,7 +242,7 @@ class TestJournalAssembly:
         assert result.frustrations == []        # Fallback
         assert result.tone_mood is None         # Fallback
         assert result.discussion_notes == []    # Fallback
-        assert result.terminal_commands == []   # Fallback
+
         assert result.commit_metadata == {}     # Fallback
 
 
@@ -275,7 +262,6 @@ class TestOrchestrationIntegration:
         # Setup mocks
         mock_context = JournalContext(
             chat=None,
-            terminal=None,
             git=GitContext(commit_hash="abc123", message="Test commit")
         )
         mock_collect.return_value = mock_context
@@ -288,7 +274,7 @@ class TestOrchestrationIntegration:
             'generate_frustrations_section': {'items': []},
             'generate_tone_mood_section': {'content': 'productive'},
             'generate_discussion_notes_section': {'items': ['Note 1']},
-            'generate_terminal_commands_section': {'items': ['git status']},
+
             'generate_commit_metadata_section': {'author': 'test'}
         }
         
@@ -306,7 +292,7 @@ class TestOrchestrationIntegration:
             frustrations=[],
             tone_mood='productive',
             discussion_notes=['Note 1'],
-            terminal_commands=['git status'],
+
             commit_metadata={'author': 'test'}
         )
         mock_assemble.return_value = mock_journal_entry
@@ -323,7 +309,7 @@ class TestOrchestrationIntegration:
         
         # Verify all phases were called
         mock_collect.assert_called_once()
-        assert mock_execute_ai.call_count == 8  # All 8 AI functions called
+        assert mock_execute_ai.call_count == 7  # All 7 AI functions called (terminal removed)
         mock_assemble.assert_called_once()
         
         # Note: Decorator testing requires more complex setup since it's applied at function definition time
@@ -352,7 +338,6 @@ class TestOrchestrationIntegration:
         # Setup context collection success
         mock_context = JournalContext(
             chat=None,
-            terminal=None, 
             git=GitContext(commit_hash="abc123", message="Test commit")
         )
         mock_collect.return_value = mock_context
@@ -384,7 +369,6 @@ class TestOrchestrationIntegration:
         # Setup successful flow
         mock_context = JournalContext(
             chat=None,
-            terminal=None,
             git=GitContext(commit_hash="abc123", message="Test commit")
         )
         mock_collect.return_value = mock_context
@@ -406,7 +390,7 @@ class TestOrchestrationIntegration:
         
         # Verify AI function timing tracking
         ai_times = telemetry['ai_function_times']
-        assert len(ai_times) == 8  # All 8 functions should be tracked
+        assert len(ai_times) == 7  # All 7 functions should be tracked (terminal removed)
         for function_name in ai_times:
             assert function_name.startswith('generate_')
             assert function_name.endswith('_section')

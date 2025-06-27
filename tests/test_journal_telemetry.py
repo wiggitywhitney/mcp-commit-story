@@ -47,11 +47,10 @@ from mcp_commit_story.journal import (
     generate_frustrations_section,
     generate_tone_mood_section,
     generate_discussion_notes_section,
-    generate_terminal_commands_section,
     generate_commit_metadata_section,
     ensure_journal_directory
 )
-from mcp_commit_story.context_types import JournalContext, ChatHistory, TerminalContext
+from mcp_commit_story.context_types import JournalContext, ChatHistory
 from opentelemetry import trace, metrics
 from opentelemetry.trace import Status, StatusCode
 
@@ -330,11 +329,8 @@ class TestAIContextFlowTracing:
                 {"role": "assistant", "content": "I'll implement JWT authentication"}
             ]
         )
-        terminal_context = TerminalContext(commands=["npm install jsonwebtoken"])
-        
         journal_context = JournalContext(
             chat_history=chat_history,
-            terminal_context=terminal_context,
             file_changes={"auth.js": "added JWT implementation"},
             commit_hash="abc123",
             timestamp="2024-01-01T12:00:00Z"
@@ -363,11 +359,8 @@ class TestAIContextFlowTracing:
                 {"role": "assistant", "content": "I'll add try-catch blocks"}
             ]
         )
-        terminal_context = TerminalContext(commands=["npm test"])
-        
         journal_context = JournalContext(
             chat_history=chat_history,
-            terminal_context=terminal_context,
             file_changes={"error_handler.js": "added error handling"},
             commit_hash="def456",
             timestamp="2024-01-01T13:00:00Z"
@@ -382,10 +375,10 @@ class TestAIContextFlowTracing:
             sections = []
             sections.append(generate_summary_section(journal_context))
             sections.append(generate_accomplishments_section(journal_context))
-            sections.append(generate_terminal_commands_section(journal_context))
+
             
             # Verify all sections were generated
-            assert len(sections) == 3
+            assert len(sections) == 2
             for section in sections:
                 assert section is not None
 
@@ -400,11 +393,8 @@ class TestAIContextFlowTracing:
                 {"role": "assistant", "content": "I'll implement all features"}
             ]
         )
-        terminal_context = TerminalContext(commands=["npm run test"])
-        
         journal_context = JournalContext(
             chat_history=chat_history,
-            terminal_context=terminal_context,
             file_changes={"app.js": "completed implementation"},
             commit_hash="all123",
             timestamp="2024-01-01T18:00:00Z"
@@ -422,7 +412,7 @@ class TestAIContextFlowTracing:
                 generate_frustrations_section,
                 generate_tone_mood_section,
                 generate_discussion_notes_section,
-                generate_terminal_commands_section,
+
                 generate_commit_metadata_section
             ]
             
@@ -432,8 +422,8 @@ class TestAIContextFlowTracing:
                 results.append(result)
                 assert result is not None
             
-            # Verify all 8 generation functions work
-            assert len(results) == 8
+            # Verify all 7 generation functions work (terminal removed)
+            assert len(results) == 7
 
     def test_file_path_generation_traced(self):
         """Test that file path generation operations are traced."""
@@ -485,7 +475,7 @@ class TestSensitiveDataHandling:
         
         journal_context = JournalContext(
             chat_history=chat_history,
-            terminal_context=TerminalContext(commands=["export API_KEY=sk-secret123456"]),
+
             file_changes={"config.js": "added API key configuration"},
             commit_hash="ghi789",
             timestamp="2024-01-01T14:00:00Z"
@@ -516,7 +506,7 @@ class TestSensitiveDataHandling:
         
         journal_context = JournalContext(
             chat_history=chat_history,
-            terminal_context=TerminalContext(commands=["git config user.email john.doe@company.com"]),
+
             file_changes={"user.js": "added user configuration"},
             commit_hash="jkl012",
             timestamp="2024-01-01T15:00:00Z"
@@ -564,7 +554,7 @@ class TestJournalOperationPerformanceImpact:
         
         journal_context = JournalContext(
             chat_history=chat_history,
-            terminal_context=TerminalContext(commands=["npm run benchmark"]),
+
             file_changes={"performance.js": "added optimizations"},
             commit_hash="mno345",
             timestamp="2024-01-01T16:00:00Z"
@@ -596,7 +586,7 @@ class TestJournalOperationPerformanceImpact:
             
             context = JournalContext(
                 chat_history=chat_history,
-                terminal_context=TerminalContext(commands=[f"echo 'task {i}'"]),
+
                 file_changes={f"task_{i}.js": f"implemented task {i}"},
                 commit_hash=f"hash{i:03d}",
                 timestamp=f"2024-01-01T{16+i:02d}:00:00Z"
@@ -628,7 +618,7 @@ class TestJournalOperationPerformanceImpact:
         
         journal_context = JournalContext(
             chat_history=chat_history,
-            terminal_context=TerminalContext(commands=["echo 'concurrent'"]),
+
             file_changes={"concurrent.js": "added concurrent processing"},
             commit_hash="pqr678",
             timestamp="2024-01-01T17:00:00Z"
