@@ -1,7 +1,7 @@
 # Task ID: 47
 # Title: Implement Chat Boundary Detection Logic
 # Status: pending
-# Dependencies: 46
+# Dependencies: None
 # Priority: medium
 # Description: Add configurable message count limits to prevent overwhelming the AI with excessive chat history during journal generation and other operations.
 # Details:
@@ -297,11 +297,178 @@ The test suite will be executed as part of the CI/CD pipeline to ensure the mess
 ### Dependencies: None
 ### Description: Create `limit_chat_messages()` function in appropriate cursor_db module. Function signature: `limit_chat_messages(chat_history: dict, max_messages: int) -> dict`. Takes chat_history dict and max_messages parameter. Returns dict with truncated messages list (keeping most recent messages). Add metadata flags indicating if truncation occurred and how many messages were removed. Include comprehensive test coverage for edge cases (empty history, limits larger than message count).
 ### Details:
+<info added on 2025-06-27T04:51:52.346Z>
+# Implementation Plan for Message Limit Function
 
+## Research Phase - Determine Optimal Limits
+- Create research script: `scripts/analyze_message_counts.py`
+- Use `query_cursor_chat_database()` to analyze real databases
+- Count human vs AI messages in typical conversations
+- Calculate average message lengths (tokens/characters)
+- Analyze last 10+ cursor databases for patterns
+- Focus on solo developer usage patterns
+- Output recommendations for `DEFAULT_MAX_HUMAN_MESSAGES` and `DEFAULT_MAX_AI_MESSAGES`
+- Document findings in code comments
+- Validate hypothesis of 200 human/200 AI messages being sufficient
+
+### Research Script Scope:
+- Focus on current workspace's historical databases
+- Use `discover_all_cursor_databases()` on current project directory
+- Analyze this specific project's patterns
+
+### Message Role Consistency:
+- Validate the role field assumption
+- Check if all messages have the 'role' field
+- Verify values are consistently 'user'/'assistant'
+- Document any inconsistencies
+
+### Research Pause Point:
+- Implement clear indication when human input is needed
+- Exit with non-zero code if hypothesis doesn't match findings
+- Provide clear summary of findings
+
+### Token Analysis:
+- Focus on character counts for simplicity
+- Calculate average characters per message type
+- Note approximate token conversion (~4 chars ≈ 1 token)
+
+## Write Tests First
+- Create `tests/unit/test_message_limiting.py`
+- Test `limit_chat_messages()` with separate human/AI limits
+- Test various scenarios (under/over limits)
+- Test boundary conditions
+- Test empty history and missing keys
+- Test metadata preservation
+- Test performance with large message sets
+
+## Approved Design Choices
+- Function signature: `limit_chat_messages(chat_history: dict, max_human_messages: int, max_ai_messages: int) -> dict`
+- Separate limits for human and AI messages
+- Target defaults: 200/200 based on solo developer patterns
+- Keep most recent messages when truncating
+- Add metadata about truncation
+
+## Implement Functionality
+- Create `src/mcp_commit_story/cursor_db/message_limiting.py`
+- Implement `limit_chat_messages()` with role-based limits
+- Add `@trace_mcp_operation("chat.limit_messages")` decorator
+- Filter messages by role before applying limits
+- Maintain chronological order
+- Add comprehensive docstrings
+- Follow existing code patterns
+
+## Integration & Testing
+- Update `context_collection.py` to use message limiting
+- Add configuration support for custom limits
+- Run full test suite
+- Test with real cursor databases
+- Performance test with large message sets
+- Document performance characteristics
+
+## Documentation
+- Update `cursor-db-api-guide.md` with new functionality
+- Add examples of message limiting
+- Document research findings and chosen defaults
+- Update architecture docs if needed
+</info added on 2025-06-27T04:51:52.346Z>
 
 ## 2. Integration and Configuration [pending]
 ### Dependencies: None
 ### Description: Wire `limit_chat_messages()` into the chat collection pipeline. Add configuration option for max_messages with suggested default of 1000. Update relevant functions to respect message limits. Document that this is a simple safety limit, not intelligent boundary detection. Add telemetry tracking for truncation events and message count statistics.
 ### Details:
+<info added on 2025-06-27T04:54:54.089Z>
+# Implementation Plan - Integration and Configuration
 
+This subtask integrates the message limiting function from 47.1 into the chat collection pipeline. Based on the research from 47.1, we'll use the validated limits (expected to be 200/200 for solo developer usage).
+
+## WRITE TESTS FIRST
+* Create tests/integration/test_chat_collection_limits.py
+* Test collect_chat_history() with default limits (200/200 or research-validated values)
+* Test collect_chat_history() with custom limit parameters
+* Test telemetry logging when truncation occurs
+* Test telemetry logging when NO truncation occurs (under limits)
+* Test integration with query_cursor_chat_database()
+* Test error handling when limit_chat_messages is unavailable
+* RUN TESTS - VERIFY THEY FAIL
+
+## APPROVED DESIGN CHOICES
+* Add max_human_messages and max_ai_messages parameters to collect_chat_history()
+* Default limits: Use research-validated values from 47.1 (expected 200/200)
+* Telemetry event name: 'chat_history_truncation' (separate from function telemetry)
+* No configuration file changes - hardcoded defaults only for MVP
+* Parameter validation at integration layer only
+* Graceful fallback if message limiting unavailable
+
+## IMPLEMENT FUNCTIONALITY
+* Update src/mcp_commit_story/context_collection.py
+* Import limit_chat_messages from cursor_db.message_limiting
+* Modify collect_chat_history() signature:
+```python
+def collect_chat_history(
+    max_human_messages: int = DEFAULT_MAX_HUMAN_MESSAGES,
+    max_ai_messages: int = DEFAULT_MAX_AI_MESSAGES
+) -> Optional[ChatHistory]:
+```
+* Call limit_chat_messages() after successful database query
+* Add log_telemetry() call for truncation events (not decorator, just event logging)
+* Add constants with solo developer context:
+```python
+# Message limits designed for solo developer usage patterns
+# Based on research from Task 47.1 analyze_message_counts.py
+# These values cover even intense 48-hour coding sessions
+# Acts as safety net for edge cases, not regular constraint
+DEFAULT_MAX_HUMAN_MESSAGES = 200  # Update based on 47.1 research
+DEFAULT_MAX_AI_MESSAGES = 200     # Update based on 47.1 research
+```
+* RUN TESTS - VERIFY THEY PASS
+
+## TELEMETRY EVENT LOGGING
+```python
+# After calling limit_chat_messages, check if truncation occurred
+if limited_history['metadata'].get('truncated_human') or limited_history['metadata'].get('truncated_ai'):
+    log_telemetry('chat_history_truncation', {
+        'original_human_count': limited_history['metadata'].get('original_human_count', 0),
+        'original_ai_count': limited_history['metadata'].get('original_ai_count', 0),
+        'removed_human_count': limited_history['metadata'].get('removed_human_count', 0),
+        'removed_ai_count': limited_history['metadata'].get('removed_ai_count', 0),
+        'final_human_count': len([m for m in limited_history['messages'] if m['role'] == 'user']),
+        'final_ai_count': len([m for m in limited_history['messages'] if m['role'] == 'assistant']),
+        'max_human_messages': max_human_messages,
+        'max_ai_messages': max_ai_messages
+    })
+```
+
+## ERROR HANDLING
+* If limit_chat_messages import fails, log warning and return unfiltered history
+* If limit_chat_messages raises exception, log error and return unfiltered history
+* Always prioritize returning some chat history over failing completely
+
+## DOCUMENT AND COMPLETE
+* Update collect_chat_history() docstring:
+  - Document new parameters and their purpose
+  - Note that limits are based on solo developer research
+  - Explain this is a safety net, rarely triggered in practice
+  - Document integration with 48-hour database filtering
+
+* Add inline comments explaining:
+  - Why we have separate human/AI limits
+  - How this works with cursor_db's 48-hour filtering
+
+* Add section to docs/cursor-db-api-guide.md under "Performance Optimization":
+  - Create "Message Limiting" subsection after "48-Hour Intelligent Filtering"
+  - Document how message limiting provides second-stage optimization
+  - Note typical truncation is rare with 200/200 limits
+
+* Update docs/architecture.md in "Intelligent Chat Parsing" section:
+  - Add brief note: "Message limiting (200/200) acts as safety net after 48-hour filtering"
+  - Keep it minimal since architecture is evolving
+
+* Run the entire test suite
+* MARK COMPLETE
+
+## Integration Notes
+* This is a minimal integration to add safety limits
+* The architecture will evolve in Task 48 when cursor_db implementation replaces placeholders
+* Keep the implementation flexible and well-commented for future updates
+</info added on 2025-06-27T04:54:54.089Z>
 
