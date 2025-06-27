@@ -73,4 +73,4 @@ __pycache__/
 *.pyc
 
 # Build artifacts
-src/mcp_commit_story.egg-info/ 
+src/mcp_commit_story.egg-info/ scripts/message_limit_research_findings.txt
