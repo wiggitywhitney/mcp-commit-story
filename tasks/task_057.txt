@@ -1,0 +1,433 @@
+# Task ID: 57
+# Title: Research and Implement AI Agent Invocation from Python
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Research available AI service APIs, evaluate authentication methods, and implement a robust Python utility for invoking AI agents with docstring prompts in a non-interactive git hook environment.
+# Details:
+This task involves creating a reliable mechanism for invoking AI services from Python code running in git hooks:
+
+1. Research and compare AI service options:
+   - OpenAI API (GPT models)
+   - Anthropic API (Claude models)
+   - Google Vertex AI
+   - Local options like Ollama
+   - Evaluate based on: API stability, model capabilities, pricing, and authentication requirements
+
+2. Authentication and API key management:
+   - Implement secure storage for API credentials
+   - Support environment variables for CI/CD environments
+   - Consider .env files with proper gitignore rules
+   - Implement credential validation on startup
+
+3. Create a flexible AI invocation utility:
+   - Design a function that accepts a prompt and returns AI-generated content
+   - Support configurable parameters (temperature, max tokens, etc.)
+   - Implement proper error handling with informative messages
+   - Add retry logic for transient failures
+   - Include timeout handling
+
+4. Optimize for git hook usage:
+   - Ensure non-interactive authentication
+   - Minimize latency where possible
+   - Handle potential network issues gracefully
+   - Add caching if appropriate to reduce API calls
+
+5. Documentation:
+   - Document API key acquisition process for each supported service
+   - Create setup instructions for developers
+   - Document configuration options and environment variables
+   - Add usage examples showing how to invoke AI with docstring prompts
+
+Sample implementation structure:
+```python
+def invoke_ai(prompt, model="gpt-4", temperature=0.7, max_tokens=1000):
+    """
+    Invokes an AI model with the given prompt and returns the response.
+    
+    Args:
+        prompt (str): The prompt to send to the AI
+        model (str): The model identifier to use
+        temperature (float): Controls randomness (0.0-1.0)
+        max_tokens (int): Maximum tokens in the response
+        
+    Returns:
+        str: The AI-generated response
+        
+    Raises:
+        AIServiceError: If the AI service returns an error
+        AuthenticationError: If authentication fails
+        NetworkError: If a network issue occurs
+    """
+    # Implementation details here
+```
+
+# Test Strategy:
+1. Unit Testing:
+   - Create unit tests for the AI invocation utility with mocked API responses
+   - Test error handling with simulated failures (network errors, API errors)
+   - Verify retry logic works as expected
+   - Test authentication error scenarios
+
+2. Integration Testing:
+   - Test with actual API credentials (using test accounts where possible)
+   - Verify responses from different AI providers match expected formats
+   - Test with various prompt lengths and complexities
+   - Measure and verify performance characteristics
+
+3. Git Hook Environment Testing:
+   - Set up a test git repository with the hooks
+   - Verify AI invocation works in pre-commit and post-commit scenarios
+   - Test in CI/CD environment to ensure non-interactive authentication works
+   - Verify behavior when network connectivity is limited or unstable
+
+4. Documentation Verification:
+   - Have a team member follow setup instructions to verify completeness
+   - Verify all configuration options are properly documented
+   - Check that error messages are clear and actionable
+
+5. Cost and Performance Analysis:
+   - Track API usage and costs during testing
+   - Measure response times and optimize if necessary
+   - Verify any implemented caching mechanisms are working correctly
+
+# Subtasks:
+## 1. Research and Pick an AI Provider [pending]
+### Dependencies: None
+### Description: Quick evaluation to pick one AI provider that works well for the project
+### Details:
+## RESEARCH PHASE
+- Create `scripts/test_ai_providers.py` to evaluate options
+- Test 3 providers max: OpenAI, Anthropic, Ollama (local/free)
+- Use actual section generator prompt from `generate_summary_section()`
+- Measure: setup complexity, response time, response quality
+- Document findings in simple markdown table
+- Pick one primary provider + note Ollama as free alternative
+
+## WRITE TESTS FIRST
+- Create `tests/unit/test_ai_provider_research.py`
+- Test that evaluation script runs without errors
+- Test timing measurement functionality
+- Test response validation (not empty, reasonable length)
+- Test API key detection for each provider
+- **RUN TESTS - VERIFY THEY FAIL**
+
+## APPROVED DESIGN CHOICES
+- **PAUSE FOR MANUAL APPROVAL**: Which 3 providers to test
+- **PAUSE FOR MANUAL APPROVAL**: Test prompt (suggest using actual docstring from generate_summary_section)
+- **PAUSE FOR MANUAL APPROVAL**: Primary provider selection criteria (ease of use vs cost vs quality)
+
+## IMPLEMENT FUNCTIONALITY
+- Write evaluation script that tests each provider
+- Use consistent test prompt from real section generator
+- Measure response time for each
+- Check response quality (length, coherence)
+- Output simple comparison table
+- **RUN TESTS - VERIFY THEY PASS**
+
+## DOCUMENT AND COMPLETE
+- Add findings to `docs/ai-provider-choice.md`
+- Include simple setup instructions for chosen provider
+- Note Ollama as offline/free alternative
+- **MARK COMPLETE**
+
+## 2. Implement Basic AI Invocation [pending]
+### Dependencies: 57.1
+### Description: Create simple function to call chosen AI provider with basic retry logic
+### Details:
+## WRITE TESTS FIRST
+- Create `tests/unit/test_ai_invocation.py`
+- Test successful AI call with mock
+- Test retry on temporary failure (max 3 attempts)
+- Test immediate failure on auth error (no retry)
+- Test missing API key returns empty string
+- Test timeout after 30 seconds
+- Test basic telemetry recording
+- **RUN TESTS - VERIFY THEY FAIL**
+
+## APPROVED DESIGN CHOICES
+- **PAUSE FOR MANUAL APPROVAL**: Retry count (suggest 3)
+- **PAUSE FOR MANUAL APPROVAL**: Timeout duration (suggest 30s)
+- **PAUSE FOR MANUAL APPROVAL**: Environment variable name for API key
+
+## IMPLEMENT FUNCTIONALITY
+Create `src/mcp_commit_story/ai_invocation.py`:
+```python
+@trace_mcp_operation("ai.invoke")
+def invoke_ai(prompt: str, context: dict) -> str:
+    """
+    Call AI provider with prompt and context.
+    Returns empty string on failure (graceful degradation).
+    """
+    # Read API key from environment variable
+    # Format prompt with context
+    # Call chosen provider's API
+    # Retry up to 3 times on temporary failures
+    # Return response text or empty string
+    # Log warnings on failure (don't crash)
+```
+- **RUN TESTS - VERIFY THEY PASS**
+
+## ERROR HANDLING
+- Missing API key: Log warning, return empty string
+- Network error: Retry 3x, then return empty string
+- Invalid response: Log error, return empty string
+- Timeout: Cancel request, return empty string
+
+## DOCUMENT AND COMPLETE
+- Add docstring with usage example
+- Document environment variable setup
+- Add to engineering spec under "AI Integration"
+- **MARK COMPLETE**
+<info added on 2025-06-27T11:44:57.258Z>
+## APPROVED DESIGN CHOICES (UPDATED)
+- **PAUSE FOR MANUAL APPROVAL**: Retry count (suggest 3)
+- **PAUSE FOR MANUAL APPROVAL**: Timeout duration (suggest 30s)
+- **PAUSE FOR MANUAL APPROVAL**: Environment variable name for API key
+- **PAUSE FOR MANUAL APPROVAL**: Should we use async or sync API calls?
+- **PAUSE FOR MANUAL APPROVAL**: How to format the context with the prompt?
+</info added on 2025-06-27T11:44:57.258Z>
+
+## 3. Create Docstring Executor [pending]
+### Dependencies: 57.2
+### Description: Simple function to execute AI functions using their docstrings as prompts
+### Details:
+## WRITE TESTS FIRST
+- Create `tests/unit/test_docstring_executor.py`
+- Test docstring extraction from function
+- Test context formatting into prompt
+- Test successful execution with mock AI
+- Test parsing for SummarySection return type
+- Test parsing for AccomplishmentsSection (list)
+- Test parsing for ToneMoodSection (multiple fields)
+- Test graceful handling of parse errors
+- **RUN TESTS - VERIFY THEY FAIL**
+
+## APPROVED DESIGN CHOICES
+- **PAUSE FOR MANUAL APPROVAL**: Context injection format (JSON, YAML, or text?)
+- **PAUSE FOR MANUAL APPROVAL**: Parsing strategy for different return types
+- **PAUSE FOR MANUAL APPROVAL**: Default values for failed parsing
+
+## IMPLEMENT FUNCTIONALITY
+Create `src/mcp_commit_story/ai_function_executor.py`:
+```python
+def execute_ai_function(func: Callable, journal_context: JournalContext) -> Any:
+    \"\"\"
+    Execute function by passing its docstring as prompt to AI.
+    Returns appropriate type based on function signature.
+    \"\"\"
+    # Extract docstring using inspect.getdoc(func)
+    # Format context as JSON string
+    # Create prompt: docstring + \"\\n\\nContext:\\n\" + context_json
+    # Call invoke_ai(prompt, {})
+    # Parse response based on function name
+    # Return parsed result or default value
+```
+- **RUN TESTS - VERIFY THEY PASS**
+
+## SIMPLE PARSING LOGIC
+```python
+if func.__name__ == \"generate_summary_section\":
+    # Extract text after \"Summary:\" or use full response
+    return SummarySection(summary=extracted_text)
+elif func.__name__ == \"generate_accomplishments_section\":
+    # Split by newlines, bullets, or numbers
+    return AccomplishmentsSection(accomplishments=items_list)
+elif func.__name__ == \"generate_tone_mood_section\":
+    # Simple regex for \"Mood: X\" and \"Indicators: Y\"
+    return ToneMoodSection(mood=mood, indicators=indicators)
+# ... etc for other sections
+```
+
+## DOCUMENT AND COMPLETE
+- Add examples for each section type
+- Document expected AI response formats
+- Note this is MVP - can improve parsing later
+- Run full test suite
+- **MARK COMPLETE**
+
+## 4. Integration Test with Git Hook [pending]
+### Dependencies: 57.3
+### Description: Verify AI invocation works correctly from git hook environment
+### Details:
+## WRITE TESTS FIRST
+- Create `tests/integration/test_git_hook_ai.py`
+- Test calling AI from subprocess (simulates git hook)
+- Test with missing API key (should not block commit)
+- Test with network failure simulation
+- Test with valid setup (should generate content)
+- Test performance impact (should be under 10s)
+- **RUN TESTS - VERIFY THEY FAIL**
+
+## APPROVED DESIGN CHOICES
+- **PAUSE FOR MANUAL APPROVAL**: Max acceptable delay for git commit (suggest 10s)
+- **PAUSE FOR MANUAL APPROVAL**: Behavior on AI failure (suggest silent failure with log)
+
+## IMPLEMENT FUNCTIONALITY
+- Create test script that simulates git hook environment
+- Test AI invocation in subprocess (no terminal)
+- Verify environment variables are passed correctly
+- Test graceful degradation scenarios
+- Measure actual time impact
+- **RUN TESTS - VERIFY THEY PASS**
+
+## TEST SCENARIOS
+- Normal commit with working AI (should succeed)
+- Commit with no API key (should complete, log warning)
+- Commit with bad API key (should complete, log error)
+- Commit during network outage (should complete)
+- Rapid commits (test concurrent execution)
+
+## DOCUMENT AND COMPLETE
+- Create simple troubleshooting guide
+- Document how to verify AI is working
+- Add setup validation script
+- Update installation docs with AI setup
+- Run entire test suite
+- **MARK COMPLETE**
+<info added on 2025-06-27T11:45:11.266Z>
+- **PAUSE FOR MANUAL APPROVAL**: Should we run AI generation synchronously or queue it?
+- **PAUSE FOR MANUAL APPROVAL**: How to handle concurrent commits?
+- **PAUSE FOR MANUAL APPROVAL**: Should we add a bypass mechanism for emergencies?
+</info added on 2025-06-27T11:45:11.266Z>
+
+## 5. Add AI Telemetry and Metrics [pending]
+### Dependencies: 57.4
+### Description: Add comprehensive telemetry for AI operations including cost tracking and performance metrics
+### Details:
+## DESIGN PHASE
+- Identify key metrics to track:
+  - Response latency (already have basic timing)
+  - Token usage (input/output)
+  - Estimated cost per invocation
+  - Success/failure rates by provider
+  - Error types and frequencies
+  - Section generation performance
+
+## WRITE TESTS FIRST
+- Create `tests/unit/test_ai_telemetry.py`
+- Test token counting estimation (simple word count * 1.3)
+- Test cost calculation based on provider rates
+- Test metric aggregation functions
+- Test telemetry doesn't break if metrics system unavailable
+- **RUN TESTS - VERIFY THEY FAIL**
+
+## IMPLEMENT FUNCTIONALITY
+Update `src/mcp_commit_story/ai_invocation.py`:
+- Add token estimation: `estimate_tokens(text) -> int`
+- Add cost calculation: `calculate_cost(input_tokens, output_tokens, provider) -> float`
+- Update `invoke_ai()` to record:
+  ```python
+  telemetry_attrs = {
+      \"ai.provider\": provider_name,
+      \"ai.model\": model_name,
+      \"ai.input_tokens\": estimated_input_tokens,
+      \"ai.output_tokens\": estimated_output_tokens,
+      \"ai.estimated_cost\": cost_estimate,
+      \"ai.latency_ms\": response_time,
+      \"ai.success\": success,
+      \"ai.error_type\": error_type if failed else None
+  }
+  ```
+- Add daily cost aggregation helper for user awareness
+- **RUN TESTS - VERIFY THEY PASS**
+
+## SIMPLE COST TRACKING
+```python
+# In config or constants
+PROVIDER_COSTS = {
+    \"openai\": {\"input\": 0.01, \"output\": 0.03},  # per 1k tokens
+    \"anthropic\": {\"input\": 0.008, \"output\": 0.024},
+    \"ollama\": {\"input\": 0.0, \"output\": 0.0}  # free/local
+}
+```
+
+## DOCUMENT AND COMPLETE
+- Add telemetry details to engineering spec
+- Create simple cost dashboard script (optional)
+- Document how to view telemetry data
+- **MARK COMPLETE**
+<info added on 2025-06-27T11:45:35.706Z>
+## APPROVED DESIGN CHOICES
+- **PAUSE FOR MANUAL APPROVAL**: Which metrics to track? (latency, tokens, cost, errors, other?)
+- **PAUSE FOR MANUAL APPROVAL**: How to estimate tokens? (word count formula, tiktoken library, character count?)
+- **PAUSE FOR MANUAL APPROVAL**: Should we track costs? (might discourage usage)
+- **PAUSE FOR MANUAL APPROVAL**: Store aggregated metrics? (daily summaries, or just log events?)
+- **PAUSE FOR MANUAL APPROVAL**: What telemetry attributes to include?
+- **PAUSE FOR MANUAL APPROVAL**: Should metrics be opt-in or opt-out?
+
+These approval points ensure we make informed decisions about metrics strategy, cost tracking approach, and user privacy considerations before implementation.
+</info added on 2025-06-27T11:45:35.706Z>
+
+## 6. Create AI Integration Documentation [pending]
+### Dependencies: 57.4
+### Description: Create comprehensive user documentation for AI setup and configuration
+### Details:
+## DOCUMENTATION PLANNING
+- No tests needed - this is pure documentation
+- Create clear, user-friendly guides
+- Include real examples and common issues
+- Keep it simple but complete
+
+## CREATE USER GUIDES
+Create `docs/ai-setup-guide.md`:
+
+### Quick Start (5 minutes)
+- Choose provider (OpenAI recommended, Ollama for free/local)
+- Get API key
+- Set environment variable
+- Test with sample commit
+
+### Provider Setup Instructions
+- **OpenAI**: Getting API key, setting limits, cost estimates
+- **Anthropic**: API access, model selection
+- **Ollama**: Installation, model download, performance tips
+
+### Cost Estimates
+- Typical journal entry: ~2-3k tokens input, ~1k output
+- Daily cost estimate: ~$0.10-0.50 for active development
+- Monthly estimates for different usage patterns
+- How to use Ollama for free local generation
+
+### Troubleshooting
+- AI not generating content (check API key)
+- Slow generation (network, provider issues)
+- Parsing errors (report bug with example)
+- Git commits hanging (timeout configuration)
+
+## CREATE DEVELOPER DOCUMENTATION
+Update `docs/architecture.md`:
+- Add \"AI Integration\" section
+- Document the docstring execution pattern
+- Explain parsing strategies for each section type
+- Note graceful degradation design
+
+## CREATE EXAMPLES
+Add to `docs/examples/`:
+- `ai-provider-config.md` - Example configurations
+- `custom-section-generator.md` - How to add new sections
+- `ai-testing.md` - How to test without API calls
+
+## VALIDATION
+- Have someone else try to set up AI following the guide
+- Verify all example commands work
+- Check that troubleshooting covers real issues
+- Ensure cost estimates are accurate
+
+## COMPLETE
+- Add AI setup to main README.md (brief mention with link)
+- Update CONTRIBUTING.md with AI testing guidelines
+- Create FAQ section for common questions
+- **MARK COMPLETE**
+<info added on 2025-06-27T11:46:39.485Z>
+## APPROVED DESIGN CHOICES
+- **PAUSE FOR MANUAL APPROVAL**: What documentation do users need? (setup guide, troubleshooting, cost info, examples?)
+- **PAUSE FOR MANUAL APPROVAL**: Should we recommend a specific provider or stay neutral?
+- **PAUSE FOR MANUAL APPROVAL**: Include cost estimates or avoid monetary discussion?
+- **PAUSE FOR MANUAL APPROVAL**: How much detail on the technical implementation?
+- **PAUSE FOR MANUAL APPROVAL**: Where should docs live? (docs/ folder, wiki, README?)
+- **PAUSE FOR MANUAL APPROVAL**: Should we create video tutorials or just text?
+
+These approval points ensure we make informed decisions about documentation scope, provider recommendations, cost transparency, technical depth, location, and format before creating comprehensive user guides.
+</info added on 2025-06-27T11:46:39.485Z>
+
