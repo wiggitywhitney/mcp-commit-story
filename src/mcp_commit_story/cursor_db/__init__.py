@@ -24,6 +24,11 @@ from .message_extraction import (
     extract_generations_data
 )
 from .message_reconstruction import reconstruct_chat_history
+from .message_limiting import (
+    limit_chat_messages,
+    DEFAULT_MAX_HUMAN_MESSAGES,
+    DEFAULT_MAX_AI_MESSAGES
+)
 from ..telemetry import trace_mcp_operation
 
 @trace_mcp_operation("cursor_db.query_chat_database")
@@ -199,5 +204,8 @@ __all__ = [
     'extract_prompts_data',
     'extract_generations_data',
     'reconstruct_chat_history',
+    'limit_chat_messages',
+    'DEFAULT_MAX_HUMAN_MESSAGES',
+    'DEFAULT_MAX_AI_MESSAGES',
     'query_cursor_chat_database'
 ] 
