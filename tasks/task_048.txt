@@ -132,3 +132,193 @@ To verify the correct refactoring of the chat collection functionality:
    - Measure execution time and memory usage
    - Verify that the function handles large datasets efficiently
    - Test the impact of different max_messages_back values
+
+# Subtasks:
+## 1. Basic cursor_db Integration [pending]
+### Dependencies: None
+### Description: Update collect_chat_history() in context_collection.py to use cursor_db package with hardcoded 200/200 message limits
+### Details:
+Replace the placeholder implementation with cursor_db integration while preserving function signature and existing telemetry
+<info added on 2025-06-27T05:54:18.443Z>
+# Task 48.1 Implementation Plan - Basic cursor_db Integration
+
+## WRITE TESTS FIRST
+
+Create `tests/unit/test_chat_collection_cursor_integration.py` with comprehensive test coverage:
+- Test that `collect_chat_history()` properly calls `query_cursor_chat_database()`
+- Test handling of `since_commit` parameter (document that it's not supported yet)
+- Test `max_messages_back` parameter interaction with message limiting from Task 47
+- Test successful cursor_db integration returns `ChatHistory` object
+- Test graceful handling when cursor_db returns empty/no data
+- Test that message limiting from Task 47 is applied with hardcoded 200/200 defaults
+- Test error scenarios (cursor_db exceptions, import failures)
+- Test conversion from cursor_db format (separate prompts/generations) to ChatHistory
+
+**RUN TESTS - VERIFY THEY FAIL**
+
+## APPROVED DESIGN CHOICES
+
+- Update existing `collect_chat_history()` in `context_collection.py` to use cursor_db
+- Call `query_cursor_chat_database()` from the cursor_db package
+- Map cursor_db response format to expected `ChatHistory` return type
+- `since_commit` parameter: Document as "reserved for future use" (no TODO comments)
+- `max_messages_back`: Keep for compatibility but actual limits come from Task 47 hardcoded defaults
+- Preserve `@trace_mcp_operation` decorator and existing function signature
+- Use hardcoded 200/200 limits from Task 47.1 research validation
+
+## IMPLEMENT FUNCTIONALITY
+
+Update `src/mcp_commit_story/context_collection.py`:
+```python
+from mcp_commit_story.cursor_db import query_cursor_chat_database
+from mcp_commit_story.cursor_db.message_limiting import (
+    limit_chat_messages, 
+    DEFAULT_MAX_HUMAN_MESSAGES,  # 200
+    DEFAULT_MAX_AI_MESSAGES      # 200
+)
+```
+
+Implementation steps:
+- Replace existing implementation with cursor_db integration
+- Convert cursor_db's separate prompts/generations to alternating ChatHistory format
+- Apply message limiting: `limit_chat_messages(chat_history, DEFAULT_MAX_HUMAN_MESSAGES, DEFAULT_MAX_AI_MESSAGES)`
+- Map cursor_db's response to expected `ChatHistory` structure
+- Handle edge cases: empty data, import errors, cursor not installed - return empty results gracefully
+- Ensure telemetry span tracks integration success/failure
+
+**RUN TESTS - VERIFY THEY PASS**
+
+## TELEMETRY ATTRIBUTES TO ADD
+
+- `cursor_db_available`: boolean indicating if import succeeded
+- `prompts_from_cursor`: count of user prompts from cursor_db
+- `generations_from_cursor`: count of AI generations from cursor_db
+- `workspace_detected`: whether cursor_db found a workspace
+- `conversion_success`: whether format conversion succeeded
+- `message_limiting_applied`: whether 200/200 limits were applied
+
+## DOCUMENT AND COMPLETE
+
+- Update `collect_chat_history()` docstring noting cursor_db integration
+- Document that `since_commit` is reserved for future enhancement
+- Add comments explaining conversion from cursor_db (separate tables) to ChatHistory (alternating messages)
+- Note this bridges old architecture with new cursor_db package
+- Add to engineering spec: "Git commit boundary integration: The since_commit parameter is currently reserved for future use. Future enhancement could filter messages based on git commit timestamps to provide more precise context boundaries."
+- Run the entire test suite
+- **MARK COMPLETE**
+</info added on 2025-06-27T05:54:18.443Z>
+
+## 2. Enhance with Boundary Detection [pending]
+### Dependencies: 48.1
+### Description: Add conversation boundary detection to segment chats and create ChatConversation objects
+### Details:
+Implement time-based conversation segmentation and create new data structures for conversation boundaries
+<info added on 2025-06-27T05:54:54.691Z>
+# Task 48.2 Implementation Plan - Enhance with Boundary Detection
+
+## WRITE TESTS FIRST
+
+Create `tests/unit/test_chat_boundary_detection.py` with comprehensive test coverage:
+- Test boundary detection with continuous conversation (no gaps)
+- Test detection of conversation breaks (30+ minute gaps)
+- Test handling of messages without timestamps (human messages)
+- Test conversion to `ChatConversation` objects  
+- Test preservation of cursor_db metadata through segmentation
+- Test `ChatHistory` enhancement to support multiple conversations
+- Test edge cases: single message, empty chat, malformed timestamps
+- Test configuration of gap threshold (default 30 minutes)
+
+**RUN TESTS - VERIFY THEY FAIL**
+
+## DESIGN DECISIONS
+
+### Data Structure Enhancements:
+**Add to `context_types.py`:**
+```python
+@dataclass
+class ChatConversation:
+    """Represents a single conversation segment with temporal boundaries."""
+    start_time: datetime
+    end_time: datetime
+    messages: List[Dict[str, Any]]
+    topic_summary: Optional[str] = None
+    message_count: int = 0
+    
+@dataclass 
+class ChatHistory:
+    """Enhanced to support multiple conversation segments."""
+    source: str
+    total_messages: int
+    conversations: List[ChatConversation]  # New field
+    workspace_info: Optional[Dict[str, Any]] = None
+    collection_metadata: Optional[Dict[str, Any]] = None
+```
+
+### Boundary Detection Logic:
+- **Gap Threshold**: 30+ minutes between AI generations = new conversation
+- **Fallback for Human Messages**: Group with nearest AI message by position
+- **Single Message Handling**: Create conversation with start_time = end_time
+- **Topic Summarization**: Optional future enhancement (not in MVP)
+
+## IMPLEMENT FUNCTIONALITY
+
+### 1. **Create Boundary Detection Class**
+In `src/mcp_commit_story/chat_boundary_detector.py`:
+```python
+class ChatBoundaryDetector:
+    def __init__(self, gap_threshold_minutes: int = 30):
+        self.gap_threshold = timedelta(minutes=gap_threshold_minutes)
+    
+    def segment_conversations(self, messages: List[Dict]) -> List[ChatConversation]:
+        # Implementation for AI timestamp-based segmentation
+        pass
+```
+
+### 2. **Enhance collect_chat_history()**
+In `context_collection.py` (builds on 48.1):
+- Apply boundary detection to cursor_db output
+- Convert segmented conversations to `ChatConversation` objects
+- Return enhanced `ChatHistory` with conversations list
+- Maintain backward compatibility for callers expecting flat message list
+
+### 3. **Update context_types.py**
+- Add `ChatConversation` dataclass
+- Enhance `ChatHistory` to support conversation segments
+- Ensure backward compatibility with existing message access patterns
+
+**RUN TESTS - VERIFY THEY PASS**
+
+## TELEMETRY ATTRIBUTES TO ADD
+
+- `conversations_detected`: number of conversation segments found
+- `avg_conversation_length`: average messages per conversation
+- `longest_gap_minutes`: largest time gap detected between messages
+- `boundary_detection_success`: whether segmentation completed successfully
+- `fallback_grouping_used`: whether fallback logic was needed for timestamp-less messages
+
+## LIMITATIONS TO DOCUMENT
+
+- **Human Message Timestamps**: Not available in cursor_db, grouped by proximity to AI messages
+- **Topic Detection**: Not implemented in MVP (manual analysis would be needed)
+- **Cross-Session Boundaries**: Only detects gaps within single database sessions
+- **Timezone Handling**: Uses timestamps as-is from cursor_db (typically UTC)
+
+## DOCUMENT AND COMPLETE
+
+- Update engineering spec with conversation boundary feature
+- Document the 30-minute gap threshold rationale
+- Add examples showing `ChatHistory` with multiple conversations
+- Note limitations around human message timestamp availability
+- Document backward compatibility approach for existing callers
+- Run the entire test suite including integration tests
+- **MARK COMPLETE**
+
+## FUTURE ENHANCEMENT NOTES
+
+Document in engineering spec under "Future Enhancements":
+- **Topic Summarization**: AI-powered conversation topic detection
+- **Git Integration**: Boundary detection based on commit timestamps
+- **Configurable Thresholds**: User-customizable gap detection settings
+- **Cross-Database Sessions**: Boundary detection across multiple workspace databases
+</info added on 2025-06-27T05:54:54.691Z>
+
