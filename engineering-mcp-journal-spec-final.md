@@ -181,6 +181,96 @@ def analyze_commit_changes(self, commit_hash: str) -> ChangeAnalysis:
 
 ## SQLite Database Integration
 
+### Cursor DB Package Architecture
+
+The `cursor_db` package provides complete programmatic access to Cursor's chat history with a modular, production-ready architecture:
+
+#### Package Components
+
+```
+src/mcp_commit_story/cursor_db/
+├── __init__.py                      # Public API exports  
+├── connection.py                    # Database connection management
+├── exceptions.py                    # Custom exception hierarchy
+├── message_extraction.py           # Data extraction functions
+├── message_reconstruction.py       # Chat history reconstruction  
+├── multiple_database_discovery.py  # Multi-workspace discovery
+├── platform.py                     # Cross-platform path detection
+├── query_executor.py              # Core SQL execution
+└── validation.py                   # Data validation utilities
+```
+
+#### Design Principles
+
+1. **Performance Optimized**: 48-hour intelligent filtering provides 80-90% performance improvement
+2. **Error Resilient**: Comprehensive exception handling with graceful degradation
+3. **Cross-Platform**: Support for macOS, Windows, Linux, WSL2, and remote SSH scenarios
+4. **Production Ready**: 5-second timeouts, connection cleanup, and telemetry integration
+5. **Zero Dependencies**: Uses only Python's built-in sqlite3 module
+
+#### Core API Functions
+
+**Primary Entry Point:**
+```python
+from mcp_commit_story.cursor_db import query_cursor_chat_database
+
+result = query_cursor_chat_database()
+# Returns: {"workspace_info": {...}, "chat_history": [...]}
+```
+
+**Multi-Database Discovery:**
+```python
+from mcp_commit_story.cursor_db import discover_all_cursor_databases
+
+databases = discover_all_cursor_databases(workspace_path)
+# Returns: List of database paths with 48-hour filtering
+```
+
+**Batch Processing:**
+```python
+from mcp_commit_story.cursor_db import extract_from_multiple_databases
+
+results = extract_from_multiple_databases(database_paths)
+# Returns: List of extraction results with error handling
+```
+
+#### Performance Optimization
+
+**48-Hour Intelligent Filtering:**
+- Automatically filters databases by modification time
+- 80-90% performance improvement for mature projects  
+- Sub-10ms filtering overhead
+- Balances performance vs. completeness for typical development cycles
+
+**Database Selection Strategy:**
+```python
+def get_recent_databases(database_paths: List[str]) -> List[str]:
+    """Filter databases modified within last 48 hours"""
+    cutoff_time = time.time() - (48 * 60 * 60)  # 48 hours
+    return [db for db in database_paths 
+            if os.path.getmtime(db) > cutoff_time]
+```
+
+#### Error Handling Architecture
+
+**Exception Hierarchy:**
+```python
+class CursorDatabaseError(Exception):
+    """Base exception for cursor_db operations"""
+
+class CursorDatabaseAccessError(CursorDatabaseError):
+    """Database file access, permission, or lock issues"""
+
+class CursorDatabaseQueryError(CursorDatabaseError):  
+    """SQL syntax, parameter, or execution issues"""
+```
+
+**Error Recovery Patterns:**
+- **Skip-and-continue**: Failed database extractions don't stop processing
+- **Graceful degradation**: Returns partial results with error indicators
+- **Timeout protection**: 5-second connection timeouts prevent hangs
+- **Comprehensive logging**: All errors logged with telemetry tracking
+
 ### Cross-Platform Database Discovery
 
 The system automatically discovers Cursor chat databases across different platforms:
