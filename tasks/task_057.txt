@@ -467,6 +467,23 @@ def execute_ai_function(func: Callable, journal_context: JournalContext) -> Any:
 - **PAUSE FOR MANUAL APPROVAL**: How to handle concurrent commits?
 - **PAUSE FOR MANUAL APPROVAL**: Should we add a bypass mechanism for emergencies?
 </info added on 2025-06-27T11:45:11.266Z>
+<info added on 2025-06-27T19:20:24.527Z>
+## APPROVED DESIGN CHOICES
+- **APPROVED**: Max acceptable delay: 30 seconds (generous since it's background)
+- **APPROVED**: Behavior on AI failure: Silent failure, telemetry captures errors
+- **APPROVED**: Execution model: Detached background process
+- **APPROVED**: Should we run AI generation synchronously or queue it?: Queue it in background
+- **APPROVED**: How to handle concurrent commits?: Background process handles queuing
+- **APPROVED**: Should we add a bypass mechanism for emergencies?: Yes, via environment variable
+
+## ADDITIONAL TESTING REQUIREMENTS FOR BACKGROUND EXECUTION
+- Test detached process execution (journal generator runs independently)
+- Test that git commits return immediately (no blocking)
+- Test background process completion and file generation
+- Test concurrent commit handling with background queuing
+- Test failure scenarios in background mode (silent failure with telemetry)
+- Test emergency bypass mechanism via environment variable
+</info added on 2025-06-27T19:20:24.527Z>
 
 ## 5. Add AI Telemetry and Metrics [pending]
 ### Dependencies: 57.4

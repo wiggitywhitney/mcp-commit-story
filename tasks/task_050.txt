@@ -721,3 +721,121 @@ Add logic to the orchestration layer to check AI availability before attempting 
 ### Details:
 Ensure the standalone generator correctly uses the execute_ai_function from Task 57 for AI-powered generators and the reconstruct_conversation function from Task 58 for merging chat databases. Update import statements and function calls to match the interfaces provided by these components.
 
+## 13. Implement Background Execution Mode [pending]
+### Dependencies: 50.12
+### Description: Make standalone journal generator run as background process
+### Details:
+Figure out the best way to run journal generation in background without blocking git commits. Consider twelve-factor principles.
+
+## DESIGN PHASE
+- Research best practices for background process execution in Python
+- Consider options: subprocess.Popen with detach, threading, multiprocessing
+- Evaluate twelve-factor app principles for process management
+- Design signals or communication mechanism between parent and child processes
+- Plan error handling and logging for detached processes
+
+## WRITE TESTS FIRST
+- Create `tests/unit/test_background_execution.py`
+- Test process spawning without blocking
+- Test background process completion detection
+- Test error scenarios (process crash, timeout)
+- Test process isolation and resource cleanup
+- **RUN TESTS - VERIFY THEY FAIL**
+
+## APPROVED DESIGN CHOICES
+- **PAUSE FOR MANUAL APPROVAL**: Process spawning method (subprocess.Popen vs multiprocessing)
+- **PAUSE FOR MANUAL APPROVAL**: Communication mechanism (files, signals, pipes)
+- **PAUSE FOR MANUAL APPROVAL**: Error handling strategy for detached processes
+- **PAUSE FOR MANUAL APPROVAL**: Process cleanup and resource management
+
+## IMPLEMENT FUNCTIONALITY
+Create `src/mcp_commit_story/background_executor.py`:
+```python
+def run_journal_generation_background(commit_hash: str, hook_type: str) -> bool:
+    """
+    Spawn journal generation as background process.
+    Returns immediately without waiting for completion.
+    """
+    # Spawn detached process for journal generation
+    # Set up logging and error capture
+    # Return success if process was spawned successfully
+    # Handle cleanup of zombie processes
+```
+- **RUN TESTS - VERIFY THEY PASS**
+
+## INTEGRATION TESTING
+- Test that parent process returns immediately
+- Test that background process completes successfully
+- Test concurrent background processes
+- Test system behavior under high load
+- Verify twelve-factor compliance
+
+## DOCUMENT AND COMPLETE
+- Document background execution design
+- Add troubleshooting guide for background processes
+- Update architecture documentation
+- **MARK COMPLETE**
+
+## 14. Update Git Hook for Background Mode [pending]
+### Dependencies: 50.13
+### Description: Modify git hook to spawn journal generator without blocking
+### Details:
+Make the hook return immediately so developers aren't waiting for journal generation.
+
+## DESIGN PHASE
+- Plan integration between git hook and background executor
+- Design hook script structure for immediate return
+- Consider environment variable detection for bypass mechanism
+- Plan logging strategy for background execution from git hooks
+- Ensure compatibility with different git hook types
+
+## WRITE TESTS FIRST
+- Create `tests/integration/test_git_hook_background.py`
+- Test git hook returns immediately after spawning background process
+- Test background journal generation completes successfully
+- Test concurrent commits with background processing
+- Test emergency bypass mechanism via environment variable
+- Test error scenarios and graceful degradation
+- **RUN TESTS - VERIFY THEY FAIL**
+
+## IMPLEMENT FUNCTIONALITY
+Update `src/mcp_commit_story/git_hook_worker.py`:
+```python
+def process_git_hook_background(hook_type: str) -> bool:
+    """
+    Process git hook by spawning background journal generation.
+    Returns immediately without waiting for completion.
+    """
+    # Check for emergency bypass environment variable
+    if os.environ.get('MCP_JOURNAL_BYPASS'):
+        return True  # Skip journal generation
+    
+    # Spawn background journal generation
+    success = run_journal_generation_background(
+        commit_hash=None,  # Let it detect HEAD
+        hook_type=hook_type
+    )
+    
+    # Return immediately - don't wait for background completion
+    return success
+```
+
+Update hook installation script to use background mode:
+- Modify .git/hooks/post-commit to call process_git_hook_background
+- Ensure hook script returns immediately
+- Add emergency bypass documentation
+- **RUN TESTS - VERIFY THEY PASS**
+
+## INTEGRATION WITH EXISTING SYSTEM
+- Maintain backward compatibility with synchronous mode
+- Add configuration option to choose execution mode
+- Update CLI to support both modes
+- Ensure telemetry captures background execution metrics
+
+## DOCUMENT AND COMPLETE
+- Update git hook installation documentation
+- Document emergency bypass mechanism
+- Add troubleshooting for background execution issues
+- Update user guide with new background behavior
+- **MARK COMPLETE**
+
