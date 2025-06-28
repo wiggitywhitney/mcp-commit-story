@@ -932,6 +932,41 @@ summary = generate_summary_section(journal_context)
 # Attributes: journal.context_size, journal.entry_id, section_type="summary"
 ```
 
+#### AI Invocation Telemetry
+The AI invocation layer includes lightweight telemetry that adds essential attributes to existing OpenTelemetry spans:
+
+```python
+from mcp_commit_story.ai_invocation import invoke_ai
+
+# AI invocation with automatic telemetry
+response = await invoke_ai(prompt, context)
+# Span: ai.invoke (from @trace_mcp_operation decorator)
+# Attributes automatically added:
+#   - ai.success: True/False
+#   - ai.latency_ms: 1250 (total duration including retries)
+#   - ai.error_type: "ConnectionError" (only on failures)
+```
+
+**Telemetry Attributes:**
+- **`ai.success`** (boolean): Whether the AI call completed successfully
+- **`ai.latency_ms`** (integer): Total duration including all retry attempts in milliseconds  
+- **`ai.error_type`** (string): Exception class name of the final error (only set on failures)
+
+**Implementation Philosophy:**
+- **Minimal overhead**: Piggybacks on existing `@trace_mcp_operation("ai.invoke")` spans
+- **No new infrastructure**: Uses current telemetry system without additional components
+- **Essential data only**: Three key attributes provide core observability needs
+- **Graceful degradation**: Operations continue normally when telemetry unavailable
+
+**What's NOT tracked** (by design):
+- Token counting or usage metrics
+- Cost calculations or billing estimates
+- Aggregated metrics or daily summaries  
+- Complex performance analytics
+- Model-specific metadata
+
+This approach provides essential AI observability while maintaining the system's philosophy of simplicity and avoiding over-engineering.
+
 #### Reading Operations
 Journal parsing and serialization operations:
 

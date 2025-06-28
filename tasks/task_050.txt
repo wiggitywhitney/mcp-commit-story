@@ -839,3 +839,50 @@ Update hook installation script to use background mode:
 - Update user guide with new background behavior
 - **MARK COMPLETE**
 
+## 15. Implement Process Improvements Section Generator [pending]
+### Dependencies: 50.14
+### Description: Add AI-powered analysis to detect recurring patterns and suggest process improvements
+### Details:
+Create a new journal section that analyzes conversation patterns to identify recurring issues and patterns WITHOUT attempting root cause analysis (which would require full project knowledge).
+
+## Anti-Hallucination Requirements:
+- ONLY identify patterns that appear multiple times in the current chat history
+- MUST provide direct quotes/evidence for each pattern identified
+- NO speculation about root causes beyond what's explicitly stated
+- NO suggestions that require project-wide knowledge
+- Focus on observable, repeated behaviors only
+
+## What to Detect:
+- Literal repeated phrases (e.g., "make sure all requirements are met before marking complete")
+- Similar corrections made multiple times
+- Questions asked repeatedly
+- Commands or processes repeated verbatim
+
+## Output Format:
+### Process Improvement Opportunities
+
+**Pattern**: "Check all requirements before marking complete"
+**Evidence**: 
+- Human said this 3 times in current session
+- [timestamp] "Please make sure all requirements are met"
+- [timestamp] "Don't forget to verify requirements"
+- [timestamp] "Remember to check all requirements first"
+
+**Simple Suggestion**: Add a checklist to task definitions
+
+## What NOT to Do:
+❌ "This seems to be caused by..." (speculation)
+❌ "The underlying issue is..." (requires full context)
+❌ "Based on project history..." (doesn't have it)
+✅ "This exact phrase appeared 3 times" (observable fact)
+
+## Implementation:
+Add `generate_process_improvements_section()` function to journal.py that:
+1. Scans conversation history for repeated patterns
+2. Extracts exact quotes with timestamps
+3. Identifies simple, actionable improvements
+4. Returns structured data with evidence and suggestions
+5. Only suggests improvements based on observable patterns
+
+This section will help identify redundant communication patterns and suggest simple process improvements based only on observable evidence from the current chat session.
+

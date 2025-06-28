@@ -147,6 +147,8 @@ Each AI generator has a docstring prompt and returns a placeholder for AI execut
    - Sends to AI provider and parses responses
    - Provides graceful degradation (returns empty sections if AI unavailable)
 
+
+
 ## Complete Data Flow
 
 ```

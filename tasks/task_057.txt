@@ -520,7 +520,7 @@ def execute_ai_function(func: Callable, journal_context: JournalContext) -> Any:
 The background execution model successfully transforms journal generation from a blocking git operation to a "magical" background process, achieving the core goal of immediate git command completion while maintaining journal generation functionality.
 </info added on 2025-06-27T23:33:02.041Z>
 
-## 5. Add AI Telemetry and Metrics [pending]
+## 5. Add AI Telemetry and Metrics [done]
 ### Dependencies: 57.4
 ### Description: Add comprehensive telemetry for AI operations including cost tracking and performance metrics
 ### Details:
@@ -587,6 +587,79 @@ PROVIDER_COSTS = {
 
 These approval points ensure we make informed decisions about metrics strategy, cost tracking approach, and user privacy considerations before implementation.
 </info added on 2025-06-27T11:45:35.706Z>
+<info added on 2025-06-27T23:47:43.001Z>
+## APPROVED DESIGN DECISIONS
+
+**What to track: Only essential metrics**
+- Success/failure (boolean)
+- Latency (milliseconds) 
+- Error type (if failed)
+
+**How to track: Use existing telemetry**
+- Add attributes to existing @trace_mcp_operation spans
+- No new metrics or counters
+- No token counting or cost tracking
+
+**Implementation: Super simple**
+```python
+# In invoke_ai() - just add to existing span:
+span.set_attribute("ai.success", success)
+span.set_attribute("ai.latency_ms", int(duration * 1000))
+if error:
+    span.set_attribute("ai.error_type", type(error).__name__)
+```
+
+**What we're NOT doing:**
+❌ Token counting
+❌ Cost calculation  
+❌ Aggregated metrics
+❌ Daily summaries
+❌ New telemetry infrastructure
+
+**Final approach:** Just piggyback on what's already there. Simple attributes on existing traces. Done!
+</info added on 2025-06-27T23:47:43.001Z>
+<info added on 2025-06-28T00:10:20.349Z>
+## IMPLEMENTATION COMPLETE
+
+### FINAL IMPLEMENTATION
+- Added 3 essential telemetry attributes to existing spans:
+  ```python
+  span.set_attribute("ai.success", success)
+  span.set_attribute("ai.latency_ms", int(duration * 1000))
+  if error:
+      span.set_attribute("ai.error_type", type(error).__name__)
+  ```
+
+### TEST COVERAGE
+- Created `tests/unit/test_ai_telemetry.py` with 9 test cases:
+  - Test success attribute is set correctly
+  - Test latency_ms attribute is calculated properly
+  - Test error_type is only set on failures
+  - Test graceful handling when no span available
+  - Test timing includes all retry attempts
+  - Test edge cases (zero duration, unusual errors)
+  - Test telemetry disabled scenarios
+  - Test integration with existing trace infrastructure
+  - Test no regressions in core functionality
+
+### DOCUMENTATION
+- Added comprehensive section to `docs/telemetry.md`
+- Removed redundant content from `docs/architecture.md`
+- Documented implementation philosophy and usage examples
+
+### VERIFICATION
+- All 9 telemetry-specific tests pass
+- Full regression test: 1019 passed, 1 skipped, 22 xfailed
+- Zero new failures or regressions
+
+### DESIGN PRINCIPLES FOLLOWED
+- Minimal overhead approach
+- No token counting or cost calculation
+- Uses existing telemetry infrastructure
+- Graceful degradation when unavailable
+
+**TASK COMPLETED**
+</info added on 2025-06-28T00:10:20.349Z>
 
 ## 6. Create AI Integration Documentation [pending]
 ### Dependencies: 57.4
@@ -659,4 +732,55 @@ Add to `docs/examples/`:
 
 These approval points ensure we make informed decisions about documentation scope, provider recommendations, cost transparency, technical depth, location, and format before creating comprehensive user guides.
 </info added on 2025-06-27T11:46:39.485Z>
+<info added on 2025-06-27T23:50:45.424Z>
+## APPROVED DESIGN DECISIONS
+
+**Documentation location: Update existing setup-cli.md**
+- Rename `docs/setup-cli.md` to `docs/setup.md` for comprehensiveness
+- Add new "AI Provider Setup" section to existing setup documentation
+- Keep everything in one place - no separate AI documentation file
+
+**What to include:**
+- Quick start (5 minutes to working)
+- Simple examples showing what success looks like  
+- Top 3 troubleshooting items
+
+**Documentation structure for the updated setup.md:**
+```markdown
+# Setup Guide
+
+## Installation
+pip install mcp-commit-story
+
+## Initialize Journal
+mcp-commit-story-setup journal-init
+
+## Install Git Hooks
+mcp-commit-story-setup install-hook
+
+## AI Provider Setup (NEW SECTION)
+### Quick Start
+- Get OpenAI API key [link]
+- export OPENAI_API_KEY=sk-...
+- Make a commit
+- Check journal/ for AI-generated entry
+
+### Examples
+- What a successful entry looks like
+- What happens without AI (empty sections)
+
+### Troubleshooting
+- No API key → export OPENAI_API_KEY=...
+- Invalid key → verify at platform.openai.com
+- Network issues → check telemetry
+```
+
+**What we're NOT doing:**
+❌ Separate AI documentation file
+❌ Comprehensive provider comparisons
+❌ Cost calculations or estimates
+❌ Advanced configuration options
+
+**Final approach:** Keep it simple, keep it together, keep it working! Just extend the existing setup guide with essential AI setup info.
+</info added on 2025-06-27T23:50:45.424Z>
 
