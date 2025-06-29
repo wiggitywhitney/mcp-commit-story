@@ -270,7 +270,7 @@ Design Choice: **Fuzzy Matching with Fallback Strategy**
 **Goal**: Robust solution that reliably finds right workspace database even when developers move/rename projects, with full observability.
 </info added on 2025-06-29T20:47:45.606Z>
 
-## 3. Commit-Based Time Window Filtering [pending]
+## 3. Commit-Based Time Window Filtering [done]
 ### Dependencies: 61.1
 ### Description: Implement git timestamp filtering with approval for edge cases
 ### Details:
