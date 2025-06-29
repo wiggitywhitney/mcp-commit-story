@@ -346,7 +346,7 @@ logger.warning(f"Git command failed for {commit_hash}, using fallback")
 - Use established patterns: len(commit.parents) > 1 for merge detection, commit.parents[0] for single parent
 </info added on 2025-06-29T21:22:10.044Z>
 
-## 4. ComposerChatProvider Class [pending]
+## 4. ComposerChatProvider Class [done]
 ### Dependencies: 61.1, 61.2, 61.3
 ### Description: Main interface class with approval for connection/caching strategies
 ### Details:
@@ -561,6 +561,82 @@ This ensures the documentation accurately reflects the new intelligent filtering
 7. Run all tests to ensure no regressions
 
 Since Composer provides chronologically ordered messages with timestamps, AI-based reconstruction is redundant.
+<info added on 2025-06-29T23:57:32.551Z>
+## COMPREHENSIVE IMPLEMENTATION PLAN - Approved Design Decisions
+
+### Key Discovery
+The current reconstruct_chat_history() is NOT AI-based as originally assumed - it's just a simple formatter that combines prompts and generations. This makes removal much simpler than expected.
+
+### Design Decisions - APPROVED:
+
+**1. Scope: Complete Removal**
+- Delete entire message_reconstruction.py module and ALL references
+- No deprecation period needed (internal code)
+- Since Composer provides already-formatted messages, reconstruction is redundant
+
+**2. Reverse-TDD Strategy**
+- Update integration tests FIRST to use Composer data directly
+- Prove system works WITHOUT reconstruction before removing code
+- Then remove code and failing unit tests
+- This provides confidence and reduces risk
+
+**3. Import Cleanup: Aggressive Approach**
+- Remove ALL imports systematically using search commands
+- Update __init__.py files
+- No partial cleanup - complete removal
+
+### Implementation Process - DETAILED:
+
+**STEP 1: Update Integration Tests First**
+- Find tests calling reconstruct_chat_history()
+- Update to use ComposerChatProvider directly
+- Tests should expect enhanced Composer format (timestamp, sessionName, composerId, bubbleId)
+- Follow pattern of testing actual implementation vs mocking
+- Ensure tests pass (proves new approach works)
+
+**STEP 2: Remove the Code**
+- Delete message_reconstruction.py
+- Remove all imports using systematic search commands
+- Run tests - integration should pass, unit tests for reconstruction will fail (expected)
+
+**STEP 3: Delete Failing Unit Tests**
+- Remove test_message_reconstruction.py
+- Remove any other reconstruction-specific tests
+- Final test run - everything should be green
+
+### Systematic Reference Finding Commands:
+```bash
+# From project root:
+grep -r "message_reconstruction" . --include="*.py"
+grep -r "reconstruct_chat_history" . --include="*.py" 
+grep -r "from .message_reconstruction" . --include="*.py"
+find . -name "__init__.py" -exec grep -l "message_reconstruction" {} \;
+
+# Documentation search:
+grep -r "reconstruction" docs/ --include="*.md"
+grep -r "reconstruct" docs/ --include="*.md"
+grep -r "merge.*conversation" docs/ --include="*.md"
+
+# Code comments/docstrings:
+grep -r "reconstruction" . --include="*.py" | grep "#"
+```
+
+### Key Implementation Notes:
+- **Telemetry Preservation**: Reuse existing @trace_mcp_operation decorators from reconstruction functions on Composer methods
+- **Comprehensive Context**: Maintain all telemetry attributes (message counts, session names, etc.)
+- **Graceful Degradation**: If Composer data unavailable, return empty results rather than throwing errors
+- **Data Format**: Integration tests expect enhanced Composer format with rich metadata
+- **Observability**: Same telemetry coverage while simplifying architecture
+
+### Success Criteria:
+✓ Zero grep results for "message_reconstruction"
+✓ All tests passing  
+✓ No documentation mentioning reconstruction
+✓ Clean git diff showing only deletions
+
+### Rationale:
+This is a great simplification - removing unnecessary complexity because Composer provides better data natively. Less code, better data, same telemetry coverage. Aligns with our principle of using the best available data source.
+</info added on 2025-06-29T23:57:32.551Z>
 
 ## 7. Update Data Models [pending]
 ### Dependencies: 61.5

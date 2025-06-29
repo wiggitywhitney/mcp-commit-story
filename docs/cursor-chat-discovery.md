@@ -374,4 +374,16 @@ If the wrong workspace is detected, check logs for "Using fallback workspace" - 
 - **Real-time Access**: Direct database reading as conversations happen
 - **Complete Context**: Full development session history with file attachments
 - **Performance**: Fast SQLite queries for immediate results
-- **Cross-platform**: Proven approach across all major platforms 
+- **Cross-platform**: Proven approach across all major platforms
+
+## Implementation
+
+The ComposerChatProvider class provides the interface for retrieving chat history:
+
+- Connects to both workspace and global databases
+- Accepts pre-calculated time windows (milliseconds)
+- Returns chronologically sorted messages with session names
+- No caching or connection pooling (per-request connections)
+- Comprehensive error handling and telemetry
+
+See `src/mcp_commit_story/composer_chat_provider.py` for implementation details. 
