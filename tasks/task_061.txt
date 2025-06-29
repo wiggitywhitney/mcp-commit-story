@@ -1,6 +1,6 @@
 # Task ID: 61
 # Title: Implement Composer Integration for Full Chat History Access
-# Status: pending
+# Status: in-progress
 # Dependencies: None
 # Priority: high
 # Description: Upgrade cursor_db to use Composer instead of aiService, providing access to complete chronologically-ordered conversation history with timestamps and session names, filtered by git commit time windows.
@@ -205,7 +205,7 @@ This task involves replacing the current aiService implementation with Cursor's 
    - Journal entries show richer context from complete conversations
 
 # Subtasks:
-## 1. Study Composer Database Structure [pending]
+## 1. Study Composer Database Structure [done]
 ### Dependencies: None
 ### Description: Research phase reading docs/cursor-chat-discovery.md and cursor_chat_sample.json, create documentation
 ### Details:
@@ -221,7 +221,7 @@ Research the two-database system:
 
 Create comprehensive documentation of findings for implementation phase.
 
-## 2. Workspace Detection Function [pending]
+## 2. Workspace Detection Function [done]
 ### Dependencies: None
 ### Description: TDD approach with approval checkpoints for workspace matching strategy
 ### Details:
@@ -235,6 +235,40 @@ Create comprehensive documentation of findings for implementation phase.
 6. Document the chosen approach
 
 Function should auto-detect correct workspace database based on current git repository path by examining workspaceStorage directory structure.
+<info added on 2025-06-29T20:47:45.606Z>
+**APPROVED DESIGN DECISIONS** (Manual Approval Step 3 Complete)
+
+Design Choice: **Fuzzy Matching with Fallback Strategy**
+
+**Primary Approach**: Scan all workspace directories in workspaceStorage and check workspace.json files for matches
+
+**Matching Criteria (Priority Order)**:
+1. **Git remote URL match** (strongest signal - survives repo moves)
+2. **Folder path match** (handles case where repo hasn't moved)  
+3. **Project/folder name similarity** (last resort before fallback)
+
+**Fallback**: Most recently modified workspace if no good match found
+**No caching**: Keep stateless like rest of project
+**Confidence threshold**: 0.8 for matches to avoid false positives
+
+**Implementation Considerations**:
+- Auto-detect correct workspace database based on current git repository
+- Handle edge cases gracefully (missing workspace.json, corrupted data, etc.)
+- Log warnings when using fallback strategies
+
+**Telemetry Requirements**:
+- Use @trace_mcp_operation decorator on main function
+- Track detection_strategy: "workspace_json_match" | "most_recent" | "not_found"
+- Track candidates_found: number of potential workspaces scanned
+- Track match_confidence: 0.0-1.0 for workspace matches
+- Track match_type: "git_remote" | "folder_path" | "folder_name" when matched
+- Track fallback_used: boolean
+- Error categorization: error.category: "workspace_detection"
+- Add metrics: Counter for strategy usage, Histogram for detection duration
+- Include span attributes: repo_path, selected workspace path, etc.
+
+**Goal**: Robust solution that reliably finds right workspace database even when developers move/rename projects, with full observability.
+</info added on 2025-06-29T20:47:45.606Z>
 
 ## 3. Commit-Based Time Window Filtering [pending]
 ### Dependencies: 61.1

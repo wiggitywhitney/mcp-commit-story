@@ -344,6 +344,19 @@ The [cursor-chat-browser](https://github.com/thomas-pedersen/cursor-chat-browser
 - Rich context preservation
 - Export capabilities (Markdown, HTML, PDF)
 
+## Workspace Detection
+
+The system automatically finds the correct Cursor workspace for your repository by:
+1. Matching git remote URLs (survives repo moves)
+2. Matching folder paths
+3. Checking folder name similarity
+4. Falling back to most recent workspace if needed
+
+Confidence threshold: 0.8 (matches below this use fallback)
+
+### Troubleshooting
+If the wrong workspace is detected, check logs for "Using fallback workspace" - this usually means the repository path or git remotes have changed since the workspace was created.
+
 ## Benefits
 
 - **Zero Dependencies**: Uses Python's built-in sqlite3 module
