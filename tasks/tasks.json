@@ -545,11 +545,11 @@
       {
         "id": 50,
         "title": "Create Standalone Journal Generator",
-        "description": "Implement a standalone journal generator that runs from git hooks without requiring the MCP server, using a layered architecture that separates concerns between context collection, conversation reconstruction, orchestration, section generation, and AI invocation.",
+        "description": "Implement a standalone journal generator that runs from git hooks without requiring the MCP server, using a simplified 4-layer architecture that separates concerns between context collection, orchestration, section generation, and AI invocation.",
         "status": "pending",
         "dependencies": [
           "57",
-          "58"
+          "61"
         ],
         "priority": "high",
         "details": "# Standalone Journal Generator Architecture\n\nThis task implements a layered architecture for journal generation that can operate independently of the MCP server:\n\n## Layer 1: Context Collection (Programmatic)\nThree context collectors that gather raw data without AI:\n- `collect_git_context(commit_hash)` - Extracts git metadata, diffs, and commit info\n- `collect_chat_history()` - Queries cursor_db for raw prompts/responses (returns separate databases)\n- `collect_journal_context()` - Reads existing journal entries, reflections, and manual context (Task 55)\n\n## Layer 2: Conversation Reconstruction (AI-Powered, Task 58)\n- `reconstruct_conversation(raw_chat_data)` - Uses AI to intelligently merge separate databases\n- Handles mismatched counts, missing responses, multiple prompts\n- Returns unified conversation flow that generators can use\n\n## Layer 3: Orchestration (Coordination)\nThe orchestration layer in `standalone_generator.py` coordinates the entire flow:\n1. Calls all context collectors to gather raw data\n2. Invokes conversation reconstruction to unify chat data using AI\n3. Builds the `JournalContext` structure with all collected data\n4. Iterates through section generators, determining which need AI\n5. For programmatic generators: calls directly\n6. For AI generators: uses AI function executor (Task 57)\n7. Assembles the complete journal entry from generated sections\n8. Handles errors gracefully - if one section fails, others continue\n9. Saves the final journal entry to the appropriate file\n\n## Layer 4: Section Generators (Mixed AI and Programmatic)\nSeven generator functions in `journal.py` with different execution patterns:\n\n**Programmatic Generators** (can be implemented without AI):\n- `generate_commit_metadata_section()` - Pure git data extraction\n- `generate_technical_synopsis_section()` - Could analyze code changes programmatically\n- `generate_file_changes_section()` - Git diff analysis\n\n**AI-Powered Generators** (require AI interpretation):\n- `generate_summary_section()` - Creates narrative summary of changes\n- `generate_accomplishments_section()` - Interprets what was achieved\n- `generate_frustrations_section()` - Identifies challenges from context\n- `generate_tone_mood_section()` - Detects emotional indicators\n- `generate_discussion_notes_section()` - Extracts key conversation excerpts\n- `generate_decision_points_section()` - Identifies moments where decisions were made\n\n## Layer 5: AI Invocation (Task 57)\nThe AI invocation happens at two points:\n\n1. **Conversation Reconstruction**:\n   - AI analyzes separate prompt/response databases\n   - Intelligently matches and merges them\n   - Handles edge cases and mismatches\n\n2. **Section Generation**:\n   - `execute_ai_function(func, context)` - Executes AI-powered generators\n   - Reads the docstring prompt\n   - Formats context and sends to AI provider\n   - Parses AI response into expected return type\n   - Provides graceful degradation (returns empty section if AI unavailable)\n\n## Complete Data Flow\n1. Git hook triggers → `process_git_hook()`\n2. Orchestrator called → `generate_journal_entry_standalone()`\n3. Context collectors gather → git data, chat history (raw), journal content\n4. **AI Call #1**: Conversation reconstruction → unified chat from separate databases\n5. Build JournalContext with reconstructed conversation\n6. For each generator:\n   - Programmatic ones: execute directly\n   - **AI Call #2+**: AI generators via executor\n7. Assembly → sections combined into complete journal entry\n8. Save → journal entry written to daily file\n\n## Implementation Example: Standalone Generator Orchestration\n\n```python\n# src/mcp_commit_story/standalone_generator.py\n\nfrom typing import Dict, List, Optional, TypedDict, Any\nfrom journal import (\n    generate_commit_metadata_section,\n    generate_technical_synopsis_section,\n    generate_file_changes_section,\n    generate_summary_section,\n    generate_accomplishments_section,\n    generate_frustrations_section,\n    generate_tone_mood_section,\n    generate_discussion_notes_section,\n    generate_decision_points_section,\n    save_journal_entry\n)\nfrom context_collection import collect_git_context, collect_chat_history, collect_journal_context\nfrom conversation_reconstruction import reconstruct_conversation\nfrom ai_function_executor import execute_ai_function, is_ai_available\nfrom logging_utils import log_error, log_info\n\n\nclass JournalContext(TypedDict):\n    \"\"\"Structure containing all context needed for journal generation\"\"\"\n    git_context: Dict\n    conversation_history: List[Dict]\n    journal_context: Dict\n    hook_type: str\n\n\n# Define which generators are AI-powered vs programmatic\nPROGRAMMATIC_GENERATORS = {\n    'metadata': generate_commit_metadata_section,\n    'technical_synopsis': generate_technical_synopsis_section,\n    'file_changes': generate_file_changes_section,\n}\n\nAI_GENERATORS = {\n    'summary': generate_summary_section,\n    'accomplishments': generate_accomplishments_section,\n    'frustrations': generate_frustrations_section,\n    'tone_mood': generate_tone_mood_section,\n    'discussion_notes': generate_discussion_notes_section,\n    'decision_points': generate_decision_points_section,\n}\n\n\ndef generate_journal_entry_standalone(commit_hash: Optional[str] = None, hook_type: str = 'post-commit') -> bool:\n    \"\"\"Generate a journal entry using the standalone architecture\n    \n    Args:\n        commit_hash: Optional commit hash to use (defaults to HEAD)\n        hook_type: Type of git hook that triggered this (or 'manual')\n        \n    Returns:\n        bool: True if journal generation was successful, False otherwise\n    \"\"\"\n    try:\n        # Layer 1: Collect all raw context\n        git_context = collect_git_context(commit_hash)\n        raw_chat_data = collect_chat_history()\n        journal_context = collect_journal_context()\n        \n        # Layer 2: Reconstruct conversation from raw chat data\n        conversation_history = []\n        if raw_chat_data:\n            try:\n                conversation_history = reconstruct_conversation(raw_chat_data)\n            except Exception as e:\n                log_error(f\"Failed to reconstruct conversation: {str(e)}\")\n                # Continue with empty conversation history\n        \n        # Build the complete journal context\n        context = JournalContext(\n            git_context=git_context,\n            conversation_history=conversation_history,\n            journal_context=journal_context,\n            hook_type=hook_type\n        )\n        \n        # Layer 3 & 4: Generate all sections\n        journal_sections = {}\n        \n        # Execute programmatic generators directly\n        for section_name, generator_func in PROGRAMMATIC_GENERATORS.items():\n            try:\n                journal_sections[section_name] = generator_func(context)\n            except Exception as e:\n                log_error(f\"Failed to generate {section_name} section: {str(e)}\")\n                journal_sections[section_name] = {}\n        \n        # Execute AI generators via the AI function executor\n        for section_name, generator_func in AI_GENERATORS.items():\n            try:\n                if is_ai_available():\n                    journal_sections[section_name] = execute_ai_function(generator_func, context)\n                else:\n                    log_info(f\"AI unavailable, skipping {section_name} section\")\n                    journal_sections[section_name] = {}\n            except Exception as e:\n                log_error(f\"Failed to generate {section_name} section: {str(e)}\")\n                journal_sections[section_name] = {}\n        \n        # Save the complete journal entry\n        save_journal_entry(journal_sections)\n        return True\n        \n    except Exception as e:\n        log_error(f\"Journal generation failed: {str(e)}\")\n        return False\n```\n\n## Implementation Example: Git Hook Worker Update\n\n```python\n# src/mcp_commit_story/git_hook_worker.py\n\nfrom standalone_generator import generate_journal_entry_standalone\nfrom context_collection import collect_git_context\nfrom logging_utils import log_error, log_telemetry\nimport argparse\nimport os\n\ndef process_git_hook(hook_type):\n    \"\"\"Process a git hook event by directly generating journal entries\n    \n    Args:\n        hook_type: Type of git hook that triggered this\n        \n    Returns:\n        bool: True if processing was successful, False otherwise\n    \"\"\"\n    try:\n        # Call standalone journal generator directly\n        success = generate_journal_entry_standalone(hook_type=hook_type)\n        \n        # Log telemetry for the direct call\n        git_context = collect_git_context()\n        log_telemetry('git_hook_journal_generation', {\n            'success': success,\n            'hook_type': hook_type,\n            'commit_hash': git_context.get('commit_hash', 'unknown')\n        })\n        \n        return success\n    except Exception as e:\n        log_error(f\"Git hook processing failed: {str(e)}\")\n        return False\n\n\ndef handle_cli_commands():\n    \"\"\"Handle CLI commands for git hook management\"\"\"\n    parser = argparse.ArgumentParser(description='Git hook management and journal generation')\n    parser.add_argument('--install-hooks', action='store_true', help='Install git hooks for automatic journal generation')\n    parser.add_argument('--generate-now', action='store_true', help='Generate journal entry immediately')\n    \n    args = parser.parse_args()\n    \n    if args.install_hooks:\n        success = install_git_hooks()\n        print(f\"Git hooks installation {'successful' if success else 'failed'}\")\n    \n    if args.generate_now:\n        success = generate_journal_entry_standalone(hook_type='manual')\n        print(f\"Journal generation {'successful' if success else 'failed'}\")\n        \n    if not args.install_hooks and not args.generate_now:\n        parser.print_help()\n\n\ndef main():\n    \"\"\"Main entry point for git hook worker\"\"\"\n    parser = argparse.ArgumentParser(description='Git hook worker')\n    parser.add_argument('--hook-type', type=str, help='Type of git hook being processed')\n    \n    args = parser.parse_args()\n    \n    if args.hook_type:\n        process_git_hook(args.hook_type)\n    else:\n        handle_cli_commands()\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\n## Implementation Example: Decision Points Section Generator\n\n```python\n# In journal.py\n\ndef generate_decision_points_section(context: JournalContext) -> List[Dict]:\n    \"\"\"Generate a section that identifies key decision points from the conversation.\n    \n    Analyze the conversation history to identify moments where architectural, design, \n    or implementation decisions were made. Look for:\n    \n    1. Explicit decisions: \"I decided to...\", \"We chose to...\", \"Let's go with...\"\n    2. Trade-off discussions: \"Option A has X benefit but Y drawback...\"\n    3. Reasoning for choices: \"I'm using X because...\", \"This approach is better because...\"\n    4. Pivots or changes in approach: \"Instead of X, let's try Y\", \"I changed my mind about...\"\n    \n    For each decision point, extract:\n    - The decision made\n    - The context or problem it addresses\n    - The reasoning or justification\n    - Alternatives that were considered (if mentioned)\n    \n    Return a list of decision points, each containing the above information.\n    \n    Args:\n        context: Complete journal context including git data and conversation history\n        \n    Returns:\n        List of decision points, each as a dictionary with keys:\n        - decision: The actual decision that was made\n        - context: The problem or situation being addressed\n        - reasoning: Why this decision was made\n        - alternatives: Other options that were considered (if any)\n    \"\"\"\n    # This is a placeholder that will be replaced by AI execution\n    return []\n```",
@@ -841,107 +841,130 @@
         ]
       },
       {
-        "id": 58,
-        "title": "Implement Conversation Reconstruction from Cursor Databases",
-        "description": "Design and implement a function that intelligently reconstructs chronological conversations from separate user prompts and AI responses stored in Cursor databases, handling various edge cases and mismatches.",
-        "details": "This task involves creating a robust algorithm to reconstruct conversations from Cursor database collections:\n\n1. Analyze the structure of Cursor databases to understand how user prompts and AI responses are stored:\n   - User prompts lack timestamps\n   - AI responses have unixMs timestamps\n   - Collections may have mismatched counts or ordering issues\n\n2. Design a reconstruction algorithm that:\n   - Interleaves user prompts and AI responses chronologically\n   - Handles cases where counts don't match (missing responses, multiple prompts)\n   - Uses contextual clues to match prompts with responses when timestamps aren't available\n   - Resolves ambiguities using AI-based context matching when necessary\n\n3. Implement the `reconstruct_conversation()` function with the following signature:\n```python\ndef reconstruct_conversation(cursor_db_path: str) -> List[ConversationTurn]:\n    \"\"\"\n    Reconstructs a chronological conversation from Cursor database collections.\n    \n    Args:\n        cursor_db_path: Path to the Cursor database\n        \n    Returns:\n        List of ConversationTurn objects representing the reconstructed conversation\n    \"\"\"\n```\n\n4. Define a `ConversationTurn` class that includes:\n   - Role (user/assistant)\n   - Content\n   - Timestamp (when available)\n   - Confidence score for the matching (when applicable)\n\n5. Implement heuristics for matching:\n   - Sequential matching as a baseline\n   - Content-based matching using semantic similarity\n   - Time-proximity matching for responses with timestamps\n   - Fallback strategies for ambiguous cases\n\n6. Add detailed logging to track the reconstruction process and decisions made\n\n7. Document known limitations and edge cases:\n   - Handling of deleted messages\n   - Conversations with multiple back-and-forth exchanges in rapid succession\n   - Very long conversations with potential context confusion\n   - Partial or corrupted database entries\n\n8. Ensure the output format is compatible with section generators by providing appropriate conversion methods.",
-        "testStrategy": "1. Unit Testing:\n   - Create mock Cursor database collections with known conversation patterns\n   - Test reconstruction with perfect 1:1 prompt-response pairs\n   - Test with missing responses (n prompts, n-m responses)\n   - Test with extra responses (n prompts, n+m responses)\n   - Test with out-of-order timestamps\n   - Verify correct handling of edge cases\n\n2. Integration Testing:\n   - Test with real Cursor databases of varying sizes and complexities\n   - Compare reconstructed conversations with known ground truth\n   - Measure accuracy of reconstruction (correctly matched pairs / total pairs)\n   - Verify timestamp ordering is preserved when available\n\n3. Validation Testing:\n   - Have human reviewers evaluate a sample of reconstructed conversations\n   - Calculate inter-rater reliability for human judgments\n   - Compare algorithm confidence scores with human judgments\n\n4. Performance Testing:\n   - Measure reconstruction time for databases of different sizes\n   - Ensure memory usage remains reasonable for large conversations\n\n5. Edge Case Testing:\n   - Test with corrupted databases\n   - Test with extremely long conversations\n   - Test with conversations containing similar/repeated prompts\n   - Test with conversations having long gaps between exchanges\n\n6. Documentation Verification:\n   - Ensure all known limitations are documented\n   - Verify that output format meets the requirements of section generators",
+        "id": 61,
+        "title": "Implement Composer Integration for Full Chat History Access",
+        "description": "Upgrade cursor_db to use Composer instead of aiService, providing access to complete chronologically-ordered conversation history with timestamps and session names, filtered by git commit time windows.",
         "status": "pending",
-        "dependencies": [
-          "57"
-        ],
-        "priority": "high",
-        "subtasks": []
-      },
-      {
-        "id": 59,
-        "title": "Fix pytest temporary directory cleanup warnings",
-        "description": "Resolve pytest warnings about failing to clean up temporary directories by fixing permission restoration issues and ensuring proper cleanup of resources in test files.",
-        "status": "done",
         "dependencies": [],
-        "priority": "medium",
-        "details": "This task involves systematically addressing pytest warnings related to temporary directory cleanup failures across multiple test files. The implementation should:\n\n1. Review and fix each identified test file:\n   - tests/unit/test_cli.py: Add proper permission restoration in finally blocks after chmod operations\n   - tests/unit/test_cursor_db_exceptions.py: Ensure permission changes are properly reverted\n   - tests/unit/test_git_hook_installation.py: Restore hooks directory permissions after tests\n   - tests/unit/test_journal_init.py: Fix directory permission tests to properly clean up\n   - tests/unit/test_database_connection.py: Ensure file permission changes are reverted\n   - tests/unit/test_git_utils.py: Restore permissions for readonly hooks directory tests\n   - tests/unit/test_daily_summary_end_to_end.py: Handle permission errors properly\n   - Integration tests: Review all uses of tempfile.TemporaryDirectory()\n\n2. Implement proper resource management patterns:\n   ```python\n   # Example pattern for permission changes\n   original_mode = os.stat(path).st_mode\n   try:\n       os.chmod(path, new_mode)\n       # Test code here\n   finally:\n       os.chmod(path, original_mode)\n   ```\n\n3. Replace direct tempfile usage with pytest fixtures where appropriate:\n   ```python\n   # Instead of\n   with tempfile.TemporaryDirectory() as tmpdir:\n       # test code\n   \n   # Use pytest fixtures\n   def test_something(tmp_path):\n       # test code using tmp_path\n   ```\n\n4. Ensure all file handles are properly closed by using context managers:\n   ```python\n   with open(file_path, 'w') as f:\n       f.write('content')\n   ```\n\n5. Add explicit cleanup for any subdirectories or files created during tests:\n   ```python\n   try:\n       # Create subdirectories/files\n       # Test code\n   finally:\n       # Clean up subdirectories/files\n       shutil.rmtree(subdir_path, ignore_errors=True)\n   ```\n\n6. Review and fix any tests that might be creating files with insufficient permissions for deletion.\n\n7. Consider implementing a custom pytest fixture that handles permission restoration automatically for tests that need to modify permissions.",
-        "testStrategy": "1. Run the pytest suite with the `-v` flag and verify no temporary directory cleanup warnings are generated:\n   ```\n   pytest -v\n   ```\n\n2. Add specific tests for each fixed file to ensure the functionality still works as expected:\n   ```\n   pytest tests/unit/test_cli.py -v\n   pytest tests/unit/test_cursor_db_exceptions.py -v\n   pytest tests/unit/test_git_hook_installation.py -v\n   pytest tests/unit/test_journal_init.py -v\n   pytest tests/unit/test_database_connection.py -v\n   pytest tests/unit/test_git_utils.py -v\n   pytest tests/unit/test_daily_summary_end_to_end.py -v\n   ```\n\n3. Run the tests with the `--keep-tempdir` flag to inspect the temporary directories after test execution and verify they're properly cleaned up:\n   ```\n   pytest --keep-tempdir\n   ```\n\n4. Create a test that specifically checks for resource leaks:\n   ```python\n   def test_no_resource_leaks():\n       # Use psutil to check for open file handles before and after running tests\n       import psutil\n       process = psutil.Process()\n       handles_before = process.open_files()\n       # Run test operations\n       handles_after = process.open_files()\n       assert len(handles_after) <= len(handles_before)\n   ```\n\n5. Run the tests in a loop (e.g., 10 times) to ensure consistent cleanup:\n   ```\n   for i in {1..10}; do pytest tests/unit/test_cli.py; done\n   ```\n\n6. Monitor disk space before and after running the test suite multiple times to ensure no accumulation of temporary files.\n\n7. Verify that all tests still pass and maintain the same functionality after the fixes.\n\n8. Check for and clean up any accumulated garbage directories in the pytest temporary directory (e.g., `/var/folders/.../pytest-of-username/`).",
+        "priority": "high",
+        "details": "This task involves replacing the current aiService implementation with Cursor's Composer system to improve chat history access:\n\n## Required Reading Before Implementation\n\n**READ FIRST**: `/Users/wiggitywhitney/Repos/mcp-commit-story/docs/cursor-chat-discovery.md` - explains Composer database structure\n**REFERENCE**: `/Users/wiggitywhitney/Repos/mcp-commit-story/cursor_chat_sample.json` - shows real data examples\n\n## Key Technical Details from Research\n\n- Composer uses a two-database system:\n  - Workspace database (session metadata) in `workspaceStorage/{hash}/state.vscdb`\n  - Global database (actual messages) in `globalStorage/state.vscdb`\n- Session metadata key: `composer.composerData` in workspace ItemTable\n- Message headers key: `composerData:{composerId}` in global cursorDiskKV table\n- Individual messages key: `bubbleId:{composerId}:{bubbleId}` in global cursorDiskKV table\n- Messages are already chronologically ordered with timestamps\n\n## Implementation Steps\n\n1. Create a new module that interfaces with Composer databases:\n   ```typescript\n   // Example implementation\n   import { Database } from 'better-sqlite3';\n   import * as path from 'path';\n   import { execSync } from 'child_process';\n   \n   export class ComposerChatProvider {\n     private workspaceDb: Database;\n     private globalDb: Database;\n     \n     constructor(gitRepoPath: string) {\n       // Auto-detect workspace based on git repository path\n       const workspaceHash = this.detectWorkspaceHash(gitRepoPath);\n       this.workspaceDb = new Database(path.join('workspaceStorage', workspaceHash, 'state.vscdb'));\n       this.globalDb = new Database(path.join('globalStorage', 'state.vscdb'));\n     }\n     \n     async getChatHistoryForCommit(commitHash: string): Promise<ChatMessage[]> {\n       // Get current commit timestamp\n       const currentCommitTimestamp = this.getCommitTimestamp(commitHash);\n       \n       // Get previous commit timestamp\n       const previousCommitHash = this.getPreviousCommitHash(commitHash);\n       const previousCommitTimestamp = this.getCommitTimestamp(previousCommitHash);\n       \n       // Define time window: from previous commit to current commit\n       const startTime = previousCommitTimestamp;\n       const endTime = currentCommitTimestamp;\n       \n       // Get session metadata from workspace DB\n       const sessions = this.getSessionMetadata();\n       \n       // Get messages from global DB filtered by time window\n       const messages = this.getMessagesInTimeWindow(sessions, startTime, endTime);\n       \n       return messages;\n     }\n     \n     private getCommitTimestamp(commitHash: string): number {\n       const timestamp = execSync(\n         `git show -s --format=%ct ${commitHash}`,\n         { encoding: 'utf-8' }\n       ).trim();\n       \n       // Convert to milliseconds (git returns seconds)\n       return parseInt(timestamp) * 1000;\n     }\n     \n     private getPreviousCommitHash(commitHash: string): string {\n       return execSync(\n         `git rev-parse ${commitHash}~1`,\n         { encoding: 'utf-8' }\n       ).trim();\n     }\n     \n     private getSessionMetadata() {\n       const result = this.workspaceDb.prepare(\n         \"SELECT value FROM ItemTable WHERE key = 'composer.composerData'\"\n       ).get();\n       \n       return JSON.parse(result.value);\n     }\n     \n     private getMessagesInTimeWindow(sessions, startTime, endTime) {\n       const messages = [];\n       \n       for (const session of sessions) {\n         // Get message headers\n         const headerKey = `composerData:${session.composerId}`;\n         const headerRow = this.globalDb.prepare(\n           \"SELECT value FROM cursorDiskKV WHERE key = ?\"\n         ).get(headerKey);\n         \n         if (!headerRow) continue;\n         \n         const header = JSON.parse(headerRow.value);\n         \n         // Get individual messages\n         for (const bubbleId of header.bubbleIds) {\n           const messageKey = `bubbleId:${session.composerId}:${bubbleId}`;\n           const messageRow = this.globalDb.prepare(\n             \"SELECT value FROM cursorDiskKV WHERE key = ?\"\n           ).get(messageKey);\n           \n           if (!messageRow) continue;\n           \n           const message = JSON.parse(messageRow.value);\n           \n           // Filter by timestamp\n           if (message.timestamp >= startTime && message.timestamp <= endTime) {\n             messages.push({\n               id: message.id,\n               role: message.role,\n               content: message.content,\n               timestamp: message.timestamp,\n               sessionName: session.name || 'Unnamed Session',\n               // Add other required fields\n             });\n           }\n         }\n       }\n       \n       // Sort by timestamp to ensure chronological order\n       return messages.sort((a, b) => a.timestamp - b.timestamp);\n     }\n     \n     private detectWorkspaceHash(gitRepoPath: string): string {\n       // Implementation to detect workspace hash based on git repository path\n       // This would involve examining the workspaceStorage directory\n       // and matching with the current repository\n     }\n   }\n   ```\n\n2. Update the cursor_db module to use the new Composer integration:\n   - Replace existing aiService calls with Composer calls\n   - Update data models to include timestamps and session names\n   - Remove any code related to AI-based conversation reconstruction\n   - Implement clear error handling if Composer databases not found\n\n3. Update the API to maintain backward compatibility while providing new features:\n   - Keep the same function signatures but enhance return data\n   - Add timestamp filtering based on git commit time\n   - Include session names in the returned data\n\n4. Update tests:\n   - Create new mock data based on the Composer database structure\n   - Update existing tests to expect the new data format\n   - Add tests for time window filtering\n\n## Implementation Decisions (APPROVED)\n\n- **Time Window Strategy**: Use git commit timestamps to define chat window (previous commit to current commit)\n- **Message Filtering**: Filter conversations that happened during the development of the current commit\n- **Data Richness**: Include session names from Composer (e.g., \"Implement authentication\")\n- **Workspace Detection**: Auto-detect based on current git repository path\n- **Error Handling**: Fail clearly if Composer not found (no fallback to aiService)",
+        "testStrategy": "1. Unit Tests:\n   - Create unit tests for the new Composer integration module\n   - Test edge cases like empty chats, very large chats, and malformed responses\n   - Mock Composer database responses for predictable testing\n   - Test commit-based time window filtering logic with various commit pairs\n   - Verify workspace detection logic with different repository paths\n\n2. Integration Tests:\n   - Test the integration between cursor_db and the Composer system\n   - Verify that chat history is correctly retrieved and formatted\n   - Test with real Composer databases in a staging environment\n   - Verify session names are correctly included in the output\n\n3. Regression Tests:\n   - Ensure all features that previously used aiService continue to work\n   - Verify that chat history access works for both recent and older conversations\n   - Check that the full chronological history is correctly maintained\n   - Verify commit-based time window filtering works correctly with real git commits\n\n4. Performance Tests:\n   - Measure and compare load times for chat history between old and new implementations\n   - Test with large chat histories to ensure performance remains acceptable\n   - Verify memory usage doesn't increase significantly\n   - Test performance of SQLite queries on large Composer databases\n\n5. Manual Testing:\n   - Manually verify that the complete chat history is accessible\n   - Check that the chronological ordering is correct\n   - Verify that the UI correctly displays the expanded chat history\n   - Test with real git commits to ensure commit-based time windows capture relevant conversations\n\n6. Validation Criteria:\n   - All chat history (not just 48 hours) is accessible\n   - Messages are correctly filtered by commit-based time windows\n   - Session names are included in the output\n   - No regression in existing functionality\n   - Performance meets or exceeds previous implementation\n   - All automated tests pass\n   - Journal entries show richer context from complete conversations",
         "subtasks": [
           {
             "id": 1,
-            "title": "Fix permission restoration in test_cli.py",
-            "description": "Added proper try/finally with original permission restoration in test_cli_journal_entry_permission_error()",
-            "status": "completed",
+            "title": "Study Composer database structure and schema",
+            "description": "Read the documentation in `/Users/wiggitywhitney/Repos/mcp-commit-story/docs/cursor-chat-discovery.md` and examine sample data in `/Users/wiggitywhitney/Repos/mcp-commit-story/cursor_chat_sample.json` to understand the Composer database structure.",
+            "status": "pending",
             "dependencies": [],
             "details": "",
             "testStrategy": ""
           },
           {
             "id": 2,
-            "title": "Fix permission restoration in test_cursor_db_exceptions.py",
-            "description": "Added proper try/finally with original permission restoration in test_query_database_access_error()",
-            "status": "completed",
+            "title": "Create ComposerChatProvider class",
+            "description": "Implement a new class that interfaces with both Composer databases (workspace and global) to extract chat history with proper timestamps and session names.",
+            "status": "pending",
             "dependencies": [],
             "details": "",
             "testStrategy": ""
           },
           {
             "id": 3,
-            "title": "Fix permission restoration in test_git_hook_installation.py",
-            "description": "Added proper try/finally with original permission restoration in test_install_post_commit_hook_permission_error_on_hooks_dir()",
-            "status": "completed",
+            "title": "Implement workspace detection logic",
+            "description": "Create a function to automatically detect the correct workspace database based on the current git repository path.",
+            "status": "pending",
             "dependencies": [],
             "details": "",
             "testStrategy": ""
           },
           {
             "id": 4,
-            "title": "Fix permission restoration in test_journal_init.py",
-            "description": "Added proper try/finally with original permission restoration in test_generate_default_config_permission_error() and test_validate_git_repository_permission_error()",
-            "status": "completed",
+            "title": "Implement commit-based time window filtering",
+            "description": "Add logic to filter messages based on git commit timestamps, using previous commit timestamp as start time and current commit timestamp as end time.",
+            "status": "pending",
             "dependencies": [],
             "details": "",
             "testStrategy": ""
           },
           {
             "id": 5,
-            "title": "Fix permission restoration in test_database_connection.py",
-            "description": "Added proper try/finally with original permission restoration in test_get_cursor_chat_database_permission_denied()",
-            "status": "completed",
+            "title": "Update cursor_db module",
+            "description": "Replace aiService calls with the new ComposerChatProvider in the cursor_db module while maintaining the same API.",
+            "status": "pending",
             "dependencies": [],
             "details": "",
             "testStrategy": ""
           },
           {
             "id": 6,
-            "title": "Fix permission restoration in test_git_utils.py",
-            "description": "Added proper try/finally with original permission restoration in test_install_post_commit_hook_readonly_hooks_dir()",
-            "status": "completed",
+            "title": "Remove conversation reconstruction code",
+            "description": "Identify and remove any code related to AI-based conversation reconstruction that is no longer needed.",
+            "status": "pending",
             "dependencies": [],
             "details": "",
             "testStrategy": ""
           },
           {
             "id": 7,
-            "title": "Fix permission restoration in test_daily_summary_end_to_end.py",
-            "description": "Added proper try/finally with original permission restoration in test_permission_errors_handling()",
-            "status": "completed",
+            "title": "Update data models",
+            "description": "Enhance data models to include timestamps and session names from Composer.",
+            "status": "pending",
             "dependencies": [],
             "details": "",
             "testStrategy": ""
           },
           {
             "id": 8,
-            "title": "Clean up accumulated garbage directories",
-            "description": "Manually fixed permissions on and removed 60+ accumulated garbage directories in /var/folders/.../pytest-of-wiggitywhitney/",
-            "status": "completed",
+            "title": "Implement error handling",
+            "description": "Add clear error handling for cases where Composer databases cannot be found or accessed.",
+            "status": "pending",
             "dependencies": [],
             "details": "",
             "testStrategy": ""
           },
           {
             "id": 9,
-            "title": "Verify all warnings are eliminated",
-            "description": "Run full test suite to confirm zero garbage/cleanup warnings and ensure all tests pass without any regressions",
-            "status": "completed",
+            "title": "Create mock data for tests",
+            "description": "Create new mock data based on the Composer database structure for use in tests.",
+            "status": "pending",
             "dependencies": [],
             "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 10,
+            "title": "Update existing tests",
+            "description": "Update existing tests to work with the new implementation and data format.",
+            "status": "pending",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 11,
+            "title": "Add new tests for commit-based time window filtering",
+            "description": "Create new tests specifically for the commit-based time window filtering logic with various git commit pairs.",
+            "status": "pending",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 12,
+            "title": "Perform integration testing",
+            "description": "Test the integration with real Composer databases to ensure everything works as expected.",
+            "status": "pending",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 13,
+            "title": "Implement git commit timestamp retrieval",
+            "description": "Create functions to get the current commit timestamp and previous commit timestamp using git commands.",
+            "status": "pending",
+            "dependencies": [],
+            "details": "This should include:\n- Function to get timestamp for a specific commit hash\n- Function to get the previous commit hash\n- Proper error handling for git command execution\n- Conversion from git timestamp (seconds) to JavaScript timestamp (milliseconds)",
             "testStrategy": ""
           }
         ]
@@ -949,7 +972,7 @@
     ],
     "metadata": {
       "created": "2025-06-21T07:52:11.612Z",
-      "updated": "2025-06-28T00:13:20.785Z",
+      "updated": "2025-06-29T09:05:23.137Z",
       "description": "Tasks for master context"
     }
   }

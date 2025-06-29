@@ -55,7 +55,7 @@ MCP Commit Story follows a **background generation architecture** with automatic
 - **Context optimization**: Return only chat segments related to the work
 
 ### 4. Fresh AI Generation
-- **New AI instance** for each journal entry (no persistent context)
+- **Fresh AI instance** for each journal entry (no persistent context)
 - **Comprehensive input**: All collected context provided to AI
 - **Structured output**: Human-readable + machine-tagged journal entries
 - **Quality focus**: Grounded in real data, captures emotion and decisions
@@ -80,40 +80,31 @@ The MCP server provides **interactive tools only**:
 
 **Key Point**: The MCP server is NOT required for core journal generation - it runs independently in the background.
 
-## 5-Layer Standalone Journal Generator Architecture
+## 4-Layer Standalone Journal Generator Architecture
 
-The journal generation process follows a **5-layer architecture** that separates concerns between data collection, AI processing, and content generation:
+The journal generation process follows a **4-layer architecture** that separates concerns between data collection, orchestration, section generation, and AI invocation:
 
 ### Layer 1: Context Collection (Programmatic)
 - **Responsibility**: Gather raw data without AI interpretation
 - **Key Functions**:
   - `collect_git_context(commit_hash)` - Git metadata, diffs, and commit info
-  - `collect_chat_history()` - Raw prompts/responses from cursor_db (separate databases)
+  - `collect_chat_history()` - Complete chronological conversations from Composer system
   - `collect_journal_context()` - Existing journal entries, reflections, and manual context
 
-These functions are pure data extraction with no AI involved.
+These functions are pure data extraction with no AI involved. The chat history collection uses Cursor's Composer system, which provides complete chronologically-ordered conversation history with timestamps and session names.
 
-### Layer 2: Conversation Reconstruction (AI-Powered)
-- **Responsibility**: Intelligently merge separate chat databases using AI
-- **Key Functions**:
-  - `reconstruct_conversation(raw_chat_data)` - Uses AI to merge user prompts and AI responses
-  - Handles mismatched counts, missing responses, multiple prompts
-  - Returns unified conversation flow for downstream generators
-  - **First AI invocation** in the pipeline
-
-### Layer 3: Orchestration (Coordination)
+### Layer 2: Orchestration (Coordination)
 - **Module**: `standalone_generator.py`
 - **Responsibility**: Coordinate the entire journal generation flow
 - **Key Functions**:
   - `generate_journal_entry_standalone()` - Main orchestration function
   - Calls all context collectors to gather raw data
-  - Invokes conversation reconstruction (Layer 2) to unify chat data
-  - Builds the `JournalContext` structure with all collected data
+  - Builds the `JournalContext` structure with collected data (conversation history comes pre-structured)
   - Determines which generators need AI vs programmatic execution
   - Assembles complete journal entry from generated sections
   - Handles errors gracefully - if one section fails, others continue
 
-### Layer 4: Section Generators (Mixed AI and Programmatic)
+### Layer 3: Section Generators (Mixed AI and Programmatic)
 - **Responsibility**: Generate specific journal entry sections
 - **Mixed Execution Model**:
 
@@ -128,24 +119,21 @@ These functions are pure data extraction with no AI involved.
 - `generate_frustrations_section()` - Challenge identification
 - `generate_tone_mood_section()` - Emotional indicator detection
 - `generate_discussion_notes_section()` - Key conversation excerpts
-- `generate_decision_points_section()` - **NEW** - Decision moment identification
+- `generate_decision_points_section()` - Decision moment identification
 
 Each AI generator has a docstring prompt and returns a placeholder for AI execution.
 
-### Layer 5: AI Invocation (Infrastructure)
+### Layer 4: AI Invocation (Infrastructure)
 - **Responsibility**: Execute AI-powered components with graceful degradation
-- **Two AI Invocation Points**:
+- **Single AI Invocation Point**:
 
-1. **Conversation Reconstruction** (Layer 2):
-   - AI analyzes separate prompt/response databases
-   - Intelligently matches and merges them chronologically
-   - Handles edge cases and data mismatches
+**Section Generation** (Layer 3):
+- `execute_ai_function(func, context)` - Executes AI-powered generators
+- Reads docstring prompts and formats context
+- Sends to AI provider and parses responses
+- Provides graceful degradation (returns empty sections if AI unavailable)
 
-2. **Section Generation** (Layer 4):
-   - `execute_ai_function(func, context)` - Executes AI-powered generators
-   - Reads docstring prompts and formats context
-   - Sends to AI provider and parses responses
-   - Provides graceful degradation (returns empty sections if AI unavailable)
+**Direct Integration**: Chat history comes pre-structured and chronologically ordered directly from Cursor's Composer database.
 
 
 
@@ -154,34 +142,26 @@ Each AI generator has a docstring prompt and returns a placeholder for AI execut
 ```
 1. Git hook triggers → process_git_hook()
 2. Orchestrator called → generate_journal_entry_standalone()
-3. Context collectors gather → git data, chat history (raw), journal content
-4. **AI Call #1**: Conversation reconstruction → unified chat from separate databases
-5. Build JournalContext with reconstructed conversation
-6. For each generator:
+3. Context collectors gather → git data, chronological chat history, journal content
+4. Build JournalContext with conversation history
+5. For each generator:
    - Programmatic ones: execute directly
-   - **AI Call #2+**: AI generators via executor
-7. Assembly → sections combined into complete journal entry
-8. Save → journal entry written to daily file
+   - **AI Calls**: AI generators via executor
+6. Assembly → sections combined into complete journal entry
+7. Save → journal entry written to daily file
 ```
 
-### Standalone Journal Generator (Layer 3 Implementation)
+The system provides complete chronologically-ordered chat history with timestamps and session names directly from Cursor's Composer database.
+
+### Standalone Journal Generator (Layer 2 Implementation)
 ```python
 def generate_journal_entry_standalone(commit_hash: Optional[str] = None, hook_type: str = 'post-commit') -> bool:
-    """Main orchestration function using 5-layer architecture"""
+    """Main orchestration function using 4-layer architecture"""
     try:
         # Layer 1: Collect all raw context
         git_context = collect_git_context(commit_hash)
-        raw_chat_data = collect_chat_history()
+        conversation_history = collect_chat_history()  # Chronological conversations from Composer
         journal_context = collect_journal_context()
-        
-        # Layer 2: Reconstruct conversation from raw chat data
-        conversation_history = []
-        if raw_chat_data:
-            try:
-                conversation_history = reconstruct_conversation(raw_chat_data)  # AI Call #1
-            except Exception as e:
-                log_error(f"Failed to reconstruct conversation: {str(e)}")
-                # Continue with empty conversation history
         
         # Build the complete journal context
         context = JournalContext(
@@ -191,7 +171,7 @@ def generate_journal_entry_standalone(commit_hash: Optional[str] = None, hook_ty
             hook_type=hook_type
         )
         
-        # Layer 4: Generate all sections using mixed execution
+        # Layer 3: Generate all sections using mixed execution
         journal_sections = {}
         
         # Execute programmatic generators directly
@@ -202,11 +182,11 @@ def generate_journal_entry_standalone(commit_hash: Optional[str] = None, hook_ty
                 log_error(f"Failed to generate {section_name} section: {str(e)}")
                 journal_sections[section_name] = {}
         
-        # Execute AI generators via Layer 5 (AI invocation infrastructure)
+        # Execute AI generators via Layer 4 (AI invocation infrastructure)
         for section_name, generator_func in AI_GENERATORS.items():
             try:
                 if is_ai_available():
-                    journal_sections[section_name] = execute_ai_function(generator_func, context)  # AI Calls #2+
+                    journal_sections[section_name] = execute_ai_function(generator_func, context)  # AI Calls
                 else:
                     log_info(f"AI unavailable, skipping {section_name} section")
                     journal_sections[section_name] = {}
@@ -223,7 +203,7 @@ def generate_journal_entry_standalone(commit_hash: Optional[str] = None, hook_ty
         return False
 ```
 
-### Generator Registry (Layer 4 Implementation)
+### Generator Registry (Layer 3 Implementation)
 ```python
 # Define which generators are AI-powered vs programmatic
 PROGRAMMATIC_GENERATORS = {
@@ -238,9 +218,60 @@ AI_GENERATORS = {
     'frustrations': generate_frustrations_section,
     'tone_mood': generate_tone_mood_section,
     'discussion_notes': generate_discussion_notes_section,
-    'decision_points': generate_decision_points_section,  # NEW
+    'decision_points': generate_decision_points_section,
 }
 ```
+
+## Chat System Integration
+
+The system integrates with Cursor's Composer chat system to provide rich conversational context for journal entries:
+
+### Composer Integration Features
+- **Complete archive**: Access to comprehensive conversation history
+- **Chronological order**: Messages already sorted with accurate timestamps
+- **Rich context**: Session names, file attachments, and conversation threading
+- **Workspace isolation**: Automatic filtering to project-specific conversations
+- **Git correlation**: Precise commit-based time windows (previous commit timestamp to current commit timestamp)
+
+### Implementation
+```python
+# Chat collection using Composer
+conversation = collect_chat_history(commit_timestamp)  # Pre-structured, chronological
+```
+
+### Chat Collection Time Window Strategy
+
+The Composer integration uses a precise commit-based time window approach for collecting relevant chat conversations:
+
+**Time Window Definition**:
+- **Start time**: Previous commit timestamp (the last commit before the current one)
+- **End time**: Current commit timestamp
+- **Purpose**: Collect all chat conversations that happened during the development of the current commit
+
+**Why This Approach**:
+- **Exact correlation**: Captures the exact development conversation that led to the commit
+- **No arbitrary windows**: Eliminates guesswork about what constitutes "relevant" timeframes
+- **Direct relationship**: Chat context directly correlates with the work done
+- **Natural boundaries**: Handles varying development session lengths naturally (some commits take minutes, others take hours or days)
+
+**Implementation**:
+```python
+def collect_chat_history_for_commit(commit_hash: str) -> List[ChatMessage]:
+    # Get current commit timestamp
+    current_timestamp = get_commit_timestamp(commit_hash)
+    
+    # Get previous commit timestamp  
+    previous_commit = get_previous_commit(commit_hash)
+    previous_timestamp = get_commit_timestamp(previous_commit)
+    
+    # Filter Composer conversations within this window
+    return filter_conversations_by_timeframe(
+        start_time=previous_timestamp,
+        end_time=current_timestamp
+    )
+```
+
+This approach ensures journal entries contain exactly the conversations that contributed to each commit, providing precise context without noise from unrelated development sessions.
 
 ## Benefits of This Architecture
 
@@ -249,26 +280,28 @@ AI_GENERATORS = {
 - **No Workflow Disruption**: Background generation never interrupts work
 - **Full Control**: Add context when needed, ignore when focused
 - **Rich Context**: Every entry has comprehensive, relevant information
-- **Decision Capture**: New decision points section captures architectural and design choices
+- **Decision Capture**: Decision points section captures architectural and design choices
 
 ### For Quality
-- **Fresh Perspective**: Each entry generated by new AI instance with full context
+- **Fresh Perspective**: Each entry generated by fresh AI instance with full context
 - **Grounded Content**: All entries based on real git changes and conversations  
-- **Intelligent Conversation Reconstruction**: AI merges separate chat databases chronologically
+- **Complete Conversation History**: Rich conversational context from comprehensive chat data
+- **Chronological Accuracy**: Pre-structured conversations with timestamps and session context
 - **Mixed Execution**: Programmatic sections provide reliable data, AI sections add interpretation
 - **Consistent Format**: Standardized structure across all entries
 
 ### For Reliability
-- **Layered Concerns**: Clear separation between data collection, AI processing, and content generation
+- **Simplified Concerns**: Clear separation between data collection, orchestration, section generation, and AI invocation
+- **Reduced AI Dependencies**: Fewer failure points with direct data access
 - **Graceful Degradation**: System works even when AI unavailable (programmatic sections continue)
 - **Error Isolation**: If one section fails, others continue processing
 - **No Dependencies**: Core functionality works without MCP server
-- **Fast Execution**: Optimized with programmatic processing where possible
+- **Fast Execution**: Optimized with programmatic processing and pre-structured data
 
 ### For Maintainability
 - **Separation of Concerns**: Each layer has a single, well-defined responsibility
 - **Testable Components**: Layers can be tested independently with appropriate mocks
-- **Extensible Design**: New generators can be added to either programmatic or AI categories
+- **Extensible Design**: Generators can be added to either programmatic or AI categories
 - **Clear Data Flow**: Linear progression through layers with explicit boundaries
 
 ## User Experience Patterns
@@ -292,8 +325,6 @@ journal/capture-context  # Captures current AI conversation context
 ### Summary Generation
 ```bash
 # Automatic daily summaries when date changes
-# Manual generation available via MCP if needed
-journal/generate-summary --type=daily --date=2025-06-14
 ```
 
 ## Future Architecture Considerations
