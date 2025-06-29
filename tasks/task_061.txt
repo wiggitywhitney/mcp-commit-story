@@ -205,85 +205,220 @@ This task involves replacing the current aiService implementation with Cursor's 
    - Journal entries show richer context from complete conversations
 
 # Subtasks:
-## 1. Study Composer database structure and schema [pending]
+## 1. Study Composer Database Structure [pending]
 ### Dependencies: None
-### Description: Read the documentation in `/Users/wiggitywhitney/Repos/mcp-commit-story/docs/cursor-chat-discovery.md` and examine sample data in `/Users/wiggitywhitney/Repos/mcp-commit-story/cursor_chat_sample.json` to understand the Composer database structure.
+### Description: Research phase reading docs/cursor-chat-discovery.md and cursor_chat_sample.json, create documentation
 ### Details:
+**READ FIRST**: docs/cursor-chat-discovery.md - explains Composer database structure
+**REFERENCE**: cursor_chat_sample.json - shows real data examples
 
+Research the two-database system:
+- Workspace database (session metadata) in workspaceStorage/{hash}/state.vscdb
+- Global database (actual messages) in globalStorage/state.vscdb
+- Session metadata key: composer.composerData in workspace ItemTable
+- Message headers key: composerData:{composerId} in global cursorDiskKV table
+- Individual messages key: bubbleId:{composerId}:{bubbleId} in global cursorDiskKV table
 
-## 2. Create ComposerChatProvider class [pending]
+Create comprehensive documentation of findings for implementation phase.
+
+## 2. Workspace Detection Function [pending]
 ### Dependencies: None
-### Description: Implement a new class that interfaces with both Composer databases (workspace and global) to extract chat history with proper timestamps and session names.
+### Description: TDD approach with approval checkpoints for workspace matching strategy
 ### Details:
+**REFERENCE**: docs/cursor-chat-discovery.md for workspace detection strategies
 
+1. Write failing tests for workspace detection based on git repository path
+2. Run tests to confirm failure
+3. PAUSE FOR MANUAL APPROVAL: Workspace matching strategy (exact path vs fuzzy matching)
+4. Implement workspace hash detection function
+5. Run tests to confirm they pass
+6. Document the chosen approach
 
-## 3. Implement workspace detection logic [pending]
-### Dependencies: None
-### Description: Create a function to automatically detect the correct workspace database based on the current git repository path.
+Function should auto-detect correct workspace database based on current git repository path by examining workspaceStorage directory structure.
+
+## 3. Commit-Based Time Window Filtering [pending]
+### Dependencies: 61.1
+### Description: Implement git timestamp filtering with approval for edge cases
 ### Details:
+1. Write failing tests for time window filtering logic
+2. Run tests to confirm failure
+3. Implement git commit timestamp retrieval functions:
+   - getCommitTimestamp(commitHash): Get timestamp for specific commit
+   - getPreviousCommitHash(commitHash): Get previous commit hash
+   - Handle git command execution errors
+   - Convert git timestamps (seconds) to JavaScript timestamps (milliseconds)
+4. PAUSE FOR MANUAL APPROVAL: Edge case handling (first commit, merge commits, detached HEAD)
+5. Implement message filtering logic for time windows
+6. Run tests to confirm they pass
 
+Time window: previous commit timestamp to current commit timestamp.
 
-## 4. Implement commit-based time window filtering [pending]
-### Dependencies: None
-### Description: Add logic to filter messages based on git commit timestamps, using previous commit timestamp as start time and current commit timestamp as end time.
+## 4. ComposerChatProvider Class [pending]
+### Dependencies: 61.1, 61.2, 61.3
+### Description: Main interface class with approval for connection/caching strategies
 ### Details:
+**REFERENCE**: docs/cursor-chat-discovery.md for database connection patterns
 
+1. Write failing tests for ComposerChatProvider class
+2. Run tests to confirm failure  
+3. Create basic class structure with constructor and main methods
+4. PAUSE FOR MANUAL APPROVAL: Database connection strategy (singleton vs per-request, connection pooling)
+5. PAUSE FOR MANUAL APPROVAL: Caching strategy for session metadata and messages
+6. Implement database connections to both workspace and global databases
+7. Implement getChatHistoryForCommit method
+8. Implement session metadata retrieval
+9. Implement message retrieval with time filtering
+10. Run tests to confirm they pass
 
-## 5. Update cursor_db module [pending]
-### Dependencies: None
-### Description: Replace aiService calls with the new ComposerChatProvider in the cursor_db module while maintaining the same API.
+Class should handle both workspace database (session metadata) and global database (actual messages).
+
+## 5. Update query_cursor_chat_database Function [pending]
+### Dependencies: 61.4
+### Description: Replace aiService with Composer integration
 ### Details:
+**REFERENCE**: src/mcp_commit_story/cursor_db/ module for current implementation
 
+1. Write failing tests for updated query_cursor_chat_database function
+2. Run tests to confirm failure
+3. Replace aiService calls with ComposerChatProvider calls
+4. Update function signature and return data to include timestamps and session names
+5. Maintain backward compatibility for existing callers
+6. Update error handling to handle Composer database failures
+7. Run tests to confirm they pass
+8. Document API changes
 
-## 6. Remove conversation reconstruction code [pending]
-### Dependencies: None
-### Description: Identify and remove any code related to AI-based conversation reconstruction that is no longer needed.
+Function should maintain same external interface while providing richer data from Composer.
+
+## 6. Remove Conversation Reconstruction Code [pending]
+### Dependencies: 61.5
+### Description: Eliminate AI-based reconstruction since Composer provides chronological data
 ### Details:
+1. Identify all AI-based conversation reconstruction code in cursor_db module
+2. Create tests to ensure removal doesn't break functionality
+3. Remove message_reconstruction.py functions that are no longer needed
+4. Remove any AI provider calls used for conversation ordering
+5. Clean up imports and dependencies
+6. Update documentation to reflect removal
+7. Run all tests to ensure no regressions
 
+Since Composer provides chronologically ordered messages with timestamps, AI-based reconstruction is redundant.
 
-## 7. Update data models [pending]
-### Dependencies: None
-### Description: Enhance data models to include timestamps and session names from Composer.
+## 7. Update Data Models [pending]
+### Dependencies: 61.5
+### Description: Enhance with timestamps and session names
 ### Details:
+**REFERENCE**: src/mcp_commit_story/context_types.py for current data models
 
+1. Write failing tests for enhanced data models
+2. Run tests to confirm failure
+3. Update ChatMessage and related types to include:
+   - timestamp: number (JavaScript timestamp in milliseconds)
+   - sessionName: string (e.g., \"Implement authentication\")
+   - composerId: string (for debugging/tracing)
+   - bubbleId: string (for debugging/tracing)
+4. Update any interfaces or type definitions
+5. Ensure backward compatibility for existing code
+6. Run tests to confirm they pass
+7. Update documentation for new fields
 
-## 8. Implement error handling [pending]
-### Dependencies: None
-### Description: Add clear error handling for cases where Composer databases cannot be found or accessed.
+Enhanced models should support the richer data available from Composer.
+
+## 8. Comprehensive Error Handling [pending]
+### Dependencies: 61.4, 61.5
+### Description: Implement robust error handling for database access, git operations, and edge cases
 ### Details:
+1. Write failing tests for various error scenarios
+2. Run tests to confirm failure
+3. Implement error handling for:
+   - Composer databases not found or inaccessible
+   - Corrupted database files
+   - Git command failures (invalid commit hash, git not available)
+   - Missing workspace detection
+   - Network/permission issues
+   - Invalid session data or missing bubbleIds
+   - Database query failures
+4. Add clear error messages with debugging information
+5. Implement graceful degradation (fallback behaviors where appropriate)
+6. Add logging for debugging purposes
+7. Run tests to confirm proper error handling
+8. Document error conditions and recovery strategies
 
+Error handling should be comprehensive but never block system operation unnecessarily.
 
-## 9. Create mock data for tests [pending]
-### Dependencies: None
-### Description: Create new mock data based on the Composer database structure for use in tests.
+## 9. Mock Data for Testing [pending]
+### Dependencies: 61.1, 61.7
+### Description: Create comprehensive test fixtures based on real Composer database structure
 ### Details:
+1. Analyze real Composer database structure from cursor_chat_sample.json
+2. Create mock workspace database data:
+   - Session metadata with composerIds
+   - Workspace configuration data
+   - Various session states (active, completed, etc.)
+3. Create mock global database data:
+   - Message headers with bubbleIds arrays
+   - Individual bubble messages with timestamps
+   - Various message types (user, assistant, system)
+   - Multiple sessions with overlapping timeframes
+4. Create edge case mock data:
+   - Empty sessions
+   - Corrupted data scenarios
+   - Large message volumes
+   - Missing references
+5. Implement SQLite test database creation helpers
+6. Document mock data structure and usage
 
+Mock data should cover normal operations, edge cases, and error scenarios for comprehensive testing.
 
-## 10. Update existing tests [pending]
-### Dependencies: None
-### Description: Update existing tests to work with the new implementation and data format.
+## 10. Basic Integration Testing [pending]
+### Dependencies: 61.8, 61.9
+### Description: Smoke tests and end-to-end validation
 ### Details:
+1. Create smoke tests for basic functionality:
+   - ComposerChatProvider can connect to databases
+   - Workspace detection works with real repositories
+   - Message retrieval returns expected format
+   - Time window filtering produces reasonable results
+2. Create end-to-end integration tests:
+   - Full chat history retrieval workflow
+   - Integration with existing MCP tools
+   - Performance benchmarks vs previous implementation
+   - Memory usage validation
+3. Test with real Composer databases (if available)
+4. Validate session names are correctly retrieved
+5. Verify chronological ordering is maintained
+6. Test commit-based time window accuracy
+7. Run performance comparison tests
+8. Document test results and any issues found
 
+Tests should validate the complete integration works as expected in real-world scenarios.
 
-## 11. Add new tests for commit-based time window filtering [pending]
-### Dependencies: None
-### Description: Create new tests specifically for the commit-based time window filtering logic with various git commit pairs.
+## 11. Telemetry Integration [pending]
+### Dependencies: 61.4, 61.5, 61.8
+### Description: Add comprehensive telemetry coverage following project standards
 ### Details:
+**REFERENCE**: docs/telemetry.md for project telemetry standards
 
+1. Add @trace_mcp_operation decorators to all new functions:
+   - ComposerChatProvider methods
+   - Workspace detection functions
+   - Time window filtering functions
+   - Database query operations
+2. Implement comprehensive metrics:
+   - mcp_composer_operations_total{operation_type, status}
+   - mcp_composer_database_query_duration_seconds{database_type}
+   - mcp_workspace_detection_duration_seconds{detection_method}
+   - mcp_time_window_filtering_duration_seconds
+   - mcp_chat_message_count{session_name}
+3. Add structured logging with trace correlation:
+   - Database connection events
+   - Workspace detection results
+   - Time window calculations
+   - Message filtering operations
+   - Error conditions
+4. Ensure graceful degradation (telemetry failures don't block operation)
+5. Add telemetry validation tests
+6. Document new metrics and traces
+7. Verify integration with existing telemetry exporters
 
-## 12. Perform integration testing [pending]
-### Dependencies: None
-### Description: Test the integration with real Composer databases to ensure everything works as expected.
-### Details:
-
-
-## 13. Implement git commit timestamp retrieval [pending]
-### Dependencies: None
-### Description: Create functions to get the current commit timestamp and previous commit timestamp using git commands.
-### Details:
-This should include:
-- Function to get timestamp for a specific commit hash
-- Function to get the previous commit hash
-- Proper error handling for git command execution
-- Conversion from git timestamp (seconds) to JavaScript timestamp (milliseconds)
+All telemetry should follow project standards: automatic trace correlation, JSON logging, and multi-exporter support.
 
