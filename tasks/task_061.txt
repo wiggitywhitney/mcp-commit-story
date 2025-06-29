@@ -364,6 +364,78 @@ logger.warning(f"Git command failed for {commit_hash}, using fallback")
 10. Run tests to confirm they pass
 
 Class should handle both workspace database (session metadata) and global database (actual messages).
+<info added on 2025-06-29T21:33:29.841Z>
+**APPROVED DESIGN DECISIONS** (Manual Approval Complete)
+
+**Database Connection Strategy: Per-request connections**
+- Create fresh connections for each `getChatHistoryForCommit()` call
+- Use context managers for automatic cleanup
+- No connection pooling or singleton patterns
+- Matches existing pattern in query_executor.py
+
+**Database Path Validation Strategy:**
+- Handle missing databases gracefully at query time, not in `__init__()`
+- Follow pattern from connection.py where validation happens during actual queries
+- Allows class instantiation even if databases aren't ready yet
+
+**Caching Strategy: No caching**
+- Query fresh data every time - no caching of session metadata or messages
+- Keeps implementation simple and data always accurate
+- Consistent with project philosophy (no caching anywhere else in codebase)
+
+**Time Window Input Format:**
+- Accept pre-calculated timestamps in milliseconds from Task 61.3
+- Method signature: `getChatHistoryForCommit(start_timestamp_ms: int, end_timestamp_ms: int)`
+- Clean separation of concerns - Task 61.3 handles git timestamp conversion
+
+**Implementation Guidelines:**
+- **Reuse existing infrastructure**:
+```python
+from ..cursor_db.query_executor import execute_cursor_query
+from ..cursor_db.exceptions import CursorDatabaseAccessError, CursorDatabaseQueryError
+```
+
+- **Follow connection patterns**:
+  - Use `execute_cursor_query()` for all database operations
+  - It already handles timeouts, error wrapping, and telemetry
+  - Don't create new connection logic
+
+**Error Handling Strategy:**
+- Let database errors bubble up from `execute_cursor_query()`
+- Add class-specific error handling only where needed
+- Use existing exception types (`CursorDatabaseAccessError`, `CursorDatabaseQueryError`)
+
+**Logging Strategy:**
+- Add debug logging for empty results following query_executor.py patterns:
+```python
+logger.debug(f"No sessions found in workspace database: {self.workspace_db_path}")
+logger.debug(f"No messages found in time window {start_timestamp_ms} to {end_timestamp_ms}")
+```
+- Provides debugging info without treating empty results as errors
+- Telemetry attributes still track counts (0 sessions, 0 messages) for monitoring
+
+**Telemetry Requirements:**
+- Use `@trace_mcp_operation("composer.get_chat_history")` on main method
+- Performance threshold: 500ms (from `PERFORMANCE_THRESHOLDS["query_chat_database"]`)
+- Track span attributes:
+  - `composer.session_count`: Number of sessions found
+  - `composer.message_count`: Number of messages retrieved
+  - `composer.time_window_hours`: Duration of the time window
+  - `database.workspace_path`: Path to workspace DB
+  - `database.global_path`: Path to global DB
+
+**Class Structure Design:**
+- Keep simple - just store the database paths
+- No connection state management
+- Methods should be independent (no shared state between calls)
+- Focus on business logic of retrieving right messages for time window
+
+**Implementation Focus:**
+- Clean, simple implementation leveraging existing database infrastructure
+- Avoid reinventing the wheel - reuse proven patterns
+- Focus on core responsibility: querying the right chat data for given time windows
+- Maintain consistency with established codebase patterns
+</info added on 2025-06-29T21:33:29.841Z>
 
 ## 5. Update query_cursor_chat_database Function [pending]
 ### Dependencies: 61.4
