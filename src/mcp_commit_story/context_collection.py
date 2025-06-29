@@ -93,25 +93,26 @@ def collect_chat_history(
         raw_chat_data = query_cursor_chat_database()
         
         # Apply message limiting with research-validated defaults
+        limited_chat_data = None
         if limit_chat_messages is None:
             logger.warning("Message limiting module not available")
             limited_chat_history = raw_chat_data.get('chat_history', {})
         else:
             try:
-                # Pass only the chat_history part to limit_chat_messages
-                chat_history_part = raw_chat_data.get('chat_history', {})
-                limited_chat_history = limit_chat_messages(
-                    chat_history_part,
+                # Pass the full chat data to limit_chat_messages
+                limited_chat_data = limit_chat_messages(
+                    raw_chat_data,
                     DEFAULT_MAX_HUMAN_MESSAGES,
                     DEFAULT_MAX_AI_MESSAGES
                 )
+                limited_chat_history = limited_chat_data.get('chat_history', {})
             except Exception as e:
                 logger.warning(f"Message limiting failed: {e}")
                 limited_chat_history = raw_chat_data.get('chat_history', {})
         
         # Log telemetry if truncation occurred
-        if limited_chat_history and isinstance(limited_chat_history, dict):
-            metadata = limited_chat_history.get('metadata', {})
+        if limited_chat_data and isinstance(limited_chat_data, dict):
+            metadata = limited_chat_data.get('metadata', {})
             if metadata.get('truncated_human') or metadata.get('truncated_ai'):
                 # Simple telemetry logging as specified in the plan
                 try:
@@ -133,7 +134,8 @@ def collect_chat_history(
         
         # Convert to ChatHistory format
         messages = []
-        chat_messages = limited_chat_history.get('messages', [])
+        # limited_chat_history is now the messages array directly
+        chat_messages = limited_chat_history if isinstance(limited_chat_history, list) else []
         for msg in chat_messages:
             messages.append({
                 'speaker': 'Human' if msg.get('role') == 'user' else 'Assistant',
