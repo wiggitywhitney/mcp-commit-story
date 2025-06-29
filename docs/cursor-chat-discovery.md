@@ -282,6 +282,17 @@ def filter_recent_conversations(conversations: List[Dict], hours: int = 48) -> L
     return recent_conversations
 ```
 
+## Time Window Filtering
+
+The system uses precise commit-based time windows to collect only relevant chat history:
+
+- **Normal commits**: Previous commit timestamp → current commit timestamp
+- **First commits**: 24-hour lookback window
+- **Merge commits**: Skipped entirely (no journal entries generated)
+- **Error fallback**: 24-hour window when git operations fail
+
+This ensures each journal entry contains exactly the conversations that led to that commit.
+
 ## Key Features
 
 ### Chronological Message Structure

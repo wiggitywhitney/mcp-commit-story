@@ -453,6 +453,100 @@ logger.debug(f"No messages found in time window {start_timestamp_ms} to {end_tim
 8. Document API changes
 
 Function should maintain same external interface while providing richer data from Composer.
+<info added on 2025-06-29T23:18:28.761Z>
+# Comprehensive Implementation Plan
+
+## Context
+Function query_cursor_chat_database() is the integration point between existing system and new Composer approach. Currently only called by collect_chat_history() in context_collection.py.
+
+## Approved Design Decisions
+
+### 1. Function Signature: Keep exactly the same - no parameters
+```python
+def query_cursor_chat_database() -> Dict[str, Any]:
+```
+**Rationale**: Maintains perfect backward compatibility
+
+### 2. Time Window: Use "last commit to current" as the default
+- Detect current commit internally (since no parameters)
+- Calculate time window: previous commit timestamp → current commit timestamp  
+- Much smarter than the arbitrary 48-hour window
+**Rationale**: Provides precisely the conversations that led to each commit
+
+### 3. Return Structure: Must maintain compatibility
+- Keep chat_history key with array of messages
+- Each message needs role and content (required)
+- Add timestamp and sessionName fields (new)
+- Update ChatMessage type definition for type safety
+**Rationale**: Existing code continues to work while getting richer data
+
+### 4. Error Handling: Fail fast with clear errors
+- No fallback to old aiService approach
+- Clear error when Composer databases unavailable
+**Rationale**: Makes problems visible rather than masking them
+
+### 5. Implementation: Create new ComposerChatProvider instance per call
+- No connection pooling or state management
+- Reuse existing execute_cursor_query() infrastructure
+**Rationale**: Matches project's stateless patterns
+
+## CRITICAL ADDITIONAL CHANGE
+Remove the 200/200 message limiting from collect_chat_history()
+
+**Current Problem**: 
+- collect_chat_history() calls query_cursor_chat_database()
+- Then applies 200 human + 200 AI message limits
+- This was designed for the old 48-hour window approach
+
+**With Composer's precise commit-based time windows**:
+- We're already getting ONLY the relevant messages for each commit
+- The 200/200 limits are unnecessary and could cut off important conversations
+- Example: A 4-hour coding session might have 250 messages - we want them all!
+
+**The Fix**:
+- Remove the limit_chat_messages() call from collect_chat_history()
+- Return the Composer data directly
+- Keep error handling and logging
+
+## Implementation Order
+1. First update query_cursor_chat_database() to use Composer
+2. Verify it returns messages with new fields
+3. Then update collect_chat_history() to remove limiting
+4. Test the complete flow
+
+## TDD Implementation Steps
+1. Write failing tests for new Composer integration
+2. Run tests to confirm they fail
+3. Implement query_cursor_chat_database() changes
+4. Implement collect_chat_history() changes (remove limiting)
+5. Update ChatMessage type definitions
+6. Run tests to confirm they pass
+7. Test complete integration flow
+
+## Key Implementation Details
+- Use get_commit_time_window() from Task 61.3 for precise time windows
+- Use detect_workspace() from Task 61.2 for workspace discovery
+- Use ComposerChatProvider from Task 61.4 for message retrieval
+- Remove limit_chat_messages() from context_collection.py
+- Update context_types.py for enhanced ChatMessage type
+</info added on 2025-06-29T23:18:28.761Z>
+<info added on 2025-06-29T23:20:35.429Z>
+## Additional Documentation Update Required:
+
+When implementing the changes, update the collect_chat_history() docstring in context_collection.py to reflect:
+
+**Current docstring mentions:**
+- "cursor_db's 48-hour filtering" 
+- "hardcoded 200/200 message limits"
+- Message limits as "safety net for edge cases"
+
+**New docstring should mention:**
+- "commit-based time window filtering" instead of 48-hour
+- "complete conversation context" instead of message limits  
+- "precise commit-relevant conversations" instead of safety net approach
+
+This ensures the documentation accurately reflects the new intelligent filtering approach.
+</info added on 2025-06-29T23:20:35.429Z>
 
 ## 6. Remove Conversation Reconstruction Code [pending]
 ### Dependencies: 61.5
