@@ -20,13 +20,16 @@ class TestAITelemetryIntegration:
         """Test that successful AI calls add success=True and latency attributes."""
         mock_span = Mock()
         
-        with patch('src.mcp_commit_story.ai_invocation.invoke_ai') as mock_invoke:
+        with patch('src.mcp_commit_story.ai_invocation.OpenAIProvider') as mock_provider_class:
             with patch('opentelemetry.trace.get_current_span', return_value=mock_span):
-                # Mock successful AI response
-                mock_invoke.return_value = "Generated content"
+                # Mock successful AI provider
+                mock_provider = Mock()
+                mock_provider.call.return_value = "Generated content"
+                mock_provider_class.return_value = mock_provider
                 
-                # Call the function (this will be the actual invoke_ai with telemetry)
+                # Call the function (this will execute the actual invoke_ai with telemetry)
                 result = invoke_ai("Test prompt", {})
+                assert result == "Generated content"
                 
                 # Verify success attributes were set
                 mock_span.set_attribute.assert_any_call("ai.success", True)
