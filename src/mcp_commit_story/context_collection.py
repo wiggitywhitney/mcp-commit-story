@@ -95,21 +95,23 @@ def collect_chat_history(
         # Apply message limiting with research-validated defaults
         if limit_chat_messages is None:
             logger.warning("Message limiting module not available")
-            limited_data = raw_chat_data
+            limited_chat_history = raw_chat_data.get('chat_history', {})
         else:
             try:
-                limited_data = limit_chat_messages(
-                    raw_chat_data,
+                # Pass only the chat_history part to limit_chat_messages
+                chat_history_part = raw_chat_data.get('chat_history', {})
+                limited_chat_history = limit_chat_messages(
+                    chat_history_part,
                     DEFAULT_MAX_HUMAN_MESSAGES,
                     DEFAULT_MAX_AI_MESSAGES
                 )
             except Exception as e:
                 logger.warning(f"Message limiting failed: {e}")
-                limited_data = raw_chat_data
+                limited_chat_history = raw_chat_data.get('chat_history', {})
         
         # Log telemetry if truncation occurred
-        if limited_data and isinstance(limited_data, dict):
-            metadata = limited_data.get('metadata', {})
+        if limited_chat_history and isinstance(limited_chat_history, dict):
+            metadata = limited_chat_history.get('metadata', {})
             if metadata.get('truncated_human') or metadata.get('truncated_ai'):
                 # Simple telemetry logging as specified in the plan
                 try:
@@ -131,8 +133,8 @@ def collect_chat_history(
         
         # Convert to ChatHistory format
         messages = []
-        chat_history = limited_data.get('chat_history', []) if limited_data else []
-        for msg in chat_history:
+        chat_messages = limited_chat_history.get('messages', [])
+        for msg in chat_messages:
             messages.append({
                 'speaker': 'Human' if msg.get('role') == 'user' else 'Assistant',
                 'text': msg.get('content', '')
