@@ -29,6 +29,7 @@ This task involves replacing the current aiService implementation with Cursor's 
    // Example implementation
    import { Database } from 'better-sqlite3';
    import * as path from 'path';
+   import { execSync } from 'child_process';
    
    export class ComposerChatProvider {
      private workspaceDb: Database;
@@ -41,10 +42,17 @@ This task involves replacing the current aiService implementation with Cursor's 
        this.globalDb = new Database(path.join('globalStorage', 'state.vscdb'));
      }
      
-     async getChatHistoryForCommit(commitTimestamp: number): Promise<ChatMessage[]> {
-       // Define time window: 30 min before, 5 min after commit
-       const startTime = commitTimestamp - (30 * 60 * 1000);
-       const endTime = commitTimestamp + (5 * 60 * 1000);
+     async getChatHistoryForCommit(commitHash: string): Promise<ChatMessage[]> {
+       // Get current commit timestamp
+       const currentCommitTimestamp = this.getCommitTimestamp(commitHash);
+       
+       // Get previous commit timestamp
+       const previousCommitHash = this.getPreviousCommitHash(commitHash);
+       const previousCommitTimestamp = this.getCommitTimestamp(previousCommitHash);
+       
+       // Define time window: from previous commit to current commit
+       const startTime = previousCommitTimestamp;
+       const endTime = currentCommitTimestamp;
        
        // Get session metadata from workspace DB
        const sessions = this.getSessionMetadata();
@@ -53,6 +61,23 @@ This task involves replacing the current aiService implementation with Cursor's 
        const messages = this.getMessagesInTimeWindow(sessions, startTime, endTime);
        
        return messages;
+     }
+     
+     private getCommitTimestamp(commitHash: string): number {
+       const timestamp = execSync(
+         `git show -s --format=%ct ${commitHash}`,
+         { encoding: 'utf-8' }
+       ).trim();
+       
+       // Convert to milliseconds (git returns seconds)
+       return parseInt(timestamp) * 1000;
+     }
+     
+     private getPreviousCommitHash(commitHash: string): string {
+       return execSync(
+         `git rev-parse ${commitHash}~1`,
+         { encoding: 'utf-8' }
+       ).trim();
      }
      
      private getSessionMetadata() {
@@ -132,8 +157,8 @@ This task involves replacing the current aiService implementation with Cursor's 
 
 ## Implementation Decisions (APPROVED)
 
-- **Time Window Strategy**: Use git commit timestamp to define chat window (30 min before, 5 min after)
-- **Message Filtering**: No message count limits - rely only on time windows
+- **Time Window Strategy**: Use git commit timestamps to define chat window (previous commit to current commit)
+- **Message Filtering**: Filter conversations that happened during the development of the current commit
 - **Data Richness**: Include session names from Composer (e.g., "Implement authentication")
 - **Workspace Detection**: Auto-detect based on current git repository path
 - **Error Handling**: Fail clearly if Composer not found (no fallback to aiService)
@@ -143,7 +168,7 @@ This task involves replacing the current aiService implementation with Cursor's 
    - Create unit tests for the new Composer integration module
    - Test edge cases like empty chats, very large chats, and malformed responses
    - Mock Composer database responses for predictable testing
-   - Test time window filtering logic with various commit timestamps
+   - Test commit-based time window filtering logic with various commit pairs
    - Verify workspace detection logic with different repository paths
 
 2. Integration Tests:
@@ -156,7 +181,7 @@ This task involves replacing the current aiService implementation with Cursor's 
    - Ensure all features that previously used aiService continue to work
    - Verify that chat history access works for both recent and older conversations
    - Check that the full chronological history is correctly maintained
-   - Verify time window filtering works correctly with real git commits
+   - Verify commit-based time window filtering works correctly with real git commits
 
 4. Performance Tests:
    - Measure and compare load times for chat history between old and new implementations
@@ -168,11 +193,11 @@ This task involves replacing the current aiService implementation with Cursor's 
    - Manually verify that the complete chat history is accessible
    - Check that the chronological ordering is correct
    - Verify that the UI correctly displays the expanded chat history
-   - Test with real git commits to ensure time windows capture relevant conversations
+   - Test with real git commits to ensure commit-based time windows capture relevant conversations
 
 6. Validation Criteria:
    - All chat history (not just 48 hours) is accessible
-   - Messages are correctly filtered by git commit time windows
+   - Messages are correctly filtered by commit-based time windows
    - Session names are included in the output
    - No regression in existing functionality
    - Performance meets or exceeds previous implementation
@@ -198,9 +223,9 @@ This task involves replacing the current aiService implementation with Cursor's 
 ### Details:
 
 
-## 4. Implement time window filtering [pending]
+## 4. Implement commit-based time window filtering [pending]
 ### Dependencies: None
-### Description: Add logic to filter messages based on git commit timestamp (30 minutes before, 5 minutes after) while preserving chronological ordering.
+### Description: Add logic to filter messages based on git commit timestamps, using previous commit timestamp as start time and current commit timestamp as end time.
 ### Details:
 
 
@@ -240,9 +265,9 @@ This task involves replacing the current aiService implementation with Cursor's 
 ### Details:
 
 
-## 11. Add new tests for time window filtering [pending]
+## 11. Add new tests for commit-based time window filtering [pending]
 ### Dependencies: None
-### Description: Create new tests specifically for the time window filtering logic with various git commit timestamps.
+### Description: Create new tests specifically for the commit-based time window filtering logic with various git commit pairs.
 ### Details:
 
 
@@ -251,4 +276,14 @@ This task involves replacing the current aiService implementation with Cursor's 
 ### Description: Test the integration with real Composer databases to ensure everything works as expected.
 ### Details:
 
+
+## 13. Implement git commit timestamp retrieval [pending]
+### Dependencies: None
+### Description: Create functions to get the current commit timestamp and previous commit timestamp using git commands.
+### Details:
+This should include:
+- Function to get timestamp for a specific commit hash
+- Function to get the previous commit hash
+- Proper error handling for git command execution
+- Conversion from git timestamp (seconds) to JavaScript timestamp (milliseconds)
 

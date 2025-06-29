@@ -1,4 +1,4 @@
-# Setup CLI Reference
+# Setup Guide
 
 ## Overview
 
@@ -13,12 +13,16 @@ The system uses a **purposeful separation of concerns**:
 
 This approach delivers the best experience for each use case - simple setup commands for humans, and rich structured operations for AI automation.
 
-## Available Commands
-
-### `journal-init` - Initialize Journal System
+## Installation
 
 ```bash
-mcp-commit-story-setup journal-init [OPTIONS]
+pip install mcp-commit-story
+```
+
+## Initialize Journal
+
+```bash
+mcp-commit-story-setup journal-init
 ```
 
 Initialize journal configuration and directory structure in a git repository.
@@ -35,10 +39,10 @@ Initialize journal configuration and directory structure in a git repository.
 - ✅ JSON output for scripting
 - ✅ Comprehensive error handling
 
-### `install-hook` - Install Git Post-Commit Hook
+## Install Git Hooks
 
 ```bash
-mcp-commit-story-setup install-hook [OPTIONS]
+mcp-commit-story-setup install-hook
 ```
 
 Install git post-commit hook for automated journal entry creation.
@@ -52,6 +56,75 @@ Install git post-commit hook for automated journal entry creation.
 - ✅ Non-blocking hook execution
 - ✅ Cross-platform compatibility
 - ✅ JSON output for scripting
+
+## AI Provider Setup
+
+### Quick Start
+
+1. **Get OpenAI API key**: Visit [OpenAI Platform](https://platform.openai.com/api-keys) and create a new API key
+2. **Set environment variable**:
+   ```bash
+   export OPENAI_API_KEY=sk-your-key-here
+   ```
+3. **Make a commit**: Any git commit will now trigger AI-enhanced journal generation
+4. **Check journal**: Look in `journal/` directory for AI-generated entry
+
+### Examples
+
+**What a successful AI-generated entry looks like**:
+```markdown
+## 2025-06-29 14:30:42 - Commit abc123ef
+
+### Summary
+Updated documentation and implemented new feature X with comprehensive tests.
+
+### Technical Synopsis
+The implementation involved creating three new modules...
+
+### Accomplishments
+1. Successfully implemented feature X
+2. Added 15 new test cases with 100% coverage
+3. Updated documentation for better clarity
+```
+
+**What happens without AI** (empty sections but structure preserved):
+```markdown
+## 2025-06-29 14:30:42 - Commit abc123ef
+
+### Summary
+
+
+### Technical Synopsis
+
+
+### Accomplishments
+
+```
+
+### Troubleshooting
+
+1. **No API key error**: 
+   ```bash
+   export OPENAI_API_KEY=your-actual-key-here
+   ```
+
+2. **Invalid API key**: Verify your key works at [OpenAI Platform](https://platform.openai.com)
+
+3. **Network/timeout issues**: Check telemetry logs in journal directory for detailed error information
+
+## Available Commands
+
+### `journal-init` - Initialize Journal System
+
+```bash
+mcp-commit-story-setup journal-init [OPTIONS]
+```
+
+### `install-hook` - Install Git Post-Commit Hook
+
+```bash
+mcp-commit-story-setup install-hook [OPTIONS]
+```
 
 ## JSON Output Format
 
@@ -103,22 +176,20 @@ Configure the MCP server in your editor (e.g., Cursor) for integrated journal op
 
 The `install-hook` command sets up automatic journal entries on every git commit.
 
-## Installation & Usage
-
-### Install Package
+## Quick Start
 
 ```bash
+# Install package
 pip install mcp-commit-story
-```
 
-### Quick Start
-
-```bash
 # Initialize journal in current git repository
 mcp-commit-story-setup journal-init
 
 # Install automated git hooks
 mcp-commit-story-setup install-hook
+
+# Set up AI (optional but recommended)
+export OPENAI_API_KEY=your-key-here
 ```
 
 ### Get Help
