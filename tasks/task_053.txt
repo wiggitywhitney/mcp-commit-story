@@ -74,6 +74,9 @@ def get_model_config(generation_type):
 - Locate and reuse the existing logic that determines when summaries should be generated
 - Ensure this logic continues to work correctly with the standalone approach
 
+7. **Research Note**:
+- Consider whether to include inefficiency detection and solution suggestions in daily summaries (e.g., detecting repeated identical queries to AI assistant, similar questions asked differently, etc.). Evaluate during implementation whether this enhancement would be valuable.
+
 The implementation should follow the same patterns established in the standalone journal generator (Task 50), adapting them specifically for daily summaries. This refactoring completes the transition of all AI generation functionality to background processes that don't require the MCP server while preserving all existing daily summary capabilities.
 
 # Test Strategy:

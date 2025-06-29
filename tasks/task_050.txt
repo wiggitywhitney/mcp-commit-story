@@ -1,7 +1,7 @@
 # Task ID: 50
 # Title: Create Standalone Journal Generator
 # Status: pending
-# Dependencies: 57 (Not found), 61
+# Dependencies: 61
 # Priority: high
 # Description: Implement a standalone journal generator that runs from git hooks without requiring the MCP server, using a simplified 4-layer architecture that separates concerns between context collection, orchestration, section generation, and AI invocation.
 # Details:

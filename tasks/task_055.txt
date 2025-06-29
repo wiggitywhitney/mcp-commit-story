@@ -43,6 +43,12 @@ def collect_journal_context(journal_date=None):
    - Ensure compatibility with the journal generation process
    - Maintain consistent data structures with other context collection functions
 
+5. Research consideration:
+   - During implementation, evaluate whether README/project context collection should be included in this function
+   - Note that architecture docs specify four context sources: Git Context and Chat History (already implemented), Recent Journals (current focus), and Project Context (README or configured overview file)
+   - Consider if Project Context should be part of collect_journal_context() or remain as a separate function
+   - Document your decision and rationale in the implementation
+
 # Test Strategy:
 1. Unit tests:
    - Create test_collect_journal_context.py with the following test cases:
@@ -65,3 +71,9 @@ def collect_journal_context(journal_date=None):
    - Run the function and verify the output matches expectations
    - Test with real user journal files (if available)
    - Verify the function correctly handles different formatting styles
+
+4. If Project Context collection is included:
+   - Add tests for README/project context extraction
+   - Test with various README formats and sizes
+   - Test with custom configured overview files
+   - Verify appropriate integration with other context sources
