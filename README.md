@@ -128,6 +128,8 @@ Later, Bonnie used her journal to write a conference talk. She found not just th
 
 Over time, Bonnie's journal became a resource for performance reviews, onboarding new teammates, and even her own career growth. The value wasn't in any single entry, but in the cumulative story of her engineering journey.
 
+**Real Example:** The development of MCP Commit Story itself provides a concrete example of what this kind of documentation enables. Months of journal entries capturing the technical work, emotional journey, and architectural discoveries were transformed into ["Building a Castle on Unstable Ground: My Month of Misleading AI Advice"](blog-post-castle-unstable-ground.md) - a detailed account of discovering fundamental flaws in the original AI-guided architecture and the recovery process that led to a better system. The blog post demonstrates how automated journaling can capture not just what you built, but the complete story of why and how, including the failures and pivots that traditional documentation often omits.
+
 ---
 
 ## Background Generation: Capture Now, Process Silently
