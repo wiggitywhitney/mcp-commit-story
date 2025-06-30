@@ -670,6 +670,37 @@ CONTENT QUALITY GUIDELINES:
 - Use conversational, human language rather than corporate jargon
 - If entries contain conflicting or ambiguous information, preserve the ambiguity. Note unresolved questions without inventing answers.
 
+EXTERNAL READER ACCESSIBILITY GUIDELINES:
+Write summaries that can be understood by someone outside the project who has no prior context.
+Use specific, concrete language that explains real problems and solutions rather than abstract buzzwords.
+
+❌ AVOID Abstract Corporate Speak:
+- "Revolutionary Implementation Gap Solution"
+- "Sophisticated AI prompting" 
+- "Architectural maturity"
+- "Systematic progression from infrastructure through breakthrough innovation"
+- "Comprehensive optimization initiatives"
+- "Strategic refactoring paradigms"
+
+✅ USE Specific, Concrete Problems and Solutions:
+- "Fixed Empty AI Function Problem: For months, the AI functions were supposed to generate rich journal content but were just returning empty stubs with TODO comments"
+- "Made Git Hooks Actually Trigger Summaries: Previous git hook implementation was broken - it would install the hooks but they wouldn't actually generate summaries when you committed code"
+- "Built smart calendar logic that can detect when summary periods have been crossed and backfill missing summaries"
+- "Solved the 'I haven't committed in a week but still want summaries' problem by adding a file-watching trigger system"
+
+AVOID MEANINGLESS TASK REFERENCES:
+❌ "Completed task 61.2" (meaningless to external readers and future you)
+❌ "Finished subtask 45.3" (internal organizational noise)
+✅ "Fixed the database connection detection problem - the system can now automatically find and connect to Cursor's SQLite databases on different platforms"
+✅ "Solved the cursor chat integration issue by implementing proper message filtering"
+
+The improved approach:
+- Explains real problems readers can understand
+- Uses concrete language about what was built and why it matters  
+- Avoids buzzwords that don't convey actual meaning
+- Connects to developer experience that feels authentic and relatable
+- Makes the summary valuable for conference talks, documentation, or future reference
+
 [... rest of comprehensive prompt ...]
 
 JOURNAL ENTRIES TO ANALYZE:
@@ -812,6 +843,37 @@ def generate_daily_summary(journal_entries: List[JournalEntry], date_str: str, c
     - If the developer does something routinely, only mention it if there was something specific/challenging about it this time, or if the volume was unusually high
     - Use conversational, human language rather than corporate jargon
     - If entries contain conflicting or ambiguous information, preserve the ambiguity. Note unresolved questions without inventing answers.
+
+    EXTERNAL READER ACCESSIBILITY GUIDELINES:
+    Write summaries that can be understood by someone outside the project who has no prior context.
+    Use specific, concrete language that explains real problems and solutions rather than abstract buzzwords.
+    
+    ❌ AVOID Abstract Corporate Speak:
+    - "Revolutionary Implementation Gap Solution"
+    - "Sophisticated AI prompting"
+    - "Architectural maturity"
+    - "Systematic progression from infrastructure through breakthrough innovation"
+    - "Comprehensive optimization initiatives"
+    - "Strategic refactoring paradigms"
+    
+    ✅ USE Specific, Concrete Problems and Solutions:
+    - "Fixed Empty AI Function Problem: For months, the AI functions were supposed to generate rich journal content but were just returning empty stubs with TODO comments"
+    - "Made Git Hooks Actually Trigger Summaries: Previous git hook implementation was broken - it would install the hooks but they wouldn't actually generate summaries when you committed code"
+    - "Built smart calendar logic that can detect when summary periods have been crossed and backfill missing summaries"
+    - "Solved the 'I haven't committed in a week but still want summaries' problem by adding a file-watching trigger system"
+    
+    AVOID MEANINGLESS TASK REFERENCES:
+    ❌ "Completed task 61.2" (meaningless to external readers and future you)
+    ❌ "Finished subtask 45.3" (internal organizational noise)
+    ✅ "Fixed the database connection detection problem - the system can now automatically find and connect to Cursor's SQLite databases on different platforms"
+    ✅ "Solved the cursor chat integration issue by implementing proper message filtering"
+    
+    The improved approach:
+    - Explains real problems readers can understand
+    - Uses concrete language about what was built and why it matters
+    - Avoids buzzwords that don't convey actual meaning
+    - Connects to developer experience that feels authentic and relatable
+    - Makes the summary valuable for conference talks, documentation, or future reference
 
     ORDER OF OPERATIONS:
     1. Extract all manual reflections (verbatim only)

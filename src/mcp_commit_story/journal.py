@@ -732,6 +732,37 @@ def generate_summary_section(journal_context) -> SummarySection:
       - Keep: "this f***ing bug is driving me crazy", "I am awesome!", "I nailed that implementation"
       - Translate: "I'm such an idiot" → "encountered challenging complexity", "Bob writes terrible code" → "encountered challenging legacy implementation"
 
+    EXTERNAL READER ACCESSIBILITY GUIDELINES:
+    Write journal entries that can be understood by someone outside the project who has no prior context.
+    Use specific, concrete language that explains real problems and solutions rather than abstract buzzwords.
+
+    ❌ AVOID Abstract Corporate Speak:
+    - "Revolutionary Implementation Gap Solution"
+    - "Sophisticated AI prompting"
+    - "Architectural maturity"
+    - "Systematic progression from infrastructure through breakthrough innovation"
+    - "Comprehensive optimization initiatives"
+    - "Strategic refactoring paradigms"
+
+    ✅ USE Specific, Concrete Problems and Solutions:
+    - "Fixed Empty AI Function Problem: For months, the AI functions were supposed to generate rich journal content but were just returning empty stubs with TODO comments"
+    - "Made Git Hooks Actually Trigger Summaries: Previous git hook implementation was broken - it would install the hooks but they wouldn't actually generate summaries when you committed code"
+    - "Built smart calendar logic that can detect when summary periods have been crossed and backfill missing summaries"
+    - "Solved the 'I haven't committed in a week but still want summaries' problem by adding a file-watching trigger system"
+
+    AVOID MEANINGLESS TASK REFERENCES:
+    ❌ "Completed task 61.2" (meaningless to external readers and future you)
+    ❌ "Finished subtask 45.3" (internal organizational noise)
+    ✅ "Fixed the database connection detection problem - the system can now automatically find and connect to Cursor's SQLite databases on different platforms"
+    ✅ "Solved the cursor chat integration issue by implementing proper message filtering"
+
+    The improved approach:
+    - Explains real problems readers can understand
+    - Uses concrete language about what was built and why it matters
+    - Avoids buzzwords that don't convey actual meaning
+    - Connects to developer experience that feels authentic and relatable
+    - Makes the summary valuable for conference talks, documentation, or future reference
+
     ANTI-HALLUCINATION RULES:
     - Do NOT invent, infer, or summarize information not explicitly present in the context
     - Only include purpose statements directly supported by chat transcript or commit messages
@@ -746,6 +777,8 @@ def generate_summary_section(journal_context) -> SummarySection:
     - [ ] Extracted developer's actual reasoning where explicitly stated
     - [ ] Showed evolution of thinking if multiple purposes emerged over time
     - [ ] Translated harsh personal language while preserving technical meaning and authentic frustration
+    - [ ] Applied External Reader Accessibility Guidelines - used concrete language, avoided abstract corporate speak
+    - [ ] Avoided meaningless task references (e.g., "completed task 61.2") and used specific problem descriptions instead
     - [ ] Used git changes as foundation when chat context unavailable
     - [ ] Did NOT infer or speculate about unstated motivations
     - [ ] Created conversational narrative that explains what changed and why
@@ -978,6 +1011,34 @@ def generate_accomplishments_section(journal_context: JournalContext) -> Accompl
       - Keep: "this f***ing bug is driving me crazy", "I am awesome!", "I nailed that implementation"
       - Translate: "I'm such an idiot" → "encountered challenging complexity", "Bob writes terrible code" → "encountered challenging legacy implementation"
 
+    EXTERNAL READER ACCESSIBILITY GUIDELINES:
+    Write accomplishments that can be understood by someone outside the project who has no prior context.
+    Use specific, concrete language that explains real problems solved rather than abstract achievements.
+
+    ❌ AVOID Abstract Corporate Achievements:
+    - "Completed strategic refactoring initiatives"
+    - "Achieved architectural optimization"
+    - "Finalized comprehensive implementation"
+    - "Delivered sophisticated solution architecture"
+
+    ❌ AVOID MEANINGLESS TASK REFERENCES:
+    - "Completed task 61.2" (meaningless to external readers and future you)
+    - "Finished subtask 45.3" (internal organizational noise)
+    - "Successfully delivered on task requirements"
+
+    ✅ USE Specific, Concrete Accomplishments:
+    - "Fixed the database connection detection problem - the system can now automatically find and connect to Cursor's SQLite databases on different platforms"
+    - "Solved the cursor chat integration issue by implementing proper message filtering that excludes system notifications"
+    - "Built working git hook integration that actually triggers summary generation when code is committed"
+    - "Created smart calendar logic that detects when summary periods have been crossed and backfills missing summaries"
+
+    The improved approach:
+    - Explains what specific problem was solved
+    - Uses concrete language about what was accomplished and why it matters
+    - Avoids buzzwords that don't convey actual meaning
+    - Connects to real developer experience that feels authentic and relatable
+    - Makes accomplishments valuable for conference talks, documentation, or future reference
+
     ANTI-HALLUCINATION RULES:
     - Do NOT invent, infer, or assume accomplishments not explicitly supported by the context
     - Only include accomplishments with clear evidence in chat transcript, commit messages, or git changes
@@ -997,6 +1058,8 @@ def generate_accomplishments_section(journal_context: JournalContext) -> Accompl
     - [ ] Focused on meaningful progress with specific evidence
     - [ ] Included both technical achievements and learning moments
     - [ ] Applied language translation guidelines while preserving authentic satisfaction
+    - [ ] Applied External Reader Accessibility Guidelines - used concrete accomplishment descriptions, avoided abstract achievements
+    - [ ] Avoided meaningless task references (e.g., "completed task 61.2") and described specific problems solved instead
     - [ ] Used only accomplishments directly supported by context evidence
     - [ ] Returned empty list if no clear accomplishments found
     - [ ] Did NOT invent, infer, or assume accomplishments without explicit evidence
