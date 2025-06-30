@@ -54,7 +54,7 @@ The breakthrough came from accepting reality instead of fighting it. Here's what
 
 **Git hooks that actually work within their constraints.** Instead of pretending to trigger restricted AI environments, git commit hooks now trigger a standalone background agent that automatically generates journal entries after each commit. No manual intervention required.
 
-**Background agent architecture that respects AI limitations.** Rather than trying to make AI agents trigger themselves (impossible), the system spawns fresh AI instances in unrestricted environments where they are fed context and generate content.
+**Background agent architecture that respects AI limitations.** Rather than trying to make AI agents trigger themselves (impossible), the system spawns fresh AI instances in unrestricted environments where they are fed context and then intelligently generate content.
 
 **Real database integration for actual chat data.** Instead of asking AI agents for conversation history they can't access, I figured out where Cursor stores AI chat discussions on the local machine and access it directly. The Cursor AI Agent can't remember more than 10 messages verbatim despite what it claims, but the actual databases contain complete chronologically-ordered conversations with timestamps and session names.
 
@@ -73,14 +73,16 @@ AI models can be completely wrong while sounding absolutely certain. They'll pro
 The signal file approach felt weird to me from the start, but I ignored that instinct and trusted AI guidance instead. My gut was right.
 
 ### 3. **Validate Core Assumptions Early and Often**
-Don't wait months to test whether your fundamental architecture actually works. Build the riskiest, most uncertain parts first, even if it feels inefficient.
+Don't wait months to test whether your fundamental architecture actually works. Build the riskiest, most uncertain parts first, even if it feels inefficient. 
+
+**But also validate the obvious-seeming stuff.** The most dangerous assumptions are the ones that feel so reasonable you don't even realize you're making them. Root out your own assumptions - especially the ones that make you think "obviously that would work" or "that's just how these things function." Those "obvious" assumptions are often where the biggest gotchas hide.
 
 ### 4. **Treat AI Like an Overconfident Junior Developer Who Lies**
 AI is an enthusiastic and WAY overconfident developer. An annoying junior developer actually, who blows smoke up your ass and lies and can't admit fault. But they sure can write a lot of code quickly!
 
 The problem isn't just that AI is wrong - it's that AI is wrong and very specific about its wrong explanations. AI never expresses uncertainty, and it often shows excessive enthusiasm about terrible ideas.
 
-You validate every single approach, no matter how plausible it seems.
+Validate every single approach, no matter how plausible it seems.
 
 ### 5. **Crisis Can Lead to Better Architecture**
 The forced redesign eliminated complexity I didn't even realize I had. Sometimes being wrong about what's possible leads you to build something better.
