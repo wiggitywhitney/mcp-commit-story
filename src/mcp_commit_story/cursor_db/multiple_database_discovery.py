@@ -52,7 +52,7 @@ Integration:
 This module is designed to be used alongside the existing cursor_db functions:
 - Use discover_all_cursor_databases() to find databases
 - Use extract_from_multiple_databases() to get raw data
-- Use existing reconstruct_chat_history() to process the combined data
+- Use Composer integration to provide chronological data directly
 """
 
 import os
@@ -364,7 +364,7 @@ def extract_from_multiple_databases(database_paths: List[str]) -> List[Dict[str,
         discover_all_cursor_databases: Find databases to process
         extract_prompts_data: Single database prompt extraction
         extract_generations_data: Single database generation extraction
-        reconstruct_chat_history: Process extracted data into conversations
+        Composer integration: Provides chronological data directly from databases
     """
     start_time = time.time()
     results = []

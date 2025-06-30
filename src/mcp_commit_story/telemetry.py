@@ -78,7 +78,7 @@ PERFORMANCE_THRESHOLDS = {
     "execute_cursor_query": 50,        # Basic SQL query (milliseconds)
     "extract_prompts_data": 100,       # Query + JSON parsing (milliseconds)
     "extract_generations_data": 100,   # Query + JSON parsing (milliseconds)
-    "reconstruct_chat_history": 200,   # Processing + sorting (milliseconds)
+    # "reconstruct_chat_history": 200,   # Removed - Composer provides chronological data
     "query_chat_database": 500,        # High-level orchestration function (milliseconds)
     # Multiple database discovery thresholds (approved specifications for Task 46.7)
     "discover_all_cursor_databases": 100,     # Database file discovery (milliseconds)

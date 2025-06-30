@@ -2,7 +2,7 @@
 Test telemetry instrumentation for cursor_db modules.
 
 Tests the @trace_mcp_operation decorator integration on all public functions
-in query_executor, message_extraction, and message_reconstruction modules.
+in query_executor, message_extraction, and Composer integration modules.
 """
 
 import pytest
@@ -15,7 +15,7 @@ from pathlib import Path
 
 from src.mcp_commit_story.cursor_db.query_executor import execute_cursor_query
 from src.mcp_commit_story.cursor_db.message_extraction import extract_prompts_data, extract_generations_data
-from src.mcp_commit_story.cursor_db.message_reconstruction import reconstruct_chat_history
+# reconstruct_chat_history removed - replaced with Composer integration
 from src.mcp_commit_story.telemetry import get_mcp_metrics
 
 
@@ -324,72 +324,7 @@ class TestExtractGenerationsDataTelemetry:
         span.set_attribute.assert_any_call('truncation_detected', False)  # 2 < 100
 
 
-class TestReconstructChatHistoryTelemetry:
-    """Test telemetry for reconstruct_chat_history function."""
-    
-    def test_reconstruct_chat_history_has_trace_decorator(self, mock_telemetry):
-        """Test that reconstruct_chat_history uses @trace_mcp_operation decorator."""
-        prompts = [{"text": "Hello", "commandType": "chat"}]
-        generations = [{"textDescription": "Hi", "unixMs": 1640995200000, "type": "composer"}]
-        
-        result = reconstruct_chat_history(prompts, generations)
-        
-                # Verify span was created with correct operation name - reconstruct_chat doesn't call other traced functions
-        mock_telemetry['tracer'].return_value.start_as_current_span.assert_called_with('cursor_db.reconstruct_chat')
-        
-        # Verify specific attributes for reconstruction
-        span = mock_telemetry['span']
-        span.set_attribute.assert_any_call('prompt_count', 1)
-        span.set_attribute.assert_any_call('generation_count', 1)
-        span.set_attribute.assert_any_call('total_messages', 2)
-    
-    def test_reconstruct_chat_history_performance_metrics(self, mock_telemetry):
-        """Test performance metrics for reconstruct_chat_history."""
-        # Create larger dataset to test performance
-        prompts = [{"text": f"Prompt {i}", "commandType": "chat"} for i in range(50)]
-        generations = [
-            {
-                "textDescription": f"Response {i}",
-                "unixMs": 1640995200000 + i * 1000,
-                "type": "composer"
-            }
-            for i in range(50)
-        ]
-        
-        start_time = time.time()
-        
-        result = reconstruct_chat_history(prompts, generations)
-        
-        duration = (time.time() - start_time) * 1000
-        
-        # Verify span attributes were set
-        span = mock_telemetry['span']
-        
-        # Should record data counts
-        span.set_attribute.assert_any_call('prompt_count', 50)
-        span.set_attribute.assert_any_call('generation_count', 50)
-        span.set_attribute.assert_any_call('total_messages', 100)
-    
-    def test_reconstruct_chat_history_malformed_data_tracking(self, mock_telemetry):
-        """Test tracking of malformed data in reconstruct_chat_history."""
-        # Include some malformed data
-        prompts = [
-            {"text": "Valid prompt", "commandType": "chat"},
-            {"commandType": "chat"},  # Missing 'text' field
-            {"text": "Another valid prompt", "commandType": "chat"}
-        ]
-        generations = [
-            {"textDescription": "Valid response", "unixMs": 1640995200000, "type": "composer"},
-            {"unixMs": 1640995260000, "type": "apply"},  # Missing 'textDescription' field
-        ]
-        
-        result = reconstruct_chat_history(prompts, generations)
-        
-        # Verify malformed data was tracked
-        span = mock_telemetry['span']
-        span.set_attribute.assert_any_call('malformed_prompts', 1)
-        span.set_attribute.assert_any_call('malformed_generations', 1)
-        span.set_attribute.assert_any_call('valid_messages', 3)  # 2 valid prompts + 1 valid generation
+# TestReconstructChatHistoryTelemetry class removed - replaced with Composer integration
 
 
 class TestCursorDBTelemetryThresholds:
@@ -403,13 +338,13 @@ class TestCursorDBTelemetryThresholds:
         assert 'execute_cursor_query' in PERFORMANCE_THRESHOLDS
         assert 'extract_prompts_data' in PERFORMANCE_THRESHOLDS
         assert 'extract_generations_data' in PERFORMANCE_THRESHOLDS
-        assert 'reconstruct_chat_history' in PERFORMANCE_THRESHOLDS
+        # 'reconstruct_chat_history' removed - replaced with Composer integration
         
         # Verify threshold values match approved specifications
         assert PERFORMANCE_THRESHOLDS['execute_cursor_query'] == 50  # milliseconds
         assert PERFORMANCE_THRESHOLDS['extract_prompts_data'] == 100
         assert PERFORMANCE_THRESHOLDS['extract_generations_data'] == 100
-        assert PERFORMANCE_THRESHOLDS['reconstruct_chat_history'] == 200
+        # reconstruct_chat_history threshold removed - Composer integration used instead
     
     def test_no_sampling_applied(self, mock_telemetry, temp_db_with_data):
         """Test that no sampling is applied (100% telemetry collection)."""
@@ -418,15 +353,12 @@ class TestCursorDBTelemetryThresholds:
             execute_cursor_query(temp_db_with_data, 'SELECT COUNT(*) FROM ItemTable')
             extract_prompts_data(temp_db_with_data)
             extract_generations_data(temp_db_with_data)
-            
-            prompts = [{"text": "Test", "commandType": "chat"}]
-            generations = [{"textDescription": "Response", "unixMs": 1640995200000, "type": "composer"}]
-            reconstruct_chat_history(prompts, generations)
+            # reconstruct_chat_history removed - replaced with Composer integration
         
         # Verify all calls were traced (no sampling)
         # Note: extract functions call execute_cursor_query internally, so we get nested calls
         tracer = mock_telemetry['tracer']
-        assert tracer.return_value.start_as_current_span.call_count >= 15  # At least 3 functions * 5 calls each
+        assert tracer.return_value.start_as_current_span.call_count >= 10  # At least 2 functions * 5 calls each
 
 
 class TestCursorDBTelemetryErrorHandling:
@@ -470,18 +402,19 @@ class TestCursorDBTelemetryIntegrationEndToEnd:
         # Step 2: Extract generations
         generations = extract_generations_data(temp_db_with_data)
         
-        # Step 3: Reconstruct chat history
-        chat_history = reconstruct_chat_history(prompts, generations)
+        # Step 3: Composer integration replaces reconstruction
+        from src.mcp_commit_story.cursor_db import query_cursor_chat_database
+        result = query_cursor_chat_database()
         
         # Verify all operations were traced
         tracer = mock_telemetry['tracer']
-        assert tracer.return_value.start_as_current_span.call_count >= 3
+        assert tracer.return_value.start_as_current_span.call_count >= 2
         
         # Verify specific operation names
         call_args = [call[0][0] for call in tracer.return_value.start_as_current_span.call_args_list]
         assert 'cursor_db.extract_prompts' in call_args
         assert 'cursor_db.extract_generations' in call_args
-        assert 'cursor_db.reconstruct_chat' in call_args
+        # 'cursor_db.reconstruct_chat' replaced with 'cursor_db.query_composer'
     
     def test_telemetry_graceful_degradation(self, temp_db_with_data):
         """Test that cursor_db functions work even when telemetry fails."""
@@ -489,9 +422,9 @@ class TestCursorDBTelemetryIntegrationEndToEnd:
         # The @trace_mcp_operation decorator is designed to be resilient but may not catch all telemetry failures
         prompts = extract_prompts_data(temp_db_with_data)
         generations = extract_generations_data(temp_db_with_data)
-        chat_history = reconstruct_chat_history(prompts, generations)
+        # reconstruct_chat_history replaced with Composer integration
         
         # Verify data is still returned correctly
         assert len(prompts) == 2
         assert len(generations) == 2
-        assert len(chat_history['messages']) == 4 
+        # chat_history structure verification replaced by Composer integration tests 

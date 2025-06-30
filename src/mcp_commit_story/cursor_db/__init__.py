@@ -30,7 +30,7 @@ from .message_extraction import (
     extract_prompts_data,
     extract_generations_data
 )
-from .message_reconstruction import reconstruct_chat_history
+# message_reconstruction module removed - Composer provides chronological data
 # Message limiting removed - using Composer's precise commit-based time windows
 from ..telemetry import trace_mcp_operation, get_mcp_metrics
 from .multiple_database_discovery import (
@@ -260,7 +260,7 @@ __all__ = [
     'execute_cursor_query',
     'extract_prompts_data',
     'extract_generations_data',
-    'reconstruct_chat_history',
+    # 'reconstruct_chat_history' - removed, Composer provides chronological data
     'query_cursor_chat_database',
     'get_primary_workspace_path',
     'discover_all_cursor_databases',

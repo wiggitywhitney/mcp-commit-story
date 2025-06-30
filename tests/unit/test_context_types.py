@@ -5,8 +5,8 @@ from mcp_commit_story.context_collection import collect_chat_history
 from mcp_commit_story import journal, git_utils
 
 def test_chat_history_type():
-    # Mocked chat history
-    chat = {'messages': [{'speaker': 'user', 'text': 'Hello'}]}
+    # Mocked chat history with enhanced Composer metadata (from Task 61.5)
+    chat = {'messages': [{'speaker': 'user', 'text': 'Hello', 'timestamp': 1640995200000, 'sessionName': 'test-session'}]}
     assert set(chat.keys()) == set(ChatHistory.__annotations__.keys())
     for msg in chat['messages']:
         assert set(msg.keys()) == set(ChatMessage.__annotations__.keys())
@@ -27,7 +27,7 @@ def test_git_context_type():
 
 def test_journal_context_type():
     ctx = {
-        'chat': {'messages': [{'speaker': 'user', 'text': 'hi'}]},
+        'chat': {'messages': [{'speaker': 'user', 'text': 'hi', 'timestamp': 1640995200000, 'sessionName': 'test-session'}]},
         'git': {
             'metadata': {'hash': 'abc', 'author': 'me', 'date': 'today', 'message': 'msg'},
             'diff_summary': 'diff',
@@ -114,7 +114,7 @@ def test_section_generators_accept_journal_context():
     from mcp_commit_story import journal
     from mcp_commit_story.context_types import JournalContext
     ctx = JournalContext(
-        chat={'messages': [{'speaker': 'user', 'text': 'hi'}]},
+        chat={'messages': [{'speaker': 'user', 'text': 'hi', 'timestamp': 1640995200000, 'sessionName': 'test-session'}]},
         git={
             'metadata': {'hash': 'abc', 'author': 'me', 'date': 'today', 'message': 'msg'},
             'diff_summary': '', 'changed_files': [], 'file_stats': {}, 'commit_context': {}

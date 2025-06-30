@@ -163,15 +163,15 @@ def analyze_database(db_path: str) -> Optional[Dict[str, Any]]:
         # to query specific database paths rather than auto-detection
         from mcp_commit_story.cursor_db.connection import query_cursor_chat_database as query_db_direct
         from mcp_commit_story.cursor_db.message_extraction import extract_prompts_data, extract_generations_data
-        from mcp_commit_story.cursor_db.message_reconstruction import reconstruct_chat_history
+        # reconstruct_chat_history removed - using Composer data directly
+        
+        # Use Composer data directly instead of reconstruction
+        from mcp_commit_story.cursor_db import query_cursor_chat_database
         
         try:
-            # Extract data from the specific database
-            prompts_data = extract_prompts_data(db_path)
-            generations_data = extract_generations_data(db_path)
-            
-            # Reconstruct chat history
-            messages = reconstruct_chat_history(prompts_data, generations_data)
+            # Get messages from Composer instead of reconstruction
+            result = query_cursor_chat_database()
+            messages = result.get('chat_history', [])
             
             # Create chat_history structure similar to main function
             chat_history = {
@@ -195,32 +195,21 @@ def analyze_database(db_path: str) -> Optional[Dict[str, Any]]:
         print(f"DEBUG: Messages type: {type(messages)}")
         print(f"DEBUG: Messages content: {repr(messages)}")
         
-        # Handle different message formats returned by reconstruct_chat_history
-        if isinstance(messages, dict):
-            # If it's a dict, convert to list
-            if 'messages' in messages:
-                messages = messages['messages']
-            else:
-                # Might be indexed messages, convert to list
-                messages = list(messages.values()) if messages else []
-        elif not isinstance(messages, list):
-            print(f"   ⚠️  Unexpected message format: {type(messages)}")
+        # Handle Composer message format (list of message objects)
+        if not isinstance(messages, list):
+            print(f"   ⚠️  Unexpected message format: {type(messages)} (expected list from Composer)")
             return None
         
-        # The reconstruct_chat_history function returns a list where each item alternates between
-        # user prompts and assistant responses. Let's handle this correctly.
+        # Composer provides messages with proper roles and content structure
         formatted_messages = []
-        for i, msg in enumerate(messages):
-            # Determine role based on position (even = user, odd = assistant)
-            role = 'user' if i % 2 == 0 else 'assistant'
-            
-            # Extract content - messages should be strings from reconstruct_chat_history
-            if isinstance(msg, str):
-                content = msg
-            elif hasattr(msg, 'get'):
-                content = msg.get('content') or msg.get('text') or str(msg)
-            else:
-                content = str(msg)
+        for msg in messages:
+            if not isinstance(msg, dict):
+                print(f"   ⚠️  Skipping malformed message: {type(msg)}")
+                continue
+                
+            # Extract role and content from Composer format
+            role = msg.get('speaker', msg.get('role', 'unknown'))
+            content = msg.get('text', msg.get('content', str(msg)))
             
             formatted_messages.append({
                 'role': role,
