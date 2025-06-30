@@ -11,10 +11,10 @@ That reflection, typed in frustration, captures one of the most important lesson
 The project seemed straightforward enough. I wanted to build a system that could automatically generate journal entries about my software development work by analyzing git commits and AI chat conversations. Instead of manually writing "I worked on authentication today," the system would understand what I actually accomplished, what challenges I faced, and what I learned.
 
 The architecture, as explained by my AI assistants, was elegant:
-- Git hooks would trigger the system when I committed code
-- The system would analyze recent commits and chat history  
+- Git hooks would trigger the AI Agent when I committed code
+- The AI Agent would analyze recent commits and chat history  
 - AI would generate rich, meaningful journal entries
-- Everything would happen automatically in the background
+- Everything would happen automatically
 
 I spent May building this vision. The first breakthrough came on May 19th when the system successfully generated its first real journal entry from actual development data. It worked! Or so I thought.
 
