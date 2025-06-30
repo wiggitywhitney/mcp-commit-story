@@ -594,8 +594,15 @@ class TestComposerChatProviderTelemetry:
         from mcp_commit_story.composer_chat_provider import ComposerChatProvider
         provider = ComposerChatProvider("/workspace.vscdb", "/global.vscdb")
         
-        # Mock slow operation (600ms)
-        mock_time.side_effect = [1640995000.0, 1640995000.6]
+        # Mock slow operation (600ms) - use a function to simulate time progression
+        # This avoids StopIteration when time.time() is called more times than expected
+        time_values = [1640995000.0, 1640995000.6]  # Start time, then 600ms later
+        def mock_time_func():
+            # Return first value on first call, second value on subsequent calls
+            if len(time_values) > 1:
+                return time_values.pop(0)
+            return time_values[0]  # Always return the last value for any extra calls
+        mock_time.side_effect = mock_time_func
         
         # Mock empty result
         mock_execute_query.return_value = [(json.dumps({"allComposers": []}),)]
