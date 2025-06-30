@@ -156,8 +156,9 @@ class TestHandleGenerateDailySummary:
                 "summary": "Great progress on authentication",
                 "progress_made": "Implemented user authentication",
                 "key_accomplishments": ["Login endpoint", "Auth flow"],
-                "technical_synopsis": "JWT-based authentication system",
-                "challenges_and_learning": None,
+                "technical_progress": "JWT-based authentication system",
+                "challenges_overcome": None,
+                "learning_insights": None,
                 "discussion_highlights": None,
                 "reflections": None,
                 "tone_mood": None,
@@ -288,8 +289,9 @@ class TestDailySummaryGeneration:
                 "reflections": ["Learned about JWT vs sessions tradeoffs"],
                 "progress_made": "Successfully implemented user authentication with JWT",
                 "key_accomplishments": ["Login endpoint created", "Authentication flow working"],
-                "technical_synopsis": "Implemented JWT-based authentication system",
-                "challenges_and_learning": ["Middleware integration required careful debugging"],
+                "technical_progress": "Implemented JWT-based authentication system",
+                "challenges_overcome": ["Middleware integration required careful debugging"],
+                "learning_insights": ["JWT vs sessions tradeoffs understanding"],
                 "discussion_highlights": ["Discussed JWT vs sessions tradeoffs"],
                 "tone_mood": {"mood": "Focused", "indicators": "Deep concentration"},
                 "daily_metrics": {"commits": 1, "files_changed": 3}
@@ -308,8 +310,8 @@ class TestDailySummaryGeneration:
                 assert len(result["reflections"]) > 0
                 assert result["progress_made"] != ""
                 assert len(result["key_accomplishments"]) > 0
-                assert result["technical_synopsis"] != ""
-                assert len(result["challenges_and_learning"]) > 0
+                assert result["technical_progress"] != ""
+                assert result["challenges_overcome"] is not None and len(result["challenges_overcome"]) > 0
                 assert result["tone_mood"] is not None
                 assert result["daily_metrics"] is not None
                 
@@ -334,8 +336,9 @@ class TestDailySummaryGeneration:
                 "reflections": [],  # AI doesn't generate reflections when manual ones exist
                 "progress_made": "Progress",
                 "key_accomplishments": ["Achievement"],
-                "technical_synopsis": "Technical details",
-                "challenges_and_learning": ["Learning"],
+                "technical_progress": "Technical details",
+                "challenges_overcome": [],
+                "learning_insights": ["Learning"],
                 "discussion_highlights": [],
                 "tone_mood": None,
                 "daily_metrics": {}
@@ -377,8 +380,9 @@ class TestDailySummaryGeneration:
                 "reflections": [],  # Empty - should be omitted
                 "progress_made": "Fixed a typo",
                 "key_accomplishments": ["Typo fixed"],
-                "technical_synopsis": "Minor fix applied",
-                "challenges_and_learning": [],  # Empty - should be omitted
+                "technical_progress": "Minor fix applied",
+                "challenges_overcome": [],  # Empty - should be omitted
+                "learning_insights": [],  # Empty - should be omitted
                 "discussion_highlights": [],  # Empty - should be omitted
                 "tone_mood": None,  # Empty - should be omitted
                 "daily_metrics": {"commits": 1}
@@ -389,7 +393,8 @@ class TestDailySummaryGeneration:
                 
                 # Verify empty sections are omitted
                 assert result["reflections"] is None or len(result["reflections"]) == 0
-                assert result["challenges_and_learning"] is None or len(result["challenges_and_learning"]) == 0
+                assert result["challenges_overcome"] is None or len(result["challenges_overcome"]) == 0
+                assert result["learning_insights"] is None or len(result["learning_insights"]) == 0
                 assert result["discussion_highlights"] is None or len(result["discussion_highlights"]) == 0
                 assert result["tone_mood"] is None
                 
@@ -397,7 +402,7 @@ class TestDailySummaryGeneration:
                 assert result["summary"] != ""
                 assert result["progress_made"] != ""
                 assert len(result["key_accomplishments"]) > 0
-                assert result["technical_synopsis"] != ""
+                assert result["technical_progress"] != ""
                 
             except NameError:
                 pytest.fail("generate_daily_summary function not implemented yet")
