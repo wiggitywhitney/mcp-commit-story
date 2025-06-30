@@ -34,27 +34,7 @@ from mcp_commit_story.telemetry import (
 # Import cursor_db for chat history collection
 from mcp_commit_story.cursor_db import query_cursor_chat_database
 
-# Import message limiting with defaults validated from Task 47.1 research
-try:
-    from mcp_commit_story.cursor_db.message_limiting import (
-        limit_chat_messages, 
-        DEFAULT_MAX_HUMAN_MESSAGES,
-        DEFAULT_MAX_AI_MESSAGES
-    )
-except ImportError:
-    # Fallback defaults if message limiting unavailable
-    DEFAULT_MAX_HUMAN_MESSAGES = 200
-    DEFAULT_MAX_AI_MESSAGES = 200
-    limit_chat_messages = None
-
 logger = logging.getLogger(__name__)
-
-# Message limits designed for solo developer usage patterns
-# Based on research from Task 47.1 analyze_message_counts.py
-# These values cover even intense 48-hour coding sessions
-# Acts as safety net for edge cases, not regular constraint
-# Research findings: typical usage ~35 human/35 AI messages per session
-# 200/200 limits provide significant safety margin without impacting normal workflows
 
 
 @trace_git_operation("chat_history", 
@@ -65,82 +45,53 @@ def collect_chat_history(
     max_messages_back=150
 ) -> ChatHistory:
     """
-    Collect relevant chat history for journal entry with message count limits.
+    Collect relevant chat history for journal entry using Composer's precise time windows.
     
-    Uses hardcoded 200/200 message limits based on solo developer research.
-    These limits act as a safety net for edge cases without impacting normal workflows.
+    Uses commit-based time window filtering via query_cursor_chat_database() with Composer
+    integration. No artificial message limits are applied since Composer provides precisely
+    relevant messages for the development context.
 
     Args:
-        since_commit: Commit reference (validated for compatibility but unused - cursor_db handles filtering)
-        max_messages_back: Maximum messages to look back (validated for compatibility but unused - cursor_db handles filtering)
+        since_commit: Commit reference (validated for compatibility but unused - Composer handles precise filtering)
+        max_messages_back: Maximum messages to look back (validated for compatibility but unused - Composer handles precise filtering)
 
     Returns:
-        ChatHistory: Dictionary with 'messages' array containing chat data.
-                    Each message has 'speaker' and 'text' fields.
+        ChatHistory: Dictionary with 'messages' array containing enhanced chat data.
+                    Each message has 'speaker' and 'text' fields, with additional metadata preserved.
                     Returns empty ChatHistory on errors for graceful degradation.
 
     Note:
-        Message limits (200/200) are based on solo developer usage research.
-        These limits act as a safety net and are rarely triggered in practice
-        due to cursor_db's 48-hour filtering.
+        No artificial message limits are applied. Composer's commit-based time windows 
+        provide naturally scoped, relevant conversation context. This replaces the old 
+        200/200 limiting approach which was designed for 48-hour time windows.
     """
     # Validate required parameters (keeping for compatibility even if unused)
     if since_commit is None or max_messages_back is None:
         raise ValueError("collect_chat_history: since_commit and max_messages_back must not be None")
     
     try:
-        # Get chat history from cursor database
-        raw_chat_data = query_cursor_chat_database()
+        # Get chat history from Composer via cursor database
+        chat_data = query_cursor_chat_database()
         
-        # Apply message limiting with research-validated defaults
-        limited_chat_data = None
-        if limit_chat_messages is None:
-            logger.warning("Message limiting module not available")
-            limited_chat_history = raw_chat_data.get('chat_history', {})
-        else:
-            try:
-                # Pass the full chat data to limit_chat_messages
-                limited_chat_data = limit_chat_messages(
-                    raw_chat_data,
-                    DEFAULT_MAX_HUMAN_MESSAGES,
-                    DEFAULT_MAX_AI_MESSAGES
-                )
-                limited_chat_history = limited_chat_data.get('chat_history', {})
-            except Exception as e:
-                logger.warning(f"Message limiting failed: {e}")
-                limited_chat_history = raw_chat_data.get('chat_history', {})
+        # Extract chat messages directly - no limiting applied
+        chat_messages = chat_data.get('chat_history', [])
         
-        # Log telemetry if truncation occurred
-        if limited_chat_data and isinstance(limited_chat_data, dict):
-            metadata = limited_chat_data.get('metadata', {})
-            if metadata.get('truncated_human') or metadata.get('truncated_ai'):
-                # Simple telemetry logging as specified in the plan
-                try:
-                    from mcp_commit_story.telemetry import get_mcp_metrics
-                    metrics = get_mcp_metrics()
-                    if metrics:
-                        metrics.record_counter('chat_history_truncation', attributes={
-                            'original_human_count': str(metadata.get('original_human_count', 0)),
-                            'original_ai_count': str(metadata.get('original_ai_count', 0)),
-                            'removed_human_count': str(metadata.get('removed_human_count', 0)),
-                            'removed_ai_count': str(metadata.get('removed_ai_count', 0)),
-                            'max_human_messages': str(DEFAULT_MAX_HUMAN_MESSAGES),
-                            'max_ai_messages': str(DEFAULT_MAX_AI_MESSAGES)
-                        })
-                except ImportError:
-                    logger.debug("Telemetry not available for truncation logging")
-                except Exception as e:
-                    logger.debug(f"Failed to log truncation telemetry: {e}")
-        
-        # Convert to ChatHistory format
+        # Convert to ChatHistory format with enhanced data preservation
         messages = []
-        # limited_chat_history is now the messages array directly
-        chat_messages = limited_chat_history if isinstance(limited_chat_history, list) else []
         for msg in chat_messages:
-            messages.append({
+            # Preserve enhanced Composer metadata in the conversion
+            message_data = {
                 'speaker': 'Human' if msg.get('role') == 'user' else 'Assistant',
                 'text': msg.get('content', '')
-            })
+            }
+            
+            # Preserve additional metadata from Composer if available
+            if 'timestamp' in msg:
+                message_data['timestamp'] = msg['timestamp']
+            if 'sessionName' in msg:
+                message_data['sessionName'] = msg['sessionName']
+            
+            messages.append(message_data)
         
         return ChatHistory(messages=messages)
         

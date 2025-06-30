@@ -14,6 +14,9 @@ else:
 class ChatMessage(TypedDict):
     speaker: str
     text: str
+    # Optional enhanced metadata from Composer integration
+    timestamp: Optional[int]  # Unix timestamp in milliseconds
+    sessionName: Optional[str]  # Cursor session identifier
 
 class ChatHistory(TypedDict):
     messages: List[ChatMessage]

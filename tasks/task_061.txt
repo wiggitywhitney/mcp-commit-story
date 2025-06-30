@@ -437,7 +437,7 @@ logger.debug(f"No messages found in time window {start_timestamp_ms} to {end_tim
 - Maintain consistency with established codebase patterns
 </info added on 2025-06-29T21:33:29.841Z>
 
-## 5. Update query_cursor_chat_database Function [pending]
+## 5. Update query_cursor_chat_database Function [done]
 ### Dependencies: 61.4
 ### Description: Replace aiService with Composer integration
 ### Details:
@@ -657,6 +657,70 @@ This is a great simplification - removing unnecessary complexity because Compose
 7. Update documentation for new fields
 
 Enhanced models should support the richer data available from Composer.
+<info added on 2025-06-30T00:59:11.891Z>
+# Approved Design Decisions for Chat Context Manager
+
+## Core Architecture
+- **Thin orchestration layer**: Manager calls `query_cursor_chat_database()` and transforms data for CollectedContext integration
+- **No additional filtering**: Trust existing commit-based filtering in `query_cursor_chat_database()`
+- **Use existing cursor_db package**: Leverage proven implementation patterns
+
+## Implementation Details
+
+**File**: `src/mcp_commit_story/chat_context_manager.py`
+
+**Data Structures**:
+```python
+class TimeWindow(TypedDict):
+    start_timestamp_ms: int
+    end_timestamp_ms: int
+    strategy: str  # "commit_based", "first_commit", "fallback_24h"
+    duration_hours: float
+
+class ChatContextData(TypedDict):
+    messages: List[ChatMessage]  # Using existing ChatMessage from context_types
+    time_window: TimeWindow      # From commit_time_window.py
+    session_names: List[str]     # Unique session identifiers
+    metadata: Dict[str, Any]     # Additional context (message counts, etc.)
+```
+
+**Core Function**:
+```python
+@trace_mcp_operation("chat_context_manager.extract")
+def extract_chat_for_commit() -> ChatContextData:
+    """Extract chat context for current commit using Composer integration."""
+    # 1. Call query_cursor_chat_database() (handles all filtering)
+    # 2. Transform response to ChatContextData format
+    # 3. Extract unique session names from messages
+    # 4. Build TimeWindow from workspace_info
+    # 5. Add telemetry spans and error handling
+```
+
+## Integration Points
+- **Use existing components**: `query_cursor_chat_database()`, `detect_workspace()`, existing telemetry patterns
+- **Data format**: Work with `speaker: "user"/"assistant"` from existing ChatMessage
+- **Error handling**: Follow cursor_db patterns with graceful degradation
+- **Performance**: 500ms threshold per telemetry.md standards
+
+## Key Clarifications
+1. **No additional filtering**: Manager trusts `query_cursor_chat_database()`'s commit-based filtering
+2. **Database scope**: Let `query_cursor_chat_database()` decide workspace vs global databases  
+3. **Message format**: Use existing `speaker` field format, not raw database internals
+4. **Return format**: `ChatContextData` as specified above for easy CollectedContext integration
+
+## Telemetry Attributes
+- `chat.messages_found` (count)
+- `chat.time_window_hours` (duration) 
+- `chat.session_count` (unique sessions)
+- `chat.workspace_detected` (boolean)
+- `error.category` if failures occur
+
+## TDD Implementation Approach
+- Start with comprehensive tests defining expected behavior
+- Implement minimal code to make tests pass
+- Focus on simplicity and reusability
+- Follow existing patterns from `context_collection.py` and `cursor_db/`
+</info added on 2025-06-30T00:59:11.891Z>
 
 ## 8. Comprehensive Error Handling [pending]
 ### Dependencies: 61.4, 61.5

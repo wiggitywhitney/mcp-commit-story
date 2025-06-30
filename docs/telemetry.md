@@ -583,7 +583,7 @@ The `@trace_git_operation` decorator automatically provides:
 
 #### Context Collection Examples
 
-**Chat History Collection:**
+**Chat History Collection (Legacy):**
 ```python
 @trace_git_operation("chat_history", 
                     performance_thresholds={"duration": 1.0},
@@ -592,6 +592,53 @@ def collect_chat_history(since_commit=None, max_messages_back=150):
     """AI prompt for chat analysis - clean and focused."""
     # Function contains only AI prompts and business logic
     return ChatHistory(messages=processed_messages)
+```
+
+**Composer Chat History Collection (Task 61 - Enhanced):**
+```python
+@trace_mcp_operation("cursor_db.query_composer")
+def query_cursor_chat_database() -> Dict[str, Any]:
+    """Enhanced Composer-based chat history with rich telemetry."""
+    metrics = get_mcp_metrics()
+    start_time = time.time()
+    span = trace.get_current_span()
+    
+    try:
+        # Enhanced telemetry attributes
+        span.set_attribute("cursor.workspace_detected", True)
+        span.set_attribute("cursor.commit_detected", True)
+        span.set_attribute("time_window.strategy", "commit_based")
+        span.set_attribute("time_window.duration_hours", 2.5)
+        span.set_attribute("cursor.messages_retrieved", 42)
+        span.set_attribute("cursor.database_type", "composer")
+        
+        # Success metrics
+        if metrics:
+            metrics.record_histogram(
+                "mcp.cursor.query_duration_seconds", 
+                0.235,
+                attributes={"database_type": "composer", "strategy": "commit_based"}
+            )
+            metrics.record_counter(
+                "mcp.cursor.messages_total",
+                42, 
+                attributes={"source": "composer"}
+            )
+        
+        return enhanced_composer_data
+        
+    except Exception as e:
+        # Error categorization and metrics
+        error_category = categorize_cursor_error(e)
+        span.set_attribute("error.category", error_category)
+        
+        if metrics:
+            metrics.record_counter(
+                "mcp.cursor.errors_total",
+                1,
+                attributes={"error_category": error_category}
+            )
+        raise
 ```
 
 **Terminal Commands Collection:**
@@ -611,7 +658,8 @@ Git operation instrumentation automatically generates:
 
 **Duration Metrics:**
 - `mcp.journal.git_context.duration` - Git context collection timing
-- `mcp.journal.chat_history.duration` - Chat history collection timing  
+- `mcp.journal.chat_history.duration` - Chat history collection timing (legacy)
+- `mcp.cursor.query_duration_seconds` - Composer chat history collection timing (enhanced)
 - `mcp.journal.terminal_commands.duration` - Terminal command collection timing
 
 **Performance Metrics:**
@@ -623,6 +671,8 @@ Git operation instrumentation automatically generates:
 - `mcp.journal.errors.by_type{error_type="git"}` - Git-specific errors
 - `mcp.journal.errors.by_type{error_type="filesystem"}` - File system errors
 - `mcp.journal.errors.by_type{error_type="memory"}` - Memory-related errors
+- `mcp.cursor.errors_total{error_category}` - Composer database errors with categorization
+- `mcp.cursor.messages_total{source="composer"}` - Composer message retrieval counters
 
 #### Performance Optimizations
 

@@ -49,8 +49,30 @@ src/mcp_commit_story/cursor_db/
 ### Performance Characteristics
 - **Single database**: 50-100ms extraction
 - **Multi-database discovery**: 20-50ms
-- **48-hour optimization**: 80-90% performance improvement
+- **48-hour optimization**: 80-90% performance improvement (now superseded by Composer)
 - **Error recovery**: Graceful degradation for corrupted databases
+
+### Composer Integration (Task 61 - 2025-01-07)
+✅ **IMPLEMENTED**: Direct integration with Cursor's Composer system for enhanced chat history collection.
+
+**Key Improvements**:
+- **Commit-based time windows**: Precise filtering based on git commit boundaries instead of 48-hour windows
+- **Enhanced metadata**: Messages include timestamps (`timestamp`) and session names (`sessionName`)
+- **Natural conversation boundaries**: Development conversations naturally scoped by commit activity
+- **Rich context preservation**: Complete conversation history with full fidelity
+- **No artificial limiting**: Composer's precise time windows eliminate need for 200/200 message caps
+
+**Implementation Details**:
+- **Module**: `src/mcp_commit_story/cursor_db/composer_integration.py`
+- **Provider**: `ComposerChatProvider` class for direct Composer database access
+- **Time Window Strategy**: `get_commit_time_window()` for git-based temporal filtering
+- **Enhanced Return Structure**: Includes workspace/global database paths, time window metadata, and commit hash
+- **Comprehensive Telemetry**: Rich observability with span attributes, error categorization, and performance metrics
+
+**Migration Impact**: 
+- Replaces `message_limiting.py` functionality
+- Eliminates 48-hour filtering constraints
+- Provides significantly more relevant and complete conversation context
 
 ## Research Foundation
 

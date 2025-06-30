@@ -43,16 +43,16 @@ MCP Commit Story follows a **background generation architecture** with automatic
 
 ### 2. Context Collection
 - **Git Context**: Commit metadata, diffs, file changes (always available)
-- **Chat History**: Cursor SQLite database extraction with intelligent filtering
+- **Chat History**: Direct from Composer with commit-based time window filtering
 - **Recent Journals**: Today's journal + 2 most recent daily entries for continuity
 - **Project Context**: README (or configured overview file) ensures AI always understands project goals
 
-### 3. Intelligent Chat Parsing
-- **Git-driven filtering**: Extract keywords and concepts from git diffs
-- **Relevance scoring**: Match chat content against code changes
-- **Boundary detection**: Identify relevant chat sessions and conversations
-- **Message limiting**: 200/200 limits act as safety net after 48-hour filtering
-- **Context optimization**: Return only chat segments related to the work
+### 3. Composer-Based Chat Collection
+- **Commit-based time windows**: Precise filtering based on git commit boundaries
+- **Enhanced metadata**: Messages include timestamps and session names
+- **Natural scoping**: Development conversations naturally bounded by commits
+- **Rich context**: Complete conversation history with full fidelity
+- **No artificial limiting**: Composer's precise time windows eliminate need for message caps
 
 ### 4. Fresh AI Generation
 - **Fresh AI instance** for each journal entry (no persistent context)

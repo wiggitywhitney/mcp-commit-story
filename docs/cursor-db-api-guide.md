@@ -8,7 +8,7 @@ The `cursor_db` package provides programmatic access to Cursor's chat history st
 
 - **Complete Conversation Access**: Extract full chat history without AI memory limitations
 - **Multi-Workspace Support**: Handle database rotation and multiple workspace configurations  
-- **Performance Optimized**: 80-90% faster processing with 48-hour intelligent filtering
+- **Performance Optimized**: Commit-based time windows provide precise context without artificial limits
 - **Cross-Platform Compatible**: Works on macOS, Windows, and Linux
 - **Zero Dependencies**: Uses Python's built-in sqlite3 module
 - **Production Ready**: Comprehensive error handling and telemetry integration
@@ -54,23 +54,32 @@ except CursorDatabaseError as e:
 
 #### `query_cursor_chat_database() -> Dict`
 
-Main entry point for extracting complete chat history with workspace metadata.
+Main entry point for extracting complete chat history using Cursor's Composer system with commit-based time windows.
+
+- **Commit-based filtering**: Uses git commit boundaries for precise temporal context
+- **Enhanced metadata**: Messages include timestamps and session names from Composer
+- **Precise context**: Natural conversation boundaries based on development activity
+- **Rich telemetry**: Comprehensive observability and error categorization
 
 **Returns:**
 ```python
 {
     "workspace_info": {
-        "workspace_path": str,      # Detected workspace directory
-        "database_path": str,       # SQLite database location  
-        "last_updated": str,        # Database modification time
-        "total_messages": int       # Total message count
+        "workspace_database_path": str | None,    # Workspace SQLite database path
+        "global_database_path": str | None,       # Global Cursor database path  
+        "total_messages": int,                   # Total message count
+        "time_window_start": int | None,         # Time window start (Unix ms)
+        "time_window_end": int | None,           # Time window end (Unix ms)
+        "time_window_strategy": str,             # Strategy used ("commit_based", "24_hour_fallback", etc.)
+        "commit_hash": str | None,               # Current git commit hash
+        "last_updated": str                      # ISO timestamp of operation
     },
-    "chat_history": [              # List of conversation messages
+    "chat_history": [                           # List of conversation messages
         {
-            "role": "user" | "assistant",
-            "content": str,         # Message text
-            "timestamp": int | None, # Unix timestamp (None for user prompts)
-            "type": str | None      # Message type ("composer", etc.)
+            "speaker": str,                      # "user" or "assistant"
+            "text": str,                        # Message content
+            "timestamp": int | None,            # Unix timestamp in milliseconds
+            "sessionName": str | None           # Cursor session identifier
         }
     ]
 }
@@ -83,8 +92,9 @@ Main entry point for extracting complete chat history with workspace metadata.
 
 **Performance:**
 - Threshold: 500ms for typical workspaces
-- 80-90% faster processing with 48-hour intelligent filtering
-- Sub-10ms filtering overhead for database selection
+- Commit-based time windows provide precise context boundaries
+- Enhanced telemetry tracks query duration and message counts
+- Graceful degradation with 24-hour fallback for git errors
 
 #### `discover_all_cursor_databases(workspace_path: str) -> List[str]`
 
@@ -219,14 +229,63 @@ Combine prompts and generations into standardized message format.
 
 ## Performance Optimization
 
-### 48-Hour Intelligent Filtering
+### Commit-Based Time Windows
 
-The cursor_db package includes automatic performance optimization through 48-hour database filtering:
+The cursor_db package uses intelligent commit-based filtering for precise context extraction:
 
 **How It Works:**
-- Automatically filters databases by modification time before processing
+- Automatically detects current git commit context
+- Calculates time window: previous commit → current commit  
+- Returns only messages relevant to the current development session
+- Natural boundaries that match your actual work patterns
+
+**Performance Characteristics:**
+```python
+# Precise filtering based on actual development time
+# 1-hour coding session: ~50-100 messages
+# 4-hour deep work: ~200-300 messages  
+# Overnight debugging: ~400-500 messages
+# No artificial caps - complete conversation context preserved
+```
+
+**Enhanced Return Structure:**
+```python
+{
+    "workspace_info": {
+        "workspace_database_path": "/path/to/workspace.vscdb",
+        "global_database_path": "/path/to/global.vscdb", 
+        "time_window_start": 1640995200000,  # Unix ms
+        "time_window_end": 1640998800000,    # Unix ms
+        "time_window_strategy": "commit_based",
+        "commit_hash": "abc123...",
+        "total_messages": 25
+    },
+    "chat_history": [
+        {
+            "speaker": "user",
+            "text": "How do I implement...",
+            "timestamp": 1640995800000,
+            "sessionName": "Session_2025-01-07"
+        }
+    ]
+}
+```
+
+**Edge Case Handling:**
+- **No git repository**: Falls back to 24-hour time window
+- **Git errors**: Graceful degradation with 24-hour fallback
+- **No recent commits**: Uses reasonable default time boundaries
+- **Empty results**: Clear indicators in workspace_info
+
+### 48-Hour Database Filtering
+
+The cursor_db package includes automatic performance optimization through 48-hour database filtering at the file level:
+
+**How It Works:**
+- Automatically filters database files by modification time before processing
 - Only processes databases modified within the last 48 hours
 - Transparent optimization - no API changes required
+- Applied before commit-based message filtering
 
 **Performance Impact:**
 ```python
@@ -242,74 +301,6 @@ The cursor_db package includes automatic performance optimization through 48-hou
 - Fixed 48-hour window (balances performance vs. completeness)
 - Automatically applied by `discover_all_cursor_databases()`
 - No configuration options - optimized for typical development cycles
-
-**Edge Cases:**
-- Empty result if no databases modified recently
-- Graceful fallback for clock changes or permission errors
-- Debug logging shows filtered vs. processed database counts
-
-**Monitoring:**
-```python
-# Telemetry attributes tracked:
-# - databases_discovered: total found
-# - databases_filtered: recent only  
-# - filter_duration_ms: optimization overhead
-# - time_window_hours: filtering window (48)
-```
-
-### Message Limiting
-
-The context collection system includes message limiting as a second-stage optimization after 48-hour filtering:
-
-**How It Works:**
-- Applied during chat history collection for journal generation
-- Separate limits for human and AI messages (default: 200 each)
-- Acts as a safety net for edge cases, rarely triggered in normal usage
-
-**Performance Context:**
-```python
-# Message limiting provides safety bounds for extreme cases:
-# 48-hour filtering (1st stage): 910 total messages → ~455 typical
-# Message limiting (2nd stage): 455 messages → 400 max (200 human + 200 AI)
-# Combined: >90% performance predictability for journal generation
-```
-
-**Research-Based Defaults:**
-- Limits based on analysis of solo developer usage patterns
-- 200 human messages covers even intensive 48-hour coding sessions
-- 200 AI responses provides comprehensive context without performance impact
-- Designed as safety net, not regular constraint
-
-**Implementation:**
-```python
-from mcp_commit_story.context_collection import collect_chat_history
-
-# Automatic message limiting with research-validated defaults
-chat_history = collect_chat_history(
-    since_commit='abc123',
-    max_messages_back=150
-)
-# Uses DEFAULT_MAX_HUMAN_MESSAGES = 200, DEFAULT_MAX_AI_MESSAGES = 200 internally
-```
-
-**Telemetry Tracking:**
-```python
-# When truncation occurs, telemetry events are logged:
-# Event: 'chat_history_truncation'
-# Data: {
-#     'original_human_count': int,
-#     'original_ai_count': int, 
-#     'removed_human_count': int,
-#     'removed_ai_count': int,
-#     'max_human_messages': 200,
-#     'max_ai_messages': 200
-# }
-```
-
-**Graceful Degradation:**
-- If message limiting unavailable, returns unfiltered results
-- Preserves chat history over enforcing limits
-- Logs warnings for monitoring
 
 ## Common Workflows
 
