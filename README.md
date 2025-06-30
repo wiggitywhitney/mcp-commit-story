@@ -102,8 +102,8 @@ utility function.
 ## How Does It Work?
 
 - **Background Generation:** Git commits automatically trigger journal entry creation that happens silently in the background. No workflow interruption, no waiting.
-- **Rich Context Collection:** The system automatically pulls in commit messages, code changes, terminal commands, AI chat history, and your project's README, building a rich, evidence-based journal entry where the AI always understands your project's goals.
-- **Intelligent Chat Collection:** Captures all AI conversations between commits using Cursor's Composer system, providing complete chronological context for each code change.
+- **Rich Context Collection:** The system automatically pulls in commit messages, code changes, AI chat history, and your project's README, building a rich, evidence-based journal entry where the AI always understands your project's goals.
+- **Intelligent Chat Collection:** Captures all AI conversations between commits using Cursor's AI chat, providing complete chronological context for each code change.
 - **User Control:** While generation happens automatically, you control the context. Add manual reflections or capture your AI assistant's current knowledge directly into your journal.
 - **No Hallucinated Summaries:** Everything in your journal is grounded in real actions and conversations.
 - **Mood and Emotion:** The journal reflects your mood and tone based on how you talk to the AI agent or what you write in commit messages—so if you vent, celebrate, or reflect, those feelings are captured authentically.
