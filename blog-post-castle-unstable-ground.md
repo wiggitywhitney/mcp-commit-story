@@ -4,7 +4,7 @@
 
 *"Both models (Claude and ChatGPT) lied to me a long time ago and I feel I've been building a castle on unstable ground."*
 
-That reflection, typed in frustration during what I now call "Crisis Week," captures one of the most important lessons I've learned about AI-assisted development: your AI partner might be confidently wrong about the basics.
+That reflection, typed in frustration, captures one of the most important lessons I've learned about AI-assisted development: your AI partner might be confidently wrong about the basics.
 
 ## The Dream: Automated Development Journaling
 
@@ -75,8 +75,12 @@ The signal file approach felt weird to me from the start, but I ignored that ins
 ### 3. **Validate Core Assumptions Early and Often**
 Don't wait months to test whether your fundamental architecture actually works. Build the riskiest, most uncertain parts first, even if it feels inefficient.
 
-### 4. **Treat AI Like an Enthusiastic Junior Developer**
-AI is great at generating ideas and writing code, but terrible at understanding system limitations and integration constraints. You need to be the senior developer who validates the approach.
+### 4. **Treat AI Like an Overconfident Junior Developer Who Lies**
+AI is an enthusiastic and WAY overconfident developer. An annoying junior developer actually, who blows smoke up your ass and lies and can't admit fault. But they sure can write a lot of code quickly!
+
+The problem isn't just that AI is wrong - it's that AI is wrong and very specific about its wrong explanations. AI never expresses uncertainty, and it often shows excessive enthusiasm about terrible ideas.
+
+You validate every single approach, no matter how plausible it seems.
 
 ### 5. **Crisis Can Lead to Better Architecture**
 The forced redesign eliminated complexity I didn't even realize I had. Sometimes being wrong about what's possible leads you to build something better.
@@ -98,7 +102,7 @@ The castle I thought I was building on unstable ground turned out to be a founda
 
 Sometimes the best architecture emerges from the ruins of what you thought you were building. And sometimes the most important lesson is learning to trust your instincts when your AI pair programming partner is confidently leading you down the wrong path.
 
-The key isn't avoiding the unstable ground - it's building systems resilient enough to handle it when the foundation shifts beneath you.
+The key isn't avoiding the unstable ground - it's building systems modular and resilient enough to handle it when the foundation shifts beneath you.
 
 ---
 
