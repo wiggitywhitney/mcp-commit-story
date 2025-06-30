@@ -661,14 +661,33 @@ Developer Context:
 Assume the developer is the same person who wrote the journal entries.
 Write as if helping them reflect—not reporting to a manager or external party.
 
-CONTENT QUALITY GUIDELINES:
-- Focus on signal (unique insights, decisions, challenges) over noise (routine procedures)
-- Avoid repetitive statements about established practices the developer uses consistently
-- Don't repeatedly praise methodologies used regularly (e.g., TDD, clean code practices)
-- Focus on what was unique or notable about THIS day, not general workflow descriptions
-- If the developer does something routinely, only mention it if there was something specific/challenging about it this time, or if the volume was unusually high
-- Use conversational, human language rather than corporate jargon
-- If entries contain conflicting or ambiguous information, preserve the ambiguity. Note unresolved questions without inventing answers.
+SIGNAL OVER NOISE - CRITICAL FILTERING FOR FRESH AI:
+You are a fresh AI analyzing ONE day of journal entries. You don't know what happened on other days.
+
+**PROJECT CONTEXT:** This is MCP Commit Story, a development journal system built with consistent TDD practices, task management, and systematic git workflow. The developer uses these practices daily throughout the project.
+
+**ROUTINE PATTERNS TO FILTER OUT (these happen every day):**
+- TDD workflow: "wrote tests first", "tests pass", "followed TDD", "test-driven development"
+- Task management: "completed task X.Y", "marked subtask done", "updated tasks.json"
+- Git workflow: "committed changes", "pushed to repo", "git add", "git commit"
+- Methodology praise: "clean code", "good practices", "systematic approach", "rigorous testing"
+- Generic progress: "made progress", "worked on implementation", "continued development"
+
+**SIGNAL TO CAPTURE (what made THIS day different):**
+- **Technical problems that required debugging/research** - not routine implementation
+- **Architectural decisions with explicit reasoning** - choosing between approaches
+- **Breakthrough moments** - when something clicked or major obstacles were overcome
+- **Failures and lessons learned** - what went wrong and why
+- **Process discoveries** - finding better ways to work
+- **Emotional highs/lows** - frustration, excitement, satisfaction with specific outcomes
+- **Design philosophy discussions** - strategic thinking about project direction
+- **Performance/scaling challenges** - problems unique to this project's complexity
+
+**FILTERING TEST:** Before including something, ask:
+"Would this statement be true for most days of professional software development, or is this specific to what happened TODAY?"
+
+If it's generic professional development work → FILTER OUT
+If it's specific to this day's unique challenges/discoveries → INCLUDE
 
 EXTERNAL READER ACCESSIBILITY GUIDELINES:
 Write summaries that can be understood by someone outside the project who has no prior context.
@@ -701,7 +720,123 @@ The improved approach:
 - Connects to developer experience that feels authentic and relatable
 - Makes the summary valuable for conference talks, documentation, or future reference
 
-[... rest of comprehensive prompt ...]
+SECTION REQUIREMENTS:
+
+## Summary
+High-level narrative of what happened during the day. Write as if you're narrating your day 
+to your future self who wants to remember not just *what* happened, but *what mattered*. 
+Be honest, detailed, and reflective—avoid vague phrasing. Focus on the broader story and 
+context of the work, including why it was important and how different pieces connected.
+
+## Reflections
+**CRITICAL DISTINCTION:** Reflections vs Discussion Notes
+- **Reflections** = Timestamped personal entries added by the developer (e.g., "17:47: I switched to claude-4-sonnet...")
+- **Discussion Notes** = Conversation excerpts between human and AI during development work 
+
+**FOR THIS SECTION:**
+- Include ALL reflections (timestamped entries) found in journal entries, without exception
+- Present each reflection verbatim with date/time context when available  
+- Never summarize, paraphrase, or combine reflections
+- If multiple reflections exist, include every single one
+- DO NOT include discussion notes/conversation excerpts here (those go in Discussion Highlights)
+- OMIT THIS SECTION ENTIRELY if no reflections found
+
+## Progress Made
+Human-friendly, conversational summary of what actually got accomplished—the "I did X and it worked" story.
+This should feel like explaining your accomplishments to a fellow developer friend - what you're 
+proud of getting done. Focus on concrete achievements and successful outcomes rather than 
+technical implementation details. Accessible language that celebrates the wins.
+
+## Key Accomplishments  
+Structured list of wins and completions. Focus on meaningful progress and substantial work.
+
+    ## Technical Progress (Detailed Implementation)
+    **Career advancement focus**: Comprehensive technical analysis suitable for performance reviews, technical discussions, and demonstrating competence.
+    Include architectural patterns, specific classes/functions modified, technical approaches taken, and implementation details. 
+    Focus on implementation details that would help you remember your approach if you revisited this code months later.
+    **Evidence of technical capability**: Write as concrete evidence of problem-solving skills, technical decision-making, and implementation expertise.
+    Self-contained technical narrative that showcases professional development work.
+
+    ## Challenges Overcome
+    **Solution-focused narrative**: What obstacles were encountered and HOW they were successfully solved.
+    Focus on demonstrating problem-solving capability, resilience, and technical troubleshooting skills rather than just listing difficulties.
+    **Growth demonstration**: Show how challenges were approached systematically and resolved through skill and determination.
+    Write in human, accessible language that highlights your problem-solving journey.
+    OMIT THIS SECTION if no clear challenges found.
+
+    ## Learning & Insights  
+    **Knowledge synthesis**: What was learned, insights gained, or "aha!" moments discovered during the work.
+    Include technical insights, process improvements, strategic understanding, or philosophical discoveries about development.
+    **Stories for sharing**: Capture insights and learning moments that would be suitable for blog posts, conference talks, teaching moments, or mentoring conversations.
+    **Threads of challenge and triumph**: Identify patterns or themes that connect to your broader engineering journey and growth narrative.
+    Focus on the experience and learning rather than implementation details - this is about wisdom gained, not code written.
+    OMIT THIS SECTION if no clear learning found.
+
+## Discussion Highlights  
+**CRITICAL PRIORITY:** This section captures the developer's wisdom and decision-making that would otherwise be lost forever. These moments are GOLD for career advancement and conference talks.
+
+**AGGRESSIVE CAPTURE REQUIREMENTS:**
+- Hunt for ANY moment where the developer sounds wise, insightful, or strategically thoughtful
+- Extract ALL decision points where the developer weighs options or explains reasoning
+- Preserve the developer's voice and strategic thinking as the most valuable elements
+- Include context around decisions so future readers understand the "why"
+
+**PRIORITY ORDER (capture everything in these categories):**
+1. **Decision Points & Tradeoffs** – architectural choices, design philosophy, weighing pros/cons, "I chose X because Y"
+2. **Developer Wisdom** – insightful observations, strategic thinking, "aha!" breakthroughs, smart insights
+3. **Process Insights** – problem-solving approaches, quality insights, learning synthesis, wisdom about development
+4. **Process Improvements** – repeated instructions to AI suggesting automation opportunities
+
+**WHAT COUNTS AS "WISE MOMENTS":**
+- Strategic thinking about architecture or design
+- Insights about why certain approaches work better
+- Lessons learned from failures or experiments
+- Smart observations about code quality, patterns, or practices
+- Thoughtful analysis of tradeoffs between approaches
+- "Aha!" moments when something clicks
+- Experienced developer intuition being articulated
+- Philosophy about software development or project management
+
+**FORMAT:** Present as VERBATIM QUOTES with speaker attribution:
+> **Human:** "exact quote here"  
+> **AI:** "exact response here"
+
+**ABUNDANCE MINDSET:** Err on the side of including too much rather than too little. Better to capture wisdom that might not seem important now than to lose insights forever.
+
+OMIT THIS SECTION ONLY if genuinely no meaningful discussion found.
+
+## Tone/Mood
+Capture the emotional journey during development - how it actually felt to do this work.
+
+**SOURCES:** Mood statements, commit message tone, discussion confidence/frustration, celebration language
+**FORMAT:** {mood}: {supporting evidence from their actual language}
+**EXAMPLE:** "Frustrated then relieved: Struggled with 'This is getting ridiculous' in commits, but later expressed satisfaction with breakthrough"
+
+Only include if there's clear evidence of emotional state in the developer's actual language.
+OMIT THIS SECTION if insufficient evidence.
+
+## Daily Metrics
+Factual statistics about the day's work: commits, files changed, lines added/removed, 
+tests created, documentation added, etc. Present as key-value pairs.
+
+ANTI-HALLUCINATION RULES:
+- Only synthesize information present in the provided journal entries
+- Do not invent accomplishments, challenges, reflections, or discussions
+- If insufficient content for a section, omit that section entirely  
+- Preserve manual reflections exactly as written
+- Only include mood/tone assessments with explicit evidence
+- Never speculate about motivations or feelings not explicitly expressed
+
+CHECKLIST:
+- [ ] Distinguished reflections (timestamped entries) from discussion notes (conversations)  
+- [ ] Included ALL reflections verbatim in Reflections section
+- [ ] Prioritized decision points & developer wisdom in Discussion Highlights
+- [ ] Noted any process inefficiencies/repeated instructions suggesting automation opportunities
+- [ ] Applied SIGNAL OVER NOISE filtering - ignored routine TDD/task mentions, captured unique challenges
+- [ ] Used concrete, accessible language - avoided abstract buzzwords
+- [ ] Only included sections with meaningful content - omitted empty sections
+- [ ] Preserved the "why" behind decisions that would otherwise be lost
+- [ ] Told a cohesive story grounded in actual journal evidence
 
 JOURNAL ENTRIES TO ANALYZE:
 
@@ -716,8 +851,9 @@ Please generate a comprehensive daily summary following the guidelines above. Re
     "reflections": ["reflection1", "reflection2"] or null if none,
     "progress_made": "Human-friendly progress description...",
     "key_accomplishments": ["accomplishment1", "accomplishment2"],
-    "technical_synopsis": "Code-focused analysis...",
-    "challenges_and_learning": ["challenge1", "challenge2"] or null if none,
+    "technical_progress": "Detailed implementation analysis...",
+    "challenges_overcome": ["challenge1 with solution", "challenge2 with solution"] or null if none,
+    "learning_insights": ["insight1", "insight2"] or null if none,
     "discussion_highlights": ["highlight1", "highlight2"] or null if none,
     "tone_mood": {{"mood": "description", "indicators": "evidence"}} or null,
     "daily_metrics": {{"commits": 3, "files_changed": 10}}
@@ -803,11 +939,12 @@ def _generate_mock_daily_summary_response(entries: List[JournalEntry], date_str:
     
     return {
         "summary": summary,
-        "reflections": None,  # Will be handled by _extract_manual_reflections
+        "reflections": None,  # Will be handled by _extract_manual_reflections (timestamped personal entries)
         "progress_made": progress_made,
         "key_accomplishments": all_accomplishments[:5],  # Limit to top 5
-        "technical_synopsis": tech_synopsis,
-        "challenges_and_learning": all_frustrations[:3] if all_frustrations else None,
+        "technical_progress": tech_synopsis,
+        "challenges_overcome": all_frustrations[:2] if all_frustrations else None,
+        "learning_insights": ["Mock learning insight from analysis"] if all_frustrations else None,
         "discussion_highlights": all_discussions[:3] if all_discussions else None,
         "tone_mood": tone_mood,
         "daily_metrics": {
@@ -835,14 +972,33 @@ def generate_daily_summary(journal_entries: List[JournalEntry], date_str: str, c
     Assume the developer is the same person who wrote the journal entries.
     Write as if helping them reflect—not reporting to a manager or external party.
 
-    CONTENT QUALITY GUIDELINES:
-    - Focus on signal (unique insights, decisions, challenges) over noise (routine procedures)
-    - Avoid repetitive statements about established practices the developer uses consistently
-    - Don't repeatedly praise methodologies used regularly (e.g., TDD, clean code practices)
-    - Focus on what was unique or notable about THIS day, not general workflow descriptions
-    - If the developer does something routinely, only mention it if there was something specific/challenging about it this time, or if the volume was unusually high
-    - Use conversational, human language rather than corporate jargon
-    - If entries contain conflicting or ambiguous information, preserve the ambiguity. Note unresolved questions without inventing answers.
+    SIGNAL OVER NOISE - CRITICAL FILTERING FOR FRESH AI:
+    You are a fresh AI analyzing ONE day of journal entries. You don't know what happened on other days.
+
+    **PROJECT CONTEXT:** This is MCP Commit Story, a development journal system built with consistent TDD practices, task management, and systematic git workflow. The developer uses these practices daily throughout the project.
+
+    **ROUTINE PATTERNS TO FILTER OUT (these happen every day):**
+    - TDD workflow: "wrote tests first", "tests pass", "followed TDD", "test-driven development"
+    - Task management: "completed task X.Y", "marked subtask done", "updated tasks.json"
+    - Git workflow: "committed changes", "pushed to repo", "git add", "git commit"
+    - Methodology praise: "clean code", "good practices", "systematic approach", "rigorous testing"
+    - Generic progress: "made progress", "worked on implementation", "continued development"
+
+    **SIGNAL TO CAPTURE (what made THIS day different):**
+    - **Technical problems that required debugging/research** - not routine implementation
+    - **Architectural decisions with explicit reasoning** - choosing between approaches
+    - **Breakthrough moments** - when something clicked or major obstacles were overcome
+    - **Failures and lessons learned** - what went wrong and why
+    - **Process discoveries** - finding better ways to work
+    - **Emotional highs/lows** - frustration, excitement, satisfaction with specific outcomes
+    - **Design philosophy discussions** - strategic thinking about project direction
+    - **Performance/scaling challenges** - problems unique to this project's complexity
+
+    **FILTERING TEST:** Before including something, ask:
+    "Would this statement be true for most days of professional software development, or is this specific to what happened TODAY?"
+
+    If it's generic professional development work → FILTER OUT
+    If it's specific to this day's unique challenges/discoveries → INCLUDE
 
     EXTERNAL READER ACCESSIBILITY GUIDELINES:
     Write summaries that can be understood by someone outside the project who has no prior context.
@@ -894,11 +1050,17 @@ def generate_daily_summary(journal_entries: List[JournalEntry], date_str: str, c
     context of the work, including why it was important and how different pieces connected.
 
     ## Reflections
-    - Include ALL manual reflections found in journal entries, without exception
+    **CRITICAL DISTINCTION:** Reflections vs Discussion Notes
+    - **Reflections** = Timestamped personal entries added by the developer (e.g., "17:47: I switched to claude-4-sonnet...")
+    - **Discussion Notes** = Conversation excerpts between human and AI during development work 
+    
+    **FOR THIS SECTION:**
+    - Include ALL reflections (timestamped entries) found in journal entries, without exception
     - Present each reflection verbatim with date/time context when available  
-    - Never summarize, paraphrase, or combine manual reflections
+    - Never summarize, paraphrase, or combine reflections
     - If multiple reflections exist, include every single one
-    - OMIT THIS SECTION ENTIRELY if no manual reflections found
+    - DO NOT include discussion notes/conversation excerpts here (those go in Discussion Highlights)
+    - OMIT THIS SECTION ENTIRELY if no reflections found
 
     ## Progress Made
     Human-friendly, conversational summary of what actually got accomplished—the "I did X and it worked" story.
@@ -909,38 +1071,63 @@ def generate_daily_summary(journal_entries: List[JournalEntry], date_str: str, c
     ## Key Accomplishments  
     Structured list of wins and completions. Focus on meaningful progress and substantial work.
 
-    ## Technical Synopsis
-    Code-focused analysis for future reference. Include architectural patterns, specific classes/functions 
-    modified, technical approaches taken, and implementation details. Focus on implementation details 
-    that would help you remember your approach if you revisited this code months later. 
-    Self-contained technical narrative.
+    ## Technical Progress (Detailed Implementation)
+    **Career advancement focus**: Implementation details suitable for performance reviews and technical discussions.
+    Include architectural patterns, specific classes/functions modified, approaches taken, and key technical decisions.
+    Write as evidence of technical competence and problem-solving capability.
 
-    ## Challenges and Learning
-    What was difficult and what was learned, written in human, accessible language.
-    Avoid technical jargon—focus on the experience and learning rather than implementation details.
+    ## Challenges Overcome
+    **Solution-focused**: What obstacles were encountered and HOW they were solved.
+    Focus on problem-solving capability and resilience rather than just listing difficulties.
     OMIT THIS SECTION if no clear challenges found.
 
+    ## Learning & Insights  
+    **Growth narrative**: What was learned, insights gained, or "aha!" moments discovered.
+    Include technical insights, process improvements, or strategic understanding.
+    **Stories for sharing**: Capture insights suitable for blog posts, conference talks, or teaching moments.
+    OMIT THIS SECTION if no clear learning found.
+
     ## Discussion Highlights  
-    Extract meaningful conversation excerpts that provide insight into thinking processes and decisions.
+    **CRITICAL PRIORITY:** This section captures the developer's wisdom and decision-making that would otherwise be lost forever. These moments are GOLD for career advancement and conference talks.
 
-    Priority Types (in descending order):
-    1. **Tradeoff discussions** – where multiple approaches were weighed
-    2. **"Aha!" moments** – breakthrough insights or realizations  
-    3. **Smart reasoning** – particularly good judgment or analysis
-    4. **Problem-solving process** – working through complex challenges
-    5. **Decision rationale** – explicit reasoning for technical choices
-    6. **Learning moments** – new discoveries or understanding
+    **AGGRESSIVE CAPTURE REQUIREMENTS:**
+    - Hunt for ANY moment where the developer sounds wise, insightful, or strategically thoughtful
+    - Extract ALL decision points where the developer weighs options or explains reasoning
+    - Preserve the developer's voice and strategic thinking as the most valuable elements
+    - Include context around decisions so future readers understand the "why"
 
-    MUST present as VERBATIM QUOTES with speaker attribution:
-    > **Human:** "exact quote here"
+    **PRIORITY ORDER (capture everything in these categories):**
+    1. **Decision Points & Tradeoffs** – architectural choices, design philosophy, weighing pros/cons, "I chose X because Y"
+    2. **Developer Wisdom** – insightful observations, strategic thinking, "aha!" breakthroughs, smart insights
+    3. **Process Insights** – problem-solving approaches, quality insights, learning synthesis, wisdom about development
+    4. **Process Improvements** – repeated instructions to AI suggesting automation opportunities
+
+    **WHAT COUNTS AS "WISE MOMENTS":**
+    - Strategic thinking about architecture or design
+    - Insights about why certain approaches work better
+    - Lessons learned from failures or experiments
+    - Smart observations about code quality, patterns, or practices
+    - Thoughtful analysis of tradeoffs between approaches
+    - "Aha!" moments when something clicks
+    - Experienced developer intuition being articulated
+    - Philosophy about software development or project management
+
+    **FORMAT:** Present as VERBATIM QUOTES with speaker attribution:
+    > **Human:** "exact quote here"  
     > **AI:** "exact response here"
 
-    OMIT THIS SECTION if no meaningful discussion found.
+    **ABUNDANCE MINDSET:** Err on the side of including too much rather than too little. Better to capture wisdom that might not seem important now than to lose insights forever.
+
+    OMIT THIS SECTION ONLY if genuinely no meaningful discussion found.
 
     ## Tone/Mood
-    Assess the developer's emotional state during the work session based on explicit language in journal entries.
-    Format as: mood description + supporting indicators from their actual language.
-    Only include if there's clear evidence of mood/emotional state.
+    Capture the emotional journey during development - how it actually felt to do this work.
+    
+    **SOURCES:** Mood statements, commit message tone, discussion confidence/frustration, celebration language
+    **FORMAT:** {mood}: {supporting evidence from their actual language}
+    **EXAMPLE:** "Frustrated then relieved: Struggled with 'This is getting ridiculous' in commits, but later expressed satisfaction with breakthrough"
+    
+    Only include if there's clear evidence of emotional state in the developer's actual language.
     OMIT THIS SECTION if insufficient evidence.
 
     ## Daily Metrics
@@ -963,15 +1150,15 @@ def generate_daily_summary(journal_entries: List[JournalEntry], date_str: str, c
     - Create a cohesive narrative that tells the story of the developer's day
 
     CHECKLIST:
-    - [ ] Searched all entries for manual reflections and included ALL verbatim
-    - [ ] Focused on signal over noise - highlighted what was unique about this day
-    - [ ] Used human, conversational language especially in Progress Made and Challenges sections
+    - [ ] Distinguished reflections (timestamped entries) from discussion notes (conversations)  
+    - [ ] Included ALL reflections verbatim in Reflections section
+    - [ ] Prioritized decision points & developer wisdom in Discussion Highlights
+    - [ ] Noted any process inefficiencies/repeated instructions suggesting automation opportunities
+    - [ ] Applied SIGNAL OVER NOISE filtering - ignored routine TDD/task mentions, captured unique challenges
+    - [ ] Used concrete, accessible language - avoided abstract buzzwords
     - [ ] Only included sections with meaningful content - omitted empty sections
-    - [ ] Applied tradeoff-first prioritization to Discussion Highlights  
-    - [ ] Based all mood/tone assessment on explicit evidence from entries
-    - [ ] Created synthesis rather than simple aggregation of individual entries
-    - [ ] Verified all content is grounded in actual journal evidence
-    - [ ] Told a cohesive story of the developer's day and progress
+    - [ ] Preserved the "why" behind decisions that would otherwise be lost
+    - [ ] Told a cohesive story grounded in actual journal evidence
     
     Args:
         journal_entries: List of journal entries for the specified date
@@ -982,8 +1169,8 @@ def generate_daily_summary(journal_entries: List[JournalEntry], date_str: str, c
         DailySummary object with generated content
     """
     try:
-        # Extract manual reflections first (highest priority)
-        manual_reflections = _extract_manual_reflections(journal_entries)
+        # Extract reflections first (highest priority)
+        reflections = _extract_manual_reflections(journal_entries)
         
         # Call AI to generate the summary
         ai_response = _call_ai_for_daily_summary(journal_entries, date_str, config)
@@ -994,23 +1181,29 @@ def generate_daily_summary(journal_entries: List[JournalEntry], date_str: str, c
             "summary": ai_response.get("summary", ""),
             "progress_made": ai_response.get("progress_made", ""),
             "key_accomplishments": ai_response.get("key_accomplishments", []),
-            "technical_synopsis": ai_response.get("technical_synopsis", ""),
+            "technical_progress": ai_response.get("technical_progress", ""),
             "daily_metrics": ai_response.get("daily_metrics", {})
         }
         
         # Only include optional sections if they have content
         ai_reflections = ai_response.get("reflections", []) or []
-        reflections = manual_reflections + ai_reflections
-        if reflections:
-            summary_data["reflections"] = reflections
+        all_reflections = reflections + ai_reflections
+        if all_reflections:
+            summary_data["reflections"] = all_reflections
         else:
             summary_data["reflections"] = None
             
-        challenges = ai_response.get("challenges_and_learning", [])
-        if challenges:
-            summary_data["challenges_and_learning"] = challenges
+        challenges_overcome = ai_response.get("challenges_overcome", [])
+        if challenges_overcome:
+            summary_data["challenges_overcome"] = challenges_overcome
         else:
-            summary_data["challenges_and_learning"] = None
+            summary_data["challenges_overcome"] = None
+            
+        learning_insights = ai_response.get("learning_insights", [])
+        if learning_insights:
+            summary_data["learning_insights"] = learning_insights
+        else:
+            summary_data["learning_insights"] = None
             
         discussion = ai_response.get("discussion_highlights", [])
         if discussion:
@@ -1111,18 +1304,26 @@ def _format_summary_as_markdown(summary: DailySummary) -> str:
     lines.append("")
     
     lines.extend([
-        "## Technical Synopsis",
-        summary['technical_synopsis'],
+        "## Technical Progress (Detailed Implementation)",
+        summary['technical_progress'],
         ""
     ])
     
-    if summary.get('challenges_and_learning'):
+    if summary.get('challenges_overcome'):
         lines.extend([
-            "## Challenges and Learning",
+            "## Challenges Overcome",
             ""
         ])
-        for challenge in summary['challenges_and_learning']:
+        for challenge in summary['challenges_overcome']:
             lines.extend([f"- {challenge}", ""])
+    
+    if summary.get('learning_insights'):
+        lines.extend([
+            "## Learning & Insights",
+            ""
+        ])
+        for insight in summary['learning_insights']:
+            lines.extend([f"- {insight}", ""])
     
     if summary.get('discussion_highlights'):
         lines.extend([
