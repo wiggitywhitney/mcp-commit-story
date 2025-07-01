@@ -49,8 +49,6 @@ from .composer_integration import (
     get_commit_time_window,
     find_workspace_composer_databases
 )
-from ..composer_chat_provider import ComposerChatProvider
-
 logger = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
 
@@ -294,6 +292,8 @@ def query_cursor_chat_database() -> Dict[str, Any]:
         
         # Step 4: Create ComposerChatProvider and retrieve messages
         try:
+            # Import here to avoid circular import
+            from ..composer_chat_provider import ComposerChatProvider
             provider = ComposerChatProvider(workspace_db_path, global_db_path)
             chat_messages = provider.getChatHistoryForCommit(start_timestamp_ms, end_timestamp_ms)
             
@@ -484,7 +484,6 @@ __all__ = [
     'get_current_commit_hash',
     'get_commit_time_window',
     'find_workspace_composer_databases',
-    'ComposerChatProvider',
     # Exception classes
     'CursorDatabaseError',
     'CursorDatabaseNotFoundError',

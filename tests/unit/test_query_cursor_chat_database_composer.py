@@ -25,7 +25,7 @@ class TestComposerBasedQueryCursorChatDatabase:
 
     @patch('mcp_commit_story.cursor_db.get_commit_time_window')
     @patch('mcp_commit_story.cursor_db.find_workspace_composer_databases')
-    @patch('mcp_commit_story.cursor_db.ComposerChatProvider')
+    @patch('mcp_commit_story.composer_chat_provider.ComposerChatProvider')
     @patch('mcp_commit_story.cursor_db.get_current_commit_hash')
     def test_successful_composer_integration(
         self, 
@@ -124,7 +124,7 @@ class TestComposerBasedQueryCursorChatDatabase:
 
     @patch('mcp_commit_story.cursor_db.get_commit_time_window')
     @patch('mcp_commit_story.cursor_db.find_workspace_composer_databases')
-    @patch('mcp_commit_story.cursor_db.ComposerChatProvider')
+    @patch('mcp_commit_story.composer_chat_provider.ComposerChatProvider')
     @patch('mcp_commit_story.cursor_db.get_current_commit_hash')
     def test_enhanced_return_structure(
         self,
@@ -192,7 +192,7 @@ class TestComposerBasedQueryCursorChatDatabase:
 
     @patch('mcp_commit_story.cursor_db.get_commit_time_window')
     @patch('mcp_commit_story.cursor_db.find_workspace_composer_databases')
-    @patch('mcp_commit_story.cursor_db.ComposerChatProvider')
+    @patch('mcp_commit_story.composer_chat_provider.ComposerChatProvider')
     @patch('mcp_commit_story.cursor_db.get_current_commit_hash')
     def test_composer_provider_error_handling(
         self,
@@ -230,7 +230,7 @@ class TestComposerBasedQueryCursorChatDatabase:
         mock_get_commit_hash.side_effect = Exception("Git repository not found")
         
         with patch('mcp_commit_story.cursor_db.find_workspace_composer_databases') as mock_find, \
-             patch('mcp_commit_story.cursor_db.ComposerChatProvider') as mock_provider_class, \
+             patch('mcp_commit_story.composer_chat_provider.ComposerChatProvider') as mock_provider_class, \
              patch('time.time') as mock_time:
             
             mock_time.return_value = 1640998800  # Current time in seconds
@@ -256,7 +256,7 @@ class TestComposerBasedQueryCursorChatDatabase:
 
     @patch('mcp_commit_story.cursor_db.get_commit_time_window')
     @patch('mcp_commit_story.cursor_db.find_workspace_composer_databases')
-    @patch('mcp_commit_story.cursor_db.ComposerChatProvider')
+    @patch('mcp_commit_story.composer_chat_provider.ComposerChatProvider')
     @patch('mcp_commit_story.cursor_db.get_current_commit_hash')
     def test_empty_results_handling(
         self,
@@ -286,7 +286,7 @@ class TestComposerBasedQueryCursorChatDatabase:
 
     @patch('mcp_commit_story.cursor_db.get_commit_time_window')
     @patch('mcp_commit_story.cursor_db.find_workspace_composer_databases')
-    @patch('mcp_commit_story.cursor_db.ComposerChatProvider')
+    @patch('mcp_commit_story.composer_chat_provider.ComposerChatProvider')
     @patch('mcp_commit_story.cursor_db.get_current_commit_hash')
     def test_telemetry_integration(
         self,
@@ -317,7 +317,7 @@ class TestComposerBasedQueryCursorChatDatabase:
 
     @patch('mcp_commit_story.cursor_db.get_commit_time_window')
     @patch('mcp_commit_story.cursor_db.find_workspace_composer_databases')
-    @patch('mcp_commit_story.cursor_db.ComposerChatProvider')
+    @patch('mcp_commit_story.composer_chat_provider.ComposerChatProvider')
     @patch('mcp_commit_story.cursor_db.get_current_commit_hash')
     def test_chronological_message_sorting(
         self,
@@ -365,7 +365,7 @@ class TestComposerBasedQueryCursorChatDatabase:
         with patch('mcp_commit_story.cursor_db.get_current_commit_hash'), \
              patch('mcp_commit_story.cursor_db.get_commit_time_window'), \
              patch('mcp_commit_story.cursor_db.find_workspace_composer_databases'), \
-             patch('mcp_commit_story.cursor_db.ComposerChatProvider'):
+             patch('mcp_commit_story.composer_chat_provider.ComposerChatProvider'):
             
             # Mock quick responses
             start_time = time.time()
@@ -385,9 +385,9 @@ class TestNewFunctionImports:
         from mcp_commit_story.cursor_db import (
             get_current_commit_hash,
             get_commit_time_window,
-            find_workspace_composer_databases,
-            ComposerChatProvider
+            find_workspace_composer_databases
         )
+        from mcp_commit_story.composer_chat_provider import ComposerChatProvider
         
         # Verify all functions are callable
         assert callable(get_current_commit_hash)

@@ -223,7 +223,10 @@ class TestErrorHandling:
         # Should return empty ChatContextData instead of crashing
         assert result['messages'] == []
         assert result['session_names'] == []
-        assert result['metadata'] == {}
+        # Metadata should contain error information for debugging
+        assert 'error_info' in result['metadata']
+        assert result['metadata']['error_info']['error_type'] == 'Exception'
+        assert result['metadata']['error_info']['message'] == 'Database connection failed'
         # Should still have a valid time_window with fallback values
         assert 'time_window' in result
     

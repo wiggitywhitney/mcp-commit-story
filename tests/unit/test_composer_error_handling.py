@@ -91,7 +91,7 @@ class TestCursorDatabaseNotFoundError:
 class TestCursorDatabaseAccessError:
     """Test handling of permission and lock issues."""
     
-    @patch('src.mcp_commit_story.cursor_db.ComposerChatProvider')
+    @patch('src.mcp_commit_story.composer_chat_provider.ComposerChatProvider')
     @patch('src.mcp_commit_story.cursor_db.find_workspace_composer_databases')
     def test_database_access_permission_error(self, mock_find_databases, mock_provider_class):
         """Test handling when database access is denied due to permissions."""
@@ -114,7 +114,7 @@ class TestCursorDatabaseAccessError:
         assert result['workspace_info']['error_info']['error_type'] == 'CursorDatabaseAccessError'
         assert result['workspace_info']['error_info']['permission_type'] == 'read'
     
-    @patch('src.mcp_commit_story.cursor_db.ComposerChatProvider')
+    @patch('src.mcp_commit_story.composer_chat_provider.ComposerChatProvider')
     @patch('src.mcp_commit_story.cursor_db.find_workspace_composer_databases')
     def test_database_locked_error_handling(self, mock_find_databases, mock_provider_class):
         """Test handling when database is locked by another process."""
@@ -136,7 +136,7 @@ class TestCursorDatabaseAccessError:
 class TestCursorDatabaseSchemaError:
     """Test handling of corrupted or incompatible database schemas."""
     
-    @patch('src.mcp_commit_story.cursor_db.ComposerChatProvider')
+    @patch('src.mcp_commit_story.composer_chat_provider.ComposerChatProvider')
     @patch('src.mcp_commit_story.cursor_db.find_workspace_composer_databases')
     def test_schema_version_mismatch_error(self, mock_find_databases, mock_provider_class):
         """Test handling when database schema doesn't match expectations."""
@@ -155,7 +155,7 @@ class TestCursorDatabaseSchemaError:
         assert result['workspace_info']['error_info']['error_type'] == 'CursorDatabaseSchemaError'
         assert result['workspace_info']['error_info']['table_name'] == 'conversations'
     
-    @patch('src.mcp_commit_story.cursor_db.ComposerChatProvider')
+    @patch('src.mcp_commit_story.composer_chat_provider.ComposerChatProvider')
     @patch('src.mcp_commit_story.cursor_db.find_workspace_composer_databases')
     def test_corrupted_database_graceful_degradation(self, mock_find_databases, mock_provider_class):
         """Test graceful degradation when database is corrupted."""
@@ -179,7 +179,7 @@ class TestCursorDatabaseSchemaError:
 class TestCursorDatabaseQueryError:
     """Test handling of invalid SQL or parameter issues."""
     
-    @patch('src.mcp_commit_story.cursor_db.ComposerChatProvider')
+    @patch('src.mcp_commit_story.composer_chat_provider.ComposerChatProvider')
     @patch('src.mcp_commit_story.cursor_db.find_workspace_composer_databases')
     def test_invalid_sql_error_handling(self, mock_find_databases, mock_provider_class):
         """Test handling when SQL query has syntax errors."""
@@ -198,7 +198,7 @@ class TestCursorDatabaseQueryError:
         assert result['workspace_info']['error_info']['error_type'] == 'CursorDatabaseQueryError'
         assert 'sql' in result['workspace_info']['error_info']
     
-    @patch('src.mcp_commit_story.cursor_db.ComposerChatProvider')
+    @patch('src.mcp_commit_story.composer_chat_provider.ComposerChatProvider')
     @patch('src.mcp_commit_story.cursor_db.find_workspace_composer_databases')
     def test_parameter_mismatch_error_handling(self, mock_find_databases, mock_provider_class):
         """Test handling when SQL parameters don't match placeholders."""
@@ -279,7 +279,7 @@ class TestGracefulDegradation:
     def test_partial_data_recovery(self):
         """Test recovery when some operations succeed and others fail."""
         with patch('src.mcp_commit_story.cursor_db.find_workspace_composer_databases') as mock_find, \
-             patch('src.mcp_commit_story.cursor_db.ComposerChatProvider') as mock_provider_class:
+             patch('src.mcp_commit_story.composer_chat_provider.ComposerChatProvider') as mock_provider_class:
             
             # Workspace database found, but global database fails
             mock_find.return_value = ("/workspace.vscdb", None)  # Global DB missing
