@@ -1167,6 +1167,91 @@ All task requirements have been met with exceptional performance results.
 7. Verify integration with existing telemetry exporters
 
 All telemetry should follow project standards: automatic trace correlation, JSON logging, and multi-exporter support.
+<info added on 2025-07-01T22:54:16.539Z>
+# TDD Implementation Approach
+
+## Step 1: Write Failing Tests
+- Create tests/unit/test_telemetry_integration.py
+- Write tests that verify:
+  - All public functions have @trace_mcp_operation decorators
+  - Correct span attributes are set for each operation
+  - Error categorization works correctly
+  - Metrics are recorded properly
+  - Telemetry gracefully degrades when disabled
+
+## Step 2: Run Tests to Confirm Failures
+- Verify all tests fail before implementation
+- Document expected vs actual behavior
+
+## Step 3: Implement Telemetry Step by Step
+- Add @trace_mcp_operation decorators to functions
+- Implement error category mappings
+- Ensure span attributes are set correctly
+- Add metric recording where appropriate
+- Run tests after each step to track progress
+
+## Step 4: Achieve 100% Test Success
+- All telemetry tests should pass
+- Verify existing tests still pass (no regressions)
+
+# Implementation Details
+
+## Functions Requiring @trace_mcp_operation Decorators:
+- chat_context_manager.extract_chat_for_commit() - replace manual span
+- commit_time_window.calculate_time_window_for_commit() - add decorator
+- cursor_db.discover_cursor_databases() - basic operation tracking
+- cursor_db.query_cursor_chat_database() - if not already decorated
+
+## Error Categorization:
+- Extend existing error categories from telemetry.md
+- Map cursor_db exceptions to semantic categories:
+  - "database" category for database-related errors
+  - "workspace" category for workspace detection errors
+  - "query" category for query execution errors
+  - Reuse existing categories (filesystem, parsing) where appropriate
+
+## Required Span Attributes:
+
+**For extract_chat_for_commit():**
+- chat.messages_found (count)
+- chat.session_count (count)
+- chat.time_window_hours (duration)
+- chat.workspace_detected (boolean)
+- error.category (on failures)
+
+**For calculate_time_window_for_commit():**
+- time_window.strategy (string)
+- time_window.duration_hours (float)
+- time_window.start_timestamp (int)
+- time_window.end_timestamp (int)
+- error.category (on failures)
+
+**For database discovery functions:**
+- cursor.databases_found (count)
+- cursor.discovery_duration_ms (int)
+- error.category (on failures)
+
+# Documentation Requirements
+
+## Docstring Updates:
+- Add telemetry information to docstrings of decorated functions
+- Document which attributes are set by each operation
+- Include performance threshold information where relevant
+
+## Inline Comments:
+- Document why specific attributes are chosen
+- Explain error category mappings
+- Note any telemetry-specific design decisions
+
+## Success Criteria
+✅ All telemetry tests passing
+✅ All existing tests still passing
+✅ Consistent use of @trace_mcp_operation decorator
+✅ Error categorization implemented and tested
+✅ All required span attributes being set
+✅ Graceful degradation when telemetry disabled
+✅ Clear docstrings and comments added
+</info added on 2025-07-01T22:54:16.539Z>
 
 ## 12. Documentation Cleanup: Remove Old Database References [pending]
 ### Dependencies: 61.6
@@ -1211,4 +1296,185 @@ Remove all outdated references to the old aiService database system and rewrite 
    - Test that documentation accurately describes current behavior
 
 The goal is clean, consistent documentation that describes the current chat integration without any confusing historical references or internal terminology.
+<info added on 2025-07-01T22:57:02.446Z>
+# IMPLEMENTATION PLAN FOR TASK 61.12: DOCUMENTATION CLEANUP
+
+## Overview
+Systematically remove all references to aiService.prompts and aiService.generations from documentation and code comments, rewriting content to reflect only the current chat integration.
+
+## Step 1: Discovery Phase - Find All References
+
+Run these commands from project root to identify all locations:
+
+```bash
+# Find aiService references in docs
+grep -r "aiService" docs/ --include="*.md" -n
+grep -r "prompts.*generations" docs/ --include="*.md" -n
+
+# Find in code comments and docstrings
+grep -r "aiService" src/ --include="*.py" -n
+grep -r "prompts.*generations" src/ --include="*.py" -n
+
+# Check example files
+grep -r "aiService" . --include="*.json" -n
+
+# Check README and engineering spec
+grep -n "aiService" README.md engineering-mcp-journal-spec-final.md
+```
+
+Document all findings in a checklist before making changes.
+
+## Step 2: Update Documentation Files
+
+### Priority files to update:
+
+**docs/cursor-database-implementation.md**
+- Remove entire sections about aiService.prompts/generations
+- Rewrite to describe current chat database access
+- Focus on benefits: timestamps, session names, chronological ordering
+
+**engineering-mcp-journal-spec-final.md**
+- Update "SQLite Database Integration" section
+- Remove references to message reconstruction
+- Update example queries and data structures
+
+**cursor_chat_sample.json (if contains old format)**
+- Update to show current message format
+- Include timestamp and sessionName fields
+
+**Any other docs with aiService mentions**
+- Replace with "chat database" or "chat history"
+- Remove technical implementation details
+
+## Step 3: Update Code Comments
+
+Search for and update:
+- Docstrings mentioning aiService
+- TODO comments referencing old system
+- Implementation comments about prompts/generations
+- Example comments showing old data format
+
+## Step 4: Rewriting Guidelines
+
+When rewriting, follow these patterns:
+
+**Instead of:** "The system queries aiService.prompts and aiService.generations from the ItemTable..."
+**Write:** "The system retrieves chat conversations from Cursor's chat database..."
+
+**Instead of:** "We reconstruct conversations by merging prompts with generations..."
+**Write:** "Chat messages are retrieved with full context including timestamps and session names..."
+
+**Instead of:** "Due to limitations in the old system..."
+**Write:** Just describe current capabilities without historical context
+
+## Step 5: Validation Checklist
+
+After updates, verify:
+- ✅ Zero occurrences of "aiService" in docs/
+- ✅ Zero occurrences of "prompts.*generations" pattern
+- ✅ No mentions of "reconstruction" in chat context
+- ✅ No historical comparisons or "updated from" language
+- ✅ All examples use current data format
+- ✅ Documentation reads cohesively about current system
+
+## Step 6: Final Review
+- Re-run all grep commands to ensure complete cleanup
+- Read through updated docs to ensure coherent narrative
+- Verify examples match current implementation
+- Check that benefits are clearly communicated
+
+## Key Files Requiring Updates (based on search):
+- docs/cursor-database-implementation.md - Extensive aiService content
+- engineering-mcp-journal-spec-final.md - Multiple sections
+- src/mcp_commit_story/cursor_db/*.py - Check all docstrings
+- Any example JSON files with old format
+
+## Success Criteria
+✅ No references to aiService.prompts or aiService.generations remain
+✅ Documentation describes only current implementation
+✅ No historical context or upgrade language
+✅ Clear user benefits emphasized
+✅ Technical accuracy maintained
+</info added on 2025-07-01T22:57:02.446Z>
+
+## 13. Document Chat Integration Architecture [pending]
+### Dependencies: 61.10
+### Description: Create comprehensive documentation for the new chat integration feature that helps users and developers understand how chat context enhances journal entries
+### Details:
+## TASK 61.13: DOCUMENT CHAT INTEGRATION ARCHITECTURE
+
+### Overview
+Create comprehensive documentation for the new chat integration feature that helps users and developers understand how chat context enhances journal entries.
+
+### Requirements Analysis
+
+#### Files to ADD (new documentation):
+- `docs/chat-integration.md` - Primary documentation for the feature
+- Configuration examples in appropriate locations
+
+#### Files to UPDATE:
+- `docs/architecture.md` - Add chat integration to system architecture
+- `docs/context-collection.md` - Include chat as a context source
+- `docs/journal-behavior.md` - Show chat context in journal examples
+- `docs/configuration.md` (if exists) or create section for chat config
+- `engineering-mcp-journal-spec-final.md` - Update "Context Collection" section to include chat
+- `README.md` - Add brief mention of chat context feature in overview
+
+#### Files to REVIEW (no changes needed):
+- Other docs in `/docs/` - Most are implementation-specific and don't need chat mentions
+
+### Implementation Plan
+
+#### 1. Create Primary Documentation (docs/chat-integration.md):
+- **Overview**: What is chat integration and why it matters
+- **How It Works**: Simple explanation of chat context collection
+- **Data Collected**: Messages, timestamps, session names (be transparent)
+- **Time Windows**: How the system determines relevant conversations
+- **Privacy & Security**: Data stays local, no external transmission
+- **Examples**: Show sample journal entries with chat context
+
+#### 2. Update Architecture Documentation:
+- `docs/architecture.md`: Add "Chat Integration" component to architecture diagram/description
+- Show data flow: Cursor DB → Chat Context Manager → Journal Generation
+- Explain the time window calculation strategy
+
+#### 3. Update Context Collection:
+- `docs/context-collection.md`: Add section on chat as a context source
+- Explain how chat complements git, file, and command contexts
+- Reference the chat integration doc for details
+
+#### 4. Update Journal Behavior:
+- `docs/journal-behavior.md`: Add examples showing chat in journal entries
+- Explain how chat appears in the "Context" section
+- Show different scenarios (with/without chat data)
+
+#### 5. Configuration Documentation:
+- Document chat-related configuration options
+- Time window settings
+- Enabling/disabling chat collection
+- Troubleshooting common issues
+
+#### 6. Update Engineering Spec:
+- In "Context Collection" section, add chat context subsection
+- Update the context data structure to show chat format
+- Keep it technical but don't mention old approaches
+
+#### 7. Update README:
+- In the "How It Works" or features section, add:
+  - "Captures relevant chat conversations from your development sessions"
+  - Keep it brief (1-2 sentences)
+
+### Writing Guidelines
+- Write as if chat integration has always been part of the system
+- Focus on user benefits: richer context, better memory, comprehensive stories
+- Use simple, clear language - avoid internal terminology
+- Include practical examples where possible
+- Maintain consistency with existing documentation style
+
+### Success Criteria
+✅ Users understand what chat integration does and its value
+✅ Developers can trace how chat data flows through the system
+✅ Configuration options are clearly documented
+✅ No references to old implementations or historical context
+✅ Documentation feels cohesive with existing docs
 
