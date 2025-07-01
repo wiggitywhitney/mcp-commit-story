@@ -58,12 +58,33 @@ def extract_chat_for_commit() -> ChatContextData:
             return transformed_data
             
         except Exception as e:
-            logger.warning(f"Failed to extract chat context: {e}", exc_info=True)
+            logger.warning(f"Failed to extract chat context: {e}", extra={
+                'error_type': e.__class__.__name__,
+                'error_category': 'chat_context_extraction',
+                'troubleshooting_hint': getattr(e, 'troubleshooting_hint', None)
+            })
             span.set_attribute('chat.error', str(e))
             span.set_attribute('chat.fallback_used', True)
             
-            # Return empty ChatContextData on any failure for graceful degradation
-            return _create_empty_chat_context_data()
+            # Build error info for metadata
+            error_info = {
+                "error_type": e.__class__.__name__,
+                "message": str(e),
+                "category": "chat_context_extraction"
+            }
+            
+            # Add specific context from exception if available
+            if hasattr(e, 'context') and e.context:
+                for key, value in e.context.items():
+                    if key not in ['timestamp', 'platform', 'platform_version', 'python_version']:
+                        error_info[key] = value
+            
+            # Add troubleshooting hint if available
+            if hasattr(e, 'troubleshooting_hint') and e.troubleshooting_hint:
+                error_info["troubleshooting_hint"] = e.troubleshooting_hint
+            
+            # Return empty ChatContextData with error info for graceful degradation
+            return _create_empty_chat_context_data(error_info=error_info)
 
 
 def _transform_chat_data(raw_data: Dict[str, Any]) -> ChatContextData:
@@ -173,11 +194,14 @@ def _build_time_window(workspace_info: Dict[str, Any]) -> TimeWindow:
     )
 
 
-def _create_empty_chat_context_data() -> ChatContextData:
+def _create_empty_chat_context_data(error_info: Optional[Dict[str, Any]] = None) -> ChatContextData:
     """Create empty ChatContextData for graceful error handling.
     
+    Args:
+        error_info: Optional error information to include in metadata
+    
     Returns:
-        ChatContextData: Empty data structure with fallback time window
+        ChatContextData: Empty data structure with fallback time window and optional error info
     """
     fallback_time_window = TimeWindow(
         start_timestamp_ms=0,
@@ -186,9 +210,13 @@ def _create_empty_chat_context_data() -> ChatContextData:
         duration_hours=0.0
     )
     
+    metadata = {}
+    if error_info:
+        metadata['error_info'] = error_info
+    
     return ChatContextData(
         messages=[],
         time_window=fallback_time_window,
         session_names=[],
-        metadata={}
+        metadata=metadata
     ) 
