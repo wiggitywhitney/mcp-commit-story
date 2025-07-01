@@ -108,4 +108,4 @@ The key isn't avoiding the unstable ground - it's building systems modular and r
 
 ---
 
-*Want to see the system in action or read more about the technical implementation? Check out the [MCP Commit Story project](https://github.com/user/mcp-commit-story) where all this development work is documented in real-time, including the architectural crisis and recovery described in this post.* 
+*Want to see the system in action or read more about the technical implementation? Check out the [MCP Commit Story project](https://github.com/wiggitywhitney/mcp-commit-story) where all this development work is documented in real-time, including the architectural crisis and recovery described in this post.* 
