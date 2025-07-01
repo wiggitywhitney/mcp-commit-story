@@ -56,7 +56,7 @@ The breakthrough came from accepting reality instead of fighting it. Here's what
 
 **Background agent architecture that respects AI limitations.** Rather than trying to make AI agents trigger themselves (impossible), the system spawns fresh AI instances in unrestricted environments where they are fed context and then intelligently generate content.
 
-**Real database integration for actual chat data.** Instead of asking AI agents for conversation history they can't access, I figured out where Cursor stores AI chat discussions on the local machine and access it directly. The Cursor AI Agent can't remember more than 10 messages verbatim despite what it claims, but the actual databases contain complete chronologically-ordered conversations with timestamps and session names.
+**Real database integration for actual chat data.** Instead of asking AI agents for conversation history they can't access, I figured out where Cursor, and I access the messages directly. The Cursor AI Agent can't remember more than 10 messages verbatim despite what it claims, but the actual databases contain complete, chronologically-ordered conversations with timestamps and session names.
 
 The result is a fully automatic system that produces rich, meaningful engineering journal entries after every git commit instead of failing silently or producing garbage.
 
@@ -100,7 +100,7 @@ The project that emerged from the wreckage is more honest about what AI can and 
 
 I'm now working on a conference talk about this experience called "How to Trust a Liar: Instrumenting AI Execution with OpenTelemetry." The core question isn't how to avoid being misled by AI - that's probably impossible given how confident and detailed AI guidance can be. The question is how to build systems that can detect when AI guidance is wrong and recover gracefully.
 
-The castle I thought I was building on unstable ground turned out to be a foundation. Not for the system I originally envisioned, but for something more valuable: a methodology for productive partnership with unreliable AI assistants.
+That castle I'm building? The unstable ground turned out to be a foundation. Not for the system I originally envisioned, but for something more valuable: a methodology for productive partnership with unreliable AI assistants.
 
 Sometimes the best architecture emerges from the ruins of what you thought you were building. And sometimes the most important lesson is learning to trust your instincts when your AI pair programming partner is confidently leading you down the wrong path.
 
