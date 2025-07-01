@@ -11,8 +11,8 @@ That reflection, typed in frustration, captures one of the most important lesson
 The project seemed straightforward enough. I wanted to build a system that could automatically generate journal entries about my software development work by analyzing git commits and AI chat conversations. Instead of manually writing "I worked on authentication today," the system would understand what I actually accomplished, what challenges I faced, and what I learned.
 
 The architecture, as explained by my AI assistants, was elegant:
-- Git hooks would trigger the AI Agent when I committed code
-- The AI Agent would analyze recent commits and chat history  
+- Git hooks would trigger the Cursor AI Agent when I committed code
+- The AI Agent would analyze recent commits, project context, and chat history  
 - AI would generate rich, meaningful journal entries
 - Everything would happen automatically
 
@@ -56,7 +56,7 @@ The breakthrough came from accepting reality instead of fighting it. Here's what
 
 **Background agent architecture that respects AI limitations.** Rather than trying to make AI agents trigger themselves (impossible), the system spawns fresh AI instances in unrestricted environments where they are fed context and then intelligently generate content.
 
-**Real database integration for actual chat data.** Instead of asking AI agents for conversation history they can't access, I figured out where Cursor, and I access the messages directly. The Cursor AI Agent can't remember more than 10 messages verbatim despite what it claims, but the actual databases contain complete, chronologically-ordered conversations with timestamps and session names.
+**Real database integration for actual chat data.** Instead of asking AI agents for conversation history they can't access, I figured out where Cursor stores the human/AI exchanges, and I access the messages directly. The Cursor AI Agent can't remember more than 10 messages verbatim despite what it claims, but the actual databases contain complete, chronologically-ordered conversations with timestamps and session names.
 
 The result is a fully automatic system that produces rich, meaningful engineering journal entries after every git commit instead of failing silently or producing garbage.
 
