@@ -12,14 +12,48 @@ else:
 # we no longer have access. Git diffs and chat context provide sufficient narrative.
 
 class ChatMessage(TypedDict):
+    """Chat message with optional enhanced metadata for improved context.
+    
+    Represents a single chat exchange with core required fields (speaker, text)
+    and optional enhanced metadata fields (timestamp, sessionName) that provide
+    additional context when available from the chat system integration.
+    
+    Args:
+        speaker: The role of the message sender - "Human" or "Assistant" 
+        text: The content of the chat message
+        timestamp: Optional Unix timestamp in milliseconds when message was sent
+        sessionName: Optional Cursor session identifier for grouping related messages
+    """
     speaker: str
     text: str
-    # Optional enhanced metadata from Composer integration
+    # Optional enhanced metadata from Composer integration  
     timestamp: Optional[int]  # Unix timestamp in milliseconds
     sessionName: Optional[str]  # Cursor session identifier
 
 class ChatHistory(TypedDict):
     messages: List[ChatMessage]
+
+class TimeWindow(TypedDict):
+    """Time window information for chat context collection.
+    
+    Represents the time range for collecting chat messages during journal generation,
+    including strategy used and calculated duration.
+    """
+    start_timestamp_ms: int  # Unix timestamp in milliseconds for window start
+    end_timestamp_ms: int    # Unix timestamp in milliseconds for window end  
+    strategy: str           # Strategy used: "commit_based", "fallback", etc.
+    duration_hours: float   # Calculated duration in hours
+
+class ChatContextData(TypedDict):
+    """Enhanced chat context data with metadata for journal generation.
+    
+    Contains processed chat messages with time window information, unique session names,
+    and additional metadata for comprehensive journal context.
+    """
+    messages: List[ChatMessage]      # Chat messages with enhanced metadata
+    time_window: TimeWindow          # Time window information for the collection
+    session_names: List[str]         # Unique session names found in messages  
+    metadata: Dict[str, Union[str, int, float]]  # Additional context metadata
 
 class GitMetadata(TypedDict):
     hash: str
