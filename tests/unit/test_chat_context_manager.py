@@ -268,15 +268,16 @@ class TestErrorHandling:
 class TestTelemetryIntegration:
     """Test telemetry span creation and attributes."""
     
+    @patch('src.mcp_commit_story.chat_context_manager.HAS_TELEMETRY', True)
     @patch('src.mcp_commit_story.chat_context_manager.tracer')
     @patch('src.mcp_commit_story.chat_context_manager.query_cursor_chat_database')
-    def test_telemetry_span_creation(self, mock_query, mock_tracer):
-        """Test that telemetry span is created and called correctly."""
+    def test_telemetry_span_creation_with_telemetry(self, mock_query, mock_tracer):
+        """Test that telemetry span is created when OpenTelemetry is available."""
         mock_span = Mock()
-        mock_context_manager = MagicMock()
-        mock_context_manager.__enter__.return_value = mock_span
-        mock_context_manager.__exit__.return_value = None
-        mock_tracer.start_as_current_span.return_value = mock_context_manager
+        # Add context manager support to the mock span
+        mock_span.__enter__ = Mock(return_value=mock_span)
+        mock_span.__exit__ = Mock(return_value=None)
+        mock_tracer.start_span.return_value = mock_span
         
         mock_query.return_value = {
             'chat_history': [
@@ -292,13 +293,49 @@ class TestTelemetryIntegration:
         result = extract_chat_for_commit()
         
         # Should create span with correct name
-        mock_tracer.start_as_current_span.assert_called_once_with('extract_chat_for_commit')
+        mock_tracer.start_span.assert_called_once_with('extract_chat_for_commit')
+        
+        # Should call context manager methods
+        mock_span.__enter__.assert_called_once()
+        mock_span.__exit__.assert_called_once()
         
         # Should set telemetry attributes
         mock_span.set_attribute.assert_any_call('chat.messages_found', 1)
         mock_span.set_attribute.assert_any_call('chat.session_count', 1)
         mock_span.set_attribute.assert_any_call('chat.time_window_hours', 24.0)
         mock_span.set_attribute.assert_any_call('chat.workspace_detected', True)
+        
+        # Function should work correctly
+        assert isinstance(result, dict)
+        assert 'messages' in result
+        assert len(result['messages']) == 1
+        assert result['messages'][0]['speaker'] == 'Human'
+        assert result['messages'][0]['text'] == 'Hello'
+    
+    @patch('src.mcp_commit_story.chat_context_manager.HAS_TELEMETRY', False)
+    @patch('src.mcp_commit_story.chat_context_manager.tracer', None)
+    @patch('src.mcp_commit_story.chat_context_manager.query_cursor_chat_database')
+    def test_telemetry_span_creation_without_telemetry(self, mock_query):
+        """Test that function works correctly when OpenTelemetry is not available."""
+        mock_query.return_value = {
+            'chat_history': [
+                {'role': 'user', 'content': 'Hello', 'sessionName': 'Session A'}
+            ],
+            'workspace_info': {
+                'start_timestamp_ms': 1672531200000,
+                'end_timestamp_ms': 1672617600000,
+                'strategy': 'commit_based'
+            }
+        }
+        
+        result = extract_chat_for_commit()
+        
+        # Function should work correctly without telemetry
+        assert isinstance(result, dict)
+        assert 'messages' in result
+        assert len(result['messages']) == 1
+        assert result['messages'][0]['speaker'] == 'Human'
+        assert result['messages'][0]['text'] == 'Hello'
 
 
 class TestPerformanceRequirements:

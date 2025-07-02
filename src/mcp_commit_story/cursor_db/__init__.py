@@ -10,8 +10,17 @@ import time
 from datetime import datetime
 from typing import Dict, Optional, Any
 
-from opentelemetry import trace
-from opentelemetry.trace import Status, StatusCode
+# Optional OpenTelemetry import with graceful degradation
+try:
+    from opentelemetry import trace
+    from opentelemetry.trace import Status, StatusCode
+    HAS_TELEMETRY = True
+except ImportError:
+    HAS_TELEMETRY = False
+    trace = None
+    StatusCode = None
+    Status = None
+
 from git.exc import GitCommandError, BadName
 import logging
 
@@ -38,7 +47,19 @@ from .message_extraction import (
 )
 # message_reconstruction module removed - Composer provides chronological data
 # Message limiting removed - using Composer's precise commit-based time windows
-from ..telemetry import trace_mcp_operation, get_mcp_metrics
+# Conditional telemetry imports
+try:
+    from ..telemetry import trace_mcp_operation, get_mcp_metrics
+except ImportError:
+    # Fallback when telemetry is not available
+    def trace_mcp_operation(name):
+        def decorator(func):
+            return func
+        return decorator
+    
+    def get_mcp_metrics():
+        return None
+
 from .multiple_database_discovery import (
     discover_all_cursor_databases, 
     get_recent_databases, 
@@ -50,7 +71,12 @@ from .composer_integration import (
     find_workspace_composer_databases
 )
 logger = logging.getLogger(__name__)
-tracer = trace.get_tracer(__name__)
+
+# Create tracer only if telemetry is available
+if HAS_TELEMETRY and trace:
+    tracer = trace.get_tracer(__name__)
+else:
+    tracer = None
 
 # Simple circuit breaker for repeated failures
 class _CircuitBreaker:
@@ -142,7 +168,11 @@ def query_cursor_chat_database() -> Dict[str, Any]:
     
     metrics = get_mcp_metrics()
     start_time = time.time()
-    span = trace.get_current_span()
+    
+    # Get current span if telemetry is available
+    span = None
+    if HAS_TELEMETRY and trace:
+        span = trace.get_current_span()
     
     workspace_db_path = None
     global_db_path = None
@@ -155,16 +185,20 @@ def query_cursor_chat_database() -> Dict[str, Any]:
         # Step 1: Get current commit hash for time window calculation
         try:
             commit_hash = get_current_commit_hash()
-            span.set_attribute("cursor.commit_detected", True)
-            span.set_attribute("cursor.commit_hash", commit_hash or "unknown")
+            if span:
+                    span.set_attribute("cursor.commit_detected", True)
+            if span:
+                    span.set_attribute("cursor.commit_hash", commit_hash or "unknown")
         except Exception as e:
             # Fall back to 24-hour window if git operations fail
             time_window_strategy = "24_hour_fallback"
             current_time_ms = int(time.time() * 1000)
             start_timestamp_ms = current_time_ms - (24 * 60 * 60 * 1000)  # 24 hours ago
             end_timestamp_ms = current_time_ms
-            span.set_attribute("cursor.commit_detected", False)
-            span.set_attribute("cursor.git_error", str(e))
+            if span:
+                    span.set_attribute("cursor.commit_detected", False)
+            if span:
+                    span.set_attribute("cursor.git_error", str(e))
         
         # Step 2: Calculate time window based on commit (or use fallback)
         if commit_hash and start_timestamp_ms is None:
@@ -188,35 +222,49 @@ def query_cursor_chat_database() -> Dict[str, Any]:
         # Step 3: Find Composer databases using workspace detection
         try:
             workspace_db_path, global_db_path = find_workspace_composer_databases()
-            span.set_attribute("cursor.workspace_detected", bool(workspace_db_path))
-            span.set_attribute("cursor.global_database_detected", bool(global_db_path))
-            span.set_attribute("cursor.workspace_database_path", workspace_db_path or "none")
+            if span:
+                    span.set_attribute("cursor.workspace_detected", bool(workspace_db_path))
+            if span:
+                    span.set_attribute("cursor.global_database_detected", bool(global_db_path))
+            if span:
+                    span.set_attribute("cursor.workspace_database_path", workspace_db_path or "none")
         except (WorkspaceDetectionError, CursorDatabaseError) as e:
             # Record failure in circuit breaker
             _circuit_breaker.record_failure()
             
             # Database not found - return graceful degradation with error info
-            span.set_attribute("cursor.workspace_detected", False)
-            span.set_attribute("cursor.detection_error", str(e))
-            span.set_status(Status(StatusCode.ERROR, f"Workspace detection failed: {e}"))
+            if span:
+                    span.set_attribute("cursor.workspace_detected", False)
+            if span:
+                    span.set_attribute("cursor.detection_error", str(e))
+            if span and HAS_TELEMETRY and Status and StatusCode:
+                span.set_status(Status(StatusCode.ERROR, f"Workspace detection failed: {e}"))
             
             # Set telemetry error attributes
-            span.set_attribute("error.type", e.__class__.__name__)
+            if span:
+                    span.set_attribute("error.type", e.__class__.__name__)
             if isinstance(e, CursorDatabaseNotFoundError):
-                span.set_attribute("error.category", "database_not_found")
+                if span:
+                    span.set_attribute("error.category", "database_not_found")
             elif isinstance(e, CursorDatabaseAccessError):
-                span.set_attribute("error.category", "database_access")
+                if span:
+                    span.set_attribute("error.category", "database_access")
             elif isinstance(e, CursorDatabaseSchemaError):
-                span.set_attribute("error.category", "database_schema")
+                if span:
+                    span.set_attribute("error.category", "database_schema")
             elif isinstance(e, CursorDatabaseQueryError):
-                span.set_attribute("error.category", "database_query")
+                if span:
+                    span.set_attribute("error.category", "database_query")
             elif isinstance(e, WorkspaceDetectionError):
-                span.set_attribute("error.category", "workspace_detection")
+                if span:
+                    span.set_attribute("error.category", "workspace_detection")
             else:
-                span.set_attribute("error.category", "database_error")
+                if span:
+                    span.set_attribute("error.category", "database_error")
             
             # Record exception for distributed tracing
-            span.record_exception(e)
+            if span:
+                span.record_exception(e)
             
             # Log error with context and troubleshooting hints
             context_info = getattr(e, 'context', {})
@@ -298,9 +346,12 @@ def query_cursor_chat_database() -> Dict[str, Any]:
             chat_messages = provider.getChatHistoryForCommit(start_timestamp_ms, end_timestamp_ms)
             
             # Set success attributes
-            span.set_attribute("cursor.messages_retrieved", len(chat_messages))
-            span.set_attribute("cursor.database_type", "composer")
-            span.set_attribute("cursor.success", True)
+            if span:
+                    span.set_attribute("cursor.messages_retrieved", len(chat_messages))
+            if span:
+                    span.set_attribute("cursor.database_type", "composer")
+            if span:
+                    span.set_attribute("cursor.success", True)
             
             # Record success in circuit breaker
             _circuit_breaker.record_success()
@@ -310,8 +361,10 @@ def query_cursor_chat_database() -> Dict[str, Any]:
             _circuit_breaker.record_failure()
             
             # Provider error - return graceful degradation with database paths preserved
-            span.set_attribute("cursor.provider_error", str(e))
-            span.set_status(Status(StatusCode.ERROR, f"Composer provider failed: {e}"))
+            if span:
+                    span.set_attribute("cursor.provider_error", str(e))
+            if span and HAS_TELEMETRY and Status and StatusCode:
+                span.set_status(Status(StatusCode.ERROR, f"Composer provider failed: {e}"))
             
             # Determine error category based on exception type
             error_category = "composer_provider"
@@ -417,7 +470,8 @@ def query_cursor_chat_database() -> Dict[str, Any]:
             error_category = "git_error"
             
         span.set_attribute("error.category", error_category)
-        span.set_status(Status(StatusCode.ERROR, str(e)))
+        if span and HAS_TELEMETRY and Status and StatusCode:
+            span.set_status(Status(StatusCode.ERROR, str(e)))
         
         if metrics:
             metrics.record_counter(
