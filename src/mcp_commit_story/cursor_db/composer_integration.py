@@ -107,8 +107,13 @@ def find_workspace_composer_databases(repo_path: Optional[str] = None) -> Tuple[
         # Use workspace detection to find the matching workspace
         workspace_match: WorkspaceMatch = detect_workspace_for_repo(repo_path)
         
-        if not workspace_match.workspace_hash:
-            raise Exception("No workspace found for repository")
+        # Extract workspace hash from the database path
+        # workspace_match.path is like: /Users/user/.cursor/workspaceStorage/abc123hash/state.vscdb
+        # We need the parent directory name which is the workspace hash
+        workspace_hash = workspace_match.path.parent.name
+        
+        if not workspace_hash:
+            raise Exception("No workspace hash found for repository")
             
         # Construct database paths
         cursor_base = Path.home() / ".cursor"
@@ -117,7 +122,7 @@ def find_workspace_composer_databases(repo_path: Optional[str] = None) -> Tuple[
         workspace_db_path = (
             cursor_base / 
             "workspaceStorage" / 
-            workspace_match.workspace_hash / 
+            workspace_hash / 
             "state.vscdb"
         )
         
