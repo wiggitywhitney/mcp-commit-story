@@ -59,84 +59,66 @@ class ComposerChatProvider:
     @trace_mcp_operation("composer_chat_retrieval")
     def getChatHistoryForCommit(self, start_timestamp_ms: int, end_timestamp_ms: int) -> List[Dict[str, Any]]:
         """
-        Retrieve chat history for a specific time window (commit-based filtering).
-        
-        This is the main method that queries both workspace and global databases
-        to retrieve all chat messages within the specified time window, with
-        comprehensive session metadata and message content.
+        Retrieve chat history for a commit within a specific time window.
         
         Args:
             start_timestamp_ms: Start of time window (milliseconds since epoch)
             end_timestamp_ms: End of time window (milliseconds since epoch)
             
         Returns:
-            List of chat messages with enhanced structure:
-            [
-                {
-                    'role': 'user' | 'assistant',
-                    'content': str,
-                    'timestamp': int (milliseconds),
-                    'sessionName': str,
-                    'composerId': str,
-                    'bubbleId': str
-                },
-                ...
-            ]
-            Messages are returned in chronological order by timestamp.
+            List of formatted message dictionaries sorted chronologically
             
         Raises:
-            CursorDatabaseAccessError: When database files cannot be accessed
-            CursorDatabaseQueryError: When SQL queries fail  
-            json.JSONDecodeError: When database contains malformed JSON
-            
-        Design Notes:
-        - Uses pre-calculated millisecond timestamps from Task 61.3
-        - Handles at query time (not in __init__), following connection.py patterns  
-        - Debug logging when no sessions/messages found
-        - Performance threshold monitoring with 500ms limit
+            CursorDatabaseNotFoundError: When database files don't exist
+            CursorDatabaseAccessError: When databases cannot be accessed
+            CursorDatabaseQueryError: When queries fail
+            CursorDatabaseSchemaError: When database schema is unexpected
         """
         start_time = time.time()
         
         try:
-            # Step 1: Get session metadata from workspace database
-            sessions = self._get_session_metadata()
+            # Get session metadata from workspace database
+            session_metadata = self._get_session_metadata()
             
-            if not sessions:
-                logger.debug(f"No sessions found in workspace database: {self.workspace_db_path}")
+            if not session_metadata:
+                logger.debug("No composer sessions found in workspace database")
                 self._record_metrics("no_sessions", start_time, 0)
                 return []
             
-            # Step 2: Get messages from all sessions within time window
             all_messages = []
             
-            for session in sessions:
+            # Process each session
+            for session in session_metadata:
                 composer_id = session.get('composerId')
                 session_name = session.get('name', 'Unknown Session')
+                session_created_at = session.get('createdAt', 0)  # Get timestamp from session metadata
                 
                 if not composer_id:
                     continue
-                    
-                # Get message headers for this session
+                
+                # Check if this session falls within the time window
+                if not (start_timestamp_ms <= session_created_at <= end_timestamp_ms):
+                    continue  # Skip session if outside time window
+                
+                # Get message headers from global database
                 message_headers = self._get_message_headers(composer_id)
                 
                 if not message_headers:
                     continue
                 
-                # Get individual messages and filter by time window
+                # Get messages for this session, passing session timestamp
                 session_messages = self._get_session_messages(
-                    composer_id, 
+                    composer_id,
                     session_name,
                     message_headers,
-                    start_timestamp_ms,
-                    end_timestamp_ms
+                    session_created_at  # Pass session timestamp
                 )
                 
                 all_messages.extend(session_messages)
             
-            # Step 3: Sort messages chronologically
+            # Sort all messages chronologically by session timestamp
             all_messages.sort(key=lambda msg: msg['timestamp'])
             
-            # Step 4: Record metrics and check performance threshold
             if not all_messages:
                 logger.debug(f"No messages found in time window {start_timestamp_ms} to {end_timestamp_ms}")
             
@@ -212,8 +194,7 @@ class ComposerChatProvider:
         composer_id: str,
         session_name: str,
         message_headers: Dict[str, Any],
-        start_timestamp_ms: int,
-        end_timestamp_ms: int
+        session_created_at: int
     ) -> List[Dict[str, Any]]:
         """
         Retrieve and filter individual messages for a session.
@@ -222,8 +203,7 @@ class ComposerChatProvider:
             composer_id: Session identifier
             session_name: Human-readable session name
             message_headers: Message headers containing conversation structure
-            start_timestamp_ms: Start of time window filter
-            end_timestamp_ms: End of time window filter
+            session_created_at: Session creation timestamp
             
         Returns:
             List of formatted message dictionaries within time window
@@ -246,17 +226,12 @@ class ComposerChatProvider:
             if not message_data:
                 continue
             
-            # Check timestamp filtering
-            message_timestamp = message_data.get('timestamp', 0)
-            
-            if not (start_timestamp_ms <= message_timestamp <= end_timestamp_ms):
-                continue
-            
             # Format message according to enhanced structure
+            # Use session timestamp for all messages (individual messages don't have timestamps)
             formatted_message = {
                 'role': self._map_message_type_to_role(message_type),
                 'content': message_data.get('text', ''),
-                'timestamp': message_timestamp,
+                'timestamp': session_created_at,  # Use session timestamp, not individual message timestamp
                 'sessionName': session_name,
                 'composerId': composer_id,
                 'bubbleId': bubble_id

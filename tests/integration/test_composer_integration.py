@@ -79,8 +79,22 @@ class TestComposerWorkflowIntegration:
         timestamps = [msg['timestamp'] for msg in messages]
         assert timestamps == sorted(timestamps), "Messages should be in chronological order"
         
-        # Verify no duplicate timestamps (each message should have unique timestamp)
-        assert len(set(timestamps)) == len(timestamps), "All timestamps should be unique"
+        # In realistic Cursor data, messages within the same session share the session's createdAt timestamp
+        # But different sessions should have different timestamps
+        unique_timestamps = set(timestamps)
+        
+        # We have 3 sessions, so should have exactly 3 unique timestamps
+        assert len(unique_timestamps) == 3, f"Expected 3 unique session timestamps, got {len(unique_timestamps)}"
+        
+        # Verify session grouping: messages from same session have same timestamp
+        session_timestamps = {}
+        for msg in messages:
+            session_id = msg['composerId']
+            if session_id not in session_timestamps:
+                session_timestamps[session_id] = msg['timestamp']
+            else:
+                assert session_timestamps[session_id] == msg['timestamp'], \
+                    f"All messages in session {session_id} should have same timestamp"
 
 
 class TestComposerPerformanceIntegration:

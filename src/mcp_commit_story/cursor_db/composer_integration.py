@@ -107,26 +107,15 @@ def find_workspace_composer_databases(repo_path: Optional[str] = None) -> Tuple[
         # Use workspace detection to find the matching workspace
         workspace_match: WorkspaceMatch = detect_workspace_for_repo(repo_path)
         
-        # Extract workspace hash from the database path
-        # workspace_match.path is like: /Users/user/.cursor/workspaceStorage/abc123hash/state.vscdb
-        # We need the parent directory name which is the workspace hash
-        workspace_hash = workspace_match.path.parent.name
+        # Use the actual workspace database path found by detection
+        # workspace_match.path already contains the full correct path
+        workspace_db_path = workspace_match.path
         
-        if not workspace_hash:
-            raise Exception("No workspace hash found for repository")
-            
-        # Construct database paths
-        cursor_base = Path.home() / ".cursor"
-        
-        # Workspace database path
-        workspace_db_path = (
-            cursor_base / 
-            "workspaceStorage" / 
-            workspace_hash / 
-            "state.vscdb"
-        )
-        
-        # Global database path
+        # Construct global database path using the same base directory as workspace
+        # For macOS: /Users/user/Library/Application Support/Cursor/User/workspaceStorage/hash/state.vscdb
+        # Global:    /Users/user/Library/Application Support/Cursor/User/globalStorage/state.vscdb
+        # Go up from hash/state.vscdb to hash/ to workspaceStorage/ to parent (Cursor/User/)
+        cursor_base = workspace_match.path.parent.parent.parent  
         global_db_path = cursor_base / "globalStorage" / "state.vscdb"
         
         # Verify databases exist
