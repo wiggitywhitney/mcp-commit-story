@@ -6,7 +6,7 @@
 
 ## Cursor Chat Architecture
 
-Cursor 1.1.6 stores chat conversations in the **Composer system** - a rich conversational interface that maintains complete chat history with full context, file attachments, and chronological message threading.
+Cursor stores chat conversations in the **Composer system** - a rich conversational interface that maintains complete chat history with full context, file attachments, and chronological message threading.
 
 ### Database Locations
 
@@ -29,11 +29,17 @@ Cursor 1.1.6 stores chat conversations in the **Composer system** - a rich conve
 /mnt/c/Users/{USERNAME}/AppData/Roaming/Cursor/User/globalStorage/state.vscdb
 ```
 
+**Important Notes:**
+- Database files use `.vscdb` extension (SQLite format), not `.vsdb`
+- Each database has a corresponding `.vscdb.backup` file for transaction safety
+- Workspace hash directories can be identified via `workspace.json` files
+- No evidence of `.vsdb` files or short-term chat storage in separate databases
+
 ### Storage Architecture
 
 **Two-Database System:**
-1. **Workspace Database** (`workspaceStorage/{hash}/state.vscdb`): Contains session metadata and workspace mapping
-2. **Global Database** (`globalStorage/state.vscdb`): Contains actual conversation content
+1. **Workspace Database** (`workspaceStorage/{hash}/state.vscdb`): Contains workspace mapping and session references
+2. **Global Database** (`globalStorage/state.vscdb`): Contains all conversation content, session metadata, and message data
 
 **Workspace Detection:**
 ```json
@@ -43,29 +49,7 @@ Cursor 1.1.6 stores chat conversations in the **Composer system** - a rich conve
 }
 ```
 
-## Database Schema
 
-### Workspace Database (`state.vscdb`)
-```sql
-CREATE TABLE ItemTable (
-    [key] TEXT PRIMARY KEY,
-    value BLOB
-);
-
--- Key: 'composer.composerData' - Session metadata
--- Key: 'workspace' - Workspace path mapping
-```
-
-### Global Database (`state.vscdb`)
-```sql
-CREATE TABLE cursorDiskKV (
-    [key] TEXT PRIMARY KEY,
-    value BLOB
-);
-
--- Key Pattern: 'composerData:{composerId}' - Session headers
--- Key Pattern: 'bubbleId:{composerId}:{bubbleId}' - Individual messages
-```
 
 ## Data Structure
 
@@ -106,11 +90,15 @@ CREATE TABLE cursorDiskKV (
 ```
 
 ### Individual Messages
+
+Cursor stores different message types in distinct fields within bubble records:
+
+**User Messages** (type 1):
 ```json
 {
   "text": "How do I implement JWT authentication?",
   "richText": "{\"root\":{\"children\":[...]}}",
-  "timestamp": 1751046149314,
+  "type": 1,
   "context": {
     "fileSelections": [
       {
@@ -123,6 +111,145 @@ CREATE TABLE cursorDiskKV (
   }
 }
 ```
+
+**AI Responses** (type 2):
+```json
+{
+  "thinking": {
+    "text": "I'll help you implement JWT authentication. First, let me analyze your current setup...",
+    "signature": "..."
+  },
+  "type": 2,
+  "tokenCount": {"inputTokens": 1500, "outputTokens": 800},
+  "context": {...}
+}
+```
+
+**Tool Executions**:
+```json
+{
+  "toolFormerData": {
+    "name": "read_file",
+    "params": "{\"target_file\": \"auth.py\"}",
+    "result": "{\"contents\": \"...\"}",
+    "status": "completed",
+    "toolCallId": "toolu_vrtx_01...",
+    "rawArgs": "..."
+  },
+  "type": 2,
+  "capabilityType": 15,
+  "tokenCount": {"inputTokens": 0, "outputTokens": 0},
+  "context": {...}
+}
+```
+
+## Database Schema
+
+### Workspace Database (`state.vscdb`)
+```sql
+CREATE TABLE ItemTable (
+    [key] TEXT PRIMARY KEY,
+    value BLOB
+);
+
+CREATE TABLE cursorDiskKV (
+    [key] TEXT PRIMARY KEY,
+    value BLOB
+);
+
+-- ItemTable Keys:
+-- 'composer.composerData' - Session references and workspace-specific composer state
+-- 'workspace' - Workspace path mapping
+-- 'workbench.backgroundComposer.workspacePersistentData' - Background composer configuration
+
+-- cursorDiskKV: Typically empty in workspace databases (all conversation data in global database)
+```
+
+### Global Database (`state.vscdb`)
+```sql
+CREATE TABLE cursorDiskKV (
+    [key] TEXT PRIMARY KEY,
+    value BLOB
+);
+
+-- Key Patterns:
+-- 'composerData:{composerId}' - Session headers and metadata (75 sessions typical)
+-- 'bubbleId:{composerId}:{bubbleId}' - Individual messages with multi-field content (37,000+ messages typical)
+-- 'checkpointId:{composerId}:{checkpointId}' - Code editing checkpoints (12,000+ entries)
+-- 'messageRequestContext:{composerId}:{bubbleId}' - Message context metadata (3,000+ entries)
+-- 'codeBlockDiff:{diffId}' - Code change tracking (4,000+ entries)
+```
+
+## Database Persistence and Timing
+
+### Message Content Distribution
+
+Analysis of active sessions reveals Cursor uses a **multi-field message storage system** with high data completeness:
+
+**Content Field Distribution** (example from 311-message session):
+- **User messages**: 153 entries with content in `text` field
+- **AI responses**: 35 entries with content in `thinking.text` field  
+- **Tool executions**: 121 entries with data in `toolFormerData` field
+- **Empty/metadata**: 2 entries (UI elements, ~0.6%)
+- **Overall completion rate**: 99.4% when extracting from all relevant fields
+
+### Persistence Stages
+
+Analysis reveals a multi-stage persistence process:
+
+1. **Message Placeholder Creation** - Bubble IDs created immediately
+2. **Session Metadata Updates** - Headers updated with message count
+3. **Content Population** - Content fields populated asynchronously  
+4. **Index Synchronization** - Database and session headers aligned
+
+This can result in messages existing in the database with empty content fields while awaiting content population.
+
+### Persistence Behavior Patterns
+
+**Active Sessions:**
+- High completion rates (99%+) when extracting from appropriate content fields
+- Immediate availability of `text`, `thinking.text`, and `toolFormerData` content
+- Real-time persistence for current conversations
+
+**Historical Sessions:**
+- Variable persistence timing for older conversations
+- Content population delays can affect time-based queries
+- Inconsistencies between database bubble count and session header references
+
+**Real-world evidence of persistence gaps:**
+- Content extraction timing can lag conversation activity by 30-60 minutes
+- Historical queries may encounter empty content fields for recent conversations
+- Session metadata updates faster than individual message content population
+
+### Persistence Triggers
+
+Content persistence appears triggered by:
+
+1. **Time-based intervals** (30-60 minute intervals observed)
+2. **Memory pressure** (conversation buffer capacity)
+3. **Application lifecycle events** (shutdown, restart, workspace changes)
+4. **Session transitions** (switching between chat sessions)
+
+No user-controllable flush mechanism exists.
+
+### Schema Notes
+
+**Individual Message Structure:**
+- Messages use a **multi-field content system**: `text` (user), `thinking.text` (AI), `toolFormerData` (tools)
+- Messages do not contain individual timestamp fields
+- Timestamps are stored at session level in `createdAt` and `lastUpdatedAt` fields
+- All messages within a session inherit the session's timestamp for time-based filtering
+- Message types: 1=user, 2=assistant, with content in appropriate fields
+
+**Content Extraction Strategy:**
+- Check `text` field for user messages
+- Check `thinking.text` field for AI responses  
+- Check `toolFormerData` field for tool execution details
+- Multi-field extraction achieves 99%+ completion rates on active sessions
+
+**Backup Files:**
+- Each `.vscdb` file has corresponding `.vscdb.backup` file
+- Suggests transaction-safe updates with rollback capability
 
 ## Implementation Guide
 
@@ -208,7 +335,7 @@ def extract_conversations(global_db_path: Path, sessions: List[Dict]) -> List[Di
             
         headers = json.loads(headers_result[0])
         
-        # Extract individual messages
+        # Extract individual messages using multi-field approach
         messages = []
         for header in headers.get("fullConversationHeadersOnly", []):
             bubble_key = f"bubbleId:{composer_id}:{header['bubbleId']}"
@@ -220,6 +347,18 @@ def extract_conversations(global_db_path: Path, sessions: List[Dict]) -> List[Di
             if message_result:
                 message_data = json.loads(message_result[0])
                 message_data['type'] = header['type']  # 1=user, 2=assistant
+                
+                # Extract content from appropriate field based on message type
+                content = ""
+                if message_data.get('text'):  # User messages
+                    content = message_data['text']
+                elif message_data.get('thinking', {}).get('text'):  # AI responses
+                    content = message_data['thinking']['text']
+                elif message_data.get('toolFormerData'):  # Tool executions
+                    tool_data = message_data['toolFormerData']
+                    content = f"Tool: {tool_data.get('name', 'unknown')} - {tool_data.get('status', 'unknown')}"
+                
+                message_data['extracted_content'] = content
                 messages.append(message_data)
         
         conversations.append({
@@ -268,16 +407,11 @@ def filter_recent_conversations(conversations: List[Dict], hours: int = 48) -> L
     recent_conversations = []
     
     for conversation in conversations:
-        # Filter messages within time window
-        recent_messages = [
-            msg for msg in conversation['messages']
-            if msg.get('timestamp', 0) >= cutoff_time
-        ]
+        # Use session timestamp for filtering (messages inherit session timing)
+        session_timestamp = conversation.get('lastUpdatedAt', conversation.get('createdAt', 0))
         
-        if recent_messages:
-            conversation_copy = conversation.copy()
-            conversation_copy['messages'] = recent_messages
-            recent_conversations.append(conversation_copy)
+        if session_timestamp >= cutoff_time:
+            recent_conversations.append(conversation)
     
     return recent_conversations
 ```
@@ -297,8 +431,8 @@ This ensures each journal entry contains exactly the conversations that led to t
 
 ### Chronological Message Structure
 - **Pre-sorted**: Messages are stored chronologically within each session
-- **Timestamps**: All messages include precise local system timestamps
-- **Git Correlation**: Timestamps correlate directly with git commit times (same timezone)
+  - **Timestamps**: Session metadata includes creation and update timestamps
+  - **Git Correlation**: Session timestamps correlate with git commit times (same timezone)
 
 ### Rich Context
 - **File Attachments**: Code files and selections included with messages
@@ -324,16 +458,10 @@ def get_commit_context_conversation(commit_hash: str) -> Dict:
     # Find conversations around commit time (30 min before, 5 min after)
     context_conversations = []
     for conversation in conversations:
-        relevant_messages = [
-            msg for msg in conversation['messages']
-            if (commit_timestamp - 1800000) <= msg.get('timestamp', 0) <= (commit_timestamp + 300000)
-        ]
+        session_timestamp = conversation.get('lastUpdatedAt', conversation.get('createdAt', 0))
         
-        if relevant_messages:
-            context_conversations.append({
-                **conversation,
-                'messages': relevant_messages
-            })
+        if (commit_timestamp - 1800000) <= session_timestamp <= (commit_timestamp + 300000):
+            context_conversations.append(conversation)
     
     return {
         'commit': commit_hash,
@@ -341,7 +469,52 @@ def get_commit_context_conversation(commit_hash: str) -> Dict:
     }
 ```
 
+## Key Findings Summary
+
+### Multi-Field Content System
+
+Cursor's message storage uses a **distributed content approach** rather than single-field storage:
+
+- **User messages**: Content in `text` field
+- **AI responses**: Content in `thinking.text` field  
+- **Tool executions**: Data in `toolFormerData` field
+- **Metadata messages**: UI elements with minimal content
+
+This system achieves **99.4% content completion** when extracting from all relevant fields, significantly higher than single-field extraction approaches.
+
+### Persistence Behavior Implications
+
+**For Active Sessions:**
+- Near-complete data availability (99%+)
+- Real-time content persistence across all message types
+- Suitable for current conversation analysis
+
+**For Historical Data:**
+- Variable persistence timing still affects older conversations
+- Time-based queries may encounter content gaps
+- Session-level timestamps provide reliable filtering reference
+
+### Implementation Impact
+
+The multi-field discovery changes the extraction strategy from:
+- ❌ Single-field approach: "Check `text` field only" (20-30% completion)
+- ✅ Multi-field approach: "Check appropriate field per message type" (99%+ completion)
+
+This resolves data completeness issues for active conversations while persistence timing remains relevant for historical data extraction.
+
+## Implementation Considerations
+
+### Content Extraction Timing
+
+Chat extraction systems should account for different completion rates based on session age:
+
+- **Active sessions** achieve 99%+ completion rates with multi-field extraction
+- **Historical sessions** may have variable persistence timing affecting time-based queries
+- **Session timestamps** provide reliable timing reference for all messages within a session
+- **Multi-field extraction** significantly improves data completeness over single-field approaches
+
 ### Journal Generation Enhancement
+
 - **Direct Quotes**: Extract verbatim conversation quotes with full context
 - **Problem-Solving Narrative**: Complete development reasoning preserved  
 - **File Context**: Show which files were discussed during implementation
@@ -349,203 +522,92 @@ def get_commit_context_conversation(commit_hash: str) -> Dict:
 
 ## Community Validation
 
-The [cursor-chat-browser](https://github.com/thomas-pedersen/cursor-chat-browser) project (415 stars, 69 forks) demonstrates this approach in production with:
-- Cross-platform workspace detection
-- Complete conversation extraction
-- Rich context preservation
-- Export capabilities (Markdown, HTML, PDF)
+The [cursor-chat-browser](https://github.com/thomas-pedersen/cursor-chat-browser) and [cursor-chat-export](https://github.com/somogyijanos/cursor-chat-export) projects successfully extract Cursor's chat data using similar database access patterns. Their success likely stems from implementing the **multi-field content extraction approach** described above, accessing `text`, `thinking.text`, and `toolFormerData` fields appropriately rather than relying on single-field extraction methods.
 
-## Workspace Detection
+---
 
-The system automatically finds the correct Cursor workspace for your repository by:
-1. Matching git remote URLs (survives repo moves)
-2. Matching folder paths
-3. Checking folder name similarity
-4. Falling back to most recent workspace if needed
+## Development History and Failed Approaches
 
-Confidence threshold: 0.8 (matches below this use fallback)
+*This section documents our research journey and failed attempts to prevent repeating the same mistakes.*
 
-### Troubleshooting
-If the wrong workspace is detected, check logs for "Using fallback workspace" - this usually means the repository path or git remotes have changed since the workspace was created.
+### Initial Single-Field Extraction Approach (FAILED)
 
-## Benefits
+**What we tried:** Extracting conversation content by checking only the `text` field in bubble records.
 
-- **Zero Dependencies**: Uses Python's built-in sqlite3 module
-- **Real-time Access**: Direct database reading as conversations happen
-- **Complete Context**: Full development session history with file attachments
-- **Performance**: Fast SQLite queries for immediate results
-- **Cross-platform**: Proven approach across all major platforms
+**Results:** 
+- Achieved only 20-30% completion rates
+- Most AI responses appeared as "empty" messages
+- Tool executions completely missing from extracted conversations
 
-## Implementation
+**Why it failed:** Cursor uses a **distributed multi-field system** where different message types are stored in different fields:
+- User messages: `text` field
+- AI responses: `thinking.text` field  
+- Tool executions: `toolFormerData` field
 
-The ComposerChatProvider class provides the interface for retrieving chat history:
+**Lesson learned:** Single-field extraction fundamentally misunderstands Cursor's storage architecture.
 
-- Connects to both workspace and global databases
-- Accepts pre-calculated time windows (milliseconds)
-- Returns chronologically sorted messages with session names
-- No caching or connection pooling (per-request connections)
-- Comprehensive error handling and telemetry
+### Pre-Assembled Conversation Search (FAILED)
 
-See `src/mcp_commit_story/composer_chat_provider.py` for implementation details.
+**What we tried:** Searching for "tab" structures or complete pre-assembled conversation units based on Browser Claude's suggestion.
 
-## Database Persistence Lag Analysis
+**Investigation results:**
+- Searched `ItemTable` and `cursorDiskKV` for keys containing "tab", "conversation", "complete", "full"
+- Examined large `composerData` entries (1MB+) for complete conversation text
+- Found no pre-assembled conversation units
 
-### Critical Discovery: In-Memory Buffering Problem
+**Why it failed:** Cursor doesn't store complete conversations as single units. Large `composerData` entries contain:
+- File content caching (`originalModelLines`: 407KB+ per file)
+- Code block metadata (31 files worth)
+- Conversation headers (1,359 bubble references)
+- **But no complete conversation text**
 
-**Active conversations are buffered in memory before being persisted to the database.** This creates a fundamental gap where the most crucial development context - conversations happening RIGHT before a commit - are missed by real-time extraction systems.
+**Lesson learned:** cursor-chat-export and similar tools succeed through **reconstruction**, not by accessing pre-assembled data.
 
-#### Real-World Validation Data
+### Persistence Gap Theory (PARTIALLY CORRECT)
 
-**Test Case: Commit 55de441 (July 1st, 19:54:26)**
-- **Latest Persisted Session**: July 1st, 18:34:02  
-- **Persistence Gap**: 1.3 hours between latest conversation and commit
-- **Missing Context**: 711 messages including critical "context7" workspace fix conversation
-- **Result**: Journal generation without this gap would have ZERO relevant context
+**What we theorized:** Cursor has systematic persistence delays where message content lags behind conversation activity by hours.
 
-#### Timing Analysis
+**Evidence found:**
+- 1.3-hour gap between conversation activity and content availability
+- Empty `text` fields in recent conversations
+- Database bubble counts exceeding session header references
 
-```bash
-# Latest conversation session
-Session: July 1st 18:34:02 (persisted)
-├── 711 messages about workspace context issues
-├── Direct problem-solving for the exact bug fixed
-└── Implementation decisions that led to the commit
+**Why partially wrong:** The "persistence gaps" were largely artifacts of **single-field extraction**. When checking all relevant fields (`text`, `thinking.text`, `toolFormerData`), completion rates reached 99.4% even for active sessions.
 
-# Actual commit
-Commit: July 1st 19:54:26 (1.3 hours later)
-```
+**What's still correct:** 
+- **Historical sessions** may still experience variable persistence timing
+- **Multi-stage persistence process** still occurs (placeholders → content population)
+- **Time-based queries** for journal generation may encounter gaps in older data
 
-**Key Finding**: The conversations that directly led to the workspace fix commit were unavailable for 1.3 hours after they occurred, proving that lag-based processing is not just an optimization but **essential for system functionality**.
+**Lesson learned:** Persistence timing is less of an issue than extraction methodology. The multi-field approach resolves most "missing content" problems.
 
-#### Technical Root Cause: Timestamp Extraction Bug
+### Implementation Errors
 
-**Problem**: ComposerChatProvider was looking for individual `message.timestamp` fields that don't exist in real Cursor database schema.
+**Timestamp Logic Error:**
+- **Issue:** Used undefined `session_timestamp` variable in filtering examples
+- **Fix:** Use `conversation.get('lastUpdatedAt', conversation.get('createdAt', 0))`
 
-```python
-# BROKEN: Individual messages have NO timestamps
-message_timestamp = message_data.get('timestamp', 0)  # Always defaulted to 0
-```
+**Schema Misunderstanding:**
+- **Issue:** Incorrectly stated workspace databases contain session metadata
+- **Fix:** Session metadata stored in global database; workspace databases contain references only
 
-**Solution**: Use session-level `createdAt` timestamps for all messages in that session.
+**Tool Execution Overlooked:**
+- **Issue:** Failed to account for tool executions as significant portion of conversation content
+- **Fix:** Tool calls represent ~39% of messages in active sessions (121/311 in our test case)
 
-```python
-# FIXED: Use session timestamp for all messages
-session_timestamp = message_headers.get('createdAt', 0)
-# All messages in session inherit this timestamp
-```
+### Key Success Factors
 
-#### Database Schema Reality vs. Assumptions
+**What actually works:**
+1. **Multi-field extraction** from `text`, `thinking.text`, and `toolFormerData` fields
+2. **Session-level timestamps** for time-based filtering (not individual message timestamps)
+3. **Bubble-by-bubble reconstruction** with proper field handling
 
-**Session Metadata (HAS timestamps)**:
-```json
-{
-  "composerId": "session-id",
-  "name": "Fix workspace detection",
-  "createdAt": 1751171755435,  // ✅ Session timestamp exists
-  "lastUpdatedAt": 1751178902944
-}
-```
+**Critical insight:** cursor-chat-export succeeds not because they access different data, but because they **correctly implement the multi-field extraction approach** we initially missed.
 
-**Individual Messages (NO timestamps)**:
-```json
-{
-  "text": "The workspace detection is broken",
-  "context": {"fileSelections": [...]},
-  "bubbleId": "msg-1",
-  "_v": 2,
-  "type": 1
-  // ❌ NO "timestamp" field!
-}
-```
+### Implications for Journal Generation
 
-#### Cursor Database Flush Behavior
+**For active conversations:** 99%+ completion rates achievable with proper multi-field extraction.
 
-**Evidence from user reports**:
-- Cursor users report periodic freezes every 30-60 seconds
-- These correspond to database flush operations
-- Chat history lag correlates with performance issues
-- Unreliable persistence patterns observed in production
+**For historical data:** Persistence timing may still affect journal generation quality. Time-based queries should account for potential gaps in older sessions.
 
-**Research Finding**: Cursor buffers active conversations in memory, periodically flushing to SQLite databases. The flush timing is unpredictable and can create significant delays.
-
-#### Lag-Based Journal Generation Requirements
-
-**Minimum Lag Requirements**:
-- **Development commits**: 4-24 hour lag for complete context
-- **Time window expansion**: 30 minutes before → 2-4 hours before commit
-- **Persistence validation**: Check latest session timestamps vs. commit times
-
-**Implementation Strategy**:
-```python
-def should_process_commit(commit_timestamp: int, latest_session_timestamp: int) -> bool:
-    """Determine if enough lag exists for reliable extraction."""
-    lag_hours = (commit_timestamp - latest_session_timestamp) / (1000 * 60 * 60)
-    return lag_hours >= 4  # Minimum 4-hour lag for safety
-
-def get_expanded_time_window(commit_timestamp: int) -> tuple:
-    """Expand time window to account for persistence lag."""
-    four_hours_ms = 4 * 60 * 60 * 1000
-    thirty_minutes_ms = 30 * 60 * 1000
-    
-    return (
-        commit_timestamp - four_hours_ms,  # Look back 4 hours instead of 30 minutes
-        commit_timestamp + thirty_minutes_ms
-    )
-```
-
-#### Production Implications
-
-**For Real-Time Systems**:
-- ❌ **Immediate extraction fails**: Active conversations unavailable
-- ❌ **Critical context missing**: Most relevant discussions not persisted
-- ❌ **Timing-based filtering broken**: Messages filtered out due to timestamp=0 bug
-
-**For Lag-Based Systems**:
-- ✅ **Complete context available**: All relevant conversations persisted
-- ✅ **Accurate timestamps**: Session-level timestamps work correctly  
-- ✅ **Reliable extraction**: Conversations that led to commits are captured
-
-#### cursor-chat-browser Validation
-
-The popular [cursor-chat-browser](https://github.com/thomas-pedersen/cursor-chat-browser) project confirms this behavior:
-- **Same data access pattern**: Uses identical database queries
-- **Same limitation**: Cannot access active/buffered conversations
-- **No special handling**: No attempt to solve the buffering problem
-- **Production evidence**: 415 stars, 69 forks, same persistence gaps
-
-#### Test-Driven Discovery
-
-**Bug Detection**: Added `test_real_cursor_data_structure_timestamps` using realistic Cursor data (no individual message timestamps).
-
-**Before Fix**:
-```python
-# Test failed - returned 0 messages instead of 2
-# All timestamps defaulted to 0, filtered out by time window
-```
-
-**After Fix**:
-```python
-# Test passes - uses session createdAt for all messages
-assert result[0]['timestamp'] == session_timestamp
-assert result[1]['timestamp'] == session_timestamp  # Same session
-```
-
-#### Recommended Architecture
-
-**Journal Generation Pipeline**:
-1. **Commit Detection**: Git hooks trigger after commits
-2. **Lag Validation**: Check if sufficient time has passed (4+ hours)  
-3. **Queue Processing**: Add to delayed processing queue if too recent
-4. **Context Extraction**: Use expanded time windows (4 hours before commit)
-5. **Session-Level Timestamps**: Group messages by session timestamps
-
-**Configuration**:
-```python
-MINIMUM_LAG_HOURS = 4
-CONTEXT_WINDOW_HOURS = 4  # Instead of 0.5 hours
-PROCESSING_DELAY_HOURS = 24  # Daily batch processing
-```
-
-This discovery fundamentally changes how chat-based development tools should be architected, proving that **lag-based processing is mandatory** for capturing complete development context.
-
-## Time Window Filtering 
+**Recommended approach:** Implement multi-field extraction first, then evaluate whether historical persistence timing requires additional lag periods for journal generation. 
