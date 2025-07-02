@@ -93,3 +93,7 @@ My 7-hour debugging marathon that started with a simple OpenTelemetry import iss
 The solution was embarrassingly simple. Find the right session. Look in all the fields. Use the correct chronological ordering. The data was there all along - we just weren't looking at it correctly.
 
 Sometimes the hardest bugs are the ones where you're looking in the right place with the wrong assumptions. When you finally find what you're looking for, it's right where it should have been the whole time. 
+
+---
+
+*Want to see the system in action or read more about the technical implementation? Check out the [MCP Commit Story project](https://github.com/wiggitywhitney/mcp-commit-story) where all this development work is documented in real-time, including the chat extraction crisis and recovery described in this post.* 
