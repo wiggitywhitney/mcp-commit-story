@@ -1678,3 +1678,90 @@ if not (session_updated_at > start_timestamp_ms and session_created_at < end_tim
 Ready for human approval before marking complete.
 </info added on 2025-07-04T19:03:59.746Z>
 
+## 17. Fix Non-Deterministic Multi-Session Message Ordering [done]
+### Dependencies: 61.15, 61.16
+### Description: Fix the message ordering bug where sessions with identical timestamps have undefined message order, causing non-deterministic results across runs.
+### Details:
+**Implementation Plan:**
+
+**Design Decision (APPROVED):**
+- Add secondary sort key to make ordering deterministic
+- Use `composerId` as tie-breaker for sessions with identical timestamps
+- Preserve existing within-session message order (already working)
+
+**TDD Implementation Steps:**
+
+1. **Write failing tests:**
+   - Test that sessions with identical timestamps have consistent ordering
+   - Test that same messages appear in same order across multiple runs
+   - Test that within-session order is still preserved
+
+2. **Run tests to confirm failure:**
+   - Current implementation should show non-deterministic ordering
+
+3. **Implement the fix:**
+   ```python
+   # Replace line 123 with:
+   all_messages.sort(key=lambda msg: (msg['timestamp'], msg['composerId']))
+   ```
+
+4. **Run tests to ensure they pass:**
+   - Deterministic ordering achieved
+   - Within-session order preserved
+   - Full test suite passes
+
+5. **Update documentation:**
+   - Document the two-level sorting: timestamp first, then composerId
+   - Explain why composerId is used as tie-breaker
+
+**CRITICAL BUG:**
+Current implementation sorts only by timestamp: `all_messages.sort(key=lambda msg: msg['timestamp'])`
+When sessions have identical creation timestamps, message order becomes non-deterministic.
+
+**REAL EVIDENCE:**
+- Session `3d6b52bd`: "Checking Git Repository Status" 
+- Session `07dc3efa`: "Unnamed"
+- Both created at exactly 2025-05-16 11:26:04
+- Their messages could appear in different orders on different runs
+<info added on 2025-07-04T19:32:07.449Z>
+**IMPLEMENTATION COMPLETED** ✅
+
+**Bug Fixed:**
+- Current implementation sorted only by timestamp: `all_messages.sort(key=lambda msg: msg['timestamp'])`
+- When sessions had identical timestamps, message order was non-deterministic (depended on database storage order)
+- Database stores sessions in unpredictable reverse chronological order
+- Fixed by adding composerId as secondary sort key: `(msg['timestamp'], msg['composerId'])`
+
+**TDD Implementation Results:**
+1. **Session ordering tests** - ✅ Created 4 comprehensive tests:
+   - Identical timestamp sessions have consistent ordering ✅
+   - Current implementation behavior analysis ✅
+   - Within-session order preservation ✅ 
+   - Deterministic ordering with composerId tiebreaker ✅
+
+2. **Real Bug Evidence Found:**
+   - Session `3d6b52bd` and `07dc3efa` both created at exactly 1747412764075
+   - Database order is unpredictable (reverse chronological, not chronological)
+   - Without fix: Messages could appear in different orders on different runs
+
+**Implementation Details:**
+- **File:** `src/mcp_commit_story/composer_chat_provider.py`
+- **Line 123:** Changed sort key from `msg['timestamp']` to `(msg['timestamp'], msg['composerId'])`
+- **Effect:** Sessions with identical timestamps now have deterministic order based on composerId
+- **Preserved:** Within-session message order still follows conversation sequence
+
+**Documentation Updated:**
+- Updated docstring to explain two-level sorting approach
+- Documented that deterministic ordering prevents non-deterministic journal entries
+- Clarified that within-session order follows original conversation sequence
+
+**Test Results:**
+- **4 new session ordering tests** - All pass ✅
+- **Full test suite** - 1136 tests pass, no regressions ✅
+- **Deterministic behavior** - Same input always produces same output ✅
+
+**Critical Impact:**
+- **Before:** Journal entries could vary between runs (unreliable debugging)
+- **After:** Journal entries are deterministic (reliable debugging and analysis)
+</info added on 2025-07-04T19:32:07.449Z>
+

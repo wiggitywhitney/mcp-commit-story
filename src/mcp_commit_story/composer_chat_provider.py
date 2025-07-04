@@ -66,7 +66,10 @@ class ComposerChatProvider:
             end_timestamp_ms: End of time window (milliseconds since epoch)
             
         Returns:
-            List of formatted message dictionaries sorted chronologically
+            List of formatted message dictionaries sorted chronologically.
+            Messages are ordered by (session_timestamp, composerId) to ensure
+            deterministic results when sessions have identical timestamps.
+            Within each session, message order follows the original conversation sequence.
             
         Raises:
             CursorDatabaseNotFoundError: When database files don't exist
@@ -119,8 +122,9 @@ class ComposerChatProvider:
                 
                 all_messages.extend(session_messages)
             
-            # Sort all messages chronologically by session timestamp
-            all_messages.sort(key=lambda msg: msg['timestamp'])
+            # Sort all messages chronologically by session timestamp, with composerId as tiebreaker
+            # This ensures deterministic ordering when sessions have identical timestamps
+            all_messages.sort(key=lambda msg: (msg['timestamp'], msg['composerId']))
             
             if not all_messages:
                 logger.debug(f"No messages found in time window {start_timestamp_ms} to {end_timestamp_ms}")

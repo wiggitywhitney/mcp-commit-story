@@ -935,13 +935,25 @@
               "61.15"
             ],
             "parentTaskId": 61
+          },
+          {
+            "id": 17,
+            "title": "Fix Non-Deterministic Multi-Session Message Ordering",
+            "description": "Fix the message ordering bug where sessions with identical timestamps have undefined message order, causing non-deterministic results across runs.",
+            "details": "**Implementation Plan:**\n\n**Design Decision (APPROVED):**\n- Add secondary sort key to make ordering deterministic\n- Use `composerId` as tie-breaker for sessions with identical timestamps\n- Preserve existing within-session message order (already working)\n\n**TDD Implementation Steps:**\n\n1. **Write failing tests:**\n   - Test that sessions with identical timestamps have consistent ordering\n   - Test that same messages appear in same order across multiple runs\n   - Test that within-session order is still preserved\n\n2. **Run tests to confirm failure:**\n   - Current implementation should show non-deterministic ordering\n\n3. **Implement the fix:**\n   ```python\n   # Replace line 123 with:\n   all_messages.sort(key=lambda msg: (msg['timestamp'], msg['composerId']))\n   ```\n\n4. **Run tests to ensure they pass:**\n   - Deterministic ordering achieved\n   - Within-session order preserved\n   - Full test suite passes\n\n5. **Update documentation:**\n   - Document the two-level sorting: timestamp first, then composerId\n   - Explain why composerId is used as tie-breaker\n\n**CRITICAL BUG:**\nCurrent implementation sorts only by timestamp: `all_messages.sort(key=lambda msg: msg['timestamp'])`\nWhen sessions have identical creation timestamps, message order becomes non-deterministic.\n\n**REAL EVIDENCE:**\n- Session `3d6b52bd`: \"Checking Git Repository Status\" \n- Session `07dc3efa`: \"Unnamed\"\n- Both created at exactly 2025-05-16 11:26:04\n- Their messages could appear in different orders on different runs\n<info added on 2025-07-04T19:32:07.449Z>\n**IMPLEMENTATION COMPLETED** ✅\n\n**Bug Fixed:**\n- Current implementation sorted only by timestamp: `all_messages.sort(key=lambda msg: msg['timestamp'])`\n- When sessions had identical timestamps, message order was non-deterministic (depended on database storage order)\n- Database stores sessions in unpredictable reverse chronological order\n- Fixed by adding composerId as secondary sort key: `(msg['timestamp'], msg['composerId'])`\n\n**TDD Implementation Results:**\n1. **Session ordering tests** - ✅ Created 4 comprehensive tests:\n   - Identical timestamp sessions have consistent ordering ✅\n   - Current implementation behavior analysis ✅\n   - Within-session order preservation ✅ \n   - Deterministic ordering with composerId tiebreaker ✅\n\n2. **Real Bug Evidence Found:**\n   - Session `3d6b52bd` and `07dc3efa` both created at exactly 1747412764075\n   - Database order is unpredictable (reverse chronological, not chronological)\n   - Without fix: Messages could appear in different orders on different runs\n\n**Implementation Details:**\n- **File:** `src/mcp_commit_story/composer_chat_provider.py`\n- **Line 123:** Changed sort key from `msg['timestamp']` to `(msg['timestamp'], msg['composerId'])`\n- **Effect:** Sessions with identical timestamps now have deterministic order based on composerId\n- **Preserved:** Within-session message order still follows conversation sequence\n\n**Documentation Updated:**\n- Updated docstring to explain two-level sorting approach\n- Documented that deterministic ordering prevents non-deterministic journal entries\n- Clarified that within-session order follows original conversation sequence\n\n**Test Results:**\n- **4 new session ordering tests** - All pass ✅\n- **Full test suite** - 1136 tests pass, no regressions ✅\n- **Deterministic behavior** - Same input always produces same output ✅\n\n**Critical Impact:**\n- **Before:** Journal entries could vary between runs (unreliable debugging)\n- **After:** Journal entries are deterministic (reliable debugging and analysis)\n</info added on 2025-07-04T19:32:07.449Z>",
+            "status": "done",
+            "dependencies": [
+              "61.15",
+              "61.16"
+            ],
+            "parentTaskId": 61
           }
         ]
       }
     ],
     "metadata": {
       "created": "2025-06-21T07:52:11.612Z",
-      "updated": "2025-07-04T19:08:24.246Z",
+      "updated": "2025-07-04T19:32:12.277Z",
       "description": "Tasks for master context"
     }
   }
