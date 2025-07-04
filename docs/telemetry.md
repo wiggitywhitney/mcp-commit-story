@@ -594,7 +594,7 @@ def collect_chat_history(since_commit=None, max_messages_back=150):
     return ChatHistory(messages=processed_messages)
 ```
 
-**Composer Chat History Collection (Task 61 - Enhanced):**
+**Composer Chat History Collection (Enhanced):**
 ```python
 @trace_mcp_operation("cursor_db.query_composer")
 def query_cursor_chat_database() -> Dict[str, Any]:

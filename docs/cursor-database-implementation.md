@@ -52,7 +52,7 @@ src/mcp_commit_story/cursor_db/
 - **48-hour optimization**: 80-90% performance improvement (now superseded by Composer)
 - **Error recovery**: Graceful degradation for corrupted databases
 
-### Composer Integration (Task 61 - 2025-01-07)
+### Composer Integration
 ✅ **IMPLEMENTED**: Direct integration with Cursor's Composer system for enhanced chat history collection.
 
 **Key Improvements**:

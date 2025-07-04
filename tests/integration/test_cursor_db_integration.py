@@ -146,10 +146,20 @@ class TestCursorDBSingleDatabaseIntegration:
             # Create empty database (just structure, no data)
             self._create_empty_test_database(str(db_path))
             
-            with patch('mcp_commit_story.cursor_db.get_primary_workspace_path') as mock_workspace:
-                mock_workspace.return_value = temp_workspace
+            with patch('mcp_commit_story.cursor_db.composer_integration.detect_workspace_for_repo') as mock_detect:
+                from mcp_commit_story.cursor_db.workspace_detection import WorkspaceMatch
                 
-                result = query_cursor_chat_database()
+                # Mock workspace detection to return our test database
+                mock_detect.return_value = WorkspaceMatch(
+                    path=Path(db_path),
+                    confidence=1.0,
+                    match_type="test_override",
+                    workspace_folder="test_workspace"
+                )
+                
+                # Also mock the global database path to avoid real database access
+                with patch('pathlib.Path.exists', return_value=True):
+                    result = query_cursor_chat_database()
                 
                 # Should succeed with empty results  
                 chat_history = result["chat_history"]
@@ -511,9 +521,11 @@ class TestCursorDBErrorHandlingIntegration:
         
         Verifies graceful handling when the primary workspace detection fails.
         """
-        with patch('mcp_commit_story.cursor_db.get_primary_workspace_path') as mock_workspace:
+        with patch('mcp_commit_story.cursor_db.composer_integration.detect_workspace_for_repo') as mock_detect:
+            from mcp_commit_story.cursor_db.workspace_detection import WorkspaceDetectionError
+            
             # Simulate workspace detection failure
-            mock_workspace.return_value = None
+            mock_detect.side_effect = WorkspaceDetectionError("No workspace found")
             
             result = query_cursor_chat_database()
             
@@ -534,8 +546,11 @@ class TestCursorDBErrorHandlingIntegration:
         with tempfile.TemporaryDirectory() as temp_workspace:
             # Don't create .cursor directory
             
-            with patch('mcp_commit_story.cursor_db.get_primary_workspace_path') as mock_workspace:
-                mock_workspace.return_value = temp_workspace
+            with patch('mcp_commit_story.cursor_db.composer_integration.detect_workspace_for_repo') as mock_detect:
+                from mcp_commit_story.cursor_db.workspace_detection import WorkspaceMatch, WorkspaceDetectionError
+                
+                # Simulate workspace found but no .cursor directory (causes database not found)
+                mock_detect.side_effect = WorkspaceDetectionError("No .cursor directory found")
                 
                 result = query_cursor_chat_database()
                 
@@ -562,10 +577,20 @@ class TestCursorDBErrorHandlingIntegration:
             with open(db_path, 'w') as f:
                 f.write("This is not a valid SQLite database")
             
-            with patch('mcp_commit_story.cursor_db.get_primary_workspace_path') as mock_workspace:
-                mock_workspace.return_value = temp_workspace
+            with patch('mcp_commit_story.cursor_db.composer_integration.detect_workspace_for_repo') as mock_detect:
+                from mcp_commit_story.cursor_db.workspace_detection import WorkspaceMatch
                 
-                result = query_cursor_chat_database()
+                # Mock to return the corrupted database path
+                mock_detect.return_value = WorkspaceMatch(
+                    path=Path(db_path),
+                    confidence=1.0,
+                    match_type="test_corrupted",
+                    workspace_folder="test_workspace"
+                )
+                
+                # Also mock the global database path to avoid real database access
+                with patch('pathlib.Path.exists', return_value=True):
+                    result = query_cursor_chat_database()
                 
                 # Should handle corruption gracefully
                 # workspace_database_path may be None when Composer fails to find valid databases

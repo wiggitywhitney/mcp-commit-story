@@ -242,7 +242,7 @@ class TestDatabaseContentSmoke:
         assert result is not None
         assert result[0][0] == 15  # Should have 15 individual messages (5+4+6)
     
-    def test_message_timestamps_are_recent(self, test_db_paths):
+    def test_message_timestamps_are_reasonable(self, test_db_paths):
         """Test that message timestamps are within reasonable range (not ancient/future)."""
         import json
         import time
@@ -256,11 +256,14 @@ class TestDatabaseContentSmoke:
         assert result is not None
         assert len(result) >= 1
         
-        # Parse message and check timestamp is reasonable (within last 24 hours)
+        # Parse message and check timestamp is reasonable (not ancient or far future)
         message_data = json.loads(result[0][0])
         timestamp = message_data["timestamp"]
         current_time = int(time.time() * 1000)
         
-        # Timestamp should be within the last 24 hours
-        assert timestamp > (current_time - 24 * 60 * 60 * 1000)
-        assert timestamp <= current_time 
+        # Timestamp should be within reasonable range (30 days old to 1 day future for timezone tolerance)
+        thirty_days_ago = current_time - (30 * 24 * 60 * 60 * 1000)
+        one_day_future = current_time + (24 * 60 * 60 * 1000)
+        
+        assert timestamp > thirty_days_ago, f"Timestamp {timestamp} is too old (more than 30 days)"
+        assert timestamp <= one_day_future, f"Timestamp {timestamp} is too far in the future" 

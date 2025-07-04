@@ -92,13 +92,16 @@ class ComposerChatProvider:
                 composer_id = session.get('composerId')
                 session_name = session.get('name', 'Unknown Session')
                 session_created_at = session.get('createdAt', 0)  # Get timestamp from session metadata
+                session_updated_at = session.get('lastUpdatedAt', session_created_at)  # Get end timestamp
                 
                 if not composer_id:
                     continue
                 
-                # Check if this session falls within the time window
-                if not (start_timestamp_ms <= session_created_at <= end_timestamp_ms):
-                    continue  # Skip session if outside time window
+                # Check if this session overlaps with the time window using proper overlap detection
+                # Session overlaps if: session.lastUpdatedAt > window.start AND session.createdAt < window.end
+                # This captures sessions that started before but continued during the window
+                if not (session_updated_at > start_timestamp_ms and session_created_at < end_timestamp_ms):
+                    continue  # Skip session if no overlap with time window
                 
                 # Get message headers from global database
                 message_headers = self._get_message_headers(composer_id)

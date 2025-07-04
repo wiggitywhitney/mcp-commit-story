@@ -1,5 +1,5 @@
 """
-Unit tests for Chat Context Manager implementation (Task 61.7).
+Unit tests for Chat Context Manager implementation.
 
 This module tests the chat context extraction functionality that provides
 enhanced chat data with timestamps, session names, and time window information
@@ -369,4 +369,4 @@ class TestPerformanceRequirements:
         assert len(result['session_names']) == 3  # Session 0, 1, 2
 
 
-# Note: Integration tests will be implemented in subtask 61.10 (Basic Integration Testing) 
+        # Note: Integration tests are implemented separately 

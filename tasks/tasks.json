@@ -915,13 +915,22 @@
             "status": "done",
             "dependencies": [],
             "parentTaskId": 61
+          },
+          {
+            "id": 15,
+            "title": "Fix Session Resolution",
+            "description": "Fix the session selection logic to ensure we always grab the correct session using full UUID matching. Implement proper handling to capture ALL sessions that overlap with the git commit time window.",
+            "details": "**Implementation Plan:**\n\n**Design Decisions (ALREADY APPROVED):**\n- **Session Identification:** Always use full UUID (no partial matching)  \n- **Multiple Session Handling:** Get ALL sessions whose time window overlaps with the git commit time window, merge chronologically\n- **Boundary Handling:** If session time is exactly on boundary, don't include the session (simple approach)\n\n**TDD Implementation Steps:**\n\n1. **Write failing tests:**\n   - Test that partial UUID matching is rejected\n   - Test that ALL sessions overlapping commit time window are captured  \n   - Test session overlap logic (session starts before and ends after window start)\n   - Test edge cases (no sessions, single session, many sessions)\n   - Test boundary exclusion (session time exactly equals commit window boundary)\n\n2. **Run tests to confirm they fail for the right reasons:**\n   - Should fail because current code allows partial matching\n   - Should fail because current code takes only first session\n   - Should fail because current code might miss sessions that overlap the window\n\n3. **Implement the fix:**\n   - Find where partial UUID matching occurs and fix it\n   - Update session selection to check: `session_start < commit_window_end AND session_end > commit_window_start` (strict inequalities for boundary exclusion)\n   - Collect ALL overlapping sessions, not just first one\n   - Merge sessions chronologically (they don't overlap per CC's research)\n   - Add telemetry using @trace_mcp_operation decorator per telemetry.md\n   - Reuse existing database query functions\n\n4. **Run tests to ensure they pass:**\n   - All new tests should pass\n   - All existing tests must still pass\n\n5. **Code cleanup:**\n   - Remove any debug logging\n   - Update docstrings to reflect new behavior\n\n**Definition of Done:**\n- Full UUID matching prevents wrong session selection\n- ALL sessions overlapping git commit time window are captured and merged\n- Sessions merged in chronological order  \n- Boundary sessions excluded (simple handling)\n- All tests passing\n- Human approval received\n<info added on 2025-07-04T17:30:50.523Z>\n**Implementation Complete ✅**\n\n**Fixed Session Resolution Logic**: Updated session overlap detection in `composer_chat_provider.py` line 100-103 to use proper overlap formula:\n\n```python\n# OLD: Only checked if session.createdAt within window\nif not (start_timestamp_ms <= session_created_at <= end_timestamp_ms):\n\n# NEW: Checks if session overlaps using both start and end times\nsession_updated_at = session.get('lastUpdatedAt', session_created_at)\nif not (session_updated_at > start_timestamp_ms and session_created_at < end_timestamp_ms):\n```\n\n**Key Improvements**:\n1. **All Overlapping Sessions Captured**: Now captures sessions that started before the window but continued during it (resolves session ID mismatch issues)\n2. **Proper Overlap Detection**: Uses `session.lastUpdatedAt > window.start AND session.createdAt < window.end` \n3. **Strict Inequalities**: Excludes boundary sessions (end exactly at start, start exactly at end)\n4. **Full UUID Matching**: Already using complete UUIDs in database queries - no partial matching issues\n\n**Testing**:\n- Created comprehensive test suite in `tests/unit/test_session_resolution_fix.py` \n- All 5 new tests pass demonstrating the fixes\n- All 19 existing composer tests still pass (no regressions)\n- All 5 integration tests pass (end-to-end verification)\n\n**Root Cause Resolution**: Session overlap detection was incomplete, causing missing sessions and data loss. This fix ensures ALL sessions overlapping a git commit time window are captured, providing complete conversation context for journal generation.\n</info added on 2025-07-04T17:30:50.523Z>",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 61
           }
         ]
       }
     ],
     "metadata": {
       "created": "2025-06-21T07:52:11.612Z",
-      "updated": "2025-07-01T22:45:20.077Z",
+      "updated": "2025-07-04T17:30:54.666Z",
       "description": "Tasks for master context"
     }
   }

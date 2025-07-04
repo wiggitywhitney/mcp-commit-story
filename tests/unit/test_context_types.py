@@ -5,7 +5,7 @@ from mcp_commit_story.context_collection import collect_chat_history
 from mcp_commit_story import journal, git_utils
 
 def test_chat_history_type():
-    # Mocked chat history with enhanced Composer metadata (from Task 61.5)
+    # Mocked chat history with enhanced Composer metadata
     chat = {'messages': [{'speaker': 'user', 'text': 'Hello', 'timestamp': 1640995200000, 'sessionName': 'test-session'}]}
     assert set(chat.keys()) == set(ChatHistory.__annotations__.keys())
     for msg in chat['messages']:

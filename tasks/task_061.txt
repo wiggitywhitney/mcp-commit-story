@@ -1499,3 +1499,80 @@ Create comprehensive documentation for the new chat integration feature that hel
 
 **Goal**: Clear understanding of bubble record anatomy to prevent field confusion debugging disasters like the 7-hour cascade described in the blog post.
 
+## 15. Fix Session Resolution [done]
+### Dependencies: None
+### Description: Fix the session selection logic to ensure we always grab the correct session using full UUID matching. Implement proper handling to capture ALL sessions that overlap with the git commit time window.
+### Details:
+**Implementation Plan:**
+
+**Design Decisions (ALREADY APPROVED):**
+- **Session Identification:** Always use full UUID (no partial matching)  
+- **Multiple Session Handling:** Get ALL sessions whose time window overlaps with the git commit time window, merge chronologically
+- **Boundary Handling:** If session time is exactly on boundary, don't include the session (simple approach)
+
+**TDD Implementation Steps:**
+
+1. **Write failing tests:**
+   - Test that partial UUID matching is rejected
+   - Test that ALL sessions overlapping commit time window are captured  
+   - Test session overlap logic (session starts before and ends after window start)
+   - Test edge cases (no sessions, single session, many sessions)
+   - Test boundary exclusion (session time exactly equals commit window boundary)
+
+2. **Run tests to confirm they fail for the right reasons:**
+   - Should fail because current code allows partial matching
+   - Should fail because current code takes only first session
+   - Should fail because current code might miss sessions that overlap the window
+
+3. **Implement the fix:**
+   - Find where partial UUID matching occurs and fix it
+   - Update session selection to check: `session_start < commit_window_end AND session_end > commit_window_start` (strict inequalities for boundary exclusion)
+   - Collect ALL overlapping sessions, not just first one
+   - Merge sessions chronologically (they don't overlap per CC's research)
+   - Add telemetry using @trace_mcp_operation decorator per telemetry.md
+   - Reuse existing database query functions
+
+4. **Run tests to ensure they pass:**
+   - All new tests should pass
+   - All existing tests must still pass
+
+5. **Code cleanup:**
+   - Remove any debug logging
+   - Update docstrings to reflect new behavior
+
+**Definition of Done:**
+- Full UUID matching prevents wrong session selection
+- ALL sessions overlapping git commit time window are captured and merged
+- Sessions merged in chronological order  
+- Boundary sessions excluded (simple handling)
+- All tests passing
+- Human approval received
+<info added on 2025-07-04T17:30:50.523Z>
+**Implementation Complete ✅**
+
+**Fixed Session Resolution Logic**: Updated session overlap detection in `composer_chat_provider.py` line 100-103 to use proper overlap formula:
+
+```python
+# OLD: Only checked if session.createdAt within window
+if not (start_timestamp_ms <= session_created_at <= end_timestamp_ms):
+
+# NEW: Checks if session overlaps using both start and end times
+session_updated_at = session.get('lastUpdatedAt', session_created_at)
+if not (session_updated_at > start_timestamp_ms and session_created_at < end_timestamp_ms):
+```
+
+**Key Improvements**:
+1. **All Overlapping Sessions Captured**: Now captures sessions that started before the window but continued during it (resolves session ID mismatch issues)
+2. **Proper Overlap Detection**: Uses `session.lastUpdatedAt > window.start AND session.createdAt < window.end` 
+3. **Strict Inequalities**: Excludes boundary sessions (end exactly at start, start exactly at end)
+4. **Full UUID Matching**: Already using complete UUIDs in database queries - no partial matching issues
+
+**Testing**:
+- Created comprehensive test suite in `tests/unit/test_session_resolution_fix.py` 
+- All 5 new tests pass demonstrating the fixes
+- All 19 existing composer tests still pass (no regressions)
+- All 5 integration tests pass (end-to-end verification)
+
+**Root Cause Resolution**: Session overlap detection was incomplete, causing missing sessions and data loss. This fix ensures ALL sessions overlapping a git commit time window are captured, providing complete conversation context for journal generation.
+</info added on 2025-07-04T17:30:50.523Z>
+

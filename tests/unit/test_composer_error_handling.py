@@ -1,5 +1,5 @@
 """
-Unit tests for Composer Error Handling (Task 61.8).
+Unit tests for Composer Error Handling.
 
 Tests comprehensive error handling in the Composer integration including
 database access errors, workspace detection failures, and graceful degradation.
@@ -237,15 +237,14 @@ class TestWorkspaceDetectionError:
     @patch('src.mcp_commit_story.cursor_db.get_current_commit_hash')
     def test_invalid_commit_error_handling(self, mock_get_commit):
         """Test handling when git commit operations fail."""
-        mock_get_commit.side_effect = WorkspaceDetectionError(
+        mock_get_commit.side_effect = Exception(
             "Invalid git repository state"
         )
         
         result = query_cursor_chat_database()
         
         # Should fallback to alternative time window strategy
-        assert 'error_info' in result['workspace_info']
-        assert result['workspace_info']['strategy'] == 'fallback'
+        assert result['workspace_info']['time_window_strategy'] in ['24_hour_fallback', 'commit_window_fallback']
 
 
 class TestGracefulDegradation:
