@@ -127,6 +127,26 @@ def backfill(debug):
             click.echo(f"Error: {e}")
 ```
 
+5. Chat context filtering for backfill:
+
+When processing historical commits, chat conversations may contain discussions 
+about later work that happened after the commit. This contamination can make 
+journal entries confusing or inaccurate.
+
+**Key concept**: Use AI to determine conversation boundaries for each commit:
+- Leverage existing chat filtering functionality (being developed in Task 61.18)
+- Analyze git changes alongside chat history to identify relevant discussion
+- Trim both beginning and end for backfill (vs current commits which only trim beginning)
+- Preserve narrative flow while removing irrelevant future context
+
+**Behavioral difference**:
+- Current commits: trim beginning only, keep everything after
+- Backfilled commits: trim both ends to isolate relevant context
+- Build upon existing filtering logic where possible
+
+This ensures backfilled journal entries focus on what was actually being 
+discussed when the commit was made, not future work that happened later.
+
 # Test Strategy:
 1. Unit tests for missed commit detection
 2. Tests for backfill processing
@@ -135,3 +155,4 @@ def backfill(debug):
 5. Tests for handling journal-only commits
 6. Tests for chronological ordering of backfilled entries
 7. Integration tests for full backfill flow
+8. Tests for chat context filtering in backfill scenarios
