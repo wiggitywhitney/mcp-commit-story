@@ -1478,3 +1478,24 @@ Create comprehensive documentation for the new chat integration feature that hel
 ✅ No references to old implementations or historical context
 ✅ Documentation feels cohesive with existing docs
 
+## 14. Bubble Record Structure & Visual Documentation [done]
+### Dependencies: None
+### Description: Document the core bubble record structure with focus on type 1 vs type 2 messages and create visual representation to clarify what data exists and how it's organized.
+### Details:
+**Description**: Document the core bubble record structure with focus on type 1 vs type 2 messages and create visual representation to clarify what data exists and how it's organized.
+
+**Scope** (much tighter):
+1. **Bubble Record Anatomy**: What IS a bubble record? Basic structure explanation
+2. **Message Types**: Clear explanation of type 1 (user) vs type 2 (AI) messages
+3. **Field Mapping**: Where does content actually live for each type?
+4. **Visual Diagram**: Simple diagram showing the structure relationships
+5. **Integration**: Add to existing cursor-chat-discovery.md (no new files)
+
+**Implementation Considerations:**
+- Keep it human-focused - help people understand their options for data extraction
+- Avoid overwhelming technical detail about database internals
+- Focus on the content extraction patterns that matter for journal generation
+- Reference the 7-hour debugging story context without going into details
+
+**Goal**: Clear understanding of bubble record anatomy to prevent field confusion debugging disasters like the 7-hour cascade described in the blog post.
+

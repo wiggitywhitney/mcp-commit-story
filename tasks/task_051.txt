@@ -7,6 +7,31 @@
 # Details:
 Implement the journal/capture-context MCP tool with the following components:
 
+## Research & Design Results (Updated 2025-07-01)
+
+Based on design conversations with the user, this tool will serve as a knowledge capture mechanism where:
+
+1. **User Trigger**: Users manually invoke via Cursor chat
+2. **MCP Tool Execution**: Tool captures AI's current knowledge state using an optimized prompt
+3. **Chronological Appending**: Captured knowledge gets appended to today's journal file
+4. **Future Context**: Later git commits trigger fresh AI which sees this captured knowledge in today's journal context
+5. **Richer Journal Entries**: Fresh AI synthesizes better entries because it has access to previous AI's accumulated insights
+
+### Approved Prompt Design
+The backend prompt should be:
+"Provide a comprehensive knowledge capture of your current understanding of this project, recent development insights, and key context that would help a fresh AI understand where we are and how we got here. Focus on context that would be valuable for future journal entries."
+
+### Tool Implementation Strategy
+- Single comprehensive approach (no complexity for users to think about different capture types)
+- When AI receives a knowledge capture request it naturally covers:
+  - Project state and architecture understanding
+  - Recent development insights and patterns discovered
+  - Decision context and rationale
+  - Technical understanding gained during the session
+  - Development patterns and approaches observed
+
+This creates a continuous knowledge transfer mechanism that enriches the journal generation process.
+
 1. **MCP Server Handler**:
 ```python
 @trace_mcp_operation

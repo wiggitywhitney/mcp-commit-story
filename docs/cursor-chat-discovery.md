@@ -16,6 +16,86 @@
 
 **Success rate:** 99%+ message extraction when using multi-field approach.
 
+## Understanding Bubble Records
+
+### What is a Bubble Record?
+
+A **bubble record** is Cursor's fundamental unit for storing individual messages in chat conversations. Each message (whether from you or the AI) gets its own bubble record with a unique identifier.
+
+**Think of it like this:**
+- Each chat message = 1 bubble record  
+- Each bubble record = 1 row in the database
+- Bubble records contain the actual message content + metadata
+
+**Database Key Pattern:**
+```
+bubbleId:{sessionId}:{bubbleId}
+```
+
+**Example:**
+```
+bubbleId:95d1fba7-8182-47e9-b02e-51331624eca3:msg_123456
+```
+
+### Message Types: User vs AI
+
+Cursor uses a **type** field to distinguish between different kinds of messages:
+
+| Type | Source | Description | Content Location |
+|------|---------|-------------|------------------|
+| **1** | **User** | Your questions and requests | `text` field |
+| **2** | **AI** | Assistant responses and tool executions | `text`, `thinking.text`, or `toolFormerData` fields |
+
+### Field Mapping: Where Content Lives
+
+**🔑 Critical Insight:** Different message types store content in different fields. You MUST check the right field for each type.
+
+```
+Type 1 (User Messages):
+├── text: "How do I implement authentication?"
+├── context: {fileSelections, folderSelections}
+└── type: 1
+
+Type 2 (AI Messages):
+├── Case A: Direct Response
+│   ├── text: "I'll help you implement authentication..."
+│   └── type: 2
+├── Case B: AI Thinking
+│   ├── thinking.text: "Let me analyze your setup..."
+│   └── type: 2
+└── Case C: Tool Execution
+    ├── toolFormerData: {name: "read_file", result: "..."}
+    └── type: 2
+```
+
+### Bubble Record Structure
+
+```
+┌─────────────────────────────────────┐
+│          BUBBLE RECORD              │
+├─────────────────────────────────────┤
+│ type: 1 (user) or 2 (AI)           │
+│ bubbleId: unique identifier         │
+│                                     │
+│ ┌─────────────────────────────┐    │
+│ │    CONTENT (varies by type) │    │
+│ ├─────────────────────────────┤    │
+│ │ User (type 1):              │    │
+│ │   text: "user's question"   │    │
+│ ├─────────────────────────────┤    │
+│ │ AI (type 2) can have:       │    │
+│ │   text: "AI response"       │    │
+│ │   thinking: {text: "..."}   │    │
+│ │   toolFormerData: {...}     │    │
+│ └─────────────────────────────┘    │
+│                                     │
+│ context: {                          │
+│   fileSelections: [...]             │
+│   folderSelections: [...]           │
+│ }                                   │
+└─────────────────────────────────────┘
+```
+
 ## Cursor Chat Architecture
 
 Cursor stores chat conversations in the **Composer system** - a rich conversational interface that maintains complete chat history with full context, file attachments, and chronological message threading.
