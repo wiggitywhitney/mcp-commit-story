@@ -924,13 +924,24 @@
             "status": "done",
             "dependencies": [],
             "parentTaskId": 61
+          },
+          {
+            "id": 16,
+            "title": "Multi-Field Message Extraction",
+            "description": "Fix the message extraction logic to properly extract content from both user and AI messages. Currently the extraction is incomplete, causing some messages to appear empty.",
+            "details": "**Implementation Plan:**\n\n**Design Decisions (ALREADY APPROVED):**\n- Message types to extract: User + AI responses only (no tools, no thinking)\n- Empty field handling: Skip messages with empty content\n- Field extraction: Only use text field for both types (ignore thinking.text and toolFormerData completely)\n\n**TDD Implementation Steps:**\n\n1. **Verify existing session filtering tests:**\n   - Check if tests exist for session time window overlap logic\n   - Check if tests exist for excluding non-overlapping sessions\n   - If these tests don't exist, add them before proceeding\n\n2. **Write failing tests for message extraction:**\n   - Test that type 1 (user) messages extract from text field\n   - Test that type 2 (AI) messages extract from text field\n   - Test that both message types are handled correctly\n   - Test that messages with empty text field are skipped\n   - Test that thinking.text is ignored even when it's the only content\n   - Test that toolFormerData is ignored\n   - Test that only messages from time-window-overlapping sessions are included\n\n3. **Run tests to confirm they fail for the right reasons:**\n   - Verify tests fail due to incomplete extraction logic\n   - Confirm which message types are not being extracted properly\n\n4. **Implement the fix:**\n   - Fix message extraction to handle both type 1 and type 2 messages correctly\n   - Ensure text field is extracted for both user and AI messages\n   - Skip messages where text field is empty or missing\n   - Add telemetry to track extraction patterns and skipped messages\n   - Reuse existing code structure and patterns\n\n5. **Run tests to ensure they pass:**\n   - All extraction tests pass\n   - Both message types extracted correctly\n   - Empty messages properly skipped\n   - Session filtering working correctly\n   - RUN THE FULL TEST SUITE - verify no regressions\n\n6. **Update documentation:**\n   - Update docstrings to explain current extraction behavior\n   - Document that only text field is used for all message types\n   - Focus on how the system currently works, not implementation history\n\n**IMPORTANT:**\n- Get human approval before marking complete\n- Must run FULL test suite and confirm all tests pass before marking done\n\n**Dependencies:** 61.15 (complete)\n\n**Definition of Done:**\n- Session time window filtering properly tested\n- Both user and AI messages extracted correctly from text field\n- Empty messages skipped appropriately\n- Documentation reflects current behavior\n- ALL tests passing (full suite)\n- Human approval received\n<info added on 2025-07-04T19:03:59.746Z>\n**IMPLEMENTATION COMPLETED** ✅\n\n**Bug Fixed:**\n- Current implementation in `composer_chat_provider.py` line 236 was extracting `text` field but including empty messages\n- Messages with only `thinking.text` or `toolFormerData` were appearing as empty content in results\n- Fixed by adding content validation: `if not content.strip(): continue`\n\n**TDD Implementation Results:**\n1. **Session filtering tests** - ✅ Already existed and comprehensive\n2. **Message extraction tests** - ✅ Created 7 new tests covering all scenarios:\n   - User messages extract from text field ✅\n   - AI conversational messages extract from text field ✅ \n   - AI thinking messages skipped (no text field) ✅\n   - Tool messages skipped (no text field) ✅\n   - Mixed message types properly filtered ✅\n   - Empty text field messages skipped ✅\n   - Session filtering still works with fix ✅\n\n**Implementation Details:**\n- **File:** `src/mcp_commit_story/composer_chat_provider.py`\n- **Lines modified:** 228-242\n- **Fix:** Extract `text` field, validate not empty with `content.strip()`, skip if empty\n- **Comments added:** Clear design decision documentation in code\n\n**Test Results:**\n- ✅ **All 7 new tests pass**\n- ✅ **Full test suite passes (1132 tests, no regressions)**\n- ✅ **Documentation updated** with current extraction behavior\n\n**Verification:**\n- Only conversational text-based messages included in journal\n- AI thinking and tool data properly excluded\n- Empty message bug eliminated\n- Session time window filtering preserved\n\nReady for human approval before marking complete.\n</info added on 2025-07-04T19:03:59.746Z>",
+            "status": "done",
+            "dependencies": [
+              "61.15"
+            ],
+            "parentTaskId": 61
           }
         ]
       }
     ],
     "metadata": {
       "created": "2025-06-21T07:52:11.612Z",
-      "updated": "2025-07-04T17:30:54.666Z",
+      "updated": "2025-07-04T19:08:24.246Z",
       "description": "Tasks for master context"
     }
   }

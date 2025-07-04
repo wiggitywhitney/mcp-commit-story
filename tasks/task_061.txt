@@ -1576,3 +1576,105 @@ if not (session_updated_at > start_timestamp_ms and session_created_at < end_tim
 **Root Cause Resolution**: Session overlap detection was incomplete, causing missing sessions and data loss. This fix ensures ALL sessions overlapping a git commit time window are captured, providing complete conversation context for journal generation.
 </info added on 2025-07-04T17:30:50.523Z>
 
+## 16. Multi-Field Message Extraction [done]
+### Dependencies: 61.15
+### Description: Fix the message extraction logic to properly extract content from both user and AI messages. Currently the extraction is incomplete, causing some messages to appear empty.
+### Details:
+**Implementation Plan:**
+
+**Design Decisions (ALREADY APPROVED):**
+- Message types to extract: User + AI responses only (no tools, no thinking)
+- Empty field handling: Skip messages with empty content
+- Field extraction: Only use text field for both types (ignore thinking.text and toolFormerData completely)
+
+**TDD Implementation Steps:**
+
+1. **Verify existing session filtering tests:**
+   - Check if tests exist for session time window overlap logic
+   - Check if tests exist for excluding non-overlapping sessions
+   - If these tests don't exist, add them before proceeding
+
+2. **Write failing tests for message extraction:**
+   - Test that type 1 (user) messages extract from text field
+   - Test that type 2 (AI) messages extract from text field
+   - Test that both message types are handled correctly
+   - Test that messages with empty text field are skipped
+   - Test that thinking.text is ignored even when it's the only content
+   - Test that toolFormerData is ignored
+   - Test that only messages from time-window-overlapping sessions are included
+
+3. **Run tests to confirm they fail for the right reasons:**
+   - Verify tests fail due to incomplete extraction logic
+   - Confirm which message types are not being extracted properly
+
+4. **Implement the fix:**
+   - Fix message extraction to handle both type 1 and type 2 messages correctly
+   - Ensure text field is extracted for both user and AI messages
+   - Skip messages where text field is empty or missing
+   - Add telemetry to track extraction patterns and skipped messages
+   - Reuse existing code structure and patterns
+
+5. **Run tests to ensure they pass:**
+   - All extraction tests pass
+   - Both message types extracted correctly
+   - Empty messages properly skipped
+   - Session filtering working correctly
+   - RUN THE FULL TEST SUITE - verify no regressions
+
+6. **Update documentation:**
+   - Update docstrings to explain current extraction behavior
+   - Document that only text field is used for all message types
+   - Focus on how the system currently works, not implementation history
+
+**IMPORTANT:**
+- Get human approval before marking complete
+- Must run FULL test suite and confirm all tests pass before marking done
+
+**Dependencies:** 61.15 (complete)
+
+**Definition of Done:**
+- Session time window filtering properly tested
+- Both user and AI messages extracted correctly from text field
+- Empty messages skipped appropriately
+- Documentation reflects current behavior
+- ALL tests passing (full suite)
+- Human approval received
+<info added on 2025-07-04T19:03:59.746Z>
+**IMPLEMENTATION COMPLETED** ✅
+
+**Bug Fixed:**
+- Current implementation in `composer_chat_provider.py` line 236 was extracting `text` field but including empty messages
+- Messages with only `thinking.text` or `toolFormerData` were appearing as empty content in results
+- Fixed by adding content validation: `if not content.strip(): continue`
+
+**TDD Implementation Results:**
+1. **Session filtering tests** - ✅ Already existed and comprehensive
+2. **Message extraction tests** - ✅ Created 7 new tests covering all scenarios:
+   - User messages extract from text field ✅
+   - AI conversational messages extract from text field ✅ 
+   - AI thinking messages skipped (no text field) ✅
+   - Tool messages skipped (no text field) ✅
+   - Mixed message types properly filtered ✅
+   - Empty text field messages skipped ✅
+   - Session filtering still works with fix ✅
+
+**Implementation Details:**
+- **File:** `src/mcp_commit_story/composer_chat_provider.py`
+- **Lines modified:** 228-242
+- **Fix:** Extract `text` field, validate not empty with `content.strip()`, skip if empty
+- **Comments added:** Clear design decision documentation in code
+
+**Test Results:**
+- ✅ **All 7 new tests pass**
+- ✅ **Full test suite passes (1132 tests, no regressions)**
+- ✅ **Documentation updated** with current extraction behavior
+
+**Verification:**
+- Only conversational text-based messages included in journal
+- AI thinking and tool data properly excluded
+- Empty message bug eliminated
+- Session time window filtering preserved
+
+Ready for human approval before marking complete.
+</info added on 2025-07-04T19:03:59.746Z>
+

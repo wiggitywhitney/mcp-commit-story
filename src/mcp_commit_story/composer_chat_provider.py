@@ -202,6 +202,12 @@ class ComposerChatProvider:
         """
         Retrieve and filter individual messages for a session.
         
+        Message Extraction Behavior:
+        - Extracts content only from the 'text' field for both user and AI messages
+        - Skips messages where 'text' field is empty or missing
+        - Ignores 'thinking.text' (AI internal reasoning) and 'toolFormerData' fields
+        - Preserves conversational flow by including only text-based interactions
+        
         Args:
             composer_id: Session identifier
             session_name: Human-readable session name
@@ -209,7 +215,7 @@ class ComposerChatProvider:
             session_created_at: Session creation timestamp
             
         Returns:
-            List of formatted message dictionaries within time window
+            List of formatted message dictionaries with non-empty text content
         """
         messages = []
         
@@ -229,11 +235,18 @@ class ComposerChatProvider:
             if not message_data:
                 continue
             
+            # Extract content from text field only (design decision: ignore thinking.text and toolFormerData)
+            content = message_data.get('text', '')
+            
+            # Skip messages with empty or missing text field
+            if not content.strip():
+                continue
+            
             # Format message according to enhanced structure
             # Use session timestamp for all messages (individual messages don't have timestamps)
             formatted_message = {
                 'role': self._map_message_type_to_role(message_type),
-                'content': message_data.get('text', ''),
+                'content': content,
                 'timestamp': session_created_at,  # Use session timestamp, not individual message timestamp
                 'sessionName': session_name,
                 'composerId': composer_id,

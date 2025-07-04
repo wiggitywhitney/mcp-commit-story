@@ -1,57 +1,44 @@
----
-description:
-globs:
-alwaysApply: false
----
-# Documentation Usage for AI
+# Documentation Standards
 
-## **Primary Rule: Use Focused Docs First**
+## Core Principle
+**Write for a future developer with zero project knowledge who needs to understand and modify this system.**
 
-When working with mcp-commit-story, **always reference the focused documentation in `/docs/` before consulting the comprehensive engineering spec**.
+## Required Elements
+- **Complete examples**: Copy-pasteable code snippets that work
+- **Prerequisites**: What they need to install/know first
+- **Clear steps**: How to use, modify, or extend
+- **Technical context**: Why decisions were made when it affects future changes
 
-### **Focused Documentation (/docs/) - Use These First**
+## Forbidden Content
+- **Process references**: No task IDs, sprint numbers, team workflows
+- **Historical narrative**: Skip "we tried X then Y" stories
+- **Assumed knowledge**: No insider team decisions or project history
+- **Personal references**: No names, meetings, or timeline details
 
-- **[Architecture](mdc:docs/architecture.md)** - System design and architectural decisions (115 lines)
-- **[MCP API Specification](mdc:docs/mcp-api-specification.md)** - Complete API reference (295 lines)  
-- **[Journal Behavior](mdc:docs/journal-behavior.md)** - Entry generation and content patterns (287 lines)
-- **[Implementation Guide](mdc:docs/implementation-guide.md)** - Development patterns and technical details (385 lines)
+## Quality Test
+**Could a new developer use this documentation successfully without asking questions?**
 
-### **Comprehensive Reference - Use as Backup**
+## Examples
 
-- **[Engineering Spec](mdc:engineering-mcp-journal-spec-final.md)** - Complete specification (900+ lines)
-  - Only use when focused docs don't contain the needed information
-  - Reference specific sections using the table of contents
-  - Prefer focused docs for better cognitive load management
+### ✅ Good
+```markdown
+# Email Service
 
-## **Documentation Selection Guide**
+## Prerequisites
+- Node.js 18+, environment vars: `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`
 
-| **Task Type** | **Primary Reference** | **Backup Reference** |
-|---|---|---|
-| **Understanding architecture** | [Architecture](mdc:docs/architecture.md) | Engineering Spec - Architecture sections |
-| **MCP integration/API work** | [MCP API Specification](mdc:docs/mcp-api-specification.md) | Engineering Spec - MCP sections |
-| **Journal entry behavior** | [Journal Behavior](mdc:docs/journal-behavior.md) | Engineering Spec - Journal sections |
-| **Implementation/coding** | [Implementation Guide](mdc:docs/implementation-guide.md) | Engineering Spec - Implementation sections |
-| **Testing approaches** | [Testing Standards](mdc:docs/testing_standards.md) | Engineering Spec - Testing sections |
+## Usage
+```javascript
+import { sendEmail } from './email-service';
+await sendEmail('user@example.com', 'Welcome!', template);
+```
 
-## **Best Practices**
+## Configuration
+- `TIMEOUT=10000`: 10s timeout prevents hanging on slow SMTP servers
+```
 
-- **Start narrow**: Use the most specific focused doc for your task
-- **Cross-reference**: If focused docs conflict with engineering spec, flag for resolution
-- **Stay focused**: Avoid reading entire engineering spec unless absolutely necessary
-- **Update awareness**: Keep focused docs updated as implementation evolves
-
-## **Why This Matters**
-
-- **Cognitive load**: 300-line focused docs vs 900+ line comprehensive spec
-- **Efficiency**: Find relevant information faster
-- **Accuracy**: Focused docs are organized by concern, not chronologically
-- **Maintainability**: Easier to keep focused docs current
-
-## **When to Use Engineering Spec**
-
-- **Missing information**: Focused docs don't cover your specific need
-- **Historical context**: Understanding how decisions evolved
-- **Complete reference**: Need exhaustive detail on implementation
-- **Debugging**: Tracing through complete technical flow
-
-**Remember**: The focused docs exist to make your work easier. Use them!
+### ❌ Bad
+```markdown
+# Email Service
+After task #45, the team decided on nodemailer. Sarah's timeout fix solved our production issues.
+```
