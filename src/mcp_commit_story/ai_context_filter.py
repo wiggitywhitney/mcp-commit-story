@@ -23,7 +23,6 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional, TypedDict
 from git import Commit
 
-from .context_collection import collect_git_context
 from .git_utils import get_previous_commit_info
 from .telemetry import trace_mcp_operation
 from .context_types import ChatMessage
@@ -115,7 +114,11 @@ def get_previous_journal_entry(commit: Commit) -> Optional[str]:
 
 
 @trace_mcp_operation("ai_context_filter.filter_chat")
-def filter_chat_for_commit(messages: List[ChatMessage], commit: Commit) -> List[ChatMessage]:
+def filter_chat_for_commit(
+    messages: List[ChatMessage], 
+    commit: Commit, 
+    git_context: Optional[Dict[str, Any]] = None
+) -> List[ChatMessage]:
     """Use AI to filter chat messages to only those relevant to the commit.
     
     Analyzes the conversation to identify the boundary where work for the
@@ -124,6 +127,7 @@ def filter_chat_for_commit(messages: List[ChatMessage], commit: Commit) -> List[
     Args:
         messages: List of chat messages to analyze for boundary detection
         commit: Git commit object to analyze for context
+        git_context: Optional pre-collected git context. If None, a minimal context will be created.
         
     Returns:
         Filtered list of messages from the detected boundary onwards
@@ -132,15 +136,26 @@ def filter_chat_for_commit(messages: List[ChatMessage], commit: Commit) -> List[
         logger.warning("No messages provided for filtering")
         return []
 
-    # Validate all messages have required bubbleId field
-    for msg in messages:
+    # Validate that all messages have bubbleId field
+    for i, msg in enumerate(messages):
         if 'bubbleId' not in msg:
-            logger.error(f"Message missing bubbleId: {msg}")
-            return messages  # Return unfiltered on validation error
+            logger.error(f"Message {i+1} is missing bubbleId field. This indicates a data pipeline issue.")
+            raise ValueError(f"AI filtering requires bubbleId field in all messages. Message {i+1} is missing this field. Check data extraction pipeline.")
 
     try:
-        # Collect git context for the commit
-        git_context = collect_git_context(commit)
+        # Use provided git context or create minimal context
+        if git_context is None:
+            # Minimal git context for backward compatibility
+            git_context = {
+                'metadata': {
+                    'hash': commit.hexsha,
+                    'message': commit.message.strip(),
+                    'author': str(commit.author),
+                    'date': commit.committed_datetime.isoformat()
+                },
+                'changed_files': [],
+                'diff_summary': 'Git context not provided'
+            }
         
         # Get previous commit information for context
         previous_commit = get_previous_commit_info(commit)

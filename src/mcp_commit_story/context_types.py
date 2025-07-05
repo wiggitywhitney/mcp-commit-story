@@ -15,20 +15,23 @@ class ChatMessage(TypedDict):
     """Chat message with optional enhanced metadata for improved context.
     
     Represents a single chat exchange with core required fields (speaker, text)
-    and optional enhanced metadata fields (timestamp, sessionName) that provide
+    and optional enhanced metadata fields (timestamp, bubbleId) that provide
     additional context when available from the chat system integration.
     
     Args:
         speaker: The role of the message sender - "Human" or "Assistant" 
         text: The content of the chat message
         timestamp: Optional Unix timestamp in milliseconds when message was sent
-        sessionName: Optional Cursor session identifier for grouping related messages
+                 bubbleId: Unique identifier for AI filtering and conversation boundaries
+         composerId: Cursor composer session identifier
     """
     speaker: str
     text: str
     # Optional enhanced metadata from Composer integration  
     timestamp: Optional[int]  # Unix timestamp in milliseconds
-    sessionName: Optional[str]  # Cursor session identifier
+
+    bubbleId: Optional[str]  # Unique identifier for AI filtering
+    composerId: Optional[str]  # Cursor composer session identifier
 
 class ChatHistory(TypedDict):
     messages: List[ChatMessage]

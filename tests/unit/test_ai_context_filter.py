@@ -11,13 +11,12 @@ class TestAIContextFilter:
     """Tests for AI-powered context filtering module"""
 
     @patch('mcp_commit_story.ai_context_filter.invoke_ai')
-    @patch('mcp_commit_story.ai_context_filter.collect_git_context')
     @patch('mcp_commit_story.ai_context_filter.get_previous_commit_info')
     @patch('mcp_commit_story.ai_context_filter.get_previous_journal_entry')
-    def test_filter_chat_with_clear_boundary(self, mock_journal, mock_prev_commit, mock_git_context, mock_invoke_ai):
+    def test_filter_chat_with_clear_boundary(self, mock_journal, mock_prev_commit, mock_invoke_ai):
         """Test AI boundary detection when there's a clear transition between work"""
         # Setup mocks
-        mock_git_context.return_value = {"message": "Add feature X", "files": ["feature_x.py"]}
+        git_context = {"message": "Add feature X", "files": ["feature_x.py"]}
         mock_prev_commit.return_value = {"hexsha": "abc123", "message": "Fix bug Y"}
         mock_journal.return_value = "Previous work on bug fixes"
         mock_invoke_ai.return_value = json.dumps({
@@ -38,8 +37,8 @@ class TestAIContextFilter:
         mock_commit = Mock()
         mock_commit.hexsha = "def456"
         
-        # Execute
-        result = filter_chat_for_commit(mock_messages, mock_commit)
+        # Execute with git_context parameter
+        result = filter_chat_for_commit(mock_messages, mock_commit, git_context)
         
         # Verify AI was called
         mock_invoke_ai.assert_called_once()
@@ -50,13 +49,12 @@ class TestAIContextFilter:
         assert result[1]['bubbleId'] == 'msg_5'
 
     @patch('mcp_commit_story.ai_context_filter.invoke_ai')
-    @patch('mcp_commit_story.ai_context_filter.collect_git_context')
     @patch('mcp_commit_story.ai_context_filter.get_previous_commit_info')
     @patch('mcp_commit_story.ai_context_filter.get_previous_journal_entry')
-    def test_filter_chat_handles_invalid_bubble_id(self, mock_journal, mock_prev_commit, mock_git_context, mock_invoke_ai):
+    def test_filter_chat_handles_invalid_bubble_id(self, mock_journal, mock_prev_commit, mock_invoke_ai):
         """Test handling when AI returns invalid bubbleId"""
         # Setup mocks
-        mock_git_context.return_value = {"message": "Add feature", "files": ["feature.py"]}
+        git_context = {"message": "Add feature", "files": ["feature.py"]}
         mock_prev_commit.return_value = None
         mock_journal.return_value = None
         mock_invoke_ai.return_value = json.dumps({
@@ -73,21 +71,20 @@ class TestAIContextFilter:
         mock_commit = Mock()
         mock_commit.hexsha = "def456"
         
-        # Execute
-        result = filter_chat_for_commit(mock_messages, mock_commit)
+        # Execute with git_context parameter
+        result = filter_chat_for_commit(mock_messages, mock_commit, git_context)
         
         # Should fallback to first message when invalid bubbleId is returned
         assert len(result) == 2
         assert result[0]['bubbleId'] == 'msg_1'
 
     @patch('mcp_commit_story.ai_context_filter.invoke_ai')
-    @patch('mcp_commit_story.ai_context_filter.collect_git_context')
     @patch('mcp_commit_story.ai_context_filter.get_previous_commit_info')
     @patch('mcp_commit_story.ai_context_filter.get_previous_journal_entry')
-    def test_filter_chat_handles_ai_failure(self, mock_journal, mock_prev_commit, mock_git_context, mock_invoke_ai):
+    def test_filter_chat_handles_ai_failure(self, mock_journal, mock_prev_commit, mock_invoke_ai):
         """Test error handling when AI call fails"""
         # Setup mocks
-        mock_git_context.return_value = {"message": "Add feature", "files": ["feature.py"]}
+        git_context = {"message": "Add feature", "files": ["feature.py"]}
         mock_prev_commit.return_value = None
         mock_journal.return_value = None
         mock_invoke_ai.side_effect = Exception("AI service unavailable")
@@ -100,21 +97,20 @@ class TestAIContextFilter:
         mock_commit = Mock()
         mock_commit.hexsha = "def456"
         
-        # Execute (should use conservative error strategy by default)
-        result = filter_chat_for_commit(mock_messages, mock_commit)
+        # Execute (should use conservative error strategy by default) with git_context parameter
+        result = filter_chat_for_commit(mock_messages, mock_commit, git_context)
         
         # Should return all messages on error (conservative approach)
         assert len(result) == 2
         assert result == mock_messages
 
     @patch('mcp_commit_story.ai_context_filter.invoke_ai')
-    @patch('mcp_commit_story.ai_context_filter.collect_git_context')
     @patch('mcp_commit_story.ai_context_filter.get_previous_commit_info')
     @patch('mcp_commit_story.ai_context_filter.get_previous_journal_entry')
-    def test_filter_chat_aggressive_error_strategy(self, mock_journal, mock_prev_commit, mock_git_context, mock_invoke_ai):
+    def test_filter_chat_aggressive_error_strategy(self, mock_journal, mock_prev_commit, mock_invoke_ai):
         """Test aggressive error handling strategy"""
         # Setup mocks
-        mock_git_context.return_value = {"message": "Add feature", "files": ["feature.py"]}
+        git_context = {"message": "Add feature", "files": ["feature.py"]}
         mock_prev_commit.return_value = None
         mock_journal.return_value = None
         mock_invoke_ai.side_effect = Exception("AI service unavailable")
@@ -128,19 +124,18 @@ class TestAIContextFilter:
         
         # Set aggressive error strategy
         with patch.dict(os.environ, {'AI_FILTER_ERROR_STRATEGY': 'aggressive'}):
-            result = filter_chat_for_commit(mock_messages, mock_commit)
+            result = filter_chat_for_commit(mock_messages, mock_commit, git_context)
         
         # Should return empty list with aggressive strategy
         assert len(result) == 0
 
     @patch('mcp_commit_story.ai_context_filter.invoke_ai')
-    @patch('mcp_commit_story.ai_context_filter.collect_git_context')
     @patch('mcp_commit_story.ai_context_filter.get_previous_commit_info')
     @patch('mcp_commit_story.ai_context_filter.get_previous_journal_entry')
-    def test_filter_chat_raise_error_strategy(self, mock_journal, mock_prev_commit, mock_git_context, mock_invoke_ai):
+    def test_filter_chat_raise_error_strategy(self, mock_journal, mock_prev_commit, mock_invoke_ai):
         """Test raise error handling strategy"""
         # Setup mocks
-        mock_git_context.return_value = {"message": "Add feature", "files": ["feature.py"]}
+        git_context = {"message": "Add feature", "files": ["feature.py"]}
         mock_prev_commit.return_value = None
         mock_journal.return_value = None
         mock_invoke_ai.side_effect = Exception("AI service unavailable")
@@ -155,28 +150,30 @@ class TestAIContextFilter:
         # Set raise error strategy
         with patch.dict(os.environ, {'AI_FILTER_ERROR_STRATEGY': 'raise'}):
             with pytest.raises(Exception, match="AI service unavailable"):
-                filter_chat_for_commit(mock_messages, mock_commit)
+                filter_chat_for_commit(mock_messages, mock_commit, git_context)
 
     def test_filter_chat_empty_messages(self):
         """Test handling of empty message list"""
         mock_commit = Mock()
         mock_commit.hexsha = "def456"
+        git_context = {"message": "Add feature", "files": ["feature.py"]}
         
-        result = filter_chat_for_commit([], mock_commit)
+        result = filter_chat_for_commit([], mock_commit, git_context)
         assert result == []
 
     def test_filter_chat_missing_bubble_id(self):
-        """Test handling of messages missing bubbleId"""
+        """Test handling of messages missing bubbleId - should raise ValueError"""
         mock_messages = [
             {'speaker': 'Human', 'text': 'Start work', 'timestamp': 1000},  # Missing bubbleId
         ]
         
         mock_commit = Mock()
         mock_commit.hexsha = "def456"
+        git_context = {"message": "Add feature", "files": ["feature.py"]}
         
-        # Should return unfiltered messages on validation error
-        result = filter_chat_for_commit(mock_messages, mock_commit)
-        assert result == mock_messages
+        # Should raise ValueError when bubbleId is missing
+        with pytest.raises(ValueError, match="AI filtering requires bubbleId field in all messages"):
+            filter_chat_for_commit(mock_messages, mock_commit, git_context)
 
 
 class TestParseAIResponse:

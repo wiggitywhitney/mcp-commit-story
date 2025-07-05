@@ -127,13 +127,17 @@ def reset_circuit_breaker():
     _circuit_breaker.reset()
 
 @trace_mcp_operation("cursor_db.query_composer")
-def query_cursor_chat_database() -> Dict[str, Any]:
+def query_cursor_chat_database(commit=None) -> Dict[str, Any]:
     """
     Query Cursor's Composer databases to get complete chat history with enhanced metadata.
     
     Uses commit-based time windows and workspace detection to retrieve precisely 
     relevant chat messages from Cursor's Composer databases. Includes comprehensive
     telemetry for monitoring performance and debugging.
+    
+    Args:
+        commit: Git commit object to use for time window calculation. If None, 
+                uses current HEAD commit (legacy behavior).
     
     Returns:
         Dict containing:
@@ -182,12 +186,21 @@ def query_cursor_chat_database() -> Dict[str, Any]:
     end_timestamp_ms = None
     
     try:
-        # Step 1: Get current commit hash for time window calculation
+        # Step 1: Get commit hash for time window calculation
         try:
-            commit_hash = get_current_commit_hash()
-            if span:
-                    span.set_attribute("cursor.commit_detected", True)
-            if span:
+            if commit is not None:
+                # Use provided commit object
+                commit_hash = commit.hexsha
+                if span:
+                    span.set_attribute("cursor.commit_provided", True)
+                if span:
+                    span.set_attribute("cursor.commit_hash", commit_hash)
+            else:
+                # Fall back to detecting current commit (legacy behavior)
+                commit_hash = get_current_commit_hash()
+                if span:
+                    span.set_attribute("cursor.commit_provided", False)
+                if span:
                     span.set_attribute("cursor.commit_hash", commit_hash or "unknown")
         except Exception as e:
             # Fall back to 24-hour window if git operations fail
@@ -453,7 +466,7 @@ def query_cursor_chat_database() -> Dict[str, Any]:
                 "commit_hash": commit_hash,
                 "last_updated": datetime.now().isoformat()
             },
-            "chat_history": chat_messages  # Enhanced messages with timestamps, sessionName, etc.
+            "chat_history": chat_messages  # Enhanced messages with timestamps, bubbleId, etc.
         }
         
     except Exception as e:

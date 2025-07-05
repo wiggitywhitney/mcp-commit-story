@@ -16,21 +16,27 @@ from .workspace_detection import detect_workspace_for_repo, WorkspaceMatch
 from ..commit_time_window import get_commit_time_window as _get_commit_time_window
 
 
-def get_current_commit_hash(repo_path: Optional[str] = None) -> str:
+def get_current_commit_hash(commit=None, repo_path: Optional[str] = None) -> str:
     """
-    Get the current commit hash from a git repository.
+    Get the current commit hash from a git repository or a provided commit object.
     
     Args:
+        commit: Optional git commit object. If provided, returns its hash.
         repo_path: Optional path to repository. Defaults to current directory.
         
     Returns:
-        str: Current commit hash (40-character hex string)
+        str: Commit hash (40-character hex string)
         
     Raises:
         git.InvalidGitRepositoryError: If not a valid git repository
         Exception: If unable to get current commit
     """
     try:
+        # If commit object is provided, return its hash directly
+        if commit is not None:
+            return commit.hexsha
+            
+        # Otherwise, detect current commit from repository
         repo = get_repo(repo_path)
         current_commit = get_current_commit(repo)
         return current_commit.hexsha
@@ -38,7 +44,7 @@ def get_current_commit_hash(repo_path: Optional[str] = None) -> str:
         raise Exception(f"Failed to get current commit hash: {e}")
 
 
-def get_commit_time_window(commit_hash: str, repo_path: Optional[str] = None) -> Tuple[int, int]:
+def get_commit_time_window(commit_or_hash, repo_path: Optional[str] = None) -> Tuple[int, int]:
     """
     Get time window for a commit (start and end timestamps in milliseconds).
     
@@ -46,7 +52,7 @@ def get_commit_time_window(commit_hash: str, repo_path: Optional[str] = None) ->
     returns a simplified tuple format for cursor_db integration.
     
     Args:
-        commit_hash: Hash of the commit to analyze
+        commit_or_hash: Git commit object or hash of the commit to analyze
         repo_path: Optional path to repository. Defaults to current directory.
         
     Returns:
@@ -56,6 +62,14 @@ def get_commit_time_window(commit_hash: str, repo_path: Optional[str] = None) ->
         Exception: If unable to calculate time window
     """
     try:
+        # Handle both commit objects and hash strings
+        if hasattr(commit_or_hash, 'hexsha'):
+            # It's a commit object
+            commit_hash = commit_or_hash.hexsha
+        else:
+            # It's a hash string
+            commit_hash = commit_or_hash
+            
         repo = get_repo(repo_path)
         time_window_result = _get_commit_time_window(repo, commit_hash)
         

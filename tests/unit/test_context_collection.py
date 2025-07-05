@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import get_type_hints
 from mcp_commit_story.context_types import ChatMessage, ChatHistory
 from mcp_commit_story.context_collection import collect_chat_history, collect_git_context
+from unittest.mock import Mock
 
 # Assume these will be imported from the journal module
 # from mcp_commit_story.journal import collect_commit_metadata, extract_code_diff, gather_discussion_notes, capture_file_changes, collect_chat_history, collect_ai_terminal_commands
@@ -83,7 +84,7 @@ def test_collect_git_context_bad_commit_hash(tmp_path):
 def test_collect_chat_history_structure_raises_on_none():
     """Test that collect_chat_history raises ValueError for None parameters."""
     # Function now validates parameters and raises ValueError for None
-    with pytest.raises(ValueError, match="since_commit and max_messages_back must not be None"):
+    with pytest.raises(ValueError, match="collect_chat_history: either commit or since_commit must be provided"):
         collect_chat_history()
 
 # Architecture Decision: Terminal Command Collection Removed (2025-06-27)
@@ -99,3 +100,180 @@ def test_collect_chat_history_structure_valid():
 
 # Architecture Decision: Terminal Command Collection Removed (2025-06-27)
 # Terminal command structure validation tests removed as functionality no longer supported 
+
+# Test bubbleId preservation in message transformation
+def test_collect_chat_history_preserves_bubble_id(mock_query_cursor_chat_database, mock_filter_chat_for_commit):
+    """Test that collect_chat_history preserves bubbleId from ComposerChatProvider messages."""
+    # Mock ComposerChatProvider data with bubbleId
+    mock_chat_data = {
+        'chat_history': [
+            {
+                'role': 'user',
+                'content': 'Test user message',
+                'timestamp': 1234567890,
+                'sessionName': 'test_session',
+                'composerId': 'comp123',
+                'bubbleId': 'bubble_user_1'
+            },
+            {
+                'role': 'assistant', 
+                'content': 'Test assistant message',
+                'timestamp': 1234567891,
+                'sessionName': 'test_session',
+                'composerId': 'comp123',
+                'bubbleId': 'bubble_assistant_1'
+            }
+        ]
+    }
+    
+    mock_query_cursor_chat_database.return_value = mock_chat_data
+    mock_filter_chat_for_commit.return_value = mock_chat_data['chat_history']
+    
+    # Mock commit object
+    mock_commit = Mock()
+    mock_commit.hexsha = 'abc123'
+    
+    # Call collect_chat_history
+    result = collect_chat_history(commit=mock_commit)
+    
+    # Verify bubbleId is preserved in final ChatMessage format
+    assert len(result['messages']) == 2
+    
+    user_message = result['messages'][0]
+    assert user_message['speaker'] == 'Human'
+    assert user_message['text'] == 'Test user message'
+    assert user_message['bubbleId'] == 'bubble_user_1'  # This should be preserved
+    assert user_message['timestamp'] == 1234567890
+    assert user_message['composerId'] == 'comp123'
+    
+    assistant_message = result['messages'][1]
+    assert assistant_message['speaker'] == 'Assistant'
+    assert assistant_message['text'] == 'Test assistant message'
+    assert assistant_message['bubbleId'] == 'bubble_assistant_1'  # This should be preserved
+    assert assistant_message['timestamp'] == 1234567891
+    assert assistant_message['composerId'] == 'comp123'
+
+
+def test_collect_chat_history_handles_missing_bubble_id(mock_query_cursor_chat_database, mock_filter_chat_for_commit):
+    """Test backward compatibility when bubbleId is missing from ComposerChatProvider messages."""
+    # Mock ComposerChatProvider data without bubbleId (backward compatibility)
+    mock_chat_data = {
+        'chat_history': [
+            {
+                'role': 'user',
+                'content': 'Test user message',
+                'timestamp': 1234567890,
+                'sessionName': 'test_session',
+                'composerId': 'comp123'
+                # No bubbleId field
+            }
+        ]
+    }
+    
+    mock_query_cursor_chat_database.return_value = mock_chat_data
+    mock_filter_chat_for_commit.return_value = mock_chat_data['chat_history']
+    
+    # Mock commit object
+    mock_commit = Mock()
+    mock_commit.hexsha = 'abc123'
+    
+    # Call collect_chat_history
+    result = collect_chat_history(commit=mock_commit)
+    
+    # Verify it handles missing bubbleId gracefully
+    assert len(result['messages']) == 1
+    
+    user_message = result['messages'][0]
+    assert user_message['speaker'] == 'Human'
+    assert user_message['text'] == 'Test user message'
+    assert 'bubbleId' not in user_message  # Should not be present when missing from source
+    assert user_message['timestamp'] == 1234567890
+    assert user_message['composerId'] == 'comp123'
+
+
+def test_collect_chat_history_preserves_all_metadata_fields(mock_query_cursor_chat_database, mock_filter_chat_for_commit):
+    """Test that all metadata fields (timestamp, sessionName, bubbleId) are preserved correctly."""
+    # Mock ComposerChatProvider data with all metadata fields
+    mock_chat_data = {
+        'chat_history': [
+            {
+                'role': 'user',
+                'content': 'Complete metadata test',
+                'timestamp': 1234567890,
+                'sessionName': 'complete_session',
+                'composerId': 'comp123',
+                'bubbleId': 'bubble_complete_1'
+            }
+        ]
+    }
+    
+    mock_query_cursor_chat_database.return_value = mock_chat_data
+    mock_filter_chat_for_commit.return_value = mock_chat_data['chat_history']
+    
+    # Mock commit object
+    mock_commit = Mock()
+    mock_commit.hexsha = 'abc123'
+    
+    # Call collect_chat_history
+    result = collect_chat_history(commit=mock_commit)
+    
+    # Verify all metadata fields are preserved
+    assert len(result['messages']) == 1
+    
+    message = result['messages'][0]
+    assert message['speaker'] == 'Human'
+    assert message['text'] == 'Complete metadata test'
+    assert message['timestamp'] == 1234567890
+    assert message['composerId'] == 'comp123'
+    assert message['bubbleId'] == 'bubble_complete_1'
+    
+    # Verify all expected fields are present (note: sessionName removed, composerId added)
+    expected_fields = {'speaker', 'text', 'timestamp', 'composerId', 'bubbleId'}
+    assert set(message.keys()) == expected_fields 
+
+def test_sessionname_not_collected(mock_query_cursor_chat_database, mock_filter_chat_for_commit):
+    """Test that sessionName is NOT collected in chat messages."""
+    # Mock ComposerChatProvider data with sessionName
+    mock_chat_data = {
+        'chat_history': [
+            {
+                'role': 'user',
+                'content': 'Hello',
+                'timestamp': 1640995200000,
+                'sessionName': 'test_session',
+                'composerId': 'composer-123',
+                'bubbleId': 'bubble-123'
+            },
+            {
+                'role': 'assistant', 
+                'content': 'Hi there',
+                'timestamp': 1640995300000,
+                'sessionName': 'test_session',
+                'composerId': 'composer-123',
+                'bubbleId': 'bubble-456'
+            }
+        ]
+    }
+    
+    mock_query_cursor_chat_database.return_value = mock_chat_data
+    mock_filter_chat_for_commit.return_value = mock_chat_data['chat_history']
+    
+    # Mock commit object
+    mock_commit = Mock()
+    mock_commit.hexsha = 'abc123'
+    
+    # Call collect_chat_history
+    result = collect_chat_history(commit=mock_commit)
+    
+    user_message = result['messages'][0]
+    assistant_message = result['messages'][1]
+    
+    # sessionName should NOT be present
+    assert 'sessionName' not in user_message
+    assert 'sessionName' not in assistant_message
+    
+    # composerId and bubbleId should still be present
+    assert user_message['composerId'] == 'composer-123'
+    assert user_message['bubbleId'] == 'bubble-123'
+    assert assistant_message['composerId'] == 'composer-123'
+    assert assistant_message['bubbleId'] == 'bubble-456' 

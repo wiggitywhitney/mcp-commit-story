@@ -148,9 +148,7 @@ def _transform_chat_data(raw_data: Dict[str, Any]) -> ChatContextData:
         if 'timestamp' in msg:
             enhanced_message['timestamp'] = msg['timestamp']
             
-        if 'sessionName' in msg:
-            enhanced_message['sessionName'] = msg['sessionName']
-            session_names.add(msg['sessionName'])
+
             
         messages.append(enhanced_message)
     

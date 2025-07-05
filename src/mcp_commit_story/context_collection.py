@@ -33,6 +33,7 @@ from mcp_commit_story.telemetry import (
 
 # Import cursor_db for chat history collection
 from mcp_commit_story.cursor_db import query_cursor_chat_database
+from mcp_commit_story.ai_context_filter import filter_chat_for_commit
 
 logger = logging.getLogger(__name__)
 
@@ -41,40 +42,100 @@ logger = logging.getLogger(__name__)
                     performance_thresholds={"duration": 1.0},
                     error_categories=["api", "network", "parsing"])
 def collect_chat_history(
+    commit=None,
     since_commit=None, 
     max_messages_back=150
 ) -> ChatHistory:
     """
-    Collect relevant chat history for journal entry using Composer's precise time windows.
+    Collect relevant chat history for journal entry using AI-powered context filtering.
     
     Uses commit-based time window filtering via query_cursor_chat_database() with Composer
-    integration. No artificial message limits are applied since Composer provides precisely
-    relevant messages for the development context.
+    integration and AI-powered conversation boundary detection. The system automatically
+    identifies where work for the current commit begins and filters out irrelevant conversation
+    history from previous development work.
+
+    AI Filtering Process:
+    - Analyzes conversation context to identify where current commit work begins
+    - Uses git context, previous commits, and conversation flow for boundary detection
+    - Provides confidence scoring and reasoning for transparency
+    - Conservative error handling: falls back to unfiltered messages on AI failures
+    - Tracks filtering effectiveness through telemetry metrics
 
     Args:
-        since_commit: Commit reference (validated for compatibility but unused - Composer handles precise filtering)
-        max_messages_back: Maximum messages to look back (validated for compatibility but unused - Composer handles precise filtering)
+        commit: Git commit object to use for time window calculation and AI filtering (preferred)
+        since_commit: Commit reference (legacy compatibility - superseded by commit parameter)
+        max_messages_back: Historical compatibility parameter (no longer used with Composer integration)
 
     Returns:
-        ChatHistory: Dictionary with 'messages' array containing enhanced chat data.
-                    Each message has 'speaker' and 'text' fields, with additional metadata preserved.
-                    Returns empty ChatHistory on errors for graceful degradation.
+        ChatHistory: Structured chat history with AI-filtered, commit-relevant messages
+
+    Raises:
+        ValueError: If neither commit nor since_commit is provided
 
     Note:
         No artificial message limits are applied. Composer's commit-based time windows 
-        provide naturally scoped, relevant conversation context. This replaces the old 
-        200/200 limiting approach which was designed for 48-hour time windows.
+        provide naturally scoped conversation context, and AI filtering removes irrelevant
+        conversation history to ensure journal entries contain only relevant context.
+        
+    Telemetry:
+        Tracks AI filtering effectiveness including message reduction rates, success/failure
+        rates, and filtering performance metrics for monitoring and optimization.
     """
-    # Validate required parameters (keeping for compatibility even if unused)
-    if since_commit is None or max_messages_back is None:
-        raise ValueError("collect_chat_history: since_commit and max_messages_back must not be None")
+    # Validate required parameters
+    if commit is None and since_commit is None:
+        raise ValueError("collect_chat_history: either commit or since_commit must be provided")
+    if max_messages_back is None:
+        raise ValueError("collect_chat_history: max_messages_back must not be None")
     
     try:
-        # Get chat history from Composer via cursor database
-        chat_data = query_cursor_chat_database()
+        # Get chat history from Composer via cursor database, passing commit object
+        chat_data = query_cursor_chat_database(commit=commit)
         
         # Extract chat messages directly - no limiting applied
         chat_messages = chat_data.get('chat_history', [])
+        
+        # Apply AI filtering if we have messages and a commit object
+        if chat_messages and commit is not None:
+            # Telemetry: Track filtering effectiveness
+            from opentelemetry import trace
+            span = trace.get_current_span()
+            messages_before = len(chat_messages)
+            
+            try:
+                # Collect git context for AI filtering
+                git_context = collect_git_context(commit_hash=commit.hexsha)
+                filtered_messages = filter_chat_for_commit(chat_messages, commit, git_context)
+                
+                # Update to use filtered messages
+                chat_messages = filtered_messages
+                
+                # Telemetry: Track filtering success and effectiveness
+                messages_after = len(chat_messages)
+                reduction_count = messages_before - messages_after
+                reduction_percentage = (reduction_count / messages_before * 100) if messages_before > 0 else 0
+                
+                # Set telemetry attributes for filtering effectiveness
+                if span:
+                    span.set_attribute("ai_filter.messages_before", messages_before)
+                    span.set_attribute("ai_filter.messages_after", messages_after)
+                    span.set_attribute("ai_filter.reduction_count", reduction_count)
+                    span.set_attribute("ai_filter.reduction_percentage", round(reduction_percentage, 2))
+                    span.set_attribute("ai_filter.success", True)
+                
+                logger.info(f"AI filtering: {messages_before} → {messages_after} messages ({reduction_percentage:.1f}% reduction)")
+                
+            except Exception as e:
+                # Conservative error handling: log error but continue with unfiltered messages
+                logger.warning(f"AI context filtering failed, using unfiltered messages: {e}")
+                
+                # Telemetry: Track filtering failure
+                if span:
+                    span.set_attribute("ai_filter.messages_before", messages_before)
+                    span.set_attribute("ai_filter.messages_after", messages_before)  # No filtering applied
+                    span.set_attribute("ai_filter.reduction_count", 0)
+                    span.set_attribute("ai_filter.reduction_percentage", 0.0)
+                    span.set_attribute("ai_filter.success", False)
+                    span.set_attribute("ai_filter.error_type", type(e).__name__)
         
         # Convert to ChatHistory format with enhanced data preservation
         messages = []
@@ -88,8 +149,12 @@ def collect_chat_history(
             # Preserve additional metadata from Composer if available
             if 'timestamp' in msg:
                 message_data['timestamp'] = msg['timestamp']
-            if 'sessionName' in msg:
-                message_data['sessionName'] = msg['sessionName']
+            
+            if 'bubbleId' in msg:
+                message_data['bubbleId'] = msg['bubbleId']
+                
+            if 'composerId' in msg:
+                message_data['composerId'] = msg['composerId']
             
             messages.append(message_data)
         
