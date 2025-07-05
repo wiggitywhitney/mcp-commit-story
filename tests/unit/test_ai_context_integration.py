@@ -33,6 +33,10 @@ class TestFunctionSignatureUpdates:
 
     def test_query_cursor_chat_database_accepts_commit_parameter(self):
         """Test that query_cursor_chat_database can be called with commit parameter"""
+        # Reset circuit breaker to ensure clean test state
+        from mcp_commit_story.cursor_db import reset_circuit_breaker
+        reset_circuit_breaker()
+        
         mock_commit = Mock(spec=Commit)
         mock_commit.hexsha = "abc123"
         
@@ -218,6 +222,10 @@ class TestPipelineIntegration:
     @patch('mcp_commit_story.context_collection.collect_git_context')
     def test_end_to_end_pipeline_with_ai_filtering(self, mock_git_context, mock_find, mock_time, mock_provider, mock_filter):
         """Test complete pipeline from orchestrator through AI filtering"""
+        # Reset circuit breaker to ensure clean test state
+        from mcp_commit_story.cursor_db import reset_circuit_breaker
+        reset_circuit_breaker()
+        
         mock_commit = Mock(spec=Commit)
         mock_commit.hexsha = "abc123"
         
@@ -251,12 +259,10 @@ class TestPipelineIntegration:
         # Verify the complete flow
         mock_find.assert_called_once()
         mock_time.assert_called_once_with(mock_commit.hexsha)
+        mock_provider.assert_called_once()
         mock_filter.assert_called_once()
         
-        # Verify result structure and filtering
-        assert 'messages' in result
-        assert len(result['messages']) == 2  # Should have filtered messages (removed first one)
-        
-        # Verify AI filtering was effective
+        # Verify final result has filtered messages
+        assert len(result['messages']) == 2  # Should have 2 filtered messages
         assert result['messages'][0]['text'] == 'Now working on feature B'
         assert result['messages'][1]['text'] == 'Feature B implementation' 
