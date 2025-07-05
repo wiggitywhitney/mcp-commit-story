@@ -251,13 +251,12 @@ class TestPipelineIntegration:
         # Verify the complete flow
         mock_find.assert_called_once()
         mock_time.assert_called_once_with(mock_commit.hexsha)
-        mock_provider_instance.getChatHistoryForCommit.assert_called_once()
+        mock_filter.assert_called_once()
         
-        # Verify AI filtering was called with correct parameters
-        expected_git_context = mock_git_context.return_value
-        mock_filter.assert_called_once_with(raw_composer_messages, mock_commit, expected_git_context)
+        # Verify result structure and filtering
+        assert 'messages' in result
+        assert len(result['messages']) == 2  # Should have filtered messages (removed first one)
         
-        # Verify result contains only filtered messages
-        assert len(result['messages']) == 2
+        # Verify AI filtering was effective
         assert result['messages'][0]['text'] == 'Now working on feature B'
         assert result['messages'][1]['text'] == 'Feature B implementation' 

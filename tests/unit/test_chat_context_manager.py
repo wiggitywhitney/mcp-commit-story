@@ -169,25 +169,23 @@ class TestExtractChatForCommit:
         assert messages[1]['speaker'] == 'Assistant'  # assistant -> Assistant
     
     def test_extracts_unique_session_names(self):
-        """Test extraction of unique session names from messages."""
+        """Test that session names are no longer extracted since sessionName support was removed."""
         with patch('src.mcp_commit_story.chat_context_manager.query_cursor_chat_database') as mock_query:
             mock_query.return_value = {
                 'chat_history': [
-                    {'role': 'user', 'content': 'Hello', 'sessionName': 'Session A'},
-                    {'role': 'assistant', 'content': 'Hi', 'sessionName': 'Session A'},
-                    {'role': 'user', 'content': 'New topic', 'sessionName': 'Session B'},
-                    {'role': 'user', 'content': 'Another message', 'sessionName': 'Session A'}
+                    {'role': 'user', 'content': 'Hello', 'composerId': 'comp123', 'bubbleId': 'bubble1'},
+                    {'role': 'assistant', 'content': 'Hi', 'composerId': 'comp123', 'bubbleId': 'bubble2'},
+                    {'role': 'user', 'content': 'New topic', 'composerId': 'comp456', 'bubbleId': 'bubble3'},
+                    {'role': 'user', 'content': 'Another message', 'composerId': 'comp123', 'bubbleId': 'bubble4'}
                 ],
                 'workspace_info': {'start_timestamp_ms': 0, 'end_timestamp_ms': 1000, 'strategy': 'test'}
             }
             
             result = extract_chat_for_commit()
             
-            # Should extract unique session names
+            # Should no longer extract session names since sessionName support was removed
             session_names = result['session_names']
-            assert len(session_names) == 2
-            assert 'Session A' in session_names
-            assert 'Session B' in session_names
+            assert len(session_names) == 0  # Should be empty since we removed sessionName support
     
     @patch('src.mcp_commit_story.chat_context_manager.query_cursor_chat_database')
     def test_builds_time_window_from_workspace_info(self, mock_query):
@@ -281,7 +279,7 @@ class TestTelemetryIntegration:
         
         mock_query.return_value = {
             'chat_history': [
-                {'role': 'user', 'content': 'Hello', 'sessionName': 'Session A'}
+                {'role': 'user', 'content': 'Hello', 'composerId': 'comp123', 'bubbleId': 'bubble1'}
             ],
             'workspace_info': {
                 'start_timestamp_ms': 1672531200000,
@@ -289,22 +287,22 @@ class TestTelemetryIntegration:
                 'strategy': 'commit_based'
             }
         }
-        
+
         result = extract_chat_for_commit()
-        
+
         # Should create span with correct name
         mock_tracer.start_span.assert_called_once_with('extract_chat_for_commit')
-        
+
         # Should call context manager methods
         mock_span.__enter__.assert_called_once()
         mock_span.__exit__.assert_called_once()
-        
+
         # Should set telemetry attributes
         mock_span.set_attribute.assert_any_call('chat.messages_found', 1)
-        mock_span.set_attribute.assert_any_call('chat.session_count', 1)
+        mock_span.set_attribute.assert_any_call('chat.session_count', 0)  # Should be 0 since we removed sessionName support
         mock_span.set_attribute.assert_any_call('chat.time_window_hours', 24.0)
         mock_span.set_attribute.assert_any_call('chat.workspace_detected', True)
-        
+
         # Function should work correctly
         assert isinstance(result, dict)
         assert 'messages' in result
@@ -319,7 +317,7 @@ class TestTelemetryIntegration:
         """Test that function works correctly when OpenTelemetry is not available."""
         mock_query.return_value = {
             'chat_history': [
-                {'role': 'user', 'content': 'Hello', 'sessionName': 'Session A'}
+                {'role': 'user', 'content': 'Hello', 'composerId': 'comp123', 'bubbleId': 'bubble1'}
             ],
             'workspace_info': {
                 'start_timestamp_ms': 1672531200000,
@@ -347,7 +345,7 @@ class TestPerformanceRequirements:
         # Mock a realistic response
         mock_query.return_value = {
             'chat_history': [
-                {'role': 'user', 'content': f'Message {i}', 'sessionName': f'Session {i%3}'}
+                {'role': 'user', 'content': f'Message {i}', 'composerId': f'comp{i%3}', 'bubbleId': f'bubble{i}'}
                 for i in range(100)  # 100 messages to test with reasonable load
             ],
             'workspace_info': {
@@ -356,17 +354,17 @@ class TestPerformanceRequirements:
                 'strategy': 'commit_based'
             }
         }
-        
+
         start_time = time.time()
         result = extract_chat_for_commit()
         duration = time.time() - start_time
-        
+
         # Should complete under 500ms threshold
         assert duration < 0.5, f"Performance test failed: {duration:.3f}s > 0.5s threshold"
-        
+
         # Should still return valid data
         assert len(result['messages']) == 100
-        assert len(result['session_names']) == 3  # Session 0, 1, 2
+        assert len(result['session_names']) == 0  # Should be 0 since we removed sessionName support
 
 
         # Note: Integration tests are implemented separately 

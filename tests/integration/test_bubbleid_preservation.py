@@ -35,40 +35,40 @@ class TestBubbleIdPreservationIntegration:
                 'bubbleId': 'bubble_assistant_1'
             }
         ]
-        
+
         # Mock the full pipeline
         with patch('mcp_commit_story.context_collection.query_cursor_chat_database') as mock_query, \
              patch('mcp_commit_story.context_collection.filter_chat_for_commit') as mock_filter, \
              patch('mcp_commit_story.context_collection.collect_git_context') as mock_git_context:
-            
+
             # Setup mocks
             mock_query.return_value = {'chat_history': mock_composer_messages}
             mock_filter.return_value = mock_composer_messages
             mock_git_context.return_value = {'metadata': {'hash': 'abc123'}}
-            
+
             # Mock commit object
             mock_commit = Mock()
             mock_commit.hexsha = 'abc123'
-            
+
             # Call collect_chat_history (full pipeline)
             result = collect_chat_history(commit=mock_commit)
-            
+
             # Verify bubbleId is preserved through the entire pipeline
             assert len(result['messages']) == 2
-            
+
             user_message = result['messages'][0]
             assert user_message['speaker'] == 'Human'
             assert user_message['text'] == 'Test user message'
             assert user_message['bubbleId'] == 'bubble_user_1'
             assert user_message['timestamp'] == 1234567890
-            assert user_message['sessionName'] == 'test_session'
-            
+            assert user_message['composerId'] == 'comp123'  # Should have composerId, not sessionName
+
             assistant_message = result['messages'][1]
             assert assistant_message['speaker'] == 'Assistant'
             assert assistant_message['text'] == 'Test assistant message'
             assert assistant_message['bubbleId'] == 'bubble_assistant_1'
             assert assistant_message['timestamp'] == 1234567891
-            assert assistant_message['sessionName'] == 'test_session'
+            assert assistant_message['composerId'] == 'comp123'  # Should have composerId, not sessionName
 
     def test_ai_filtering_preserves_bubble_id(self):
         """Test that AI filtering preserves bubbleId when filtering messages."""
@@ -99,7 +99,7 @@ class TestBubbleIdPreservationIntegration:
                 'bubbleId': 'bubble_new_2'
             }
         ]
-        
+
         # Mock AI filtering to filter out the old message
         filtered_messages = [
             {
@@ -119,32 +119,32 @@ class TestBubbleIdPreservationIntegration:
                 'bubbleId': 'bubble_new_2'
             }
         ]
-        
+
         # Mock the full pipeline
         with patch('mcp_commit_story.context_collection.query_cursor_chat_database') as mock_query, \
              patch('mcp_commit_story.context_collection.filter_chat_for_commit') as mock_filter, \
              patch('mcp_commit_story.context_collection.collect_git_context') as mock_git_context:
-            
+
             # Setup mocks
             mock_query.return_value = {'chat_history': original_messages}
             mock_filter.return_value = filtered_messages  # AI filtering applied
             mock_git_context.return_value = {'metadata': {'hash': 'abc123'}}
-            
+
             # Mock commit object
             mock_commit = Mock()
             mock_commit.hexsha = 'abc123'
-            
+
             # Call collect_chat_history (full pipeline with AI filtering)
             result = collect_chat_history(commit=mock_commit)
-            
+
             # Verify AI filtering preserved bubbleId for remaining messages
             assert len(result['messages']) == 2
-            
+
             user_message = result['messages'][0]
             assert user_message['speaker'] == 'Human'
             assert user_message['text'] == 'Relevant new message'
             assert user_message['bubbleId'] == 'bubble_new_1'  # bubbleId preserved after filtering
-            
+
             assistant_message = result['messages'][1]
             assert assistant_message['speaker'] == 'Assistant'
             assert assistant_message['text'] == 'Relevant assistant response'
@@ -163,33 +163,33 @@ class TestBubbleIdPreservationIntegration:
                 # No bubbleId field
             }
         ]
-        
+
         # Mock the full pipeline
         with patch('mcp_commit_story.context_collection.query_cursor_chat_database') as mock_query, \
              patch('mcp_commit_story.context_collection.filter_chat_for_commit') as mock_filter, \
              patch('mcp_commit_story.context_collection.collect_git_context') as mock_git_context:
-            
+
             # Setup mocks
             mock_query.return_value = {'chat_history': mock_composer_messages}
             mock_filter.return_value = mock_composer_messages
             mock_git_context.return_value = {'metadata': {'hash': 'abc123'}}
-            
+
             # Mock commit object
             mock_commit = Mock()
             mock_commit.hexsha = 'abc123'
-            
+
             # Call collect_chat_history (full pipeline)
             result = collect_chat_history(commit=mock_commit)
-            
+
             # Verify backward compatibility (no bubbleId field)
             assert len(result['messages']) == 1
-            
+
             user_message = result['messages'][0]
             assert user_message['speaker'] == 'Human'
             assert user_message['text'] == 'Test user message'
             assert 'bubbleId' not in user_message  # Should not be present
             assert user_message['timestamp'] == 1234567890
-            assert user_message['sessionName'] == 'test_session'
+            assert user_message['composerId'] == 'comp123'  # Should have composerId, not sessionName
 
     def test_ai_filtering_error_preserves_bubble_id(self):
         """Test that when AI filtering fails, bubbleId is still preserved in unfiltered messages."""
@@ -204,30 +204,30 @@ class TestBubbleIdPreservationIntegration:
                 'bubbleId': 'bubble_user_1'
             }
         ]
-        
+
         # Mock the pipeline with AI filtering failure
         with patch('mcp_commit_story.context_collection.query_cursor_chat_database') as mock_query, \
              patch('mcp_commit_story.context_collection.filter_chat_for_commit') as mock_filter, \
              patch('mcp_commit_story.context_collection.collect_git_context') as mock_git_context:
-            
+
             # Setup mocks
             mock_query.return_value = {'chat_history': mock_composer_messages}
             mock_filter.side_effect = Exception("AI filtering failed")  # Simulate AI failure
             mock_git_context.return_value = {'metadata': {'hash': 'abc123'}}
-            
+
             # Mock commit object
             mock_commit = Mock()
             mock_commit.hexsha = 'abc123'
-            
+
             # Call collect_chat_history (should handle AI filtering failure gracefully)
             result = collect_chat_history(commit=mock_commit)
-            
+
             # Verify bubbleId is preserved even when AI filtering fails
             assert len(result['messages']) == 1
-            
+
             user_message = result['messages'][0]
             assert user_message['speaker'] == 'Human'
             assert user_message['text'] == 'Test user message'
             assert user_message['bubbleId'] == 'bubble_user_1'  # bubbleId preserved despite AI failure
             assert user_message['timestamp'] == 1234567890
-            assert user_message['sessionName'] == 'test_session' 
+            assert user_message['composerId'] == 'comp123'  # Should have composerId, not sessionName 
