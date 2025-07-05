@@ -109,7 +109,7 @@ def collect_git_context(commit_hash=None, repo=None, journal_path=None) -> GitCo
 
     Args:
         commit_hash (str, optional): Commit hash to analyze. Defaults to HEAD.
-        repo (git.Repo, optional): GitPython Repo object. Defaults to current repo.
+        repo (git.Repo or str, optional): GitPython Repo object or path string. Defaults to current repo.
         journal_path (str, optional): Path to the journal file or directory to exclude from context (for recursion prevention).
 
     Returns:
@@ -121,8 +121,12 @@ def collect_git_context(commit_hash=None, repo=None, journal_path=None) -> GitCo
     - This function enforces the in-memory-only rule for context data.
     - If journal_path is provided, all journal files are filtered from changed_files, file_stats, and diff_summary to prevent recursion.
     """
+    # Handle repo parameter - can be None, string path, or git.Repo object
     if repo is None:
         repo = get_repo()
+    elif isinstance(repo, str):
+        repo = get_repo(repo)
+    # If it's already a git.Repo object, use it as-is
     
     # Get commit with error handling
     try:
@@ -198,7 +202,13 @@ def collect_git_context(commit_hash=None, repo=None, journal_path=None) -> GitCo
     
     # --- Recursion prevention: filter out journal files ---
     if journal_path:
-        journal_rel = os.path.relpath(journal_path, repo.working_tree_dir)
+        # If journal_path is already a relative path, use it as-is
+        # If it's an absolute path, make it relative to the working tree
+        if os.path.isabs(journal_path):
+            journal_rel = os.path.relpath(journal_path, repo.working_tree_dir)
+        else:
+            journal_rel = journal_path
+        
         original_count = len(changed_files)
         changed_files = [f for f in changed_files if not f.startswith(journal_rel)]
         

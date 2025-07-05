@@ -126,6 +126,41 @@ def get_commit_details(commit: 'git.Commit') -> Dict[str, Any]:
     }
 
 
+def get_previous_commit_info(commit: 'git.Commit') -> Optional[Dict[str, Any]]:
+    """
+    Extract relevant details from the previous commit (first parent) for context filtering.
+
+    Args:
+        commit (git.Commit): Commit to get previous commit info for.
+
+    Returns:
+        dict or None: Dictionary with previous commit details (hash, message, timestamp, files_changed, 
+                     insertions, deletions) or None if this is the first commit.
+    """
+    # Handle first commit (no parents)
+    if not commit.parents:
+        return None
+    
+    # Get first parent (main branch for merge commits)
+    previous_commit = commit.parents[0]
+    
+    # Calculate stats
+    stats = {
+        'files': len(previous_commit.stats.files),
+        'insertions': sum(file_stats['insertions'] for file_stats in previous_commit.stats.files.values()),
+        'deletions': sum(file_stats['deletions'] for file_stats in previous_commit.stats.files.values())
+    }
+    
+    return {
+        'hash': previous_commit.hexsha,
+        'message': previous_commit.message,
+        'timestamp': previous_commit.committed_date,
+        'files_changed': stats['files'],
+        'insertions': stats['insertions'],
+        'deletions': stats['deletions']
+    }
+
+
 def is_blob_binary(blob) -> bool:
     """
     Heuristically determine if a git.Blob is binary.

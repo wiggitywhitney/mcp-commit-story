@@ -1765,3 +1765,135 @@ When sessions have identical creation timestamps, message order becomes non-dete
 - **After:** Journal entries are deterministic (reliable debugging and analysis)
 </info added on 2025-07-04T19:32:07.449Z>
 
+## 18. AI-Powered Context Filtering Module [done]
+### Dependencies: 61.15, 61.16, 61.17
+### Description: Create a module that invokes a separate AI instance to find where relevant conversation begins within the already-filtered time window. The AI analyzes conversations and identifies ONE message (by bubbleId) as the boundary - where work for the current commit starts. Everything before that message is removed, that message and everything after is kept.
+### Details:
+Implementation Plan:
+
+Design Decisions (ALREADY APPROVED):
+- Single boundary approach: AI identifies exactly ONE message as the start point
+- Use bubbleId: AI returns the bubbleId of the first message to keep
+- Remove before boundary: All messages before that bubbleId are removed
+- Keep boundary and after: The boundary message and ALL messages after are kept
+- Separate AI instance: Use fresh AI for objective filtering decisions
+
+TDD Implementation Steps:
+
+1. Write failing tests for git utility function:
+   - Write tests for get_previous_commit_info() in git_utils test file
+   - Test returns previous commit hash, message, timestamp, files changed
+   - Test handling of first commit (no previous)
+   - Test handling of merge commits
+   - Run tests to confirm they fail
+
+2. Implement git utility function:
+   - Add get_previous_commit_info() to existing git_utils.py
+   - Follow existing patterns in the file
+   - Run tests to confirm they pass
+
+3. Write failing tests for journal boundary utility:
+   - Create test file for boundary_detection.py
+   - Test get_previous_journal_entry() extracts last complete entry
+   - Test returns content, timestamp, and commit hash
+   - Test handling when no previous entry exists
+   - Test parsing different journal formats
+   - Run tests to confirm they fail
+
+4. Implement journal boundary utility:
+   - Create src/mcp_commit_story/boundary_detection.py
+   - Implement get_previous_journal_entry()
+   - Run tests to confirm they pass
+
+5. Write failing tests for AI filter:
+   - Test that AI returns single bubbleId as boundary
+   - Test all messages before boundary bubbleId are removed
+   - Test boundary message itself is kept
+   - Test ALL messages after boundary are kept
+   - Test integration with utilities
+   - Test edge cases (empty conversation, first commit)
+   - Run tests to confirm they fail
+
+6. Implement the AI filter module:
+   - Create src/mcp_commit_story/ai_context_filter.py
+   - Implement filter_chat_for_commit() function that:
+     - Receives messages from query_cursor_chat_database() (already time-filtered)
+     - Gets current commit context using existing collect_git_context()
+     - Gets previous commit info from git_utils.get_previous_commit_info()
+     - Gets previous journal entry from boundary_detection.get_previous_journal_entry()
+     - Prepares context package for AI with all this information
+     - **PAUSE FOR HUMAN APPROVAL**: Review and approve the AI prompt
+     - Prompt must clearly instruct AI to:
+       - Read full conversation and commit context
+       - Find where discussion shifts to current commit's work
+       - Return exactly one bubbleId
+       - Include confidence assessment
+     - Test prompt with real data before finalizing
+     - Invokes separate AI instance with clear instructions
+     - AI analyzes where discussion shifts from previous work to current work
+     - AI returns: bubbleId of first message to keep
+     - After AI returns bubbleId, verify it exists in the message list:
+       if boundary_id not in message_ids:
+           raise ValueError(f"AI returned invalid bubbleId: {boundary_id}")
+     - If bubbleId not found → throw an exception
+     - Let the caller (in the next subtask) decide what to do
+     - Filters messages to keep only from that bubbleId onwards
+   - Add telemetry using @trace_mcp_operation decorator
+   - Follow existing AI invocation patterns in the codebase
+   - Run tests to confirm they pass
+
+7. Write integration tests:
+   - Write tests that verify the filter can be called with chat messages
+   - Test the complete flow from messages in → filtered messages out
+   - Ensure the filter module works as a standalone component
+   - Note: Actual pipeline integration will be handled in subtask 61.19
+
+8. Run ALL tests:
+   - All new tests pass
+   - All existing tests still pass
+   - RUN THE FULL TEST SUITE - verify no regressions
+
+9. Update documentation:
+   - Document that boundary is identified by bubbleId
+   - Clarify that message with boundary bubbleId is kept
+   - Explain that all messages chronologically before are removed
+   - Note that backfill (Task 13) will handle different filtering needs
+
+Programmatic vs AI Separation:
+
+Programmatic (no AI needed):
+- Getting previous commit/journal data
+- Time window filtering (already done upstream)
+- Applying the filter once boundary is found
+- BubbleId validation
+
+AI-executed (requires AI):
+- Reading the conversation and context
+- Determining where work shifts to current commit
+- Returning the boundary bubbleId
+
+Dependencies: 61.15, 61.16, 61.17
+
+Definition of Done:
+- All utility functions have failing tests written first
+- Git utility function added and tested
+- Boundary detection utility implemented and tested
+- AI prompt reviewed and approved by human
+- AI correctly identifies single bubbleId as boundary
+- Removes all messages before boundary bubbleId
+- Keeps boundary message and all messages after
+- Simple validation throws exception for invalid bubbleId
+- Leverages existing functions (no code duplication)
+- Filter module works as standalone component
+- ALL tests passing (full suite)
+- Human approval after seeing working implementation with real data
+
+Implementation Notes:
+- Follow strict TDD: write failing tests FIRST for each component
+- Place git functions in existing git_utils.py
+- Use existing collect_git_context() for current commit
+- Follow established patterns for AI invocation
+- Messages already have bubbleIds from ComposerChatProvider
+- Clean, simple validation: fail fast with exceptions
+- Pipeline integration deferred to subtask 61.19
+
