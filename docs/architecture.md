@@ -43,16 +43,16 @@ MCP Commit Story follows a **background generation architecture** with automatic
 
 ### 2. Context Collection
 - **Git Context**: Commit metadata, diffs, file changes (always available)
-- **Chat History**: Direct from Composer with commit-based time window filtering
+- **Chat History**: Two-stage intelligent filtering (commit-based time window + AI boundary detection)
 - **Recent Journals**: Today's journal + 2 most recent daily entries for continuity
 - **Project Context**: README (or configured overview file) ensures AI always understands project goals
 
-### 3. Composer-Based Chat Collection
+### 3. Chat History Collection
 - **Commit-based time windows**: Precise filtering based on git commit boundaries
 - **Enhanced metadata**: Messages include timestamps and session names
 - **Natural scoping**: Development conversations naturally bounded by commits
 - **Rich context**: Complete conversation history with full fidelity
-- **No artificial limiting**: Composer's precise time windows eliminate need for message caps
+- **No artificial limiting**: Precise commit-based time windows eliminate need for message caps
 
 ### 4. Fresh AI Generation
 - **Fresh AI instance** for each journal entry (no persistent context)
@@ -63,7 +63,7 @@ MCP Commit Story follows a **background generation architecture** with automatic
 ### 5. Automatic Summaries
 - **Daily summaries**: Generated automatically when date boundaries are detected
 - **Future summaries**: Weekly, monthly, quarterly, yearly (planned)
-- **Same pattern**: Background generation using recent journal entries as input
+- **Hierarchical context**: Daily summaries use journal entries, weekly summaries use daily summaries, etc.
 
 ## MCP Server Role
 
@@ -71,8 +71,7 @@ The MCP server provides **interactive tools only**:
 
 ### User-Controlled Operations
 - **journal/add-reflection**: Add manual thoughts and reflections
-- **journal/capture-context**: Capture AI assistant's current knowledge
-- **journal/generate-summary**: Manual summary generation (if needed)
+- **journal/generate-summary**: "What did I do yesterday?" or "Help me report July's work to my boss"
 
 ### Setup Operations  
 - **journal/init**: Initialize journal structure
@@ -84,14 +83,14 @@ The MCP server provides **interactive tools only**:
 
 The journal generation process follows a **4-layer architecture** that separates concerns between data collection, orchestration, section generation, and AI invocation:
 
-### Layer 1: Context Collection (Programmatic)
-- **Responsibility**: Gather raw data without AI interpretation
+### Layer 1: Context Collection (Programmatic + AI Filtering)
+- **Responsibility**: Gather raw data with intelligent chat filtering
 - **Key Functions**:
   - `collect_git_context(commit_hash)` - Git metadata, diffs, and commit info
-  - `collect_chat_history()` - Complete chronological conversations from Composer system
+  - `collect_chat_history()` - Two-stage chat filtering (time window + AI boundary detection)
   - `collect_journal_context()` - Existing journal entries, reflections, and manual context
 
-These functions are pure data extraction with no AI involved. The chat history collection uses Cursor's Composer system, which provides complete chronologically-ordered conversation history with timestamps and session names.
+These functions handle data extraction and intelligent filtering. The chat history collection includes AI-powered filtering as a sub-step to ensure only commit-relevant conversations are included.
 
 ### Layer 2: Orchestration (Coordination)
 - **Module**: `standalone_generator.py`
@@ -133,7 +132,7 @@ Each AI generator has a docstring prompt and returns a placeholder for AI execut
 - Sends to AI provider and parses responses
 - Provides graceful degradation (returns empty sections if AI unavailable)
 
-**Direct Integration**: Chat history comes pre-structured and chronologically ordered directly from Cursor's Composer database.
+**Direct Integration**: Chat history comes pre-structured and chronologically ordered directly from the chat history system.
 
 
 
@@ -151,7 +150,7 @@ Each AI generator has a docstring prompt and returns a placeholder for AI execut
 7. Save → journal entry written to daily file
 ```
 
-The system provides complete chronologically-ordered chat history with timestamps and session names directly from Cursor's Composer database.
+The system provides complete chronologically-ordered chat history with timestamps and session names directly from the chat history system.
 
 ### Standalone Journal Generator (Layer 2 Implementation)
 ```python
@@ -160,7 +159,7 @@ def generate_journal_entry_standalone(commit_hash: Optional[str] = None, hook_ty
     try:
         # Layer 1: Collect all raw context
         git_context = collect_git_context(commit_hash)
-        conversation_history = collect_chat_history()  # Chronological conversations from Composer
+        conversation_history = collect_chat_history()  # Chronological conversations from chat history
         journal_context = collect_journal_context()
         
         # Build the complete journal context
@@ -224,9 +223,9 @@ AI_GENERATORS = {
 
 ## Chat System Integration
 
-The system integrates with Cursor's Composer chat system to provide rich conversational context for journal entries:
+The system integrates with chat history systems to provide rich conversational context for journal entries:
 
-### Composer Integration Features
+### Chat Integration Features
 - **Complete archive**: Access to comprehensive conversation history
 - **Chronological order**: Messages already sorted with accurate timestamps
 - **Rich context**: Session names, file attachments, and conversation threading
@@ -235,18 +234,18 @@ The system integrates with Cursor's Composer chat system to provide rich convers
 
 ### Implementation
 ```python
-# Chat collection using Composer
+# Chat collection using chat history system
 conversation = collect_chat_history(commit_timestamp)  # Pre-structured, chronological
 ```
 
 ### Chat Collection Time Window Strategy
 
-The Composer integration uses a precise commit-based time window approach for collecting relevant chat conversations:
+The chat integration uses a precise commit-based time window approach for collecting relevant chat conversations:
 
 **Time Window Definition**:
-- **Start time**: Previous commit timestamp (the last commit before the current one)
-- **End time**: Current commit timestamp
-- **Purpose**: Collect all chat conversations that happened during the development of the current commit
+- **Initial window**: Previous commit timestamp to current commit timestamp
+- **AI refinement**: A separate AI agent analyzes the conversation within this window to identify the exact point where work on the current commit began
+- **Final scope**: Only messages from the AI-identified boundary point onwards are included
 
 **Why This Approach**:
 - **Exact correlation**: Captures the exact development conversation that led to the commit
@@ -264,7 +263,7 @@ def collect_chat_history_for_commit(commit_hash: str) -> List[ChatMessage]:
     previous_commit = get_previous_commit(commit_hash)
     previous_timestamp = get_commit_timestamp(previous_commit)
     
-    # Filter Composer conversations within this window
+    # Filter conversations within this window
     return filter_conversations_by_timeframe(
         start_time=previous_timestamp,
         end_time=current_timestamp
@@ -272,6 +271,17 @@ def collect_chat_history_for_commit(commit_hash: str) -> List[ChatMessage]:
 ```
 
 This approach ensures journal entries contain exactly the conversations that contributed to each commit, providing precise context without noise from unrelated development sessions.
+
+### AI Boundary Detection
+
+After the initial commit-based time window filtering, a dedicated AI agent performs intelligent boundary detection:
+
+- **Separate AI instance**: Fresh context for objective analysis
+- **Boundary identification**: Finds the exact message where current commit work begins
+- **Conservative filtering**: Removes only messages definitively unrelated to the commit
+- **Fallback behavior**: If AI filtering fails, uses all messages in the time window
+
+This two-stage approach (time window + AI filtering) ensures journal entries contain precisely the conversations that led to each commit, with no extraneous context from previous work.
 
 ## Benefits of This Architecture
 
@@ -287,6 +297,7 @@ This approach ensures journal entries contain exactly the conversations that con
 - **Grounded Content**: All entries based on real git changes and conversations  
 - **Complete Conversation History**: Rich conversational context from comprehensive chat data
 - **Chronological Accuracy**: Pre-structured conversations with timestamps and session context
+- **Precise Context**: AI boundary detection ensures only relevant conversations are included
 - **Mixed Execution**: Programmatic sections provide reliable data, AI sections add interpretation
 - **Consistent Format**: Standardized structure across all entries
 
@@ -319,7 +330,7 @@ git commit -m "Implement user authentication"
 ```bash
 # Via MCP tools in editor/AI assistant
 journal/add-reflection "Learned about JWT security considerations"
-journal/capture-context  # Captures current AI conversation context
+journal/generate-summary  # "What did I do yesterday?" or "Help me report July's work to my boss"
 ```
 
 ### Summary Generation

@@ -1138,7 +1138,7 @@ Successfully implemented comprehensive integration testing for the Composer chat
 All task requirements have been met with exceptional performance results.
 </info added on 2025-07-01T22:45:40.384Z>
 
-## 11. Telemetry Integration [pending]
+## 11. Telemetry Integration [done]
 ### Dependencies: 61.4, 61.5, 61.8
 ### Description: Add comprehensive telemetry coverage following project standards
 ### Details:
@@ -1254,7 +1254,7 @@ All telemetry should follow project standards: automatic trace correlation, JSON
 </info added on 2025-07-01T22:54:16.539Z>
 
 ## 12. Documentation Cleanup: Remove Old Database References [pending]
-### Dependencies: 61.6
+### Dependencies: 61.20
 ### Description: Remove all references to aiService.prompts and aiService.generations from documentation and rewrite to describe only the current chat integration approach.
 ### Details:
 Remove all outdated references to the old aiService database system and rewrite documentation to reflect only the current implementation:
@@ -1398,7 +1398,7 @@ After updates, verify:
 </info added on 2025-07-01T22:57:02.446Z>
 
 ## 13. Document Chat Integration Architecture [pending]
-### Dependencies: 61.10
+### Dependencies: 61.12
 ### Description: Create comprehensive documentation for the new chat integration feature that helps users and developers understand how chat context enhances journal entries
 ### Details:
 ## TASK 61.13: DOCUMENT CHAT INTEGRATION ARCHITECTURE
@@ -1896,4 +1896,203 @@ Implementation Notes:
 - Messages already have bubbleIds from ComposerChatProvider
 - Clean, simple validation: fail fast with exceptions
 - Pipeline integration deferred to subtask 61.19
+
+## 19. Data Pipeline Integration for AI Context Filtering [pending]
+### Dependencies: 61.18
+### Description: Integrate the AI-powered context filtering module into the main data collection pipeline, ensuring only commit-relevant conversations are included in journal entries.
+### Details:
+Implementation Plan:
+The AI context filtering module (from 61.18) is complete and ready for integration. This task integrates it into the data collection pipeline.
+
+Key Design Decisions (Already Made):
+- No configuration needed - AI filtering is always on (KISS principle)
+- Conservative error handling - If AI fails, use all messages
+- Pass commit objects through pipeline - Fix the bug where functions assume HEAD instead of using the actual commit being processed
+- Add telemetry - Track filtering effectiveness (messages before/after, reduction percentage, success/failure)
+
+TDD Implementation Steps:
+
+1. Write failing tests for updated function signatures:
+   - Test that collect_chat_history() accepts a commit parameter
+   - Test that query_cursor_chat_database() accepts a commit parameter
+   - Test that the pipeline passes the correct commit through each stage
+   - RUN TESTS - VERIFY THEY FAIL
+
+2. Update function signatures:
+   - Change collect_chat_history() to accept commit object
+   - Change query_cursor_chat_database() to accept commit object
+   - Update orchestrator to pass commit objects instead of relying on HEAD
+   - RUN TESTS - VERIFY THEY PASS
+
+3. Write failing tests for AI filtering integration:
+   - Test that AI filtering is called when messages exist
+   - Test conservative error handling when AI fails
+   - Test telemetry is recorded correctly
+   - Test empty message handling
+   - RUN TESTS - VERIFY THEY FAIL
+
+4. Integrate AI filtering into collect_chat_history:
+   - Import and call filter_chat_for_commit from ai_context_filter
+   - Implement conservative error handling
+   - Add telemetry following existing patterns
+   - RUN TESTS - VERIFY THEY PASS
+
+5. Write integration tests:
+   - Test full pipeline from orchestrator through filtering
+   - Test with various message patterns
+   - Test error scenarios
+   - RUN TESTS - VERIFY THEY PASS
+
+6. Update telemetry:
+   - Add metrics for filtering effectiveness
+   - Follow patterns from telemetry.md
+   - Track success/failure rates
+   - RUN TESTS - VERIFY TELEMETRY WORKS
+
+7. Run ALL tests:
+   - All new tests pass
+   - All existing tests still pass
+   - RUN THE FULL TEST SUITE - verify no regressions
+
+8. Test with real data:
+   - PAUSE - Work with human to verify OpenAI API key is set up correctly
+   - Test a simple AI call first to confirm API access works
+   - Once confirmed, proceed with real testing:
+     - Generate journals with actual commits and conversations
+     - Verify filtering improves journal quality
+     - Check telemetry shows expected behavior
+     - Test error cases (API failures, timeouts, etc.)
+
+9. Review filtered output quality together
+
+10. Update documentation:
+    - Update docstrings for all modified functions
+    - Update any affected documentation files (context-collection.md, etc.)
+    - Documentation rules:
+      - Describe current system behavior only
+      - No references to tasks or implementation history
+      - Write for new users with no project knowledge
+      - Focus on what the system does, not how it evolved
+    - Ensure all documentation accurately reflects the AI filtering integration
+
+Dependencies: 61.18 (must be complete)
+
+Definition of Done:
+- Functions updated to accept commit parameter (no more HEAD assumptions)
+- AI filtering integrated with conservative error handling
+- Telemetry tracks filtering effectiveness
+- All documentation updated to reflect current behavior
+- Full test suite passing with no regressions
+- Tested with real conversations showing quality improvement
+- Human verification of API setup and filtered output quality
+
+Implementation Notes:
+- Reuse existing code - Don't rewrite from scratch
+- Follow telemetry.md patterns - Use existing decorators and patterns
+- Follow TDD pattern - Write tests first, see them fail, implement, see them pass
+- Reuse filter_chat_for_commit from 61.18
+- Fix the commit parameter bug throughout the pipeline
+
+## 20. Telemetry Integration [pending]
+### Dependencies: 61.19
+### Description: Add telemetry to functions created in Task 61 subtasks that are currently missing instrumentation.
+### Details:
+Implementation Plan:
+
+Step 1: Identify Functions Missing Telemetry
+Search the codebase for functions added during Task 61 that lack telemetry decorators:
+Search for these specific functions:
+- In ai_context_filter.py: Check if get_previous_journal_entry() has a decorator
+- In git_utils.py: Check if get_previous_commit_info() has a decorator
+- In composer_chat_provider.py: Check all public methods
+- In workspace_detection.py (if exists): Check detection functions
+- Any other utility functions added in subtasks 61.15-61.18
+
+RUN TESTS to establish baseline before adding telemetry.
+
+Step 2: Add Telemetry Decorators to Utility Functions
+Add the appropriate decorator to each function based on its purpose:
+
+For git operations, use @trace_git_operation:
+- Functions that interact with git repositories
+- Functions that process commit data
+- Functions that calculate time windows
+
+For database operations, use @trace_mcp_operation:
+- Functions that query Cursor databases
+- Functions that process chat messages
+- Functions that detect workspaces
+
+For each function:
+- Determine the appropriate decorator type
+- Choose a descriptive operation name
+- Add the decorator above the function definition
+- Ensure the function's error handling works with telemetry
+
+RUN TESTS after adding each decorator to ensure nothing breaks.
+
+Step 3: Enhance Existing Telemetry with Business Metrics
+In filter_chat_for_commit():
+After the AI boundary detection completes, add attributes to the current span that capture business value:
+- Set attribute for AI confidence score
+- Set attribute for whether a boundary was found
+- Set attribute for message count before filtering
+- Set attribute for message count after filtering
+- Set attribute for the reduction percentage
+
+In collect_chat_history() (if modified in 61.19):
+The existing decorator is good, but when AI filtering is applied, ensure the span captures:
+- Whether AI filtering was attempted
+- Whether AI filtering succeeded or fell back
+- The filtering effectiveness metrics
+
+Step 4: Add Error Categorization
+For functions that can fail in different ways, ensure errors are properly categorized:
+- Database errors: Mark as "database" category
+- Git operation errors: Mark as "git" category
+- AI service errors: Mark as "ai" category
+- File system errors: Mark as "filesystem" category
+
+The decorators handle this automatically if exceptions are raised with the right types.
+
+Step 5: Write Minimal Tests
+Create tests/unit/test_telemetry_integration.py with a single comprehensive test:
+Test that decorated functions still work correctly:
+- Call each newly decorated function with valid inputs
+- Verify it returns the expected result
+- Call each function with invalid inputs that trigger errors
+- Verify appropriate exceptions are raised
+
+Do not test:
+- Whether spans were created
+- What attributes were set
+- Telemetry internals
+
+Step 6: Run Full Test Suite
+RUN THE FULL TEST SUITE to ensure:
+- All existing tests still pass
+- The new telemetry test passes
+- No performance regressions
+
+Step 7: Update Documentation
+In docstrings of decorated functions:
+- No need to mention telemetry in docstrings
+- Keep docstrings focused on what the function does
+
+If any new error categories were added:
+- Update the error categories list in telemetry.md
+
+Definition of Done:
+- All utility functions from Task 61 have appropriate telemetry decorators
+- Business metrics are captured in key operations (AI filtering effectiveness, confidence scores)
+- Simple test verifies functions work with telemetry
+- No regressions in existing tests
+- Error categories are consistent across the codebase
+
+Implementation Notes:
+- Use existing decorator patterns - don't create new ones
+- Focus on business metrics that matter for observability
+- Keep changes minimal and surgical
+- Don't over-instrument - some functions don't need telemetry
+- Let the decorators do the work - they handle most details automatically
 
