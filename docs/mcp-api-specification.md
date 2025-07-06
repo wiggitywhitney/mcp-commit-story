@@ -33,7 +33,7 @@ Clients (such as editors or agents) should be able to connect using a configurat
       "command": "<launch command>",
       "args": ["<arg1>", "<arg2>", ...],
       "env": {
-        "ANTHROPIC_API_KEY": "<optional>"
+        "OPENAI_API_KEY": "<your-openai-api-key>"
       }
     }
   }

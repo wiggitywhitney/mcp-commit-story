@@ -69,7 +69,7 @@ The AI orchestration breakthrough demonstrates how architectural insights often 
 
 - **Background Generation:** Git commits automatically trigger journal entry creation that happens silently in the background. No workflow interruption, no waiting.
 - **Rich Context Collection:** The system automatically pulls in commit messages, code changes, AI chat history, and your project's README, building a rich, evidence-based journal entry where the AI always understands your project's goals.
-- **Intelligent Chat Collection:** Captures all AI conversations between commits using Cursor's AI chat, providing complete chronological context for each code change.
+- **Intelligent Chat Collection:** Captures all AI conversations between commits using Cursor's AI chat, providing complete chronological context for each code change. See the [Chat Integration User Guide](docs/chat-integration-guide.md) for complete details.
 - **User Control:** While generation happens automatically, you control the context. Add manual reflections or capture your AI assistant's current knowledge directly into your journal.
 - **No Hallucinated Summaries:** Everything in your journal is grounded in real actions and conversations.
 - **Mood and Emotion:** The journal reflects your mood and tone based on how you talk to the AI agent or what you write in commit messages—so if you vent, celebrate, or reflect, those feelings are captured authentically.
@@ -126,6 +126,24 @@ MCP Commit Story uses a git hook to automatically generate journal entries and d
 This project is under active development by a solo developer.  
 The core journal engine, context collection, and summary generation are being built and tested with a TDD-first approach.  
 Installation and CLI instructions will be added as the tool matures.
+
+---
+
+## Prerequisites
+
+### OpenAI API Key (Required for AI Features)
+
+MCP Commit Story uses OpenAI's API to generate rich, contextual journal entries. To use the AI-powered features, you'll need:
+
+1. **OpenAI API Key**: Visit [OpenAI Platform](https://platform.openai.com/api-keys) and create a new API key
+2. **Set Environment Variable**:
+   ```bash
+   export OPENAI_API_KEY="your-openai-api-key-here"
+   ```
+
+**Without an API key**: The system will still work, but journal entries will contain empty AI-generated sections (Summary, Technical Synopsis, etc.) while preserving the structural format and non-AI content.
+
+**Cost**: The system uses OpenAI's cost-effective `gpt-4o-mini` model. Typical usage costs are minimal (usually under $1/month for active development).
 
 ---
 

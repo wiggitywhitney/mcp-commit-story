@@ -1,5 +1,8 @@
 # Cursor Database Implementation - Technical Notes
 
+> **⚠️ INTERNAL DEVELOPER DOCUMENTATION**  
+> This document contains technical research and implementation notes for developers working on the cursor_db package. For user-facing documentation, see [Chat Integration User Guide](chat-integration-guide.md).
+
 This document contains technical research and implementation notes for the `cursor_db` package, particularly around optimization strategies and change detection methods.
 
 ## SQLite Change Detection Research

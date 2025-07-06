@@ -1,10 +1,10 @@
-# Cursor Database Setup and Configuration
+# Cursor Chat Integration Setup Guide
 
 This guide explains how to set up and configure access to Cursor's chat database for automated journal generation.
 
 ## Overview
 
-The MCP Commit Story project reads Cursor's chat history from SQLite databases to generate journal entries. The system automatically discovers and connects to recent Cursor workspace databases across different platforms.
+The chat integration system reads Cursor's conversation history from SQLite databases to generate rich journal entries. The system automatically discovers and connects to recent Cursor workspace databases across different platforms.
 
 ## Platform-Specific Database Locations
 
@@ -196,11 +196,11 @@ ls -la ~/.config/Cursor/
 
 For high-frequency usage, consider caching the discovered database path in your application rather than running discovery repeatedly.
 
-## Telemetry and Monitoring
+## System Monitoring
 
-The platform detection system includes comprehensive telemetry instrumentation for monitoring performance, errors, and system behavior.
+The platform detection system includes comprehensive monitoring capabilities for tracking performance, errors, and system behavior.
 
-### Telemetry Features
+### Monitoring Features
 
 **Performance Monitoring**:
 - Function-level performance thresholds (50ms - 1000ms depending on operation complexity)
@@ -222,9 +222,9 @@ The platform detection system includes comprehensive telemetry instrumentation f
 - Valid database validation metrics
 - Workspace enumeration efficiency
 
-### Telemetry Configuration Examples
+### Monitoring Configuration Examples
 
-**Enable Telemetry Monitoring**:
+**Enable Monitoring**:
 ```python
 import logging
 from mcp_commit_story.telemetry import configure_telemetry
@@ -291,7 +291,7 @@ Key metrics to monitor:
 - Alert on valid_workspace_count = 0 (indicates no accessible workspaces)
 - Alert on memory_usage_mb > 100MB (indicates memory leak potential)
 
-### Troubleshooting with Telemetry
+### Troubleshooting with Monitoring
 
 **Performance Issues**:
 ```python
@@ -305,7 +305,7 @@ with tracer.start_as_current_span("debug_platform_detection") as span:
 ```
 
 **Error Investigation**:
-Telemetry provides detailed error context:
+Monitoring provides detailed error context:
 - Platform type and version information
 - File system access patterns
 - Memory usage during failures
@@ -318,14 +318,14 @@ In production environments, monitor these key indicators:
 - Cache hit ratio > 80%
 - Memory growth patterns stable
 
-## Integration Testing
+## Testing and Validation
 
-The cursor_db package includes comprehensive integration tests to verify end-to-end functionality across platforms and scenarios.
+The chat integration system includes comprehensive testing capabilities to verify end-to-end functionality across platforms and scenarios.
 
-### Running Integration Tests
+### Running Tests
 
 ```bash
-# Run all cursor_db integration tests
+# Run all chat integration tests
 python -m pytest tests/integration/test_cursor_db_integration.py -v
 
 # Run specific test categories
@@ -360,9 +360,9 @@ python -m pytest tests/integration/test_cursor_db_integration.py::TestCursorDbPe
 - SQL querying → result processing
 - Error propagation through complete call stack
 
-### Mock Testing Framework
+### Testing Framework
 
-The integration tests use a comprehensive mock testing framework that:
+The tests use a comprehensive testing framework that:
 
 - Creates realistic SQLite databases with chat data structure
 - Simulates cross-platform environment scenarios
@@ -398,5 +398,5 @@ The system supports Cursor installations on network drives, though performance m
 ### Performance Optimization
 For large workspace directories (>1000 workspace folders), consider:
 - Using the environment variable override to specify exact paths
-- Implementing custom filtering in your MCP configuration
+- Implementing custom filtering in your application configuration
 - Monitoring system performance during database scanning operations 

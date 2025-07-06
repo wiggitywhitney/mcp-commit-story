@@ -23,7 +23,7 @@ This document provides detailed implementation guidance for developing the mcp-c
 
 ### Core Technologies
 - **Language**: Python 3.9+
-- **MCP Framework**: Official Anthropic MCP Python SDK
+- **MCP Framework**: MCP Python SDK
 - **CLI Framework**: Click (for command parsing and user interface)
 - **Configuration**: PyYAML (for .mcp-commit-storyrc.yaml files)
 - **Git Integration**: GitPython library
@@ -110,7 +110,7 @@ mcp-commit-story/
 ## Implementation Patterns
 
 ### MCP Server Implementation
-- Build standard MCP server using Anthropic's Python SDK
+- Build standard MCP server using MCP Python SDK
 - Register tools for each journal operation (new-entry, summarize, etc.)
 - Handle async operations for file I/O and git commands
 - Return structured responses with success status and file paths

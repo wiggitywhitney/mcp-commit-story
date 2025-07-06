@@ -1,5 +1,8 @@
 # Cursor Chat Database Architecture
 
+> **⚠️ INTERNAL DEVELOPER DOCUMENTATION**  
+> This document contains technical research and implementation details for developers working on the chat integration system. For user-facing documentation, see [Chat Integration User Guide](chat-integration-guide.md).
+
 ## Overview
 
 **MCP Commit Story** generates rich development journals by extracting comprehensive context from your Cursor chat history. This document explains Cursor's chat storage architecture and provides implementation guidance for chat data extraction.

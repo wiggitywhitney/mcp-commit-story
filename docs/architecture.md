@@ -223,6 +223,8 @@ AI_GENERATORS = {
 
 ## Chat System Integration
 
+> **For User-Friendly Overview**: See the [Chat Integration User Guide](chat-integration-guide.md) for a complete explanation of how chat integration works from a user perspective.
+
 The system integrates with chat history systems to provide rich conversational context for journal entries:
 
 ### Chat Integration Features
