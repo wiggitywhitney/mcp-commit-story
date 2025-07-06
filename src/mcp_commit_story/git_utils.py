@@ -21,6 +21,7 @@ except ImportError:
 NULL_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 
 from mcp_commit_story.context_types import GitContext
+from mcp_commit_story.telemetry import trace_git_operation
 
 
 def is_git_repo(path: Optional[str] = None) -> bool:
@@ -126,6 +127,7 @@ def get_commit_details(commit: 'git.Commit') -> Dict[str, Any]:
     }
 
 
+@trace_git_operation("get_previous_commit_info")
 def get_previous_commit_info(commit: 'git.Commit') -> Optional[Dict[str, Any]]:
     """
     Extract relevant details from the previous commit (first parent) for context filtering.

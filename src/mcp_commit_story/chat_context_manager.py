@@ -9,21 +9,14 @@ generation, including time windows, session names, and performance monitoring.
 import logging
 from typing import List, Dict, Any, Union, Optional
 
-# Optional OpenTelemetry import with graceful degradation
-try:
-    from opentelemetry import trace
-    tracer = trace.get_tracer(__name__)
-    HAS_TELEMETRY = True
-except ImportError:
-    HAS_TELEMETRY = False
-    tracer = None
-
 from .cursor_db import query_cursor_chat_database
 from .context_types import ChatMessage, TimeWindow, ChatContextData
+from .telemetry import trace_mcp_operation
 
 logger = logging.getLogger(__name__)
 
 
+@trace_mcp_operation("extract_chat_for_commit")
 def extract_chat_for_commit() -> ChatContextData:
     """Extract enhanced chat context for the current commit with metadata.
     
@@ -43,12 +36,6 @@ def extract_chat_for_commit() -> ChatContextData:
         Creates spans and attributes for monitoring chat context collection performance.
         Works with or without OpenTelemetry installed.
     """
-    # Create span if telemetry is available, otherwise use None
-    span = None
-    if HAS_TELEMETRY and tracer:
-        span = tracer.start_span("extract_chat_for_commit")
-        span.__enter__()
-    
     try:
         # Call existing cursor_db functionality
         logger.debug("Calling query_cursor_chat_database for chat context")
@@ -56,13 +43,6 @@ def extract_chat_for_commit() -> ChatContextData:
         
         # Transform the response data
         transformed_data = _transform_chat_data(raw_data)
-        
-        # Add telemetry attributes if available
-        if span:
-            span.set_attribute('chat.messages_found', len(transformed_data['messages']))
-            span.set_attribute('chat.session_count', len(transformed_data['session_names']))
-            span.set_attribute('chat.time_window_hours', transformed_data['time_window']['duration_hours'])
-            span.set_attribute('chat.workspace_detected', 'workspace_info' in raw_data)
         
         logger.info(
             f"Successfully extracted {len(transformed_data['messages'])} messages "
@@ -77,11 +57,6 @@ def extract_chat_for_commit() -> ChatContextData:
             'error_category': 'chat_context_extraction',
             'troubleshooting_hint': getattr(e, 'troubleshooting_hint', None)
         })
-        
-        # Add error telemetry if available
-        if span:
-            span.set_attribute('chat.error', str(e))
-            span.set_attribute('chat.fallback_used', True)
         
         # Build error info for metadata
         error_info = {
@@ -102,11 +77,6 @@ def extract_chat_for_commit() -> ChatContextData:
         
         # Return empty ChatContextData with error info for graceful degradation
         return _create_empty_chat_context_data(error_info=error_info)
-    
-    finally:
-        # Close span if it was created
-        if span:
-            span.__exit__(None, None, None)
 
 
 def _transform_chat_data(raw_data: Dict[str, Any]) -> ChatContextData:

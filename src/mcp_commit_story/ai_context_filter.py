@@ -51,6 +51,7 @@ class BoundaryResponse(TypedDict):
     reasoning: str
 
 
+@trace_mcp_operation("ai_context_filter.get_previous_journal_entry")
 def get_previous_journal_entry(commit: Commit) -> Optional[str]:
     """Get the most recent journal entry for context.
     

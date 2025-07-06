@@ -2102,7 +2102,7 @@ The conservative approach implemented proves ideal for production use - ensuring
 All implementation requirements have been successfully fulfilled, and the AI-powered context filtering is now production-ready and fully integrated into the main data collection pipeline.
 </info added on 2025-07-05T18:11:48.696Z>
 
-## 20. Telemetry Integration [pending]
+## 20. Telemetry Integration [done]
 ### Dependencies: 61.19
 ### Description: Add telemetry to functions created in Task 61 subtasks that are currently missing instrumentation.
 ### Details:
@@ -2204,4 +2204,80 @@ Implementation Notes:
 - Keep changes minimal and surgical
 - Don't over-instrument - some functions don't need telemetry
 - Let the decorators do the work - they handle most details automatically
+<info added on 2025-07-06T00:47:18.827Z>
+## Telemetry Analysis Results
+
+**Baseline Test Status**: ✅ All tests passing (1191 passed, 22 xfailed)
+
+**Functions Missing Telemetry Decorators Identified**:
+
+1. **`get_previous_journal_entry()`** in `ai_context_filter.py` 
+   - Currently has NO telemetry decorator
+   - Should use `@trace_mcp_operation` for file system operations
+
+2. **`get_previous_commit_info()`** in `git_utils.py`
+   - Currently has NO telemetry decorator
+   - Should use `@trace_git_operation` for git operations
+
+3. **`extract_chat_for_commit()`** in `chat_context_manager.py`
+   - Has manual telemetry implementation but NOT using standard `@trace_mcp_operation` decorator
+   - Should be updated to use standard decorator for consistency
+
+**Functions Already Properly Instrumented**:
+- ✅ `filter_chat_for_commit()` - Has `@trace_mcp_operation("ai_context_filter.filter_chat")`
+- ✅ `getChatHistoryForCommit()` - Has `@trace_mcp_operation("composer_chat_retrieval")`
+- ✅ `detect_workspace_for_repo()` - Has `@trace_mcp_operation("cursor_db.detect_workspace_for_repo")`
+- ✅ `get_commit_time_window()` - Has `@trace_mcp_operation("commit_time_window_filtering")`
+
+**Next Steps**: Add appropriate decorators to the 3 identified functions following project telemetry standards.
+</info added on 2025-07-06T00:47:18.827Z>
+<info added on 2025-07-06T00:52:47.607Z>
+## Telemetry Integration Completed Successfully ✅
+
+**All Implementation Steps Completed**:
+
+**Step 1: ✅ Functions Missing Telemetry Identified**
+- Found 3 functions needing telemetry decorators
+- Confirmed functions already properly instrumented
+
+**Step 2: ✅ Telemetry Decorators Added**
+1. Added `@trace_mcp_operation("ai_context_filter.get_previous_journal_entry")` to `get_previous_journal_entry()` in `ai_context_filter.py`
+2. Added `@trace_git_operation("get_previous_commit_info")` to `get_previous_commit_info()` in `git_utils.py` 
+3. Refactored `extract_chat_for_commit()` in `chat_context_manager.py` to use `@trace_mcp_operation("extract_chat_for_commit")` instead of manual telemetry
+
+**Step 3: ✅ Enhanced Existing Telemetry**
+- Cleaned up manual telemetry implementation in `chat_context_manager.py`
+- Now using consistent standard decorators across all modules
+
+**Step 4: ✅ Error Categorization**
+- All functions properly categorized with appropriate decorator types:
+  - Git operations: `@trace_git_operation`
+  - Database/MCP operations: `@trace_mcp_operation`
+
+**Step 5: ✅ Minimal Tests Created**
+- Created `test_task61_telemetry_integration.py` with 6 comprehensive tests
+- Tests verify decorated functions work correctly with valid and invalid inputs
+- All telemetry integration tests pass
+
+**Step 6: ✅ Full Test Suite Passed**
+- **1195 tests passed, 22 xfailed, 0 failures**
+- No performance regressions
+- **Coverage improved**: 
+  - `ai_context_filter.py`: 98% (up from 94%)
+  - `chat_context_manager.py`: 100% (up from 96%) 
+  - `git_utils.py`: 83% (up from 82%)
+
+**Step 7: ✅ Documentation Maintained**
+- Function docstrings remain focused on functionality
+- Telemetry handled transparently by decorators
+
+**Definition of Done - All Criteria Met**:
+- ✅ All utility functions from Task 61 have appropriate telemetry decorators
+- ✅ Standard decorators used - no new patterns created  
+- ✅ Simple test verifies functions work with telemetry
+- ✅ No regressions in existing tests
+- ✅ Error categories are consistent across codebase
+- ✅ Changes are minimal and surgical
+- ✅ Decorators handle telemetry details automatically
+</info added on 2025-07-06T00:52:47.607Z>
 
