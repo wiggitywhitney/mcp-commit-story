@@ -1,14 +1,14 @@
 """
 Message data extraction module for cursor database operations.
 
-Provides functions to extract and parse user prompts and AI responses from Cursor's
-ItemTable key-value structure with robust JSON parsing and error handling.
+Provides functions to extract and parse chat messages from Cursor's database
+with robust JSON parsing and error handling.
 
 Telemetry instrumentation tracks:
 - Query + JSON parsing performance against 100ms thresholds
-- Data counts (prompts, generations) and quality metrics
+- Data counts and quality metrics for extracted messages
 - JSON parse error tracking for data quality monitoring
-- Truncation detection for generation limits (100 items = potential capacity limit)
+- Truncation detection for message limits
 """
 
 import json
@@ -27,27 +27,27 @@ logger = logging.getLogger(__name__)
 @trace_mcp_operation("cursor_db.extract_prompts")
 def extract_prompts_data(db_path: str) -> List[Dict[str, Any]]:
     """
-    Extract user prompts data from the cursor database.
+    Extract user message data from the cursor database.
     
-    Queries the 'aiService.prompts' key from ItemTable and returns parsed JSON data
-    containing user messages with their command types.
+    Queries the chat database and returns parsed JSON data
+    containing user messages with their metadata.
     
     Telemetry Metrics Tracked:
         - database_path: Which database file was queried
         - query_duration_ms: Total time for query + JSON parsing
-        - prompt_count: Number of prompts successfully extracted
+        - prompt_count: Number of messages successfully extracted
         - json_parse_errors: Count of malformed JSON entries skipped
         - threshold_exceeded: Boolean if duration > 100ms threshold
     
     Threshold Rationale:
-        100ms accounts for SQLite query + JSON parsing of ~100 prompt entries.
+        100ms accounts for SQLite query + JSON parsing of typical message entries.
         Higher than basic query due to JSON deserialization overhead.
     
     Args:
         db_path: Path to the cursor database file
         
     Returns:
-        List of prompt dictionaries with 'text' and 'commandType' fields.
+        List of message dictionaries with 'text' and 'commandType' fields.
         Returns empty list if no data found or all data is malformed.
         
     Raises:
@@ -90,7 +90,7 @@ def extract_prompts_data(db_path: str) -> List[Dict[str, Any]]:
                 # Validate that it's a list format
                 if not isinstance(parsed_data, list):
                     logger.warning(
-                        f"Expected list format for aiService.prompts, got {type(parsed_data).__name__}. "
+                        f"Expected list format for chat messages, got {type(parsed_data).__name__}. "
                         f"Skipping entry in database: {db_path}"
                     )
                     continue
@@ -101,7 +101,7 @@ def extract_prompts_data(db_path: str) -> List[Dict[str, Any]]:
             except (json.JSONDecodeError, UnicodeDecodeError) as e:
                 json_parse_errors += 1
                 logger.warning(
-                    f"Failed to parse JSON for aiService.prompts in database {db_path}: {e}. "
+                    f"Failed to parse JSON for chat messages in database {db_path}: {e}. "
                     f"Skipping malformed entry."
                 )
                 continue
@@ -129,28 +129,28 @@ def extract_prompts_data(db_path: str) -> List[Dict[str, Any]]:
 @trace_mcp_operation("cursor_db.extract_generations")
 def extract_generations_data(db_path: str) -> List[Dict[str, Any]]:
     """
-    Extract AI generations data from the cursor database.
+    Extract AI response data from the cursor database.
     
-    Queries the 'aiService.generations' key from ItemTable and returns parsed JSON data
+    Queries the chat database and returns parsed JSON data
     containing AI responses with timestamps, UUIDs, and text content.
     
     Telemetry Metrics Tracked:
         - database_path: Which database file was queried
         - query_duration_ms: Total time for query + JSON parsing
-        - generation_count: Number of generations successfully extracted
+        - generation_count: Number of responses successfully extracted
         - json_parse_errors: Count of malformed JSON entries skipped
         - truncation_detected: Boolean if generation_count == 100 (database limit)
         - threshold_exceeded: Boolean if duration > 100ms threshold
     
     Threshold Rationale:
-        100ms accounts for SQLite query + JSON parsing of ~100 generation entries.
-        Generations contain more text data than prompts, requiring similar threshold.
+        100ms accounts for SQLite query + JSON parsing of typical response entries.
+        Responses contain more text data than prompts, requiring similar threshold.
     
     Args:
         db_path: Path to the cursor database file
         
     Returns:
-        List of generation dictionaries with 'unixMs', 'generationUUID', 'type', 
+        List of response dictionaries with 'unixMs', 'generationUUID', 'type', 
         and 'textDescription' fields. Returns empty list if no data found or all data is malformed.
         
     Raises:
@@ -159,8 +159,8 @@ def extract_generations_data(db_path: str) -> List[Dict[str, Any]]:
         
     Design Choices:
     - Skip and log approach for malformed JSON (resilience pattern)
-    - Memory strategy: Load everything into memory (100 messages isn't a concern)
-    - No batching needed (100 messages is trivial for SQLite)
+    - Memory strategy: Load everything into memory (typical message count isn't a concern)
+    - No batching needed (typical message count is trivial for SQLite)
     """
     start_time = time.time()
     span = trace.get_current_span()
@@ -193,7 +193,7 @@ def extract_generations_data(db_path: str) -> List[Dict[str, Any]]:
                 # Validate that it's a list format
                 if not isinstance(parsed_data, list):
                     logger.warning(
-                        f"Expected list format for aiService.generations, got {type(parsed_data).__name__}. "
+                        f"Expected list format for chat responses, got {type(parsed_data).__name__}. "
                         f"Skipping entry in database: {db_path}"
                     )
                     continue
@@ -204,7 +204,7 @@ def extract_generations_data(db_path: str) -> List[Dict[str, Any]]:
             except (json.JSONDecodeError, UnicodeDecodeError) as e:
                 json_parse_errors += 1
                 logger.warning(
-                    f"Failed to parse JSON for aiService.generations in database {db_path}: {e}. "
+                    f"Failed to parse JSON for chat responses in database {db_path}: {e}. "
                     f"Skipping malformed entry."
                 )
                 continue

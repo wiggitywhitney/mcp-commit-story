@@ -17,24 +17,24 @@
 
 MCP Commit Story is a Model Context Protocol (MCP) server that generates journal entries from git commits and AI chat history. The system reads Cursor's SQLite chat databases, extracts conversation context, and combines it with git metadata to create comprehensive development journal entries.
 
-### Chat Data Storage Architecture
+### Chat Data Integration
 
-The system accesses chat data from Cursor's SQLite databases using validated storage patterns:
+The system accesses chat data from Cursor's SQLite databases, automatically extracting conversations that occurred during development sessions:
 
-- **User prompts**: Stored in `aiService.prompts` key with format `{"text": "message", "commandType": 4}`
-- **AI responses**: Stored in `aiService.generations` key with format `{"unixMs": timestamp, "generationUUID": "uuid", "type": "composer", "textDescription": "response"}`
-- **Technical constraints**: AI responses truncated at 100 messages per workspace (older responses permanently lost)
-- **Threading approach**: No explicit conversation threading - messages correlated via timestamp proximity
+- **Conversation context**: Full chat history with timestamps and session information
+- **Time-based filtering**: Automatically identifies conversations relevant to specific commits
+- **Complete message history**: Preserves full context of development discussions
+- **Session organization**: Maintains proper conversation flow with session boundaries
 
 ### Implementation Approach
 
-The chat extraction implementation uses a dual-query strategy based on validated database structure:
+The chat integration uses a sophisticated time-window strategy for maximum relevance:
 
-1. **Query both keys separately**: Extract user prompts and AI responses from distinct database keys
-2. **Merge chronologically**: Use Unix millisecond timestamps from AI generations for ordering
-3. **Correlation by proximity**: Match prompts to responses via timestamp proximity analysis
-4. **Truncation monitoring**: Check for exactly 100 AI responses as indicator of data loss
-5. **Graceful degradation**: Handle missing data sources and maintain functionality with partial context
+1. **Commit-based filtering**: Uses git commit timestamps to define relevant time windows
+2. **Session discovery**: Identifies all chat sessions that overlap with development timeframes
+3. **Chronological ordering**: Maintains proper conversation flow across multiple sessions
+4. **Context enrichment**: Extracts conversations with full metadata and session information
+5. **Graceful degradation**: Handles missing data sources and maintains functionality with partial context
 
 ### Key Components
 - **MCP Server**: Protocol-compliant server exposing journal generation tools
@@ -60,22 +60,22 @@ The core journal generation system implements a layered architecture that separa
 #### Layer 1: Context Collection (Programmatic)
 Three context collectors that gather raw data without AI interpretation:
 - `collect_git_context(commit_hash)` - Extracts git metadata, diffs, and commit info
-- `collect_chat_history()` - Queries cursor_db for raw prompts/responses (returns separate databases)
+- `collect_chat_history()` - Queries Cursor's chat database for conversations within commit time windows
 - `collect_journal_context()` - Reads existing journal entries, reflections, and manual context
 
 These functions are pure data extraction with no AI dependencies.
 
-#### Layer 2: Conversation Reconstruction (AI-Powered)
-Since cursor_db returns user prompts and AI responses in separate collections with mismatched timestamps:
-- `reconstruct_conversation(raw_chat_data)` - Uses AI to intelligently merge the separate databases
-- Handles mismatched counts, missing responses, multiple prompts
-- Returns unified conversation flow that generators can use
-- **First AI invocation** in the pipeline
+#### Layer 2: Chat Context Processing (Programmatic)
+The chat integration system provides structured conversation data:
+- `extract_chat_for_commit(commit_hash)` - Extracts conversations using commit-based time windows
+- Returns complete conversation sessions with timestamps and session metadata
+- Maintains chronological ordering and session boundaries
+- **No AI required** - direct database access with structured data
 
 #### Layer 3: Orchestration (Coordination)
 The orchestration layer in `standalone_generator.py` coordinates the entire flow:
 1. Calls all context collectors to gather raw data
-2. Invokes conversation reconstruction (Layer 2) to unify chat data using AI
+2. Processes chat data using commit-based time windows to extract relevant conversations
 3. Builds the `JournalContext` structure with all collected data
 4. Iterates through section generators, determining which need AI
 5. For programmatic generators: calls directly
@@ -103,21 +103,20 @@ Seven generator functions with different execution patterns:
 Each AI generator has an AI prompt in its docstring and returns a placeholder for AI execution.
 
 #### Layer 5: AI Invocation (Infrastructure)
-The AI invocation happens at two points:
+The AI invocation happens for content generation:
 
-1. **Conversation Reconstruction**: AI analyzes separate prompt/response databases and intelligently matches and merges them
-2. **Section Generation**: `execute_ai_function(func, context)` executes AI-powered generators, reads docstring prompts, formats context, sends to AI provider, parses responses, and provides graceful degradation
+1. **Section Generation**: `execute_ai_function(func, context)` executes AI-powered generators, reads docstring prompts, formats context, sends to AI provider, parses responses, and provides graceful degradation
 
 #### Data Flow
 ```
 1. Git hook triggers → process_git_hook()
 2. Orchestrator called → generate_journal_entry_standalone()
-3. Context collectors gather → git data, chat history (raw), journal content
-4. **AI Call #1**: Conversation reconstruction → unified chat from separate databases
-5. Build JournalContext with reconstructed conversation
+3. Context collectors gather → git data, chat conversations, journal content
+4. Process chat data → extract relevant conversations using commit time windows
+5. Build JournalContext with complete conversation history
 6. For each generator:
    - Programmatic ones: execute directly
-   - **AI Call #2+**: AI generators via executor
+   - **AI Calls**: AI generators via executor
 7. Assembly → sections combined into complete journal entry
 8. Save → journal entry written to daily file
 ```
@@ -155,7 +154,7 @@ src/mcp_commit_story/
 ├── git_integration.py       # Git operations and metadata
 ├── cursor_db/              # Database integration package
 │   ├── __init__.py
-│   ├── platform.py         # Cross-platform path detection
+│   ├── composer_chat_provider.py # Chat integration and time windows
 │   ├── connection.py        # Database connection and queries
 │   └── exceptions.py        # Exception handling system
 └── tools/                  # MCP tool implementations
@@ -270,10 +269,8 @@ src/mcp_commit_story/cursor_db/
 ├── __init__.py                      # Public API exports  
 ├── connection.py                    # Database connection management
 ├── exceptions.py                    # Custom exception hierarchy
-├── message_extraction.py           # Data extraction functions
-├── message_reconstruction.py       # Chat history reconstruction  
-├── multiple_database_discovery.py  # Multi-workspace discovery
-├── platform.py                     # Cross-platform path detection
+├── composer_chat_provider.py        # Chat integration and time windows
+├── workspace_detection.py          # Cross-platform workspace discovery
 ├── query_executor.py              # Core SQL execution
 └── validation.py                   # Data validation utilities
 ```
@@ -913,78 +910,52 @@ class JournalGenerator:
 async def extract_chat_context(self, commit_time: datetime, 
                              changed_files: List[str]) -> ChatContext:
     """
-    Extract chat context from Cursor's SQLite database using validated data format.
+    Extract chat context from Cursor's chat database using commit-based time windows.
     
-    Chat Data Storage Architecture:
-    - User prompts: stored in 'aiService.prompts' key (format: {"text": "message", "commandType": 4})
-    - AI responses: stored in 'aiService.generations' key (format: {"unixMs": timestamp, "generationUUID": "uuid", "type": "composer", "textDescription": "response"})
-    - No explicit conversation threading - correlation via timestamp proximity
-    - AI responses truncated at 100 messages per workspace (older responses permanently lost)
+    Chat Integration Architecture:
+    - Conversation sessions: Complete chat history with timestamps and session metadata
+    - Time-based filtering: Uses git commit timestamps to identify relevant conversations
+    - Session boundaries: Maintains proper conversation flow across multiple sessions
+    - Context enrichment: Extracts conversations with full metadata and session information
     """
-    # Query both user prompts and AI responses separately
-    user_prompts = query_cursor_chat_database(
-        self.db_connection,
-        "SELECT value FROM ItemTable WHERE [key] = ?",
-        ('aiService.prompts',)
+    # Calculate time window based on commit and previous commit
+    time_window = get_commit_time_window(commit_time)
+    
+    # Extract conversations that occurred during the development timeframe
+    chat_data = query_cursor_chat_database(
+        workspace_path=self.workspace_path,
+        start_time=time_window.start,
+        end_time=time_window.end
     )
     
-    ai_responses = query_cursor_chat_database(
-        self.db_connection,
-        "SELECT value FROM ItemTable WHERE [key] = ?", 
-        ('aiService.generations',)
-    )
-    
-    # Parse JSON data and merge messages chronologically
+    # Process conversation data with full context
     messages = []
-    
-    # Process user prompts (no timestamps, need correlation)
-    if user_prompts:
-        prompts_data = json.loads(user_prompts[0][0])
-        for prompt in prompts_data:
-            if prompt.get('commandType') == 4:  # Standard user prompt
+    for conversation in chat_data.conversations:
+        for message in conversation.messages:
+            # Filter for messages relevant to the files being changed
+            if any(file_path in message.content for file_path in changed_files):
                 messages.append(ChatMessage(
-                    timestamp=None,  # No timestamp in prompts
-                    role='user',
-                    content=prompt['text']
+                    timestamp=message.timestamp,
+                    role=message.role,
+                    content=message.content,
+                    session_name=conversation.session_name
                 ))
     
-    # Process AI responses (with timestamps)
-    if ai_responses:
-        responses_data = json.loads(ai_responses[0][0])
-        for response in responses_data:
-            if response.get('type') == 'composer':
-                timestamp = datetime.fromtimestamp(response['unixMs'] / 1000)
-                messages.append(ChatMessage(
-                    timestamp=timestamp,
-                    role='assistant', 
-                    content=response['textDescription']
-                ))
+    # Sort messages chronologically to maintain conversation flow
+    messages.sort(key=lambda x: x.timestamp)
     
-    # Sort by timestamp (AI responses) and correlate with prompts
-    # Note: This is approximate due to lack of explicit threading
-    timestamped_messages = [m for m in messages if m.timestamp]
-    timestamped_messages.sort(key=lambda x: x.timestamp)
-    
-    # Filter messages related to changed files and within time window
-    time_window_start = commit_time - timedelta(hours=2)
-    time_window_end = commit_time + timedelta(hours=2)
-    
-    relevant_messages = []
-    for message in timestamped_messages:
-        if (message.timestamp and 
-            time_window_start <= message.timestamp <= time_window_end and
-            any(file_path in message.content for file_path in changed_files)):
-            relevant_messages.append(message)
-    
-    # Check for AI response truncation (exactly 100 indicates data loss)
-    truncation_detected = len(responses_data) == 100 if ai_responses else False
+    # Filter messages within the precise time window
+    relevant_messages = [
+        msg for msg in messages 
+        if time_window.start <= msg.timestamp <= time_window.end
+    ]
     
     return ChatContext(
         messages=relevant_messages,
-        time_window=(time_window_start, time_window_end),
+        time_window=(time_window.start, time_window.end),
         related_files=changed_files,
-        truncation_detected=truncation_detected,
-        total_ai_responses=len(responses_data) if ai_responses else 0
+        session_count=len(chat_data.conversations),
+        total_messages=len(messages)
     )
 ```
 

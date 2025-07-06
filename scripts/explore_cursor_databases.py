@@ -3,13 +3,13 @@
 One-time exploration script for Cursor databases.
 
 This script explores Cursor SQLite databases to understand their structure
-and identify where chat data is stored. Results inform Task 46 implementation.
+and identify where chat data is stored. Results inform chat integration implementation.
 
-Enhanced for Task 45.7 with deep chat data format research:
+Enhanced with deep chat data format research:
 - Message counting and date range analysis
 - Role indicators (user vs assistant) detection
 - Conversation threading/structure analysis
-- Multi-key investigation (aiService.prompts, aiService.generations, composer.composerData)
+- Multi-key investigation for chat data storage patterns
 - Truncation pattern detection
 
 Usage:
@@ -94,11 +94,11 @@ def sample_item_table_keys(db_path: Path, limit: int = 20) -> List[str]:
 
 def deep_analyze_chat_data(db_path: Path) -> Dict[str, Any]:
     """
-    TASK 45.7: Deep analysis of chat data to answer critical research questions.
+    Deep analysis of chat data to answer critical research questions.
     
     Critical Questions:
-    1. Is aiService.prompts ALL chat history or just user prompts?
-    2. Where are the AI responses stored? (Check aiService.generations specifically)
+    1. Where is all chat history stored in the database?
+    2. How are user prompts and AI responses organized?
     3. What's the actual message count and date range in each workspace?
     4. Is there any truncation happening based on size/age?
     5. Do messages have role indicators or threading information?
