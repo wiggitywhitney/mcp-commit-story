@@ -1,7 +1,7 @@
 # Task ID: 51
 # Title: Implement Journal/Capture-Context MCP Tool
-# Status: pending
-# Dependencies: 22, 50
+# Status: in-progress
+# Dependencies: None
 # Priority: high
 # Description: Create an MCP tool that allows users to manually capture context that will be included in future journal entries, enabling developers to add relevant information that might not be captured automatically.
 # Details:
@@ -240,3 +240,265 @@ To verify the correct implementation of the journal/capture-context MCP tool:
    - Run the standalone journal generator
    - Verify that the generated journal entry includes the captured context
    - Test with multiple days of context to ensure the lookback period works correctly
+
+# Subtasks:
+## 1. Implement MCP Server Handler for capture-context [pending]
+### Dependencies: None
+### Description: Create the core handler function that processes capture-context requests and appends to journal files. Also fix the reflection format to include the separator.
+### Details:
+Implementation Plan:
+
+WRITE TESTS FIRST
+
+Create tests/unit/test_capture_context_handler.py
+Test handle_journal_capture_context() function
+Test cases:
+
+Valid text parameter returns success
+Empty text parameter returns error
+Context is properly formatted with separator and timestamp
+Journal directory is created if missing
+File path is returned in response
+Exception handling returns proper error format
+
+
+Create/update tests/unit/test_reflection_format.py
+Test that format_reflection() includes separator:
+
+Verify output starts with \n\n____\n\n###
+Test timestamp formatting
+
+
+RUN TESTS - VERIFY THEY FAIL
+
+
+IMPLEMENT FUNCTIONALITY
+
+Fix reflection format in reflection_core.py:
+```python
+def format_reflection(reflection_text: str) -> str:
+    timestamp = datetime.now().strftime("%I:%M %p").lstrip('0')
+    return f"\n\n____\n\n### {timestamp} — Reflection\n\n{reflection_text}"
+```
+
+Create handle_journal_capture_context() in src/mcp_commit_story/journal_handlers.py
+Format should match:
+```python
+def format_ai_knowledge_capture(knowledge_text: str) -> str:
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return f"\n\n____\n\n## AI Knowledge Capture ({timestamp})\n\n{knowledge_text}"
+```
+
+Extract and validate parameters
+Determine today's journal file path using config
+Use append_to_journal_file() for consistency
+Return standardized response
+RUN TESTS - VERIFY THEY PASS
+
+
+DOCUMENT AND COMPLETE
+
+Add documentation in code docstrings
+Document the separator fix for reflections
+Do not reference tasks
+Write for the reader: Explain what the handler does
+Run the entire test suite
+MARK COMPLETE
+
+
+This ensures both reflections and AI knowledge captures have consistent formatting with proper separators.
+<info added on 2025-07-07T21:18:19.476Z>
+UPDATED IMPLEMENTATION PLAN:
+
+WRITE TESTS FIRST
+
+Create tests/unit/test_capture_context_handler.py
+Test handle_journal_capture_context() function
+Test cases:
+- Valid text parameter returns success
+- Empty text parameter returns error
+- Context is properly formatted with unified header format: `### 2:30 PM — AI Knowledge Capture`
+- Uses same timestamp format as journal entries: `%I:%M %p` (like "2:30 PM")
+- Journal directory is created if missing
+- File path is returned in response
+- Exception handling returns proper error format
+
+Create/update tests/unit/test_reflection_format.py
+Test that format_reflection() includes separator:
+- Verify output starts with \n\n____\n\n###
+- Test timestamp formatting matches unified format
+
+RUN TESTS - VERIFY THEY FAIL
+
+IMPLEMENT FUNCTIONALITY
+
+Fix reflection format in reflection_core.py:
+```python
+def format_reflection(reflection_text: str) -> str:
+    timestamp = datetime.now().strftime("%I:%M %p").lstrip('0')
+    return f"\n\n____\n\n### {timestamp} — Reflection\n\n{reflection_text}"
+```
+
+Create handle_journal_capture_context() in src/mcp_commit_story/journal_handlers.py
+Format with unified header format:
+```python
+def format_ai_knowledge_capture(knowledge_text: str) -> str:
+    timestamp = datetime.now().strftime("%I:%M %p").lstrip('0')
+    return f"\n\n____\n\n### {timestamp} — AI Knowledge Capture\n\n{knowledge_text}"
+```
+
+- Extract and validate parameters
+- Determine today's journal file path using config
+- Use append_to_journal_file() for consistency
+- Return standardized response
+
+RUN TESTS - VERIFY THEY PASS
+
+DOCUMENT AND COMPLETE
+- Add documentation in code docstrings
+- Document the unified header format (### timestamp — type)
+- Document the separator fix for reflections
+- Do not reference tasks
+- Write for the reader: Explain what the handler does
+- Run the entire test suite
+- MARK COMPLETE
+
+This ensures journal entries, reflections, and AI knowledge captures all use the same header format and timestamp style for perfect consistency.
+</info added on 2025-07-07T21:18:19.476Z>
+
+## 2. Register capture-context Tool in MCP Server [pending]
+### Dependencies: None
+### Description: Add the tool to the server's registry with proper metadata and parameter definitions following existing patterns.
+### Details:
+Implementation Plan:
+
+WRITE TESTS FIRST
+
+Create tests/unit/test_capture_context_mcp_handler.py
+Test MCP handler function in server.py
+Test cases:
+- Valid text parameter returns success with status, file_path
+- Empty text parameter returns error
+- Handler calls journal_handlers.handle_journal_capture_context correctly
+- Handler follows async pattern and error handling
+- Response matches CaptureContextResponse TypedDict format
+- Exception handling returns appropriate error format with handle_mcp_error decorator
+
+RUN TESTS - VERIFY THEY FAIL
+
+IMPLEMENT FUNCTIONALITY
+
+Update src/mcp_commit_story/server.py:
+
+Add TypedDict definitions near other request/response types:
+```python
+# Request/response types for journal/capture-context
+class CaptureContextRequest(TypedDict):
+    text: str  # AI-generated project knowledge to capture
+
+class CaptureContextResponse(TypedDict):
+    status: str
+    file_path: str
+    error: Optional[str]
+```
+
+Import the handler implementation:
+```python
+from mcp_commit_story.journal_handlers import handle_journal_capture_context
+```
+
+In register_tools() function, add after journal_add_reflection:
+```python
+@server.tool()
+@trace_mcp_operation("journal_capture_context")
+async def journal_capture_context(request: CaptureContextRequest) -> CaptureContextResponse:
+    """Capture AI's current project knowledge to provide context for future journal entries."""
+    return await handle_journal_capture_context_mcp(request)
+```
+
+Add MCP handler function following existing pattern:
+```python
+@handle_mcp_error
+@trace_mcp_operation("capture_context.handle_mcp", attributes={
+    "operation_type": "mcp_handler", 
+    "content_type": "ai_context"
+})
+async def handle_journal_capture_context_mcp(request: CaptureContextRequest) -> CaptureContextResponse:
+    """MCP handler for capturing AI context - lightweight delegation to implementation."""
+    if not request.get("text"):
+        raise MCPError("Missing required field: text")
+    
+    # Call the actual implementation (sync function)
+    result = handle_journal_capture_context(request["text"])
+    
+    return {
+        "status": result["status"],
+        "file_path": result.get("file_path", ""),
+        "error": result.get("error")
+    }
+```
+
+RUN TESTS - VERIFY THEY PASS
+
+DOCUMENT AND COMPLETE
+- Ensure handler docstring is clear: "Capture AI's current project knowledge to provide context for future journal entries"
+- Follow existing error handling and telemetry patterns
+- Use same decorator pattern (@handle_mcp_error, @trace_mcp_operation)
+- Do not reference tasks or implementation history
+- Run the entire test suite
+- MARK COMPLETE
+
+Design Decisions:
+- Tool name: journal_capture_context (snake_case, "capture" distinguishes from "add")
+- NO date parameter - always writes to today's journal (current AI session context)
+- Single text parameter for AI-generated knowledge
+- Lightweight MCP handler delegates to journal_handlers implementation
+- Follows exact patterns from existing journal tools
+<info added on 2025-07-08T01:13:37.628Z>
+**Tool Name vs Function Name Clarification:**
+
+In FastMCP, the tool name exposed to clients follows the pattern with slashes and hyphens, while the Python function uses snake_case:
+
+Update the tool registration in server.py to:
+```python
+@server.tool("journal/capture-context")
+@trace_mcp_operation("journal_capture_context")
+async def journal_capture_context(request: CaptureContextRequest) -> CaptureContextResponse:
+    """Capture AI's current project knowledge to provide context for future journal entries."""
+    return await handle_journal_capture_context_mcp(request)
+```
+
+Add to test cases:
+- Verify tool is registered with name "journal/capture-context" in the tool registry
+- Function name remains journal_capture_context in Python code
+- Trace operation uses "journal_capture_context" for consistency
+
+This follows the established pattern where external tool names use slash/hyphen notation while internal function names use snake_case.
+</info added on 2025-07-08T01:13:37.628Z>
+<info added on 2025-07-08T01:14:33.813Z>
+**Tool Name Correction:**
+
+After reviewing the actual codebase, I need to correct the tool naming pattern. All existing tools use the function name as the tool name (both in snake_case):
+
+- Tool name: `journal_capture_context` (same as function name)
+- Function name: `journal_capture_context` (snake_case)
+- Trace operation name: `journal_capture_context` (same as function name)
+
+The correct tool registration in server.py should be:
+```python
+@server.tool()
+@trace_mcp_operation("journal_capture_context")
+async def journal_capture_context(request: CaptureContextRequest) -> CaptureContextResponse:
+    """Capture AI's current project knowledge to provide context for future journal entries."""
+    return await handle_journal_capture_context_mcp(request)
+```
+
+Updated test cases:
+- Tool appears in registry with name "journal_capture_context" (matching function name)
+- Function name is journal_capture_context
+- Trace operation uses "journal_capture_context"
+- Follows exact same pattern as existing tools
+
+This maintains consistency with the established codebase pattern where tool names and function names are identical.
+</info added on 2025-07-08T01:14:33.813Z>
+
