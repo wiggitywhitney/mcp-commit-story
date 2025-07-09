@@ -365,6 +365,88 @@ DOCUMENT AND COMPLETE
 
 This ensures journal entries, reflections, and AI knowledge captures all use the same header format and timestamp style for perfect consistency.
 </info added on 2025-07-07T21:18:19.476Z>
+<info added on 2025-07-08T01:52:10.028Z>
+REVISED IMPLEMENTATION PLAN:
+
+WRITE TESTS FIRST
+
+Create tests/unit/test_capture_context_handler.py
+Test handle_journal_capture_context() function
+Test cases:
+- Valid text parameter returns success
+- Empty text parameter returns error
+- No text parameter (None) triggers AI knowledge dump generation
+- Mock generate_ai_knowledge_dump() function and verify it's called when text is None
+- Context is properly formatted with unified header format: `### 2:30 PM — AI Knowledge Capture`
+- Uses same timestamp format as journal entries: `%I:%M %p` (like "2:30 PM")
+- Journal directory is created if missing
+- File path is returned in response
+- Exception handling returns proper error format
+
+Create/update tests/unit/test_reflection_format.py
+Test that format_reflection() includes separator:
+- Verify output starts with \n\n____\n\n###
+- Test timestamp formatting matches unified format
+
+RUN TESTS - VERIFY THEY FAIL
+
+IMPLEMENT FUNCTIONALITY
+
+Fix reflection format in reflection_core.py:
+```python
+def format_reflection(reflection_text: str) -> str:
+    timestamp = datetime.now().strftime("%I:%M %p").lstrip('0')
+    return f"\n\n____\n\n### {timestamp} — Reflection\n\n{reflection_text}"
+```
+
+Create handle_journal_capture_context() in src/mcp_commit_story/journal_handlers.py with dual-mode support:
+```python
+def handle_journal_capture_context(request: CaptureContextRequest) -> CaptureContextResponse:
+    text = request.get("text")
+    if text is None:
+        # No text provided - AI should generate comprehensive knowledge dump
+        text = generate_ai_knowledge_dump()  # Uses the approved prompt
+    elif not text.strip():
+        # Empty text parameter
+        return {"success": False, "error": "Text parameter cannot be empty"}
+    
+    # Format and save the capture
+    # ...
+```
+
+Implement format_ai_knowledge_capture with unified header format:
+```python
+def format_ai_knowledge_capture(knowledge_text: str) -> str:
+    timestamp = datetime.now().strftime("%I:%M %p").lstrip('0')
+    return f"\n\n____\n\n### {timestamp} — AI Knowledge Capture\n\n{knowledge_text}"
+```
+
+Implement generate_ai_knowledge_dump() function:
+```python
+def generate_ai_knowledge_dump() -> str:
+    # Use the approved prompt to generate comprehensive knowledge capture
+    # ...
+```
+
+- Extract and validate parameters
+- Determine today's journal file path using config
+- Use append_to_journal_file() for consistency
+- Return standardized response
+
+RUN TESTS - VERIFY THEY PASS
+
+DOCUMENT AND COMPLETE
+- Add documentation in code docstrings
+- Document the dual-mode support (text provided vs. AI-generated)
+- Document the unified header format (### timestamp — type)
+- Document the separator fix for reflections
+- Do not reference tasks
+- Write for the reader: Explain what the handler does
+- Run the entire test suite
+- MARK COMPLETE
+
+This ensures journal entries, reflections, and AI knowledge captures all use the same header format and timestamp style for perfect consistency, while supporting both user-provided context and AI-generated knowledge dumps.
+</info added on 2025-07-08T01:52:10.028Z>
 
 ## 2. Register capture-context Tool in MCP Server [pending]
 ### Dependencies: None
@@ -501,4 +583,381 @@ Updated test cases:
 
 This maintains consistency with the established codebase pattern where tool names and function names are identical.
 </info added on 2025-07-08T01:14:33.813Z>
+<info added on 2025-07-08T01:52:32.080Z>
+**REVISED TECHNICAL IMPLEMENTATION based on architectural feedback:**
+
+**Tool Naming Pattern (Corrected):**
+- Tool name: `journal/capture-context` (with hyphen, matching existing pattern)
+- Function name: `journal_capture_context` (underscore for Python function)
+- This matches other tools like `journal/add-reflection` → `journal_add_reflection`
+
+**Updated TypedDict Definitions:**
+```python
+# Request/response types for journal/capture-context
+class CaptureContextRequest(TypedDict):
+    text: Optional[str]  # AI-generated project knowledge to capture (None triggers full dump)
+
+class CaptureContextResponse(TypedDict):
+    status: str
+    file_path: str
+    error: Optional[str]
+```
+
+**Updated Tool Registration:**
+```python
+@server.tool("journal/capture-context")
+@trace_mcp_operation("journal_capture_context")
+async def journal_capture_context(request: CaptureContextRequest) -> CaptureContextResponse:
+    """Capture AI's current project knowledge to provide context for future journal entries."""
+    return await handle_journal_capture_context_mcp(request)
+```
+
+**Updated MCP Handler Function:**
+```python
+@handle_mcp_error
+@trace_mcp_operation("capture_context.handle_mcp", attributes={
+    "operation_type": "mcp_handler", 
+    "content_type": "ai_context"
+})
+async def handle_journal_capture_context_mcp(request: CaptureContextRequest) -> CaptureContextResponse:
+    """MCP handler for capturing AI context - lightweight delegation to implementation."""
+    # Note: text can be None to trigger a full knowledge dump
+    
+    # Call the actual implementation (sync function)
+    result = handle_journal_capture_context(request.get("text"))
+    
+    return {
+        "status": result["status"],
+        "file_path": result.get("file_path", ""),
+        "error": result.get("error")
+    }
+```
+
+**Updated Test Cases:**
+- Tool appears in registry with name "journal/capture-context" (with hyphen)
+- Tool parameter `text` is Optional[str] (can be None to trigger knowledge dump)
+- Test both modes: with text provided and None parameter
+- Verify tool follows existing naming pattern (hyphen in tool name, underscore in function)
+
+All TDD methodology, telemetry integration, and documentation requirements remain exactly as specified in original plan.
+</info added on 2025-07-08T01:52:32.080Z>
+
+## 3. Create Context Collection Function [pending]
+### Dependencies: None
+### Description: Implement collect_recent_journal_context() using JournalParser to extract recent journal entries and AI captures for enriching commit journal generation.
+### Details:
+Implementation Plan:
+
+WRITE TESTS FIRST
+
+Create tests/unit/test_collect_recent_journal_context.py
+Test collect_recent_journal_context() function
+Test cases:
+- Returns empty latest_entry when journal file doesn't exist
+- Returns empty additional_context when no captures/reflections after latest entry
+- Extracts most recent journal entry correctly
+- Extracts AI captures added after latest entry
+- Extracts reflections added after latest entry
+- Ignores content before latest entry (avoids duplication)
+- Handles journal files with no entries gracefully
+- Correctly parses using JournalParser (not regex)
+- Preserves content formatting and timestamps
+- Works with specific date parameter
+- Defaults to today when no date provided
+- Returns proper TypedDict structure
+
+RUN TESTS - VERIFY THEY FAIL
+
+IMPLEMENT FUNCTIONALITY
+
+Add collect_recent_journal_context() to src/mcp_commit_story/context_collection.py
+Function signature:
+```python
+@trace_mcp_operation("context.collect_recent_journal")
+def collect_recent_journal_context(date=None) -> RecentJournalContext:
+    """
+    Extract recent journal content for enriching commit journal generation.
+    
+    Gets the most recent journal entry plus any AI captures or reflections
+    added after that entry to avoid duplication while ensuring new insights
+    are available for journal generation.
+    
+    Args:
+        date: Date string in YYYY-MM-DD format (defaults to today)
+        
+    Returns:
+        RecentJournalContext with latest entry and additional context
+    """
+```
+
+Add TypedDict definition:
+```python
+class RecentJournalContext(TypedDict):
+    latest_entry: Optional[str]  # Most recent journal entry
+    additional_context: List[str]  # AI captures/reflections after latest entry
+    metadata: Dict[str, Any]  # File info, timestamps, etc.
+```
+
+Implementation:
+- Default date to today if not provided
+- Use get_journal_file_path() to find journal file
+- Read file if exists (return empty structure if not)
+- Use JournalParser to parse journal sections (not regex)
+- Find most recent commit entry (### timestamp — Commit)
+- Collect any AI captures or reflections after that entry
+- Return structured data with latest_entry and additional_context
+
+Add telemetry attributes:
+- context.latest_entry_found: Boolean
+- context.additional_context_count: Number of captures/reflections
+- context.date: Date being processed
+- context.file_exists: Whether journal file exists
+- context.parser_sections: Number of sections parsed
+
+RUN TESTS - VERIFY THEY PASS
+
+DOCUMENT AND COMPLETE
+- Add clear docstring explaining dual-purpose use case
+- Document that this avoids duplication by only getting content after latest entry
+- Document the TypedDict structure
+- Explain how this enriches commit journal generation
+- Do not reference tasks or implementation history
+- Write for external readers: explain what the function does and why
+- Run the entire test suite
+- MARK COMPLETE
+
+Design Decisions Made:
+- Function name: collect_recent_journal_context() (descriptive of purpose)
+- Uses JournalParser instead of regex for maintainability
+- Returns structured TypedDict with metadata
+- Date parameter defaults to today
+- Avoids duplication by only extracting content after latest entry
+- Includes both AI captures and reflections in additional_context
+- Uses existing utilities (get_journal_file_path, JournalParser)
+- Includes comprehensive telemetry following project patterns
+- Graceful handling when file doesn't exist
+
+## 4. Integrate context collection with journal generation [pending]
+### Dependencies: 51.3
+### Description: Connect collect_recent_journal_context() output to journal generation AI functions by updating JournalContext structure and orchestrator
+### Details:
+Implementation Steps:
+
+1. **Update TypedDict definitions in context_types.py**:
+   - Move RecentJournalContext from context_collection.py to context_types.py to avoid circular imports
+   - Add journal field to JournalContext: `journal: Optional[RecentJournalContext] = None`
+
+2. **Update journal_orchestrator.py collect_all_context_data()**:
+   - Import and call collect_recent_journal_context() directly (no wrapper needed)
+   - Add journal context to returned JournalContext with graceful error handling
+   - Include journal field in the context passed to AI functions
+
+3. **Update ai_function_executor.py or relevant AI generators**:
+   - Modify at least one AI generation function to demonstrate journal context usage
+   - Add journal context handling to function signatures and prompts
+
+4. **Update AI prompts to utilize journal context**:
+   - When journal context is available in journal_context.journal:
+     - Review the latest_entry to understand recent work
+     - Check additional_context for captured insights and reflections  
+     - Avoid duplicating information already covered
+   - This specifically enhances the standalone generator (Task 50) that uses structured data approach
+
+5. **Add comprehensive tests**:
+   - Test JournalContext with journal field populated
+   - Test orchestrator integration with journal context
+   - Test AI function with journal context usage
+   - Test graceful degradation when journal context unavailable
+
+Key Design Decisions:
+- No wrapper function needed - use collect_recent_journal_context() directly
+- TypedDict moved to context_types.py to prevent circular imports
+- Integration targets standalone generator path (ai_function_executor.py pattern)
+- Graceful degradation when journal context unavailable
+- Avoids duplication by only including content after latest journal entry
+
+## 5. Verify Telemetry Consistency [pending]
+### Dependencies: 51.1, 51.2, 51.3, 51.4
+### Description: Double-check all new functions have proper telemetry following project standards from telemetry.md
+### Details:
+Implementation Plan:
+
+**WRITE VERIFICATION TESTS FIRST**
+
+Create tests/unit/test_journal_context_telemetry.py
+Test cases:
+- All public functions have @trace_mcp_operation decorators
+- Decorator operation names follow conventions
+- Span attributes match telemetry.md patterns
+- Error categories are properly defined
+- Metrics are recorded with correct naming
+- Performance thresholds are reasonable
+
+**RUN TESTS - VERIFY THEY FAIL**
+
+**VERIFY AND FIX TELEMETRY**
+
+Step 1: Check decorator presence
+```python
+# Functions to verify:
+- handle_journal_capture_context() - should have @trace_mcp_operation
+- collect_recent_journal_context() - should have @trace_mcp_operation  
+- format_ai_knowledge_capture() - internal, might not need decorator
+- Any collect_all_context_data() modifications
+```
+
+Step 2: Verify operation naming
+- MCP handlers: "journal.capture_context" pattern
+- Context collection: "context.collect_recent_journal"
+- Follow existing patterns from codebase
+
+Step 3: Check span attributes
+According to telemetry.md, verify:
+- File operations include: file.path, file.extension
+- Context operations include: context.size, context.type
+- Include privacy-conscious attributes (no full paths)
+
+Step 4: Validate error categorization
+Ensure error handling uses proper categories:
+- permission_error, file_system_error, validation_error
+- Categories align with _categorize_reflection_error() pattern
+
+Step 5: Check metrics recording
+- Verify metrics use get_mcp_metrics() pattern
+- Counter names follow convention: mcp.operation.metric_name
+- Duration tracking included where appropriate
+
+Step 6: Add integration test
+- Verify telemetry flows end-to-end through MCP server
+- Check that traces and metrics are properly generated
+
+**RUN TESTS - VERIFY ALL PASS**
+
+**DOCUMENT FINDINGS AND COMPLETE**
+- Create summary of telemetry patterns found in docs/telemetry.md
+- Document any corrections made
+- Note any patterns for future reference
+- Do not reference tasks in documentation
+- Run the entire test suite
+- **MARK COMPLETE**
+
+**Verification Checklist:**
+□ All public functions have decorators
+□ Operation names follow conventions  
+□ Span attributes include required fields
+□ Error categories properly defined
+□ Metrics recording follows patterns
+□ Performance thresholds set appropriately
+□ Privacy-conscious attribute handling
+□ Graceful degradation (telemetry failures don't block)
+□ End-to-end telemetry flow verified
+
+## 6. Integration Testing for Task 51 [pending]
+### Dependencies: 51.1, 51.2, 51.3, 51.4, 51.5
+### Description: Simple integration tests focusing only on what Task 51 built - capture-context tool and context collection integration
+### Details:
+Implementation Plan:
+
+**Prerequisites**: All previous subtasks (51.1-51.5) must be complete
+
+**Test Only What Task 51 Built:**
+
+### 1. **MCP Tool Registration Test**
+- Verify `journal/capture-context` appears in MCP server tool registry
+- Test basic tool invocation doesn't crash
+- Verify tool accepts both text parameter and None (for AI knowledge dump)
+
+### 2. **Context Collection Test**  
+- Test `collect_recent_journal_context()` works with sample journal files
+- Verify it returns expected RecentJournalContext structure
+- Test with journal files containing various content types
+
+### 3. **Basic Integration Test**
+- Capture context via MCP tool → verify it appears in today's journal file
+- Test that `collect_recent_journal_context()` can find the captured content
+- Verify captured context gets included in journal generation context
+
+### 4. **Error Handling Integration**
+- Test what happens when journal file doesn't exist
+- Test invalid requests to the MCP tool
+- Verify graceful degradation when context collection fails
+
+### 5. **End-to-End Flow Test**
+- Simple happy path: Capture context → Make git commit → Verify journal entry includes captured context
+- Focus on verifying the integration works, not testing entire system
+
+**Success Criteria:**
+- MCP tool works correctly through server
+- Context collection retrieves captured content
+- Journal generation receives and can use captured context
+- Error handling works gracefully
+- Integration doesn't break existing functionality
+
+**Testing Approach:**
+- Use existing test patterns from the codebase
+- Mock dependencies outside of Task 51 scope
+- Focus on integration points between Task 51 components
+- Simple, focused tests suitable for solo development
+
+## 7. Document Journal Capture-Context Feature [pending]
+### Dependencies: 51.1, 51.2, 51.3, 51.4, 51.5, 51.6
+### Description: Create comprehensive documentation for the journal/capture-context MCP tool following external reader accessibility guidelines, ensuring developers understand how AI knowledge capture enriches journal entries.
+### Details:
+1. MAINTAIN CONSISTENCY WITH EXISTING DOCS
+
+Follow the existing documentation structure and style
+Use the same tone and level of detail as current docs
+Ensure new content integrates seamlessly with existing documentation
+
+2. IMPLEMENT DOCUMENTATION
+Create User Guide: docs/ai-knowledge-capture-guide.md
+
+Explain the concrete problem it solves (AI knowledge lost between sessions)
+Describe how the feature works in user-friendly terms
+Provide clear usage instructions
+Show example captured knowledge in a journal
+Explain the benefits and value proposition
+
+Update Existing Documentation:
+
+docs/mcp-api-specification.md - Add journal/capture-context tool reference
+docs/architecture.md - Add brief section about AI knowledge capture in the journal system
+docs/journal-behavior.md - Document the AI Knowledge Capture section format
+docs/context-collection.md - Note that journal context now includes AI captures
+README.md - Add feature to the main features list
+
+Update High-Level Docs:
+
+PRD (scripts/mcp-commit-story-prd.md) - Add journal/capture-context as a new feature with problem/solution/benefits
+Engineering Spec (engineering-mcp-journal-spec-final.md) - Add the new MCP tool to the server implementation section and update journal generation documentation
+Ensure Table of Contents is current in both documents
+
+3. DOCUMENT AND COMPLETE
+
+Follow external reader accessibility guidelines
+Do not reference tasks or development history
+Write for users who have no prior context
+Use concrete, specific language
+Run the entire test suite and make sure all tests are passing
+Double check all subtask requirements are met before marking this subtask as complete
+MARK COMPLETE
+
+Key Documentation Principles
+
+Focus on the concrete problem: "AI knowledge gets lost between sessions"
+Explain the solution: "Capture it and include in journal for richer entries"
+Use real examples showing actual benefit
+Avoid technical implementation details in user guides
+Maintain consistency with existing documentation style
+Follow external reader accessibility guidelines
+
+Success Criteria
+
+Users understand the problem this solves
+Clear usage instructions with examples
+Proper integration with existing documentation
+No references to development history or tasks
+Concrete, accessible language throughout
+Documentation feels like a natural part of the existing docs
+PRD and Engineering Spec properly updated
 
