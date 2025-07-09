@@ -1,0 +1,77 @@
+# Task ID: 62
+# Title: Implement Multi-Session Chat Extraction Support
+# Status: pending
+# Dependencies: None
+# Priority: medium
+# Description: Enhance the chat extraction system to query and merge conversations from multiple workspace databases, ensuring complete journal entries when work spans across different chat sessions.
+# Details:
+This task involves modifying the chat extraction pipeline to capture conversations across multiple database files when work spans several chat sessions:
+
+1. Refactor `query_cursor_chat_database()` to utilize `discover_all_cursor_databases()` instead of only querying a single workspace database.
+2. Implement a mechanism to query all workspace databases that fall within the commit time window:
+   - Identify all relevant database files using `discover_all_cursor_databases()`
+   - Filter databases based on timestamp metadata to match commit timeframe
+   - Execute queries against all matching databases
+
+3. Develop a merging algorithm to combine results from multiple databases:
+   - Sort all conversation entries chronologically
+   - Handle potential duplicates across databases
+   - Preserve conversation threading and context
+
+4. Maintain backward compatibility:
+   - Ensure the API interface remains unchanged
+   - Make the multi-database querying transparent to calling code
+   - Preserve existing behavior for single-database scenarios
+
+5. Optimize performance:
+   - Implement parallel querying where appropriate
+   - Add caching mechanisms to prevent redundant database access
+   - Monitor and optimize query execution time to minimize impact on git hooks
+
+6. Handle edge cases:
+   - Overlapping chat sessions
+   - Databases with inconsistent timestamps
+   - Missing or corrupted database files
+   - Proper ordering when timestamps are identical
+
+7. Update documentation to reflect the enhanced capabilities of the chat extraction system.
+
+Code changes will primarily focus on:
+- `query_cursor_chat_database()` function
+- `ComposerChatProvider` class
+- Database query and result processing logic
+
+# Test Strategy:
+The implementation will be verified through a comprehensive testing approach:
+
+1. Unit Tests:
+   - Create mock database files with different chat sessions
+   - Verify correct discovery of all relevant database files
+   - Test the merging algorithm with various scenarios (overlapping conversations, identical timestamps)
+   - Validate deduplication logic works correctly
+
+2. Integration Tests:
+   - Set up a test environment with multiple database files spanning different time periods
+   - Simulate a commit that spans multiple chat sessions
+   - Verify all relevant conversations are extracted and merged correctly
+   - Confirm chronological ordering of merged results
+
+3. Performance Tests:
+   - Benchmark query execution time with varying numbers of database files (1, 3, 5, 10)
+   - Ensure performance remains within acceptable thresholds for git hook execution
+   - Test with large database files to identify potential bottlenecks
+
+4. Edge Case Tests:
+   - Test with corrupted or incomplete database files
+   - Verify behavior with overlapping chat sessions
+   - Test with extreme time ranges (very short and very long commits)
+   - Validate handling of databases with identical timestamps
+
+5. Regression Tests:
+   - Ensure existing functionality works correctly for single-database scenarios
+   - Verify API compatibility with existing code
+   - Confirm no regressions in related features
+
+6. Manual Testing:
+   - Create a real-world scenario with work spanning multiple chat sessions
+   - Execute a commit and verify the journal entry contains all relevant conversations

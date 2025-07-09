@@ -1,0 +1,58 @@
+# Task ID: 65
+# Title: Update Journal Section Prompts for Concrete Language and Improved Content Quality
+# Status: pending
+# Dependencies: 12, 15
+# Priority: high
+# Description: Revise all journal section prompts to replace abstract corporate language with concrete, specific language that captures real development stories, emotional journeys, and decision points.
+# Details:
+This task involves implementing the External Reader Accessibility Guidelines across all journal section prompts to improve content quality:
+
+1. Identify all existing journal section prompts in the codebase:
+   - Daily summary prompts
+   - Weekly reflection prompts
+   - Milestone documentation prompts
+   - Any other journal content generation prompts
+
+2. For each prompt:
+   - Remove abstract corporate language and replace with guidance for concrete, specific descriptions
+   - Add explicit instructions to capture important statements with emphasis ('!')
+   - Remove artificial mood categorizations and encourage authentic emotional expression
+   - Add specific prompting for decision points and trade-offs made during development
+   - Include guidance to connect technical progress with the emotional journey
+
+3. Example prompt transformation:
+   From: "Describe the revolutionary implementation of architectural components"
+   To: "Describe specifically what you built today, including:
+       - Exact problems you encountered and how you solved them
+       - Key decisions you made and why (what alternatives did you consider?)
+       - How you felt during challenging moments and what you learned
+       - Concrete examples of code or functionality you implemented"
+
+4. Update the prompt templates in the codebase:
+   - Modify prompt template files
+   - Update any hardcoded prompts in the AI function implementations
+   - Ensure all journal-related functions use the updated prompts
+
+5. Document the changes in a README or documentation file explaining the new guidelines for journal content.
+
+# Test Strategy:
+1. Manual Review:
+   - Review all updated prompt templates against the External Reader Accessibility Guidelines
+   - Verify each prompt explicitly requests concrete language, emotional journey, and decision points
+   - Check that artificial mood categorizations have been removed
+
+2. Test Journal Generation:
+   - Generate sample journal entries using the updated prompts
+   - Verify the generated content includes specific technical details rather than abstract language
+   - Confirm the content captures decision points, trade-offs, and emotional aspects
+   - Have team members review sample outputs to ensure they provide value to external readers
+
+3. User Testing:
+   - Have 2-3 team members use the updated journal prompts for their actual work
+   - Collect feedback on whether the prompts are clear and produce better quality content
+   - Compare before/after examples of journal content to verify improvement
+
+4. AI Analysis:
+   - Run a test where an AI analyzes old vs. new journal content
+   - Verify the AI can extract more concrete information and insights from the new content
+   - Confirm the new content provides more value for future reference

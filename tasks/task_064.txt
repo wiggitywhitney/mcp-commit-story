@@ -1,0 +1,63 @@
+# Task ID: 64
+# Title: Simplify AI Invocation by Removing Abstraction Layer
+# Status: pending
+# Dependencies: 15
+# Priority: high
+# Description: Refactor the AI invocation system by removing the complex ai_function_executor.py abstraction layer and updating all AI-powered section generators to directly call the OpenAI client using existing shared utilities.
+# Details:
+This task involves simplifying the AI invocation system by removing unnecessary abstraction layers while preserving all existing functionality:
+
+1. Analyze the current implementation in ai_function_executor.py to understand:
+   - How stub generation works
+   - Which components depend on this module
+   - The shared utilities already available for OpenAI API calls
+
+2. For each AI-powered section generator:
+   - Refactor to use direct OpenAI API calls via existing shared utilities
+   - Remove dependencies on stub generation
+   - Ensure the same input/output contract is maintained
+   - Preserve all existing functionality and behavior
+
+3. Update all callers including:
+   - journal_workflow.py
+   - MCP (Master Control Program) handlers
+   - Any other upstream/downstream functionality
+
+4. Remove the ai_function_executor.py file once all dependencies have been updated
+
+5. Update any relevant documentation to reflect the simplified architecture
+
+Implementation considerations:
+- Use a gradual, component-by-component approach to minimize risk
+- Ensure each component is fully tested before moving to the next
+- Maintain backward compatibility during the transition
+- Consider creating a simple utility function for common OpenAI API call patterns if needed
+- Ensure error handling, retry logic, and other robustness features are preserved
+
+# Test Strategy:
+1. Unit Tests:
+   - Create unit tests for each refactored AI-powered section generator
+   - Verify they produce identical outputs to the previous implementation
+   - Test with various input scenarios including edge cases
+   - Mock the OpenAI API responses to ensure consistent testing
+
+2. Integration Tests:
+   - Test the complete workflow from journal creation through all AI-powered sections
+   - Verify that journal_workflow.py functions correctly with the refactored components
+   - Test MCP handlers to ensure they correctly interact with the refactored components
+   - Compare generated content before and after refactoring to ensure consistency
+
+3. Regression Testing:
+   - Run the full test suite to ensure no regressions
+   - Verify all existing functionality works as expected
+   - Check that error handling and edge cases are properly managed
+
+4. Manual Testing:
+   - Manually create journals and verify AI-powered sections are generated correctly
+   - Test performance to ensure the simplified architecture maintains or improves response times
+   - Verify logging and monitoring still provide adequate visibility
+
+5. Code Review:
+   - Ensure the code is simpler and more maintainable
+   - Verify that all abstraction layers have been removed
+   - Confirm that the shared utilities are used consistently
