@@ -339,3 +339,90 @@ IMPORTANT NOTES:
 - Preserve all telemetry decorators
 - If you discover any functions lack tests while moving them, write minimal tests before moving (following TDD). However, don't write new tests just for the refactoring - existing tests should be sufficient to verify the move worked correctly"
 
+## 4. Extract Section Generators [pending]
+### Dependencies: 63.2, 63.3
+### Description: Move the 7 AI section generator functions from journal.py to individual modules in journal/sections/, along with shared utilities and prompt templates, to reduce journal.py complexity from 1735+ lines.
+### Details:
+Implementation Plan:
+
+**UPDATE ANALYSIS DOCUMENT**
+- Open journal_refactoring_analysis.md
+- Update "Current Status" to: "Working on Subtask 63.4 - Extracting Section Generators"
+- Note which generator functions you're about to move
+
+**CREATE SECTIONS MODULE STRUCTURE**
+- Create src/mcp_commit_story/journal/sections/ directory
+- Create src/mcp_commit_story/journal/sections/__init__.py
+- Create empty files for each generator:
+  - summary.py
+  - technical.py
+  - accomplishments.py
+  - frustrations.py
+  - tone_mood.py
+  - discussion.py
+  - metadata.py
+- Create shared files:
+  - utilities.py (for telemetry helpers)
+  - prompt_templates.py (for shared prompt components)
+
+**CREATE SHARED PROMPT TEMPLATES**
+- In prompt_templates.py, add string constants:
+  - ANTI_HALLUCINATION_RULES (from existing generators)
+  - EXTERNAL_READER_GUIDELINES (from project notes)
+  - Any other common prompt components you identify
+- These will be imported by individual generators to ensure consistency
+
+**MOVE TELEMETRY UTILITIES**
+- Move _add_ai_generation_telemetry and _record_ai_generation_metrics from journal.py to sections/utilities.py
+- Include all necessary imports these functions need
+- Update any other functions in journal.py that use these to import from utilities
+
+**ANALYZE AND UPDATE TESTS FOR GENERATORS**
+- Search test files for imports of each generator function
+- Plan the import updates (but don't change yet)
+- Note: The TypedDict types stay in context_types.py
+
+**MOVE GENERATORS ONE BY ONE**
+For each generator (summary, technical, accomplishments, frustrations, tone_mood, discussion, metadata):
+- Update relevant test imports FROM `from mcp_commit_story.journal import generate_X_section`
+- TO `from mcp_commit_story.journal.sections.X import generate_X_section`
+- RUN TESTS - VERIFY THEY FAIL
+- Move the generator function to its file in sections/
+- Add necessary imports at the top (including from prompt_templates and utilities as needed)
+- Update the docstring to use shared templates where applicable
+- In journal.py, replace the function with an import from sections
+- RUN TESTS - VERIFY THEY PASS
+
+**UPDATE SECTION IMPORTS IN __init__.py**
+- In journal/sections/__init__.py, add exports for all generators
+- This allows other modules to import from journal.sections if needed
+
+**VERIFY ALL FUNCTIONALITY**
+- Run entire test suite
+- Verify all telemetry decorators still work
+- Check that prompt templates are being used consistently
+- Ensure no circular dependencies
+
+**UPDATE ANALYSIS DOCUMENT**
+- Update "Current Status" to: "Subtask 63.4 Complete - Ready for 63.5"
+- Update Function Inventory to show all generators moved with ✅
+- Mark shared utilities and templates as created
+- Update all outdated sections
+- Add detailed changelog entry
+
+**FINAL VERIFICATION**
+- Run entire test suite again
+- Verify journal.py is significantly smaller
+- Check that each generator file is self-contained
+- Verify consistent use of shared templates
+- MARK COMPLETE
+
+**Important Notes:**
+- Move one generator at a time to isolate any issues
+- The TypedDict definitions (SummarySection, etc.) remain in context_types.py - do NOT move them
+- Each generator should be a self-contained module that can be understood independently
+- Update generator prompts to use the shared template constants for consistency
+- Remember that each generator will be executed by a separate AI instance
+- If you discover any generators lack tests, write minimal tests before moving
+- Preserve all telemetry decorators and ensure they work after the move
+
