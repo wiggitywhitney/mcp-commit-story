@@ -11,7 +11,7 @@ This document defines how the mcp-commit-story system generates journal entries,
 5. [Anti-Hallucination Rules](#anti-hallucination-rules)
 6. [Recursion Prevention](#recursion-prevention)
 7. [Journal Entry Structure](#journal-entry-structure)
-8. [AI Knowledge Capture Sections](#ai-knowledge-capture-sections)
+8. [AI Context Capture Sections](#ai-context-capture-sections)
 9. [Content Quality Guidelines](#content-quality-guidelines)
 10. [Configuration Options](#configuration-options)
 
@@ -205,72 +205,55 @@ Commands executed by AI during this work session:
 
 ---
 
-## AI Knowledge Capture Sections
+## AI Context Capture Sections
 
-### Purpose
-AI knowledge capture sections preserve valuable insights from AI conversations that would otherwise be lost between development sessions. These sections appear in daily journal files and are used as context for future commit journal generation.
+*Added: Complete specification for AI context capture formatting and integration*
 
-### Section Format
-AI knowledge captures use this exact format:
+AI context capture sections preserve valuable insights from AI conversations that would otherwise be lost between development sessions. These sections appear in daily journal files and are used as context for future journal generation.
 
-```markdown
-### 3:45 PM — AI Knowledge Capture
+AI context captures use this exact format:
 
-Key insight about React state management: Use useCallback for expensive 
-computations in list items to prevent unnecessary re-renders. This pattern 
-reduces rendering time by 60% in our product catalog.
+```
+### 3:45 PM — AI Context Capture
 
-____
+[Content describing insights, learnings, or context from AI conversation]
 ```
 
-### Formatting Requirements
-- **Header**: `### {time} — AI Knowledge Capture`
-- **Content**: Free-form text containing the captured insight
-- **Separator**: Four underscores (`____`) on their own line
-- **Timestamp**: 12-hour format with AM/PM (e.g., `3:45 PM`)
-- **Consistent placement**: Appended to the current day's journal file
+Key formatting requirements:
+- **Header**: `### {time} — AI Context Capture`
+- **Separator**: Full line of underscores (`____`) before the header
+- **Timestamp**: 12-hour format with stripped leading zeros (`3:45 PM` not `03:45 PM`)
+- **Content**: Free-form text describing insights or learnings
+- **Integration**: Automatically collected during journal generation as context
 
-### Content Guidelines
-AI knowledge captures should contain:
-- **Technical insights**: Implementation patterns, performance optimizations, architectural decisions
-- **Lessons learned**: Debugging discoveries, solution approaches that worked
-- **Decision context**: Reasoning behind technical choices
-- **Best practices**: Patterns that proved effective for the project
-- **Troubleshooting solutions**: Fixes for specific problems encountered
+AI context captures should contain:
+- Implementation insights that emerged during AI conversations
+- Technical decisions and their reasoning  
+- Solution approaches that proved effective
+- Architecture insights or system understanding
+- Debugging findings or performance optimizations
+- Any knowledge that would be valuable to preserve for future reference
 
-### Integration with Journal Generation
-When generating commit journal entries, the system includes recent AI captures as context:
+The journal generation system automatically scans for and includes AI context captures when building context for new journal entries, ensuring preserved knowledge enriches future development documentation.
 
-```python
-# collect_recent_journal_context() retrieves these sections
-# and includes them in the JournalContext for AI generation
-# This enables richer, more informed journal entries
+### Example Context Captures
+
+#### Technical Implementation Insight
+```
+____
+
+### 2:30 PM — AI Context Capture
+
+Discovered that our React component re-rendering issues were caused by inline object creation in JSX props. Moving object creation to useMemo reduced render cycles by 75% in the ProductList component. The pattern applies to any component receiving complex props - always memoize object/array props that don't change between renders.
 ```
 
-### Example Journal File with AI Captures
-```markdown
-# 2025-07-10 Daily Journal
-
-### 2:30 PM — AI Knowledge Capture
-
-Discovered that our API rate limiting was causing intermittent test failures. 
-The solution is to use exponential backoff in our retry logic, which reduced 
-test flakiness by 90%.
-
+#### Architecture Decision Documentation  
+```
 ____
 
-### 4:15 PM — Commit a1b2c3d
+### 6:22 PM — AI Context Capture
 
-## Summary
-Fixed API rate limiting issues in test suite...
-
-### 6:22 PM — AI Knowledge Capture
-
-Important pattern for React context providers: Always memoize the context 
-value to prevent unnecessary re-renders of all consumers. This is especially 
-critical for auth contexts used throughout the app.
-
-____
+Chose event-driven architecture over direct API calls for user notifications because: 1) Decouples notification logic from core business operations, 2) Allows multiple notification channels (email, SMS, push) without code changes, 3) Provides natural retry mechanism through message queues. Implementation uses Redis pub/sub with fallback to database polling for reliability.
 ```
 
 ### Storage and Retrieval

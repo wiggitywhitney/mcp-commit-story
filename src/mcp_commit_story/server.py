@@ -64,7 +64,7 @@ class AddReflectionResponse(TypedDict):
 
 # Request/response types for journal/capture-context
 class CaptureContextRequest(TypedDict):
-    text: Optional[str]  # AI-generated project knowledge to capture (None triggers full dump)
+    text: Optional[str]  # AI-generated project context to capture (None triggers full dump)
 
 class CaptureContextResponse(TypedDict):
     status: str
@@ -189,7 +189,7 @@ def register_tools(server: FastMCP) -> None:
     @server.tool()
     @trace_mcp_operation("journal_capture_context")
     async def journal_capture_context(request: CaptureContextRequest) -> CaptureContextResponse:
-        """Capture AI's current project knowledge to provide context for future journal entries."""
+        """Capture AI's current project context to provide context for future journal entries."""
         return await handle_journal_capture_context_mcp(request)
     
     @server.tool()
@@ -438,7 +438,7 @@ async def handle_journal_add_reflection(request: AddReflectionRequest) -> AddRef
 })
 async def handle_journal_capture_context_mcp(request: CaptureContextRequest) -> CaptureContextResponse:
     """MCP handler for capturing AI context - lightweight delegation to implementation."""
-    # Note: text can be None to trigger a full knowledge dump
+            # Note: text can be None to trigger a full context dump
     
     # Call the actual implementation (sync function)
     result = handle_journal_capture_context(request.get("text"))

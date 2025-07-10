@@ -1,9 +1,9 @@
 """
-Journal handlers for manual context capture and knowledge documentation.
+Journal handlers for manual context capture and context documentation.
 
-This module provides handlers for capturing AI context and knowledge that can be
-included in future journal entries, enabling developers to preserve insights
-and knowledge across AI sessions.
+This module provides handlers for capturing AI context and context that can be
+manually added to journal entries. It supports both targeted context capture
+and context across AI sessions.
 """
 
 import time
@@ -85,75 +85,60 @@ def _record_capture_context_metrics(operation: str, duration: float, success: bo
     )
 
 
-def format_ai_knowledge_capture(knowledge_text: str) -> str:
+def format_ai_context_capture(context_text: str) -> str:
     """
-    Format AI knowledge capture with unified header format and separator.
+    Format AI context capture with unified header format and separator.
     
     Args:
-        knowledge_text: The AI knowledge content to format
+        context_text: The AI context content to format
         
     Returns:
-        Formatted knowledge capture string with separator and unified header
+        Formatted context capture string with separator and unified header
         
     Format:
-        \n\n____\n\n### H:MM AM/PM — AI Knowledge Capture\n\n[knowledge_text]
+        \\n\\n____\\n\\n### H:MM AM/PM — AI Context Capture\\n\\n[context_text]
     """
     timestamp = datetime.now().strftime("%I:%M %p").lstrip('0')
-    return f"\n\n____\n\n### {timestamp} — AI Knowledge Capture\n\n{knowledge_text}"
+    return f"\n\n____\n\n### {timestamp} — AI Context Capture\n\n{context_text}"
 
 
-def generate_ai_knowledge_dump() -> str:
+def generate_ai_context_dump() -> str:
     """
-    Generate a comprehensive AI knowledge dump using the approved prompt.
+    Generate a comprehensive AI context dump using the approved prompt.
     
     Returns:
-        AI-generated knowledge dump or fallback message on error
+        Generated AI context content string
+        
+    Raises:
+        Exception: If AI generation fails
     """
-    approved_prompt = """Provide a comprehensive knowledge capture of your current understanding of this project, recent development insights, and key context that would help a fresh AI understand where we are and how we got here. Focus on context that would be valuable for future journal entries."""
+    approved_prompt = """Provide a comprehensive context capture of your current understanding of this project, recent development insights, and key context that would help a fresh AI understand where we are and how we got here. Focus on context that shows what's been learned, what patterns have emerged, and what the current state and direction of the project is."""
     
     try:
         return invoke_ai(approved_prompt, {})
     except Exception as e:
         # Return fallback message on AI failure
-        return f"Unable to generate AI knowledge dump due to error: {str(e)}"
+        return f"Unable to generate AI context dump due to error: {str(e)}"
 
 
 @trace_mcp_operation("capture_context.handle_journal", attributes={
     "operation_type": "manual_input",
     "content_type": "ai_context"
 })
-def handle_journal_capture_context(text: Optional[str]) -> Dict[str, Any]:
+def handle_journal_capture_context(text: Optional[str] = None) -> Dict[str, Any]:
     """
-    Handle requests to capture AI context for journal entries.
-    
-    This function supports dual-mode operation to accommodate both manual input
-    and automated AI knowledge dumping. Uses the unified journal header format
-    with separator (____) for consistency across all journal entry types.
-    
-    Technical decisions:
-    - Dual-mode design allows flexibility for both user-driven and AI-driven context capture
-    - Returns structured Dict rather than raising exceptions for better MCP integration
-    - Leverages existing journal infrastructure (append_to_journal_file, get_journal_file_path)
-    - Includes comprehensive telemetry for operation monitoring and debugging
+    Handle AI context capture requests, supporting both manual capture 
+    and automated AI context dumping. Uses the unified journal header format 
+    and proper file path resolution.
     
     Args:
-        text: Optional text to capture. If None, generates AI knowledge dump
+        text: Optional text to capture. If None, generates AI context dump
         
     Returns:
-        Dict with status, file_path, and optional error
+        Dict with status, error (if any), and file_path
         
-    Example:
-        # Capture provided text
-        result = handle_journal_capture_context("Important context to remember")
-        
-        # Generate AI knowledge dump
-        result = handle_journal_capture_context(None)
-        
-        # Handle response
-        if result["status"] == "success":
-            print(f"Context saved to {result['file_path']}")
-        else:
-            print(f"Error: {result['error']}")
+    Format:
+        \\n\\n____\\n\\n### H:MM AM/PM — AI Context Capture\\n\\n[text]
     """
     start_time = time.time()
     
@@ -166,13 +151,13 @@ def handle_journal_capture_context(text: Optional[str]) -> Dict[str, Any]:
         
         # Handle dual-mode operation
         if text is None:
-            # No text provided - generate AI knowledge dump
-            text = generate_ai_knowledge_dump()
+            # No text provided - generate AI context dump
+            text = generate_ai_context_dump()
             mode = "ai_dump"
         elif not text.strip():
             # Empty text parameter
             return {
-                "status": "error",
+                "status": "error", 
                 "file_path": None,
                 "error": "Text parameter cannot be empty"
             }
@@ -197,7 +182,7 @@ def handle_journal_capture_context(text: Optional[str]) -> Dict[str, Any]:
         journal_path = Path(config.journal_path) / relative_file_path
         
         # Format the captured context with unified header format
-        formatted_context = format_ai_knowledge_capture(text)
+        formatted_context = format_ai_context_capture(text)
         
         # Append to journal file using existing infrastructure
         append_to_journal_file(formatted_context, str(journal_path))

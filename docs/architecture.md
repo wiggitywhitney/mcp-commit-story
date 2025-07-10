@@ -80,71 +80,50 @@ The MCP server provides **interactive tools only**:
 
 **Key Point**: The MCP server is NOT required for core journal generation - it runs independently in the background.
 
-## AI Knowledge Capture System
+## AI Context Capture System
 
-The AI knowledge capture mechanism solves the "lost context between AI sessions" problem by preserving valuable insights from AI conversations directly into the journal workflow.
+*Added: Complete system specification for AI context capture functionality*
 
-### The Problem
-During AI-assisted development, valuable insights emerge during conversations:
-- Technical decisions and their reasoning
-- Implementation patterns that work for the project
-- Lessons learned from debugging sessions
-- Architectural insights and trade-offs
+The AI context capture mechanism solves the "lost context between AI sessions" problem by preserving valuable insights from AI conversations directly into the journal workflow.
 
-Without a capture mechanism, these insights are lost when the AI conversation ends, forcing developers to rediscover the same solutions repeatedly.
+**Problem Statement:**
+AI-assisted development generates valuable insights about architecture, implementation patterns, and technical decisions. Without a preservation mechanism, this knowledge disappears when the AI conversation ends, forcing developers to rediscover solutions and losing important contextual understanding.
 
-### The Solution
-The `journal/capture-context` MCP tool allows developers to preserve AI-generated insights directly in their daily journal files:
-
-```python
-# Example usage via MCP tool
-journal/capture-context "Key insight about React state management: Use useCallback 
-for expensive computations in list items to prevent unnecessary re-renders. This 
-pattern reduces rendering time by 60% in our product catalog."
+**Solution Architecture:**
+```
+AI Conversation → Manual Capture → Daily Journal → Context Collection → Enhanced Future Journals
+      ↓              ↓                 ↓               ↓                     ↓
+   [Insight]    [MCP Tool]        [File Storage]   [Auto-Parsing]     [Informed AI]
 ```
 
-### Integration with Journal Generation
-Captured knowledge enriches future journal entries through the existing context collection system:
+**Implementation Components:**
 
-```python
-# collect_recent_journal_context() retrieves captured knowledge
-def collect_recent_journal_context(commit) -> RecentJournalContext:
-    # Scans today's journal file for AI captures and reflections
-    # Returns them as additional context for commit journal generation
-    # Enables richer, more informed journal entries
-```
+1. **Capture Interface**: MCP tool (`journal/capture-context`) for manual insight preservation
+2. **Storage Integration**: Automatic append to daily journal files with consistent formatting  
+3. **Context Collection**: Parsing and retrieval of captured insights during journal generation
+4. **AI Enhancement**: Inclusion of preserved context in AI prompts for richer journal entries
 
-### Data Flow Example
-```
-1. AI conversation happens → Developer learns something valuable
-2. Developer uses journal/capture-context → Knowledge stored in daily journal
-3. Next commit occurs → Background journal generation runs
-4. Context collection → collect_recent_journal_context() finds capture
-5. AI generation → Uses captured knowledge as additional context
-6. Result → Richer journal entry that builds on previous insights
-```
-
-### Storage Format
-AI captures are stored in daily journal files with consistent timestamp formatting:
-
+**Capture Format:**
 ```markdown
-### 2:30 PM — AI Knowledge Capture
-
-Key insight about React state management: Use useCallback for expensive 
-computations in list items to prevent unnecessary re-renders. This pattern 
-reduces rendering time by 60% in our product catalog.
-
 ____
+
+### 2:30 PM — AI Context Capture
+
+[Preserved insight content - implementation details, architectural decisions, debugging discoveries, etc.]
 ```
 
-### Benefits
-- **Persistent Learning**: Insights accumulate over time instead of being lost
-- **Enriched Context**: Future journal entries reference previous discoveries
-- **Team Knowledge**: Shared insights when journals are reviewed by team members
-- **Decision History**: Captures the reasoning behind technical decisions
-- **Continuous Improvement**: Patterns emerge from accumulated knowledge
+**Integration Workflow:**
 
-[Link to AI Knowledge Capture Guide](ai-knowledge-capture-guide.md) for complete usage instructions.
+1. **During Development**: Developer discovers valuable insight through AI conversation
+2. **Manual Capture**: Uses MCP tool to preserve insight in today's journal 
+3. **Automatic Storage**: Insight appended to daily journal file with proper formatting
+4. **Context Building**: Future journal generation includes captured insights as context
+5. **Enhanced Journals**: AI generates more informed entries that reference previous learnings
+6. **Knowledge Persistence**: Critical insights survive across development sessions
+
+This system transforms ephemeral AI conversation insights into permanent knowledge assets that accumulate over time, creating a rich context base that enhances all future development documentation.
+
+[Link to AI Context Capture Guide](ai-context-capture-guide.md) for complete usage instructions.
 
 ## 4-Layer Standalone Journal Generator Architecture
 

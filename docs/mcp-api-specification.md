@@ -234,7 +234,7 @@ Each operation is instrumented with appropriate traces to monitor performance an
 - Includes captured knowledge in future journal generation as context
 - Implements proper telemetry tracking and error handling
 - Supports automatic creation of daily journal files
-- Uses consistent "AI Knowledge Capture" section headers
+- Uses consistent "AI Context Capture" section headers
 
 **Behavior**:
 - Append AI knowledge to today's journal file with timestamp
@@ -269,7 +269,7 @@ Each operation is instrumented with appropriate traces to monitor performance an
 
 **Example Journal Output**:
 ```markdown
-### 2:30 PM — AI Knowledge Capture
+### 2:30 PM — AI Context Capture
 
 Key insight about React state management: Use useCallback for expensive 
 computations in list items to prevent unnecessary re-renders. This pattern 

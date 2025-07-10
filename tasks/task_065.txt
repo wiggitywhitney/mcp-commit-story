@@ -1,7 +1,7 @@
 # Task ID: 65
 # Title: Update Journal Section Prompts for Concrete Language and Improved Content Quality
 # Status: pending
-# Dependencies: 12, 15
+# Dependencies: 66
 # Priority: high
 # Description: Revise all journal section prompts to replace abstract corporate language with concrete, specific language that captures real development stories, emotional journeys, and decision points.
 # Details:

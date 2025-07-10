@@ -92,7 +92,7 @@ This creates a continuous learning cycle where today's insights inform tomorrow'
 For a technical deep dive into the architecture, workflow, and engineering decisions behind MCP Commit Story, see the **[Technical Documentation](docs/)** which includes:
 
 - **[Architecture Overview](docs/architecture.md)** - System design and architectural decisions
-- **[AI Knowledge Capture Guide](docs/ai-knowledge-capture-guide.md)** - Complete usage guide for knowledge preservation
+- **[AI Context Capture Guide](docs/ai-context-capture-guide.md)** - Complete usage guide for knowledge preservation
 - **[MCP API Specification](docs/mcp-api-specification.md)** - Complete API reference for integration
 - **[Implementation Guide](docs/implementation-guide.md)** - Development patterns and technical details
 - **[Journal Behavior](docs/journal-behavior.md)** - How entries are generated and structured

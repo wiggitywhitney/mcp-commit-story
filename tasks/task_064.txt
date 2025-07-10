@@ -1,7 +1,7 @@
 # Task ID: 64
 # Title: Simplify AI Invocation by Removing Abstraction Layer
 # Status: pending
-# Dependencies: 15
+# Dependencies: None
 # Priority: high
 # Description: Refactor the AI invocation system by removing the complex ai_function_executor.py abstraction layer and updating all AI-powered section generators to directly call the OpenAI client using existing shared utilities.
 # Details:

@@ -32,7 +32,7 @@ class TestCaptureContextMCPHandler:
 
     @pytest.mark.asyncio
     async def test_handle_capture_context_none_text_generates_dump(self):
-        """Test MCP handler with None text parameter triggers AI knowledge dump."""
+        """Test MCP handler with None text parameter triggers AI context dump."""
         with patch('src.mcp_commit_story.server.handle_journal_capture_context') as mock_handler:
             mock_handler.return_value = {
                 "status": "success", 

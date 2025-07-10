@@ -41,8 +41,8 @@ logger = logging.getLogger(__name__)
 
 # Pre-compiled regex patterns for journal parsing (performance optimization)
 _JOURNAL_ENTRY_PATTERN = re.compile(r'^## (\d{1,2}:\d{2} (?:AM|PM)) — Git Commit: ([a-zA-Z0-9]+)', re.MULTILINE)
-_CAPTURE_REFLECTION_PATTERN = re.compile(r'^## (\d{1,2}:\d{2} (?:AM|PM)|[\d:]+) — (?:AI Context Capture|Reflection)', re.MULTILINE)
-_SECTION_BOUNDARY_PATTERN = re.compile(r'^## (?:\d{1,2}:\d{2} (?:AM|PM)|[\d:]+) —', re.MULTILINE)
+_CAPTURE_REFLECTION_PATTERN = re.compile(r'^### (\d{1,2}:\d{2} (?:AM|PM)|[\d:]+) — (?:AI Context Capture|Reflection)', re.MULTILINE)
+_SECTION_BOUNDARY_PATTERN = re.compile(r'^##+ (?:\d{1,2}:\d{2} (?:AM|PM)|[\d:]+) —', re.MULTILINE)
 
 
 @trace_git_operation("chat_history", 
@@ -493,7 +493,11 @@ def collect_recent_journal_context(commit) -> RecentJournalContext:
     current_span = trace.get_current_span()
     if current_span:
         current_span.set_attribute("journal.commit_date", commit_date_str)
-        current_span.set_attribute("journal.commit_hash", commit.hexsha[:8])
+        # Handle cases where commit object doesn't have hexsha (like in tests)
+        if hasattr(commit, 'hexsha') and commit.hexsha:
+            current_span.set_attribute("journal.commit_hash", commit.hexsha[:8])
+        else:
+            current_span.set_attribute("journal.commit_hash", "unknown")
     
     try:
         # Import required utilities
