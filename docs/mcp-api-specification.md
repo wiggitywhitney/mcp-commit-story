@@ -52,8 +52,9 @@ The server exposes these operations for journal management:
 
 1. **`journal/new-entry`** - Create a new journal entry from git, chat, and terminal context ✅ **IMPLEMENTED**
 2. **`journal/add-reflection`** - Add a manual reflection to a specific date's journal
-3. **`journal/init`** - Initialize journal in current repository  
-4. **`journal/install-hook`** - Install git post-commit hook
+3. **`journal/capture-context`** - Capture AI-generated project knowledge for future context ✅ **IMPLEMENTED**
+4. **`journal/init`** - Initialize journal in current repository  
+5. **`journal/install-hook`** - Install git post-commit hook
 
 Each operation is instrumented with appropriate traces to monitor performance and error rates.
 
@@ -218,6 +219,61 @@ Each operation is instrumented with appropriate traces to monitor performance an
 {
   "repo_path": "/path/to/my-project"
 }
+```
+
+### journal/capture-context ✅ **FULLY IMPLEMENTED**
+**Purpose**: Capture AI-generated project knowledge and store it in the daily journal
+
+**Implementation Status**: Complete with telemetry integration, context collection support, and proper file operations.
+
+**Parameters**:
+- `text: Optional[str]` (optional) - AI knowledge to capture (if null, captures full AI context dump)
+
+**Implementation Details**:
+- Integrates with existing journal file structure and timestamp formatting
+- Includes captured knowledge in future journal generation as context
+- Implements proper telemetry tracking and error handling
+- Supports automatic creation of daily journal files
+- Uses consistent "AI Knowledge Capture" section headers
+
+**Behavior**:
+- Append AI knowledge to today's journal file with timestamp
+- Create daily journal file if it doesn't exist
+- Support markdown formatting in captured text
+- Include captured knowledge in future journal context collection
+
+**Returns**:
+```json
+{
+  "status": "success",
+  "file_path": "journal/daily/2025-01-15-journal.md",
+  "error": null
+}
+```
+
+**Error Response**:
+```json
+{
+  "status": "error",
+  "file_path": "",
+  "error": "Detailed error message"
+}
+```
+
+**Example Request**:
+```json
+{
+  "text": "Key insight about React state management: Use useCallback for expensive computations in list items to prevent unnecessary re-renders. This pattern reduces rendering time by 60% in our product catalog."
+}
+```
+
+**Example Journal Output**:
+```markdown
+### 2:30 PM — AI Knowledge Capture
+
+Key insight about React state management: Use useCallback for expensive 
+computations in list items to prevent unnecessary re-renders. This pattern 
+reduces rendering time by 60% in our product catalog.
 ```
 
 ---

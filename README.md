@@ -70,14 +70,29 @@ The AI orchestration breakthrough demonstrates how architectural insights often 
 - **Background Generation:** Git commits automatically trigger journal entry creation that happens silently in the background. No workflow interruption, no waiting.
 - **Rich Context Collection:** The system automatically pulls in commit messages, code changes, AI chat history, and your project's README, building a rich, evidence-based journal entry where the AI always understands your project's goals.
 - **Intelligent Chat Collection:** Captures all AI conversations between commits using Cursor's AI chat, providing complete chronological context for each code change. See the [Chat Integration User Guide](docs/chat-integration-guide.md) for complete details.
+- **AI Knowledge Preservation:** Capture AI assistant insights during development to enrich future journal entries. Prevents rediscovering the same solutions and builds a persistent knowledge base that grows with your project.
 - **User Control:** While generation happens automatically, you control the context. Add manual reflections or capture your AI assistant's current knowledge directly into your journal.
 - **No Hallucinated Summaries:** Everything in your journal is grounded in real actions and conversations.
 - **Mood and Emotion:** The journal reflects your mood and tone based on how you talk to the AI agent or what you write in commit messages—so if you vent, celebrate, or reflect, those feelings are captured authentically.
 - **Automatic Summaries:** Daily summaries are generated automatically, with weekly, monthly, quarterly, and yearly summaries planned to help you spot patterns, track progress, and find the stories worth sharing.
 
+## AI Knowledge Preservation in Action
+
+During AI-assisted development, valuable insights often emerge but get lost when the conversation ends. MCP Commit Story's AI Knowledge Preservation feature solves this with a simple workflow:
+
+**Example Use Case:**
+1. **Discovery**: You're debugging with your AI assistant and discover that React's useCallback should be used for expensive list computations to prevent re-renders
+2. **Capture**: Use the `journal/capture-context` tool to save this insight: *"Use useCallback for expensive computations in list items - reduces rendering time by 60% in product catalogs"*
+3. **Integration**: The insight is stored in your daily journal file with proper timestamp
+4. **Enrichment**: When you commit your next React optimization, the journal generation system automatically includes this previous insight as context
+5. **Result**: Your commit journal entry references the earlier discovery, creating richer documentation that builds on previous learning
+
+This creates a continuous learning cycle where today's insights inform tomorrow's journal entries, preventing knowledge loss and building a persistent understanding of your project's evolving patterns and solutions.
+
 For a technical deep dive into the architecture, workflow, and engineering decisions behind MCP Commit Story, see the **[Technical Documentation](docs/)** which includes:
 
 - **[Architecture Overview](docs/architecture.md)** - System design and architectural decisions
+- **[AI Knowledge Capture Guide](docs/ai-knowledge-capture-guide.md)** - Complete usage guide for knowledge preservation
 - **[MCP API Specification](docs/mcp-api-specification.md)** - Complete API reference for integration
 - **[Implementation Guide](docs/implementation-guide.md)** - Development patterns and technical details
 - **[Journal Behavior](docs/journal-behavior.md)** - How entries are generated and structured

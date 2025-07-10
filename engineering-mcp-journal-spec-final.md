@@ -9,6 +9,7 @@
 5. [SQLite Database Integration](#sqlite-database-integration)
 6. [Exception Handling Architecture](#exception-handling-architecture)
 7. [Journal Generation](#journal-generation)
+   - [AI Knowledge Capture Integration](#ai-knowledge-capture-integration)
 8. [Testing Strategy](#testing-strategy)
 9. [Development Workflow](#development-workflow)
 10. [Deployment](#deployment)
@@ -173,15 +174,36 @@ class MCPCommitStoryServer:
     def __init__(self):
         self.tools = [
             Tool(
-                name="generate_journal_entry",
+                name="journal_new_entry",
                 description="Generate journal entry from git commit and chat history",
-                inputSchema=JOURNAL_ENTRY_SCHEMA
+                inputSchema=JOURNAL_NEW_ENTRY_SCHEMA
+            ),
+            Tool(
+                name="journal_add_reflection",
+                description="Add manual reflection to journal",
+                inputSchema=JOURNAL_ADD_REFLECTION_SCHEMA
+            ),
+            Tool(
+                name="journal_capture_context", 
+                description="Capture AI knowledge for future journal context",
+                inputSchema=JOURNAL_CAPTURE_CONTEXT_SCHEMA
+            ),
+            Tool(
+                name="journal_init",
+                description="Initialize journal in repository", 
+                inputSchema=JOURNAL_INIT_SCHEMA
             )
         ]
     
     async def handle_tool_call(self, tool_name: str, arguments: dict) -> ToolResult:
-        if tool_name == "generate_journal_entry":
-            return await self.generate_journal_entry(**arguments)
+        if tool_name == "journal_new_entry":
+            return await self.journal_new_entry(**arguments)
+        elif tool_name == "journal_add_reflection":
+            return await self.journal_add_reflection(**arguments)
+        elif tool_name == "journal_capture_context":
+            return await self.journal_capture_context(**arguments)
+        elif tool_name == "journal_init":
+            return await self.journal_init(**arguments)
 ```
 
 ### Tool Schema
@@ -957,6 +979,123 @@ async def extract_chat_context(self, commit_time: datetime,
         session_count=len(chat_data.conversations),
         total_messages=len(messages)
     )
+
+### AI Knowledge Capture Integration
+
+The journal generation system includes AI knowledge capture functionality that preserves valuable insights between development sessions, enriching future journal entries with accumulated context.
+
+#### Context Collection Flow
+
+```python
+# context_collection.py
+def collect_recent_journal_context(commit) -> RecentJournalContext:
+    """
+    Collect recent journal context to enrich commit journal generation.
+    
+    Extracts the most recent journal entry plus any AI captures/reflections added after
+    that entry to provide relevant context while avoiding duplication.
+    """
+    commit_date_str = commit.committed_datetime.strftime('%Y-%m-%d')
+    journal_file_path = get_journal_file_path(commit_date_str)
+    
+    if not Path(journal_file_path).exists():
+        return RecentJournalContext(
+            latest_entry=None,
+            additional_context=[],
+            metadata={"file_exists": False, "commit_date": commit_date_str}
+        )
+    
+    # Parse journal file to extract latest entry and subsequent captures
+    parser = JournalParser(journal_file_path)
+    sections = parser.parse_sections()
+    
+    # Find most recent commit entry
+    latest_entry = None
+    additional_context = []
+    found_latest = False
+    
+    for section in reversed(sections):
+        if section.section_type == "commit" and not found_latest:
+            latest_entry = section.content
+            found_latest = True
+        elif found_latest and section.section_type in ["ai_knowledge_capture", "reflection"]:
+            additional_context.append(section.content)
+    
+    return RecentJournalContext(
+        latest_entry=latest_entry,
+        additional_context=list(reversed(additional_context)),  # Chronological order
+        metadata={
+            "file_exists": True,
+            "commit_date": commit_date_str,
+            "sections_found": len(sections),
+            "additional_context_count": len(additional_context)
+        }
+    )
+```
+
+#### Data Flow Example
+
+```python
+# Integration with journal orchestrator
+def collect_all_context_data(commit, config) -> JournalContext:
+    """Enhanced context collection including recent journal context."""
+    
+    # Standard context collection
+    git_context = collect_git_context(commit)
+    chat_context = collect_chat_context(commit, config)
+    terminal_context = collect_terminal_context(commit)
+    
+    # NEW: Journal context collection
+    journal_context = None
+    try:
+        journal_context = collect_recent_journal_context(commit)
+    except Exception as e:
+        logger.warning(f"Failed to collect journal context: {e}")
+        # Graceful degradation - journal context is optional
+    
+    return JournalContext(
+        git=git_context,
+        chat=chat_context,
+        terminal=terminal_context,
+        journal=journal_context,  # Available for AI functions
+        config=config
+    )
+
+# AI functions can now access journal context
+def generate_summary_section(journal_context: JournalContext) -> str:
+    """Generate summary with awareness of recent journal context."""
+    prompt_parts = [
+        "Generate a summary for this commit:",
+        f"Commit: {journal_context.git.commit_message}",
+        f"Files: {', '.join(journal_context.git.files_changed)}"
+    ]
+    
+    # Include recent journal context if available
+    if journal_context.journal and journal_context.journal.latest_entry:
+        prompt_parts.append("Previous journal entry context:")
+        prompt_parts.append(journal_context.journal.latest_entry[:500])  # First 500 chars
+        
+        if journal_context.journal.additional_context:
+            prompt_parts.append("Recent AI captures and reflections:")
+            for context in journal_context.journal.additional_context:
+                prompt_parts.append(context[:200])  # First 200 chars each
+    
+    return generate_ai_content("\n\n".join(prompt_parts))
+```
+
+#### Journal Capture Format
+
+AI knowledge captures are stored in daily journal files using this format:
+
+```markdown
+### 2:30 PM — AI Knowledge Capture
+
+Key insight about React state management: Use useCallback for expensive 
+computations in list items to prevent unnecessary re-renders. This pattern 
+reduces rendering time by 60% in our product catalog.
+```
+
+When subsequent commits occur, the `collect_recent_journal_context()` function retrieves these captures and includes them in the AI generation context, enabling richer and more informed journal entries that build upon previous insights.
 ```
 
 ## Testing Strategy

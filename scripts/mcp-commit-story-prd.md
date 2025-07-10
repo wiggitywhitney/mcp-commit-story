@@ -73,8 +73,20 @@
 #### **User-Controlled Context Addition**
 - **Manual reflections**: Direct thought capture via journal/add-reflection tool
 - **AI context capture**: Capture current AI assistant knowledge via journal/capture-context tool
-- **Flexible timing**: Add context before, during, or after development work
+  - **Problem**: AI knowledge lost between sessions - valuable insights from AI conversations disappear when the session ends
+  - **Solution**: Persistent knowledge capture in journal files that enriches future commit journal generation
+  - **Benefits**: Continuous learning, richer documentation, team knowledge sharing, prevents rediscovering solutions
+- **Flexible timing**: Add context before, during, or after development work  
 - **Integration**: Context automatically included in future journal entries
+
+**Usage Example for AI Context Capture:**
+```
+Developer discovers React performance optimization with AI assistant
+→ Uses journal/capture-context to save insight
+→ Knowledge stored in daily journal with timestamp
+→ Next React commit automatically references previous insight
+→ Creates continuous learning cycle in journal documentation
+```
 
 #### **Automatic Summary Generation**
 - **Daily summaries**: Generated automatically when date boundaries are detected
