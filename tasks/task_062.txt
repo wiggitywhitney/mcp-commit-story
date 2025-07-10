@@ -75,3 +75,163 @@ The implementation will be verified through a comprehensive testing approach:
 6. Manual Testing:
    - Create a real-world scenario with work spanning multiple chat sessions
    - Execute a commit and verify the journal entry contains all relevant conversations
+
+# Subtasks:
+## 1. Implement Multi-Database Discovery in Chat Extraction [pending]
+### Dependencies: None
+### Description: WRITE TESTS FIRST
+Create tests/unit/test_multi_database_chat_extraction.py
+Test that query_cursor_chat_database() uses discover_all_cursor_databases():
+- Mock scenario where multiple database files exist
+- Verify all discovered workspace databases are paired with single global database
+- Test chronological ordering of combined results from multiple providers
+- Test handling when some databases are corrupted/inaccessible (partial results)
+Test backward compatibility:
+- Single database scenario still works
+- Performance remains acceptable
+Test error handling:
+- Continue with partial results when some databases fail
+- Proper logging of database failures
+- Data quality metadata in response
+
+RUN TESTS - VERIFY THEY FAIL
+
+IMPLEMENT FUNCTIONALITY
+Modify query_cursor_chat_database() to use multi-database discovery:
+- Replace single database approach with discover_all_cursor_databases()
+- Extract global database path logic from find_workspace_composer_databases()
+- Create multiple ComposerChatProvider instances, each pairing a workspace database with the same global database
+- Query each provider instance and combine results chronologically
+- Add data quality metadata to response with failure_reasons for debugging
+- Maintain all existing error handling and telemetry
+- Add telemetry attributes for databases discovered/queried/failed
+
+RUN TESTS - VERIFY THEY PASS
+
+DOCUMENT AND COMPLETE
+Update function docstring to explain multi-database support
+Run the entire test suite and make sure all tests are passing
+MARK COMPLETE
+### Details:
+Implementation approach:
+```python
+# Replace single database approach
+workspace_dbs = discover_all_cursor_databases(workspace_path)
+global_db = get_global_database_path()  # Standard location
+
+all_messages = []
+databases_queried = 0
+databases_failed = 0
+failure_reasons = []
+
+for workspace_db in workspace_dbs:
+    try:
+        provider = ComposerChatProvider(workspace_db, global_db)
+        messages = provider.getChatHistoryForCommit(start_ts, end_ts)
+        all_messages.extend(messages)
+        databases_queried += 1
+    except Exception as e:
+        logger.warning(f"Failed to query database {workspace_db}: {e}")
+        databases_failed += 1
+        failure_reasons.append(f"{Path(workspace_db).name}: {str(e)}")
+
+# Sort combined messages chronologically
+all_messages.sort(key=lambda m: m['timestamp'])
+```
+
+Data quality metadata structure:
+```python
+"data_quality": {
+    "databases_found": len(workspace_dbs),
+    "databases_queried": databases_queried,
+    "databases_failed": databases_failed,
+    "failure_reasons": failure_reasons,
+    "status": "complete" if databases_failed == 0 else "partial"
+}
+```
+
+Architecture:
+- One global database at globalStorage/state.vscdb (shared across all workspaces)
+- Multiple workspace databases at workspaceStorage/{hash}/state.vscdb (each contains session references)
+- Multiple ComposerChatProvider instances, each pairing a workspace database with the same global database
+
+## 2. Integration Testing and Edge Cases [pending]
+### Dependencies: None
+### Description: WRITE TESTS FIRST
+Create integration tests for multi-database scenarios:
+- Test with databases from different time periods
+- Verify correct session filtering (time window overlap)
+- Test performance with multiple large databases
+- Verify graceful handling of permission errors
+- Test data quality metadata accuracy
+
+RUN TESTS - VERIFY THEY FAIL IF NEEDED
+
+IMPLEMENT FUNCTIONALITY
+Handle any edge cases discovered during testing
+Ensure the 48-hour database filtering from discover_all_cursor_databases() works correctly
+Verify memory usage remains reasonable with multiple databases
+Fine-tune error handling and logging
+
+RUN TESTS - VERIFY THEY PASS
+
+DOCUMENT AND COMPLETE
+Document any important edge cases discovered
+Run the entire test suite and make sure all tests are passing
+MARK COMPLETE
+### Details:
+Focus areas for integration testing:
+- Multiple databases with overlapping time windows
+- Databases with different schema versions (graceful degradation)
+- Permission errors during database access
+- Large databases (memory and performance testing)
+- Edge cases like empty databases or corrupted files
+
+Ensure the existing 48-hour filtering optimization in discover_all_cursor_databases() works correctly with the multi-database approach.
+
+Performance considerations:
+- Memory usage when combining large result sets from multiple databases
+- Query execution time with multiple database files
+- Verify telemetry and logging work correctly across multiple providers
+
+## 3. Update Documentation for Multi-Database Support [pending]
+### Dependencies: None
+### Description: UPDATE DOCUMENTATION
+Update cursor-chat-api-reference.md:
+- Add documentation for new data_quality metadata in API response
+- Add section explaining automatic multi-database discovery and querying
+- Ensure the documentation aligns with cursor-chat-discovery.md (source of truth)
+- Clarify that chat data is extracted from multiple workspace databases paired with shared global database
+
+Update any other relevant documentation to reflect multi-database support
+
+Follow documentation standards strictly:
+Forbidden Content:
+- Process references: Do NOT mention Task 62, subtask numbers, or implementation workflow
+- Historical narrative: Do NOT write "we used to query one database, now we query multiple"
+- Assumed knowledge: Do NOT reference team decisions or project history
+- Personal references: Do NOT mention any developer names or timeline details
+
+Quality Test: Could a new developer understand multi-database chat extraction without asking questions?
+
+RUN TESTS AND COMPLETE
+Run the entire test suite and make sure all tests are passing
+MARK COMPLETE
+### Details:
+Documentation updates should focus on:
+1. New data_quality metadata structure in API responses:
+   - databases_found, databases_queried, databases_failed
+   - failure_reasons array for debugging
+   - status field (complete/partial)
+
+2. Multi-database architecture explanation:
+   - Multiple workspace databases contain session references
+   - Single global database contains all message content
+   - Automatic discovery and querying of all relevant databases
+
+3. Error handling and partial results:
+   - System continues with available data when some databases fail
+   - Transparency through data_quality metadata
+
+Follow user's documentation preferences for external readers with no prior context.
+
