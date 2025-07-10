@@ -35,7 +35,7 @@ def generate_journal_entry(commit, config, debug=False) -> Optional[JournalEntry
     Returns:
         JournalEntry: Complete journal entry object, or None if commit should be skipped
     """
-    from .context_collection import collect_chat_history, collect_git_context
+    from .context_collection import collect_chat_history, collect_git_context, collect_recent_journal_context
     from .journal import (
         generate_summary_section, generate_technical_synopsis_section,
         generate_accomplishments_section, generate_frustrations_section,
@@ -93,10 +93,20 @@ def generate_journal_entry(commit, config, debug=False) -> Optional[JournalEntry
             'commit_context': {}
         }
     
-    # Build JournalContext using correct 2-field structure: chat, git (terminal removed)
+    # Collect recent journal context (new in Task 51.4)
+    try:
+        if debug:
+            logger.debug("Collecting recent journal context")
+        context_data['journal_context'] = collect_recent_journal_context(commit)
+    except Exception as e:
+        logger.error(f"Failed to collect recent journal context: {e}")
+        context_data['journal_context'] = None
+    
+    # Build JournalContext using correct 3-field structure: chat, git, journal
     journal_context = JournalContext(
         chat=context_data['chat_history'],
-        git=context_data['git_context']
+        git=context_data['git_context'],
+        journal=context_data['journal_context']
     )
     
     if debug:

@@ -19,7 +19,7 @@ from pathlib import Path
 
 from mcp_commit_story.telemetry import trace_mcp_operation, get_mcp_metrics
 from mcp_commit_story.context_types import JournalContext, ChatHistory, GitContext
-from mcp_commit_story.context_collection import collect_git_context, collect_chat_history
+from mcp_commit_story.context_collection import collect_git_context, collect_chat_history, collect_recent_journal_context
 from mcp_commit_story.journal import (
     JournalEntry,
     generate_summary_section,
@@ -241,6 +241,7 @@ def collect_all_context_data(
     # Initialize context components
     git_context = None
     chat_context = None
+    journal_context = None
     
     # 1. Git context (Python implementation - most reliable)
     try:
@@ -265,13 +266,26 @@ def collect_all_context_data(
         logger.warning(f"Chat history collection failed: {e}")
         chat_context = None
     
+    # 3. Recent journal context (new in Task 51.4 - may fail)
+    try:
+        # Need commit object for journal context collection
+        from mcp_commit_story.git_utils import get_repo
+        repo = get_repo(repo_path)
+        commit = repo.commit(commit_hash)
+        journal_context = collect_recent_journal_context(commit)
+        logger.info("Recent journal context collection successful")
+    except Exception as e:
+        logger.warning(f"Recent journal context collection failed: {e}")
+        journal_context = None
+    
     # Architecture Decision: Terminal Command Collection Removed (2025-06-27)
     # Terminal command collection removed as it's no longer feasible or valuable
     
     # Assemble context with whatever succeeded
     return {
         'git': git_context,
-        'chat': chat_context
+        'chat': chat_context,
+        'journal': journal_context
     }
 
 
