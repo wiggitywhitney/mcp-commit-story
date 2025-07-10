@@ -20,10 +20,13 @@ from the developer's own journaling and reflection process.
 import os
 import time
 import logging
-from mcp_commit_story.context_types import ChatHistory, GitContext
+from pathlib import Path
+from typing import List, Dict, Any, Optional
+from mcp_commit_story.context_types import ChatHistory, GitContext, RecentJournalContext
 from mcp_commit_story.git_utils import get_repo, get_current_commit, get_commit_details, get_commit_diff_summary, classify_file_type, classify_commit_size, NULL_TREE
 from mcp_commit_story.telemetry import (
     trace_git_operation, 
+    trace_mcp_operation,
     memory_tracking_context, 
     smart_file_sampling,
     get_mcp_metrics,
@@ -35,7 +38,14 @@ from mcp_commit_story.telemetry import (
 from mcp_commit_story.cursor_db import query_cursor_chat_database
 from mcp_commit_story.ai_context_filter import filter_chat_for_commit
 
+import re
+
 logger = logging.getLogger(__name__)
+
+# Pre-compiled regex patterns for journal parsing (performance optimization)
+_JOURNAL_ENTRY_PATTERN = re.compile(r'^## (\d{1,2}:\d{2} (?:AM|PM)) — Git Commit: ([a-zA-Z0-9]+)', re.MULTILINE)
+_CAPTURE_REFLECTION_PATTERN = re.compile(r'^## (\d{1,2}:\d{2} (?:AM|PM)|[\d:]+) — (?:AI Context Capture|Reflection)', re.MULTILINE)
+_SECTION_BOUNDARY_PATTERN = re.compile(r'^## (?:\d{1,2}:\d{2} (?:AM|PM)|[\d:]+) —', re.MULTILINE)
 
 
 @trace_git_operation("chat_history", 
@@ -143,7 +153,7 @@ def collect_chat_history(
             # Preserve enhanced Composer metadata in the conversion
             message_data = {
                 'speaker': 'Human' if msg.get('role') == 'user' else 'Assistant',
-                'text': msg.get('content', '')
+                'text': sanitize_chat_content(msg.get('content', ''))  # SECURITY: Sanitize chat content before journal generation
             }
             
             # Preserve additional metadata from Composer if available
@@ -329,3 +339,329 @@ def trace_context_transformation(operation_name: str):
     """Function for testing context transformation tracing."""
     # This is just for testing - would be implemented with actual transformation logic
     return {"operation": operation_name, "status": "completed"} 
+
+
+def sanitize_chat_content(content: Optional[str]) -> str:
+    """
+    Sanitize potentially sensitive information from chat content before journal generation.
+    
+    Prevents API keys, tokens, passwords, and other secrets from being accidentally logged
+    in journal entries by applying comprehensive pattern-based sanitization.
+    
+    Patterns reused from telemetry.sanitize_for_telemetry() with focus on chat content:
+    - API keys and tokens (preserve first 8 chars for readability)
+    - JSON Web Tokens (JWT)
+    - Bearer tokens in headers
+    - Environment variable assignments
+    - Database connection strings
+    - GitHub tokens
+    
+    Args:
+        content: Chat message content to sanitize, can be None
+        
+    Returns:
+        Sanitized content with sensitive data replaced by *** markers,
+        empty string if content is None
+        
+    Examples:
+        >>> sanitize_chat_content("My API key is sk_1234567890abcdef1234567890abcdef")
+        'My API key is sk_12345***'
+        
+        >>> sanitize_chat_content("Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.payload.signature")
+        'Bearer jwt.***'
+    """
+    if content is None:
+        return ""
+    
+    if not content.strip():
+        return content
+    
+    str_value = str(content)
+    
+    # Order matters! Apply most specific patterns first to avoid conflicts
+    
+    # 1. JSON Web Tokens (JWT) - three base64 segments separated by dots
+    # Must be specific to avoid false positives on version numbers
+    str_value = re.sub(
+        r'\beyJ[A-Za-z0-9-_]+\.[A-Za-z0-9-_]{4,}\.[A-Za-z0-9-_]+\b', 
+        'jwt.***', 
+        str_value
+    )
+    
+    # 2. GitHub tokens (specific prefixes)
+    str_value = re.sub(
+        r'\b(ghp_|gho_|ghu_|ghs_|ghr_)[A-Za-z0-9]{36,}\b',
+        lambda m: m.group(1) + m.group(0)[4:8] + '***',
+        str_value
+    )
+    
+    # 3. API keys with common prefixes (sk_, pk_, etc.)
+    str_value = re.sub(
+        r'\b(sk_|pk_|rk_|ak_)[A-Za-z0-9_]{12,}\b',
+        lambda m: m.group(0)[:8] + '***',
+        str_value
+    )
+    
+    # 4. Bearer tokens in headers (after JWT so JWT gets specific handling)
+    # Don't match if already contains jwt.*** replacement
+    str_value = re.sub(
+        r'(Bearer\s+)(?!jwt\.\*\*\*)[A-Za-z0-9\-._~+/]+=*', 
+        r'\1***', 
+        str_value, 
+        flags=re.IGNORECASE
+    )
+    
+    # 5. Long alphanumeric strings that look like API keys/tokens (32+ chars, not version numbers)
+    # Be more conservative - only if it looks like a token (no dots, longer than 32 chars)
+    str_value = re.sub(
+        r'\b[A-Za-z0-9]{32,}\b', 
+        lambda m: m.group(0)[:8] + '***' if '.' not in m.group(0) else m.group(0), 
+        str_value
+    )
+    
+    # 6. Environment variable patterns (API_KEY=value, etc.)
+    str_value = re.sub(
+        r'(export\s+)?[A-Z_]+(KEY|SECRET|TOKEN|PASSWORD|AUTH)=[^\s]+', 
+        r'\1***=***', 
+        str_value
+    )
+    
+    # 7. Database passwords in connection strings
+    str_value = re.sub(
+        r'(password|pwd|secret)=([^;,\s]+)', 
+        r'\1=***', 
+        str_value, 
+        flags=re.IGNORECASE
+    )
+    
+    # 8. Database connection strings (mongodb://user:pass@host, postgres://user:pass@host)
+    str_value = re.sub(
+        r'(mongodb|postgres|mysql)://[^@]*@', 
+        r'\1://***:***@', 
+        str_value
+    )
+    
+    # 9. API endpoints with credentials (https://user:pass@example.com)
+    str_value = re.sub(
+        r'(https?://)[^@/]+:[^@/]+@', 
+        r'\1***:***@', 
+        str_value
+    )
+    
+    # 10. Auth tokens in URLs (?token=abc123, &key=def456)
+    str_value = re.sub(
+        r'(token|auth|key|secret)=[^&\s]+', 
+        r'\1=***', 
+        str_value, 
+        flags=re.IGNORECASE
+    )
+    
+    return str_value
+
+
+@trace_mcp_operation("context.collect_recent_journal")
+def collect_recent_journal_context(commit) -> RecentJournalContext:
+    """
+    Collect recent journal context to enrich commit journal generation.
+    
+    Extracts the most recent journal entry plus any AI captures/reflections added after
+    that entry to provide relevant context while avoiding duplication. Uses the commit's
+    date to determine which journal file to examine, following existing codebase patterns.
+    
+    Uses regex patterns for maintainable section parsing and implements comprehensive 
+    telemetry tracking with graceful error handling.
+    
+    Args:
+        commit: Git commit object containing date information for journal file selection
+        
+    Returns:
+        RecentJournalContext: Structured context with latest entry, additional context,
+                             and metadata about the collection process
+                             
+    Example:
+        commit = repo.commit('abc123')
+        context = collect_recent_journal_context(commit)
+        
+        if context['latest_entry']:
+            print(f"Latest entry: {len(context['latest_entry'])} chars")
+        print(f"Additional context sections: {len(context['additional_context'])}")
+    """
+    start_time = time.time()
+    
+    # Extract commit date for journal file selection
+    commit_date_str = commit.committed_datetime.strftime('%Y-%m-%d')
+    
+    # Initialize telemetry tracking
+    from opentelemetry import trace
+    current_span = trace.get_current_span()
+    if current_span:
+        current_span.set_attribute("journal.commit_date", commit_date_str)
+        current_span.set_attribute("journal.commit_hash", commit.hexsha[:8])
+    
+    try:
+        # Import required utilities
+        from mcp_commit_story.journal import get_journal_file_path, JournalParser
+        
+        # Get journal file path using commit date
+        relative_file_path = get_journal_file_path(commit_date_str, "daily")
+        journal_file_path = Path(relative_file_path)
+        
+        # Check if journal file exists
+        if not journal_file_path.exists():
+            if current_span:
+                current_span.set_attribute("journal.file_exists", False)
+            
+            return RecentJournalContext(
+                latest_entry=None,
+                additional_context=[],
+                metadata={
+                    'file_exists': False,
+                    'latest_entry_found': False,
+                    'additional_context_count': 0,
+                    'date': commit_date_str,
+                    'parser_sections': 0
+                }
+            )
+        
+        if current_span:
+            current_span.set_attribute("journal.file_exists", True)
+        
+        # Read journal file content
+        try:
+            with open(journal_file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+        except Exception as e:
+            logger.warning(f"Failed to read journal file {journal_file_path}: {e}")
+            if current_span:
+                current_span.set_attribute("journal.read_error", str(e))
+            
+            return RecentJournalContext(
+                latest_entry=None,
+                additional_context=[],
+                metadata={
+                    'file_exists': False,
+                    'latest_entry_found': False,
+                    'additional_context_count': 0,
+                    'date': commit_date_str,
+                    'parser_sections': 0
+                }
+            )
+        
+        if current_span:
+            current_span.set_attribute("journal.content_length", len(content))
+        
+        # Parse journal content to identify sections
+        
+        # Find the most recent journal entry (last one in the file)
+        entry_matches = list(_JOURNAL_ENTRY_PATTERN.finditer(content))
+        latest_entry = None
+        latest_entry_end_pos = 0
+        
+        if entry_matches:
+            # Get the last entry match (most recent)
+            latest_entry_match = entry_matches[-1]
+            latest_entry_start = latest_entry_match.start()
+            
+            # Find where this entry ends (start of next section or end of file)
+            next_section_pos = len(content)
+            
+            # Look for the next section starting with ## (any section, not just entries)
+            next_section_match = _SECTION_BOUNDARY_PATTERN.search(content[latest_entry_start + 1:])
+            if next_section_match:
+                next_section_pos = latest_entry_start + 1 + next_section_match.start()
+            
+            # Extract the latest entry content
+            latest_entry = content[latest_entry_start:next_section_pos].strip()
+            latest_entry_end_pos = next_section_pos
+            
+            if current_span:
+                current_span.set_attribute("journal.latest_entry_length", len(latest_entry))
+        
+        # Find captures/reflections added after the latest entry
+        additional_context = []
+        capture_matches = list(_CAPTURE_REFLECTION_PATTERN.finditer(content))
+        
+        for match in capture_matches:
+            capture_start = match.start()
+            
+            # Only include captures that come after the latest entry
+            # Use >= instead of > to include sections that start exactly at the boundary
+            if capture_start >= latest_entry_end_pos:
+                # Find where this capture/reflection ends
+                capture_end_pos = len(content)
+                
+                # Look for the next section
+                next_section_match = _SECTION_BOUNDARY_PATTERN.search(content[capture_start + 1:])
+                if next_section_match:
+                    capture_end_pos = capture_start + 1 + next_section_match.start()
+                
+                # Extract the capture/reflection content
+                capture_content = content[capture_start:capture_end_pos].strip()
+                additional_context.append(capture_content)
+        
+        # Record success metrics
+        duration = time.time() - start_time
+        metrics = get_mcp_metrics()
+        if metrics:
+            metrics.record_operation_duration(
+                "context.recent_journal_collection_duration_seconds",
+                duration,
+                operation_type="journal_context_collection"
+            )
+            metrics.record_counter(
+                "context.recent_journal_operations_total",
+                value=1,
+                attributes={
+                    "operation_type": "journal_context_collection",
+                    "success": "true"
+                }
+            )
+        
+        if current_span:
+            current_span.set_attribute("journal.latest_entry_found", latest_entry is not None)
+            current_span.set_attribute("journal.additional_context_count", len(additional_context))
+        
+        return RecentJournalContext(
+            latest_entry=latest_entry,
+            additional_context=additional_context,
+            metadata={
+                'file_exists': True,
+                'latest_entry_found': latest_entry is not None,
+                'additional_context_count': len(additional_context),
+                'date': commit_date_str,
+                'parser_sections': len(entry_matches) + len(capture_matches)
+            }
+        )
+        
+    except Exception as e:
+        # Record error metrics
+        duration = time.time() - start_time
+        metrics = get_mcp_metrics()
+        if metrics:
+            metrics.record_counter(
+                "context.recent_journal_operations_total",
+                value=1,
+                attributes={
+                    "operation_type": "journal_context_collection",
+                    "success": "false"
+                }
+            )
+        
+        if current_span:
+            current_span.set_attribute("error.category", "journal_context_collection_failed")
+            current_span.set_attribute("error.message", str(e))
+        
+        logger.error(f"Failed to collect recent journal context: {e}")
+        
+        # Return empty context on error
+        return RecentJournalContext(
+            latest_entry=None,
+            additional_context=[],
+            metadata={
+                'file_exists': False,
+                'latest_entry_found': False,
+                'additional_context_count': 0,
+                'date': commit_date_str,
+                'parser_sections': 0
+            }
+        ) 

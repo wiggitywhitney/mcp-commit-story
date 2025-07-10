@@ -12,6 +12,7 @@ from typing import List, Dict, Any, Union, Optional
 from .cursor_db import query_cursor_chat_database
 from .context_types import ChatMessage, TimeWindow, ChatContextData
 from .telemetry import trace_mcp_operation
+from .context_collection import sanitize_chat_content
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +112,7 @@ def _transform_chat_data(raw_data: Dict[str, Any]) -> ChatContextData:
         # Build enhanced ChatMessage
         enhanced_message = ChatMessage(
             speaker=speaker,
-            text=msg['content']
+            text=sanitize_chat_content(msg['content'])  # SECURITY: Sanitize chat content before processing
         )
         
         # Add optional fields if available
