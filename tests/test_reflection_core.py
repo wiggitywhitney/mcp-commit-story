@@ -93,7 +93,7 @@ class TestFormatReflection:
 
         result = format_reflection(reflection_text)
 
-        expected = "\n\n### 3:30 PM — Reflection\n\nThis is a test reflection about my coding progress."
+        expected = "\n\n____\n\n### 3:30 PM — Reflection\n\nThis is a test reflection about my coding progress."
         assert result == expected
     
     @patch('src.mcp_commit_story.reflection_core.datetime')
@@ -107,7 +107,7 @@ And contains various thoughts."""
 
         result = format_reflection(reflection_text)
 
-        expected = """\n\n### 3:30 PM — Reflection\n\nThis is a multiline reflection.
+        expected = """\n\n____\n\n### 3:30 PM — Reflection\n\nThis is a multiline reflection.
 It spans multiple lines.
 And contains various thoughts."""
         assert result == expected
@@ -119,7 +119,7 @@ And contains various thoughts."""
 
         result = format_reflection("")
 
-        expected = "\n\n### 3:30 PM — Reflection\n\n"
+        expected = "\n\n____\n\n### 3:30 PM — Reflection\n\n"
         assert result == expected
     
     @patch('src.mcp_commit_story.reflection_core.datetime')
@@ -141,7 +141,7 @@ class TestAddReflectionToJournal:
     @patch('src.mcp_commit_story.reflection_core.format_reflection')
     def test_add_reflection_creates_new_file(self, mock_format, mock_append):
         """Test adding reflection to a new journal file."""
-        mock_format.return_value = "\n\n### 3:30 PM — Reflection\n\nTest reflection"
+        mock_format.return_value = "\n\n____\n\n### 3:30 PM — Reflection\n\nTest reflection"
         
         with tempfile.TemporaryDirectory() as temp_dir:
             journal_path = os.path.join(temp_dir, "test-journal.md")
@@ -150,7 +150,7 @@ class TestAddReflectionToJournal:
             
             # Verify append_to_journal_file was called (which handles directory creation)
             mock_append.assert_called_once_with(
-                "\n\n### 3:30 PM — Reflection\n\nTest reflection",
+                "\n\n____\n\n### 3:30 PM — Reflection\n\nTest reflection",
                 journal_path
             )
             
@@ -164,7 +164,7 @@ class TestAddReflectionToJournal:
     @patch('src.mcp_commit_story.reflection_core.format_reflection')
     def test_add_reflection_appends_to_existing_file(self, mock_format, mock_append):
         """Test adding reflection to an existing journal file."""
-        mock_format.return_value = "\n\n### 3:30 PM — Reflection\n\nNew reflection"
+        mock_format.return_value = "\n\n____\n\n### 3:30 PM — Reflection\n\nNew reflection"
         
         with tempfile.TemporaryDirectory() as temp_dir:
             journal_path = os.path.join(temp_dir, "existing-journal.md")
@@ -173,7 +173,7 @@ class TestAddReflectionToJournal:
             
             # Verify append_to_journal_file was called
             mock_append.assert_called_once_with(
-                "\n\n### 3:30 PM — Reflection\n\nNew reflection",
+                "\n\n____\n\n### 3:30 PM — Reflection\n\nNew reflection",
                 journal_path
             )
             
@@ -183,7 +183,7 @@ class TestAddReflectionToJournal:
     @patch('src.mcp_commit_story.reflection_core.format_reflection')
     def test_add_reflection_handles_unicode(self, mock_format, mock_append):
         """Test adding reflection with unicode characters."""
-        mock_format.return_value = "\n\n### 3:30 PM — Reflection\n\nUnicode: 🎉 café naïve"
+        mock_format.return_value = "\n\n____\n\n### 3:30 PM — Reflection\n\nUnicode: 🎉 café naïve"
         
         with tempfile.TemporaryDirectory() as temp_dir:
             journal_path = os.path.join(temp_dir, "unicode-journal.md")
@@ -192,7 +192,7 @@ class TestAddReflectionToJournal:
             
             # Verify append_to_journal_file was called
             mock_append.assert_called_once_with(
-                "\n\n### 3:30 PM — Reflection\n\nUnicode: 🎉 café naïve",
+                "\n\n____\n\n### 3:30 PM — Reflection\n\nUnicode: 🎉 café naïve",
                 journal_path
             )
             

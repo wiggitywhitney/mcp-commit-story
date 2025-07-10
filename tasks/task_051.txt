@@ -242,7 +242,7 @@ To verify the correct implementation of the journal/capture-context MCP tool:
    - Test with multiple days of context to ensure the lookback period works correctly
 
 # Subtasks:
-## 1. Implement MCP Server Handler for capture-context [pending]
+## 1. Implement MCP Server Handler for capture-context [done]
 ### Dependencies: None
 ### Description: Create the core handler function that processes capture-context requests and appends to journal files. Also fix the reflection format to include the separator.
 ### Details:
