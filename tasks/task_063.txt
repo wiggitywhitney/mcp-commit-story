@@ -84,3 +84,95 @@ This task involves breaking up the large journal.py file into a more maintainabl
 7. Performance testing:
    - Compare performance metrics before and after refactoring
    - Ensure no significant performance regression was introduced
+
+# Subtasks:
+## 1. Analyze and Plan Module Structure [pending]
+### Dependencies: None
+### Description: Pure analysis subtask to understand the current journal.py structure before refactoring. Creates comprehensive analysis document that serves as source of truth for all subsequent refactoring subtasks.
+### Details:
+CREATE ANALYSIS DOCUMENT:
+- Create journal_refactoring_analysis.md in project root
+- Add header: "Journal.py Refactoring Analysis - Living Document"
+- Add section: "Current Status: Starting Analysis"
+- CRITICAL: This document is the source of truth throughout ALL refactoring subtasks
+- You MUST update this document after completing each subtask
+
+ANALYZE JOURNAL.PY:
+Read through the entire journal.py file with AI assistance. Create the analysis document with this exact structure:
+
+```markdown
+# Journal.py Refactoring Analysis - Living Document
+
+## Current Status
+Starting Analysis - Subtask 63.1 in progress
+
+## Function Inventory
+[List major functions/classes with current location and line numbers - good enough detail, not exhaustive]
+Example format:
+- JournalEntry class - IN: journal.py (lines 45-289)
+- save_journal_entry() - IN: journal.py (lines 1234-1289)
+- generate_summary_section() - IN: journal.py (lines 567-623)
+
+## Dependency Map
+[Document which functions call which other functions - focus on major dependencies]
+Example format:
+- generate_journal_entry() calls:
+  - save_journal_entry()
+  - all generate_*_section() functions
+  - is_journal_only_commit()
+
+## Import Analysis
+[What journal.py imports and what files import journal.py]
+
+## Natural Function Groupings Discovered
+[Group functions by actual patterns found - let structure emerge from analysis]
+Example:
+- Journal Entry Generation: [list functions]
+- File Operations: [list functions]  
+- Section Generators: [list functions]
+- [Other patterns discovered]
+
+## Proposed Module Structure
+journal/
+├── __init__.py          # Re-exports for backward compatibility
+└── [Module structure TBD - will emerge from function groupings above]
+
+## Migration Order
+[Specify the order to avoid breaking imports - rough plan]
+1. Create directory structure and __init__ files
+2. Move most independent functions first
+3. [etc... based on discovered dependencies]
+
+## Discovered Complexities & Warnings
+[Add any issues found during analysis]
+
+---
+
+## Changelog
+### Subtask 63.1 Completed - [DATE]
+- Initial analysis completed
+- Identified X functions and Y classes
+- Discovered natural groupings: [list]
+```
+
+COMPLETE THE ANALYSIS:
+- Update "Current Status" section to: "Analysis Complete - Ready for 63.2"
+- In the "Discovered Complexities & Warnings" section, add:
+  - Any circular dependency risks
+  - Functions that are tightly coupled
+  - Shared state between functions
+  - Any functions that don't fit clean categories
+  - Add recommendations for handling complexities
+- MARK COMPLETE
+
+Why No Tests?
+This subtask is pure analysis and documentation. You're not changing any code or creating any functionality - just understanding what exists. Tests would be meaningless here. Testing begins with subtask 63.2 when you start moving code.
+
+Critical Reminders:
+- The journal_refactoring_analysis.md file is your source of truth for the entire refactoring
+- You MUST update this document after EVERY subtask to keep it current
+- The main body should always reflect the CURRENT state
+- Use the Changelog section to track what changed in each subtask
+- When you start the next subtask, first update "Current Status" in the document
+- Good enough analysis - capture major patterns and dependencies, don't document every minor detail
+
