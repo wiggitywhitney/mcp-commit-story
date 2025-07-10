@@ -8,13 +8,10 @@ Terminal commands were originally designed to be collected by Cursor's AI with
 access to its execution context. With the shift to external journal generation,
 we no longer have access. Git diffs and chat context provide sufficient narrative.
 
-TODO: Implement collect_journal_context() functionality
-This function should read from journal/daily/YYYY-MM-DD-journal.md files to extract:
-- Recent reflection sections that provide project insights
-- Manual context additions from daily entries
-- Cross-reference with git commits to understand development patterns
-This would complement chat history by providing structured, intentional context
-from the developer's own journaling and reflection process.
+Journal context collection functionality is implemented via collect_recent_journal_context(commit).
+This function reads from journal/daily/YYYY-MM-DD-journal.md files and extracts recent
+reflection sections, manual context additions, and cross-references with git commits
+to provide structured context for journal generation.
 """
 
 import os

@@ -176,3 +176,166 @@ Critical Reminders:
 - When you start the next subtask, first update "Current Status" in the document
 - Good enough analysis - capture major patterns and dependencies, don't document every minor detail
 
+## 2. Create Module Structure and Move Core Classes [pending]
+### Dependencies: None
+### Description: Create the journal module structure and move JournalEntry and JournalParser classes with TDD approach and backward compatibility.
+### Details:
+UPDATE ANALYSIS DOCUMENT:
+- Open journal_refactoring_analysis.md
+- Update "Current Status" to: "Working on Subtask 63.2 - Moving Core Classes"
+- Update ALL sections to reflect current reality:
+  - Mark moved items in Function Inventory
+  - Update Proposed Module Structure to show what actually exists
+  - Update any other outdated information
+  - Note which classes you're about to move
+
+CREATE MODULE STRUCTURE:
+- Create src/mcp_commit_story/journal/ directory
+- Create empty src/mcp_commit_story/journal/__init__.py (no exports needed)
+- Create src/mcp_commit_story/journal/models.py with just file header
+- Create src/mcp_commit_story/journal/parser.py with just file header
+
+ANALYZE AND UPDATE TESTS FOR JournalEntry:
+- Search all test files for imports of JournalEntry
+- Update these imports FROM `from mcp_commit_story.journal import JournalEntry`
+- TO `from mcp_commit_story.journal.models import JournalEntry`
+- RUN TESTS - VERIFY THEY FAIL (import errors expected)
+
+MOVE JournalEntry CLASS:
+- Copy the entire JournalEntry class from journal.py to journal/models.py
+- Include any imports that JournalEntry needs
+- In journal.py, replace the JournalEntry class with:
+  ```python
+  from .journal.models import JournalEntry
+  ```
+- RUN TESTS - VERIFY THEY PASS
+
+ANALYZE AND UPDATE TESTS FOR JournalParser:
+- Search all test files for imports of JournalParser
+- Update these imports FROM `from mcp_commit_story.journal import JournalParser`
+- TO `from mcp_commit_story.journal.parser import JournalParser`
+- RUN TESTS - VERIFY THEY FAIL (import errors expected)
+
+MOVE JournalParser CLASS:
+- Copy the entire JournalParser class from journal.py to journal/parser.py
+- Include any imports that JournalParser needs (including JournalEntry from models.py)
+- In journal.py, replace the JournalParser class with:
+  ```python
+  from .journal.parser import JournalParser
+  ```
+- RUN TESTS - VERIFY THEY PASS
+
+VERIFY ALL IMPORTS:
+- Check that journal.py still exports both classes via its imports
+- Run the entire test suite to ensure nothing is broken
+- Search codebase for any missed imports that need updating
+
+VERIFY TELEMETRY:
+- Verify all @trace_mcp_operation decorators still present on moved code
+- Check telemetry imports work in new modules
+- Run a quick test that generates a journal entry to ensure telemetry data flows
+- Look for any telemetry warnings or errors in logs
+
+UPDATE ANALYSIS DOCUMENT:
+- Update "Current Status" to: "Subtask 63.2 Complete - Ready for 63.3"
+- Update the Function Inventory to show:
+  - JournalEntry class - IN: journal/models.py ✅ MOVED
+  - JournalParser class - IN: journal/parser.py ✅ MOVED
+- Update Proposed Module Structure to reflect created modules
+- Update any other sections that now have outdated information
+- Add to Changelog section:
+```markdown
+### Subtask 63.2 Completed - [DATE]
+- Created journal/ module structure  
+- Moved JournalEntry to journal/models.py
+- Moved JournalParser to journal/parser.py
+- Updated 3 test files with new import paths
+- Verified telemetry still working
+- All tests passing
+```
+
+FINAL VERIFICATION:
+- Run entire test suite one more time
+- Verify journal.py is now smaller
+- Verify new files have proper imports
+- MARK COMPLETE
+
+Key Reminders:
+- Move ONE class at a time (JournalEntry first, then JournalParser)
+- Update tests BEFORE moving code (TDD approach)
+- Verify tests fail, then pass after each move
+- Keep the analysis document current - update ALL outdated sections, not just changelog
+- Don't delete anything from journal.py - just replace with imports
+- Preserve all telemetry decorators and verify they work
+
+## 3. Extract File Operations [pending]
+### Dependencies: None
+### Description: Extract file operations and configuration utilities from journal.py into dedicated modules within the journal/ subdirectory for better organization.
+### Details:
+UPDATE ANALYSIS DOCUMENT:
+- Open journal_refactoring_analysis.md
+- Update "Current Status" to: "Working on Subtask 63.3 - Extracting File Operations"
+- Note which functions you're about to move
+
+CREATE NEW MODULES:
+- Create src/mcp_commit_story/journal/file_utils.py with file header
+- Create src/mcp_commit_story/journal/config_utils.py with file header
+
+ANALYZE AND UPDATE TESTS FOR FILE OPERATIONS:
+- Search all test files for imports of: append_to_journal_file, get_journal_file_path, ensure_journal_directory
+- Update these imports FROM from mcp_commit_story.journal import [function]
+- TO from mcp_commit_story.journal.file_utils import [function]
+- RUN TESTS - VERIFY THEY FAIL (import errors expected)
+
+MOVE FILE OPERATIONS TO FILE_UTILS.PY:
+- Move these three functions from journal.py to journal/file_utils.py:
+  - append_to_journal_file
+  - get_journal_file_path
+  - ensure_journal_directory
+- Copy ALL imports these functions need to the top of file_utils.py
+- Quick check: verify no circular dependencies created
+- In journal.py, replace each moved function with an import from file_utils
+- RUN TESTS - VERIFY THEY PASS
+
+ANALYZE AND UPDATE TESTS FOR CONFIG OPERATIONS:
+- Search test files for imports of load_journal_context
+- Update imports FROM from mcp_commit_story.journal import load_journal_context
+- TO from mcp_commit_story.journal.config_utils import load_journal_context
+- RUN TESTS - VERIFY THEY FAIL
+
+MOVE CONFIG OPERATIONS TO CONFIG_UTILS.PY:
+- Move load_journal_context from journal.py to journal/config_utils.py
+- Copy ALL imports this function needs to the top of config_utils.py
+- Quick check: verify no circular dependencies created
+- In journal.py, replace the function with an import from config_utils
+- RUN TESTS - VERIFY THEY PASS
+
+VERIFY ALL IMPORTS AND TELEMETRY:
+- Check that journal.py still has access to all moved functions via imports
+- Run entire test suite to ensure nothing is broken
+- Verify all @trace_mcp_operation decorators are still working
+- Check for any telemetry errors in logs
+
+UPDATE ANALYSIS DOCUMENT:
+- Update "Current Status" to: "Subtask 63.3 Complete - Ready for 63.4"
+- Update Function Inventory to show:
+  - Functions moved to journal/file_utils.py with ✅
+  - Function moved to journal/config_utils.py with ✅
+- Update all other outdated sections to reflect current state
+- Add to Changelog section with details of what moved where
+
+FINAL VERIFICATION:
+- Run entire test suite one more time
+- Verify journal.py is smaller
+- Verify new files have proper imports at top
+- Check no duplicate imports in the new files
+- MARK COMPLETE
+
+IMPORTANT NOTES:
+- Move functions one at a time, verifying tests after each move
+- The task description incorrectly states save_journal_entry is in journal.py - it's actually already in journal_workflow.py, so we're NOT moving it
+- We ARE creating journal/config_utils.py for load_journal_context since it's configuration-related
+- Keep ALL imports at the top of files (Python standard pattern)
+- Preserve all telemetry decorators
+- If you discover any functions lack tests while moving them, write minimal tests before moving (following TDD). However, don't write new tests just for the refactoring - existing tests should be sufficient to verify the move worked correctly"
+
