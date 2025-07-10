@@ -448,7 +448,7 @@ DOCUMENT AND COMPLETE
 This ensures journal entries, reflections, and AI knowledge captures all use the same header format and timestamp style for perfect consistency, while supporting both user-provided context and AI-generated knowledge dumps.
 </info added on 2025-07-08T01:52:10.028Z>
 
-## 2. Register capture-context Tool in MCP Server [pending]
+## 2. Register capture-context Tool in MCP Server [done]
 ### Dependencies: None
 ### Description: Add the tool to the server's registry with proper metadata and parameter definitions following existing patterns.
 ### Details:
@@ -641,6 +641,42 @@ async def handle_journal_capture_context_mcp(request: CaptureContextRequest) -> 
 
 All TDD methodology, telemetry integration, and documentation requirements remain exactly as specified in original plan.
 </info added on 2025-07-08T01:52:32.080Z>
+<info added on 2025-07-10T14:05:59.451Z>
+**Implementation Status Update:**
+
+✅ **TASK 51.2 COMPLETED SUCCESSFULLY**
+
+**MCP Tool Registration Implementation Complete:**
+
+**✅ Tests Written First (TDD Approach)**
+- Created comprehensive `tests/unit/test_capture_context_mcp_handler.py` with 12 test cases
+- Covers MCP handler function, tool registration, TypedDict definitions
+- Tests dual-mode support, error handling, telemetry integration, response format
+
+**✅ Implementation Added to server.py**
+- Added `CaptureContextRequest` and `CaptureContextResponse` TypedDict definitions
+- Added import for `handle_journal_capture_context` from journal_handlers
+- Registered tool with `@server.tool()` and `@trace_mcp_operation("journal_capture_context")`
+- Added `handle_journal_capture_context_mcp()` MCP handler function with proper decorators
+
+**✅ Tool Registration Following Existing Patterns**
+- Tool name: `journal_capture_context` (consistent with other tools)
+- Uses `@handle_mcp_error` for standardized error handling
+- Uses `@trace_mcp_operation` with proper telemetry attributes
+- Lightweight delegation to implementation in journal_handlers
+
+**✅ All Tests Pass**
+- MCP handler tests: 12/12 passing
+- Full test suite: 1224 tests passed, no regressions
+- Tool properly registered and accessible via MCP server
+
+**✅ Documentation Standards Met**
+- Clear docstring: "Capture AI's current project knowledge to provide context for future journal entries"
+- Follows existing MCP handler documentation patterns
+- No task references or implementation history
+
+The capture-context MCP tool is now fully registered and ready for use in the MCP server.
+</info added on 2025-07-10T14:05:59.451Z>
 
 ## 3. Create Context Collection Function [pending]
 ### Dependencies: None

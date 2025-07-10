@@ -30,6 +30,7 @@ from mcp_commit_story.git_utils import install_post_commit_hook
 from mcp_commit_story.journal import append_to_journal_file
 from mcp_commit_story.reflection_core import add_manual_reflection
 from mcp_commit_story.journal_orchestrator import orchestrate_journal_generation
+from mcp_commit_story.journal_handlers import handle_journal_capture_context
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -57,6 +58,15 @@ class AddReflectionRequest(TypedDict):
     date: str  # ISO date string (YYYY-MM-DD)
 
 class AddReflectionResponse(TypedDict):
+    status: str
+    file_path: str
+    error: Optional[str]
+
+# Request/response types for journal/capture-context
+class CaptureContextRequest(TypedDict):
+    text: Optional[str]  # AI-generated project knowledge to capture (None triggers full dump)
+
+class CaptureContextResponse(TypedDict):
     status: str
     file_path: str
     error: Optional[str]
@@ -175,6 +185,12 @@ def register_tools(server: FastMCP) -> None:
     async def journal_add_reflection(request: AddReflectionRequest) -> AddReflectionResponse:
         """Add a manual reflection to the journal for a specific date."""
         return await handle_journal_add_reflection(request)
+    
+    @server.tool()
+    @trace_mcp_operation("journal_capture_context")
+    async def journal_capture_context(request: CaptureContextRequest) -> CaptureContextResponse:
+        """Capture AI's current project knowledge to provide context for future journal entries."""
+        return await handle_journal_capture_context_mcp(request)
     
     @server.tool()
     @trace_mcp_operation("journal_init")
@@ -414,6 +430,24 @@ async def handle_journal_add_reflection(request: AddReflectionRequest) -> AddRef
     else:
         # This shouldn't happen due to @handle_mcp_error, but just in case
         raise MCPError(result.get("error", "Unknown error occurred"))
+
+@handle_mcp_error
+@trace_mcp_operation("capture_context.handle_mcp", attributes={
+    "operation_type": "mcp_handler", 
+    "content_type": "ai_context"
+})
+async def handle_journal_capture_context_mcp(request: CaptureContextRequest) -> CaptureContextResponse:
+    """MCP handler for capturing AI context - lightweight delegation to implementation."""
+    # Note: text can be None to trigger a full knowledge dump
+    
+    # Call the actual implementation (sync function)
+    result = handle_journal_capture_context(request.get("text"))
+    
+    return {
+        "status": result["status"],
+        "file_path": result.get("file_path", ""),
+        "error": result.get("error")
+    }
 
 @handle_mcp_error
 async def handle_journal_init(request: dict) -> dict:
