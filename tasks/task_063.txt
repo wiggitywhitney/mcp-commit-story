@@ -426,3 +426,106 @@ For each generator (summary, technical, accomplishments, frustrations, tone_mood
 - If you discover any generators lack tests, write minimal tests before moving
 - Preserve all telemetry decorators and ensure they work after the move
 
+## 5. Extract Orchestration Logic (If Any Exists) [pending]
+### Dependencies: 63.2, 63.3, 63.4
+### Description: Analyze journal.py after subtasks 63.2-63.4 to identify any remaining orchestration logic that coordinates between components, with approval gates before any code moves.
+### Details:
+Implementation Plan
+
+UPDATE ANALYSIS DOCUMENT
+
+Open journal_refactoring_analysis.md
+Update "Current Status" to: "Working on Subtask 63.5 - Analyzing for Orchestration Logic"
+
+
+ANALYZE WHAT REMAINS IN JOURNAL.PY
+
+After simulating the moves from subtasks 63.2-63.4, identify what functions remain
+Specifically look for:
+
+Functions that coordinate between multiple components
+Assembly or aggregation logic
+Workflow helpers that aren't full workflows
+Any "glue code" between modules
+
+
+Document findings in the analysis document
+PAUSE FOR MANUAL APPROVAL: Share findings before proceeding
+
+
+DETERMINE IF ORCHESTRATION EXISTS
+
+If NO orchestration logic found:
+
+Document that journal.py contains no orchestration logic
+Note that orchestration already exists in appropriate workflow files
+Skip to step 8 (Update Analysis Document as complete)
+This is the likely outcome
+
+
+If orchestration logic IS found:
+
+PAUSE FOR MANUAL APPROVAL: Get approval on where each function should go
+Continue to step 4
+
+
+
+
+DECIDE WHERE IT BELONGS (only if orchestration found)
+
+For each piece of orchestration logic, determine the best location
+Consider existing workflow files or other appropriate modules
+Document the decision for each function
+
+
+UPDATE TESTS (only if moving code)
+
+Search for test imports of any functions to be moved
+Update imports to new locations
+RUN TESTS - VERIFY THEY FAIL
+
+
+MOVE ORCHESTRATION FUNCTIONS (only if needed)
+
+Move each function to its determined location
+Add necessary imports
+Update journal.py to import from new location
+RUN TESTS - VERIFY THEY PASS
+
+
+VERIFY FUNCTIONALITY (only if code was moved)
+
+Run full test suite
+Check that all moved functions work correctly
+Verify no circular dependencies
+
+
+UPDATE ANALYSIS DOCUMENT
+
+Update "Current Status" to: "Subtask 63.5 Complete - Ready for 63.6"
+Document findings:
+
+If no orchestration found: Note this clearly
+If orchestration moved: List what moved where
+
+
+Update Function Inventory
+Add to Changelog
+
+
+FINAL VERIFICATION
+
+If code was moved: Run test suite again
+If no code moved: Document that analysis confirmed no orchestration in journal.py
+MARK COMPLETE
+
+
+
+Important Notes
+
+This subtask might result in NO code changes - that's perfectly fine
+The analysis might reveal that all orchestration has already been properly separated
+Don't force moves if the code is already in the right place
+Most likely outcome: Discover that orchestration already exists in the appropriate files
+PAUSE FOR MANUAL APPROVAL at key decision points - don't make assumptions about where code should go
+

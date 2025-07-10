@@ -216,11 +216,11 @@ class TestPipelineIntegration:
     """Test complete pipeline integration"""
 
     @patch('mcp_commit_story.context_collection.filter_chat_for_commit')
-    @patch('mcp_commit_story.composer_chat_provider.ComposerChatProvider')
+    @patch('mcp_commit_story.cursor_db.ComposerChatProvider')
     @patch('mcp_commit_story.cursor_db.get_commit_time_window')
-    @patch('mcp_commit_story.cursor_db.find_workspace_composer_databases')
+    @patch('mcp_commit_story.cursor_db.discover_all_cursor_databases')
     @patch('mcp_commit_story.context_collection.collect_git_context')
-    def test_end_to_end_pipeline_with_ai_filtering(self, mock_git_context, mock_find, mock_time, mock_provider, mock_filter):
+    def test_end_to_end_pipeline_with_ai_filtering(self, mock_git_context, mock_discover, mock_time, mock_provider, mock_filter):
         """Test complete pipeline from orchestrator through AI filtering"""
         # Reset circuit breaker to ensure clean test state
         from mcp_commit_story.cursor_db import reset_circuit_breaker
@@ -230,7 +230,7 @@ class TestPipelineIntegration:
         mock_commit.hexsha = "abc123"
         
         # Setup complete pipeline mocks
-        mock_find.return_value = ("/workspace/path", "/global/path")
+        mock_discover.return_value = (["/workspace/path"], "/global/path")
         mock_time.return_value = (1000000, 2000000)
         mock_git_context.return_value = {
             'metadata': {'hash': 'abc123', 'message': 'Test commit'},
@@ -257,9 +257,10 @@ class TestPipelineIntegration:
         result = collect_chat_history(commit=mock_commit, max_messages_back=150)
         
         # Verify the complete flow
-        mock_find.assert_called_once()
+        mock_discover.assert_called_once()
         mock_time.assert_called_once_with(mock_commit.hexsha)
-        mock_provider.assert_called_once()
+        # ComposerChatProvider is called once per database (workspace + global)
+        assert mock_provider.call_count == 2
         mock_filter.assert_called_once()
         
         # Verify final result has filtered messages

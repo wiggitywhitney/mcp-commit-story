@@ -28,8 +28,7 @@ MCP Commit Story follows a **background generation architecture** with automatic
                        │ Context Sources  │
                        │ • Git diff/log   │
                        │ • Chat history   │
-                       │ • Recent journals│
-                       │ • Project README │
+                       │ • Recent journals││
                        └──────────────────┘
 ```
 

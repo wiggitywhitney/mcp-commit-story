@@ -70,6 +70,9 @@ from .composer_integration import (
     get_commit_time_window,
     find_workspace_composer_databases
 )
+
+# Import ComposerChatProvider for multi-database support
+from ..composer_chat_provider import ComposerChatProvider
 logger = logging.getLogger(__name__)
 
 # Create tracer only if telemetry is available
@@ -232,15 +235,47 @@ def query_cursor_chat_database(commit=None) -> Dict[str, Any]:
         span.set_attribute("time_window.start_timestamp_ms", start_timestamp_ms)
         span.set_attribute("time_window.end_timestamp_ms", end_timestamp_ms)
         
-        # Step 3: Find Composer databases using workspace detection
+        # Step 3: Discover all workspace databases using multi-database approach
         try:
-            workspace_db_path, global_db_path = find_workspace_composer_databases()
+            # Try to find workspace databases using both new multi-database approach and fallback
+            workspace_db_paths = []
+            global_db_path = None
+            
+            try:
+                # Use current working directory as repo path
+                repo_path = os.getcwd()
+                workspace_match = detect_workspace_for_repo(repo_path)
+                
+                # Get the workspace root directory from the detected match
+                workspace_root = workspace_match.workspace_folder
+                if workspace_root.startswith("file://"):
+                    workspace_root = workspace_root[7:]
+                
+                # Discover all workspace databases 
+                workspace_db_paths = discover_all_cursor_databases(workspace_root)
+                
+                # Get global database using the standard method
+                _, global_db_path = find_workspace_composer_databases(repo_path)
+                
+            except Exception as workspace_detection_error:
+                logger.warning(f"Multi-database detection failed, trying fallback: {workspace_detection_error}")
+                
+                # Fallback to original single-database approach
+                try:
+                    single_workspace_db, global_db_path = find_workspace_composer_databases()
+                    workspace_db_paths = [single_workspace_db] if single_workspace_db else []
+                except Exception as fallback_error:
+                    logger.error(f"Both multi-database and fallback methods failed: {fallback_error}")
+                    raise fallback_error
+            
             if span:
-                    span.set_attribute("cursor.workspace_detected", bool(workspace_db_path))
+                    span.set_attribute("cursor.databases_discovered", len(workspace_db_paths))
+            if span:
+                    span.set_attribute("cursor.multi_database_mode", len(workspace_db_paths) > 1)
             if span:
                     span.set_attribute("cursor.global_database_detected", bool(global_db_path))
             if span:
-                    span.set_attribute("cursor.workspace_database_path", workspace_db_path or "none")
+                    span.set_attribute("cursor.workspace_databases_found", len(workspace_db_paths))
         except (WorkspaceDetectionError, CursorDatabaseError) as e:
             # Record failure in circuit breaker
             _circuit_breaker.record_failure()
@@ -282,7 +317,7 @@ def query_cursor_chat_database(commit=None) -> Dict[str, Any]:
             # Log error with context and troubleshooting hints
             context_info = getattr(e, 'context', {})
             path_info = context_info.get('path', 'unknown')
-            log_message = f"Database detection failed: {e}"
+            log_message = f"Multi-database discovery failed: {e}"
             if path_info and path_info != 'unknown':
                 log_message += f" (path: {path_info})"
                 
@@ -346,28 +381,78 @@ def query_cursor_chat_database(commit=None) -> Dict[str, Any]:
                     "strategy": "fallback",  # Indicate fallback strategy used due to error
                     "commit_hash": commit_hash,
                     "last_updated": datetime.now().isoformat(),
-                    "error_info": error_info
+                    "error_info": error_info,
+                    "data_quality": {
+                        "databases_found": 0,
+                        "databases_queried": 0,
+                        "databases_failed": 0,
+                        "status": "failed",
+                        "failure_reasons": [f"Database discovery failed: {str(e)}"]
+                    }
                 },
                 "chat_history": []
             }
         
-        # Step 4: Create ComposerChatProvider and retrieve messages
+        # Step 4: Create multiple ComposerChatProviders and retrieve messages from all databases
         try:
-            # Import here to avoid circular import
-            from ..composer_chat_provider import ComposerChatProvider
-            provider = ComposerChatProvider(workspace_db_path, global_db_path)
-            chat_messages = provider.getChatHistoryForCommit(start_timestamp_ms, end_timestamp_ms)
+            all_messages = []
+            databases_queried = 0
+            databases_failed = 0
+            failure_reasons = []
             
-            # Set success attributes
+            # Query each workspace database with the same global database
+            for workspace_db_path in workspace_db_paths:
+                try:
+                    provider = ComposerChatProvider(workspace_db_path, global_db_path)
+                    messages = provider.getChatHistoryForCommit(start_timestamp_ms, end_timestamp_ms)
+                    
+                    # Add message index to preserve within-session order
+                    # (ComposerChatProvider already sorts messages properly, but when we combine
+                    # messages from multiple databases, we need to preserve that order)
+                    for i, message in enumerate(messages):
+                        message['_message_index'] = i
+                    
+                    all_messages.extend(messages)
+                    databases_queried += 1
+                except Exception as provider_error:
+                    databases_failed += 1
+                    failure_reasons.append(f"Database {workspace_db_path}: {str(provider_error)}")
+                    logger.warning(f"Failed to query database {workspace_db_path}: {provider_error}")
+                    continue  # Skip this database, continue with others
+            
+            # Sort all messages using the same multi-criteria logic as ComposerChatProvider:
+            # 1. timestamp (session chronological order)
+            # 2. composerId (deterministic tiebreaker for sessions with same timestamp)  
+            # 3. _message_index (preserves within-session message order)
+            chat_messages = sorted(all_messages, key=lambda msg: (
+                msg.get('timestamp', 0),
+                msg.get('composerId', ''),
+                msg.get('_message_index', 0)
+            ))
+            
+            # Remove the temporary _message_index field
+            for message in chat_messages:
+                message.pop('_message_index', None)
+            
+            # Set success attributes for multi-database mode
             if span:
                     span.set_attribute("cursor.messages_retrieved", len(chat_messages))
             if span:
+                    span.set_attribute("cursor.databases_queried", databases_queried)
+            if span:
+                    span.set_attribute("cursor.databases_failed", databases_failed)
+            if span:
+                    span.set_attribute("cursor.multi_database_mode", True)
+            if span:
                     span.set_attribute("cursor.database_type", "composer")
             if span:
-                    span.set_attribute("cursor.success", True)
+                    span.set_attribute("cursor.success", databases_queried > 0)
             
-            # Record success in circuit breaker
-            _circuit_breaker.record_success()
+            # Record success in circuit breaker if at least one database worked
+            if databases_queried > 0:
+                _circuit_breaker.record_success()
+            else:
+                _circuit_breaker.record_failure()
             
         except Exception as e:
             # Record failure in circuit breaker
@@ -392,7 +477,7 @@ def query_cursor_chat_database(commit=None) -> Dict[str, Any]:
             logger.error(f"Composer provider failed: {e}", extra={
                 'error_type': e.__class__.__name__,
                 'error_category': error_category,
-                'workspace_database_path': workspace_db_path,
+                'workspace_databases': workspace_db_paths if 'workspace_db_paths' in locals() else [],
                 'global_database_path': global_db_path,
                 'troubleshooting_hint': getattr(e, 'troubleshooting_hint', None)
             })
@@ -423,15 +508,22 @@ def query_cursor_chat_database(commit=None) -> Dict[str, Any]:
             
             return {
                 "workspace_info": {
-                    "workspace_database_path": workspace_db_path,
-                    "global_database_path": global_db_path,
+                    "workspace_database_path": workspace_db_paths[0] if 'workspace_db_paths' in locals() and workspace_db_paths else None,
+                    "global_database_path": global_db_path if 'global_db_path' in locals() else None,
                     "total_messages": 0,
                     "time_window_start": start_timestamp_ms,
                     "time_window_end": end_timestamp_ms,
                     "time_window_strategy": time_window_strategy,
                     "commit_hash": commit_hash,
                     "last_updated": datetime.now().isoformat(),
-                    "error_info": error_info
+                    "error_info": error_info,
+                    "data_quality": {
+                        "databases_found": len(workspace_db_paths) if 'workspace_db_paths' in locals() else 0,
+                        "databases_queried": 0,
+                        "databases_failed": len(workspace_db_paths) if 'workspace_db_paths' in locals() else 0,
+                        "status": "failed",
+                        "failure_reasons": [f"Provider creation failed: {str(e)}"]
+                    }
                 },
                 "chat_history": []
             }
@@ -454,17 +546,32 @@ def query_cursor_chat_database(commit=None) -> Dict[str, Any]:
                 attributes={"source": "composer"}
             )
         
-        # Step 5: Build enhanced response with all metadata
+        # Step 5: Build enhanced response with multi-database metadata
+        # Determine data quality status
+        if databases_failed == 0:
+            data_quality_status = "complete"
+        elif databases_queried > 0:
+            data_quality_status = "partial"
+        else:
+            data_quality_status = "failed"
+        
         return {
             "workspace_info": {
-                "workspace_database_path": workspace_db_path,
+                "workspace_database_path": workspace_db_paths[0] if workspace_db_paths else None,  # Primary database for compatibility
                 "global_database_path": global_db_path,
                 "total_messages": len(chat_messages),
                 "time_window_start": start_timestamp_ms,
                 "time_window_end": end_timestamp_ms,
                 "time_window_strategy": time_window_strategy,
                 "commit_hash": commit_hash,
-                "last_updated": datetime.now().isoformat()
+                "last_updated": datetime.now().isoformat(),
+                "data_quality": {
+                    "databases_found": len(workspace_db_paths),
+                    "databases_queried": databases_queried,
+                    "databases_failed": databases_failed,
+                    "status": data_quality_status,
+                    "failure_reasons": failure_reasons
+                }
             },
             "chat_history": chat_messages  # Enhanced messages with timestamps, bubbleId, etc.
         }
@@ -519,7 +626,7 @@ def query_cursor_chat_database(commit=None) -> Dict[str, Any]:
         
         return {
             "workspace_info": {
-                "workspace_database_path": workspace_db_path if 'workspace_db_path' in locals() else None,
+                "workspace_database_path": workspace_db_paths[0] if 'workspace_db_paths' in locals() and workspace_db_paths else None,
                 "global_database_path": global_db_path if 'global_db_path' in locals() else None,
                 "total_messages": 0,
                 "time_window_start": start_timestamp_ms,
@@ -528,7 +635,14 @@ def query_cursor_chat_database(commit=None) -> Dict[str, Any]:
                 "strategy": "fallback",  # Indicate fallback strategy used due to error
                 "commit_hash": commit_hash if 'commit_hash' in locals() else None,
                 "last_updated": datetime.now().isoformat(),
-                "error_info": error_info
+                "error_info": error_info,
+                "data_quality": {
+                    "databases_found": len(workspace_db_paths) if 'workspace_db_paths' in locals() else 0,
+                    "databases_queried": 0,
+                    "databases_failed": len(workspace_db_paths) if 'workspace_db_paths' in locals() else 0,
+                    "status": "failed",
+                    "failure_reasons": [f"Ultimate fallback error: {str(e)}"]
+                }
             },
             "chat_history": []
         }
@@ -551,6 +665,7 @@ __all__ = [
     'get_current_commit_hash',
     'get_commit_time_window',
     'find_workspace_composer_databases',
+    'ComposerChatProvider',  # Added for multi-database support
     # Exception classes
     'CursorDatabaseError',
     'CursorDatabaseNotFoundError',

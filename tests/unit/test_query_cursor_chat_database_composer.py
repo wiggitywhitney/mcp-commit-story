@@ -66,10 +66,16 @@ class TestComposerBasedQueryCursorChatDatabase:
 
     @patch('mcp_commit_story.cursor_db.get_commit_time_window')
     @patch('mcp_commit_story.cursor_db.find_workspace_composer_databases')
-    @patch('mcp_commit_story.composer_chat_provider.ComposerChatProvider')
+    @patch('mcp_commit_story.cursor_db.ComposerChatProvider')
     @patch('mcp_commit_story.cursor_db.get_current_commit_hash')
+    @patch('mcp_commit_story.cursor_db.detect_workspace_for_repo')
+    @patch('mcp_commit_story.cursor_db.discover_all_cursor_databases')
+    @patch('mcp_commit_story.composer_chat_provider.execute_cursor_query')
     def test_enhanced_return_structure(
         self,
+        mock_execute_query,
+        mock_discover_all,
+        mock_detect_workspace,
         mock_get_commit_hash,
         mock_composer_provider,
         mock_find_databases,
@@ -80,6 +86,13 @@ class TestComposerBasedQueryCursorChatDatabase:
         mock_get_commit_hash.return_value = "abc123"
         mock_get_time_window.return_value = (1640995200000, 1640998800000)
         mock_find_databases.return_value = ("/workspace.vscdb", "/global.vscdb")
+        
+        # Mock multi-database approach to fail, triggering fallback to single-database
+        mock_detect_workspace.side_effect = Exception("Workspace detection failed")
+        mock_discover_all.return_value = []
+        
+        # Mock execute_cursor_query to return empty results (no composer sessions)
+        mock_execute_query.return_value = []
         
         mock_provider = MagicMock()
         mock_composer_provider.return_value = mock_provider
@@ -134,10 +147,16 @@ class TestComposerBasedQueryCursorChatDatabase:
 
     @patch('mcp_commit_story.cursor_db.get_commit_time_window')
     @patch('mcp_commit_story.cursor_db.find_workspace_composer_databases')
-    @patch('mcp_commit_story.composer_chat_provider.ComposerChatProvider')
+    @patch('mcp_commit_story.cursor_db.ComposerChatProvider')
     @patch('mcp_commit_story.cursor_db.get_current_commit_hash')
+    @patch('mcp_commit_story.cursor_db.detect_workspace_for_repo')
+    @patch('mcp_commit_story.cursor_db.discover_all_cursor_databases')
+    @patch('mcp_commit_story.composer_chat_provider.execute_cursor_query')
     def test_composer_provider_error_handling(
         self,
+        mock_execute_query,
+        mock_discover_all,
+        mock_detect_workspace,
         mock_get_commit_hash,
         mock_composer_provider,
         mock_find_databases,
@@ -148,6 +167,10 @@ class TestComposerBasedQueryCursorChatDatabase:
         mock_get_commit_hash.return_value = "abc123"
         mock_get_time_window.return_value = (1640995200000, 1640998800000)
         mock_find_databases.return_value = ("/workspace.vscdb", "/global.vscdb")
+        
+        # Mock multi-database approach to fail, triggering fallback to single-database
+        mock_detect_workspace.side_effect = Exception("Workspace detection failed")
+        mock_discover_all.return_value = []
         
         mock_provider = MagicMock()
         mock_composer_provider.return_value = mock_provider
@@ -172,11 +195,21 @@ class TestComposerBasedQueryCursorChatDatabase:
         mock_get_commit_hash.side_effect = Exception("Git repository not found")
         
         with patch('mcp_commit_story.cursor_db.find_workspace_composer_databases') as mock_find, \
-             patch('mcp_commit_story.composer_chat_provider.ComposerChatProvider') as mock_provider_class, \
+             patch('mcp_commit_story.cursor_db.ComposerChatProvider') as mock_provider_class, \
+             patch('mcp_commit_story.cursor_db.detect_workspace_for_repo') as mock_detect_workspace, \
+             patch('mcp_commit_story.cursor_db.discover_all_cursor_databases') as mock_discover_all, \
+             patch('mcp_commit_story.composer_chat_provider.execute_cursor_query') as mock_execute_query, \
              patch('time.time') as mock_time:
             
             mock_time.return_value = 1640998800  # Current time in seconds
             mock_find.return_value = ("/workspace.vscdb", "/global.vscdb")
+            
+            # Mock multi-database approach to fail, triggering fallback to single-database
+            mock_detect_workspace.side_effect = Exception("Workspace detection failed")
+            mock_discover_all.return_value = []
+            
+            # Mock execute_cursor_query to return empty results (no composer sessions)
+            mock_execute_query.return_value = []
             
             mock_provider = MagicMock()
             mock_provider_class.return_value = mock_provider
@@ -198,10 +231,16 @@ class TestComposerBasedQueryCursorChatDatabase:
 
     @patch('mcp_commit_story.cursor_db.get_commit_time_window')
     @patch('mcp_commit_story.cursor_db.find_workspace_composer_databases')
-    @patch('mcp_commit_story.composer_chat_provider.ComposerChatProvider')
+    @patch('mcp_commit_story.cursor_db.ComposerChatProvider')
     @patch('mcp_commit_story.cursor_db.get_current_commit_hash')
+    @patch('mcp_commit_story.cursor_db.detect_workspace_for_repo')
+    @patch('mcp_commit_story.cursor_db.discover_all_cursor_databases')
+    @patch('mcp_commit_story.composer_chat_provider.execute_cursor_query')
     def test_empty_results_handling(
         self,
+        mock_execute_query,
+        mock_discover_all,
+        mock_detect_workspace,
         mock_get_commit_hash,
         mock_composer_provider,
         mock_find_databases,
@@ -212,6 +251,10 @@ class TestComposerBasedQueryCursorChatDatabase:
         mock_get_commit_hash.return_value = "abc123"
         mock_get_time_window.return_value = (1640995200000, 1640998800000)
         mock_find_databases.return_value = ("/workspace.vscdb", "/global.vscdb")
+        
+        # Mock multi-database approach to fail, triggering fallback to single-database
+        mock_detect_workspace.side_effect = Exception("Workspace detection failed")
+        mock_discover_all.return_value = []
         
         mock_provider = MagicMock()
         mock_composer_provider.return_value = mock_provider
@@ -228,7 +271,7 @@ class TestComposerBasedQueryCursorChatDatabase:
 
     @patch('mcp_commit_story.cursor_db.get_commit_time_window')
     @patch('mcp_commit_story.cursor_db.find_workspace_composer_databases')
-    @patch('mcp_commit_story.composer_chat_provider.ComposerChatProvider')
+    @patch('mcp_commit_story.cursor_db.ComposerChatProvider')
     @patch('mcp_commit_story.cursor_db.get_current_commit_hash')
     def test_telemetry_integration(
         self,
@@ -259,10 +302,16 @@ class TestComposerBasedQueryCursorChatDatabase:
 
     @patch('mcp_commit_story.cursor_db.get_commit_time_window')
     @patch('mcp_commit_story.cursor_db.find_workspace_composer_databases')
-    @patch('mcp_commit_story.composer_chat_provider.ComposerChatProvider')
+    @patch('mcp_commit_story.cursor_db.ComposerChatProvider')
     @patch('mcp_commit_story.cursor_db.get_current_commit_hash')
+    @patch('mcp_commit_story.cursor_db.detect_workspace_for_repo')
+    @patch('mcp_commit_story.cursor_db.discover_all_cursor_databases')
+    @patch('mcp_commit_story.composer_chat_provider.execute_cursor_query')
     def test_chronological_message_sorting(
         self,
+        mock_execute_query,
+        mock_discover_all,
+        mock_detect_workspace,
         mock_get_commit_hash,
         mock_composer_provider,
         mock_find_databases,
@@ -273,6 +322,13 @@ class TestComposerBasedQueryCursorChatDatabase:
         mock_get_commit_hash.return_value = "abc123"
         mock_get_time_window.return_value = (1640995200000, 1640998800000)
         mock_find_databases.return_value = ("/workspace.vscdb", "/global.vscdb")
+        
+        # Mock multi-database approach to fail, triggering fallback to single-database
+        mock_detect_workspace.side_effect = Exception("Workspace detection failed")
+        mock_discover_all.return_value = []
+        
+        # Mock execute_cursor_query to return empty results (no composer sessions)
+        mock_execute_query.return_value = []
         
         mock_provider = MagicMock()
         mock_composer_provider.return_value = mock_provider

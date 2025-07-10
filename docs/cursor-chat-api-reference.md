@@ -25,9 +25,19 @@ result = query_cursor_chat_database()
 
 if result['workspace_info']['total_messages'] > 0:
     print(f"Found {result['workspace_info']['total_messages']} messages")
-    print(f"Workspace: {result['workspace_info']['workspace_path']}")
     
-    # Process messages
+    # Check data quality from multi-database extraction
+    data_quality = result['workspace_info']['data_quality']
+    print(f"Data Quality: {data_quality['status']}")
+    print(f"Databases: {data_quality['databases_queried']}/{data_quality['databases_found']} succeeded")
+    
+    # Handle partial results
+    if data_quality['status'] == 'partial':
+        print("Warning: Some databases failed to query")
+        for reason in data_quality['failure_reasons']:
+            print(f"  - {reason}")
+    
+    # Process messages (chronologically sorted across all databases)
     for message in result['chat_history']:
         print(f"{message['role']}: {message['content'][:100]}...")
 else:
@@ -57,25 +67,34 @@ except CursorDatabaseError as e:
 Main entry point for extracting complete chat history using Cursor's Composer system with commit-based time windows.
 
 **Features:**
+- **Multi-Database Support**: Automatically discovers and queries all workspace databases paired with shared global database
 - **Commit-based filtering**: Uses git commit boundaries for precise temporal context
 - **Enhanced metadata**: Messages include timestamps and session names from Composer
 - **Precise context**: Natural conversation boundaries based on development activity
 - **Rich monitoring**: Comprehensive observability and error categorization
+- **Graceful degradation**: Continues with available data when some databases fail
 
 **Returns:**
 ```python
 {
     "workspace_info": {
-        "workspace_database_path": str | None,    # Workspace SQLite database path
+        "workspace_database_path": str | None,    # Primary workspace SQLite database path
         "global_database_path": str | None,       # Global Cursor database path  
-        "total_messages": int,                   # Total message count
+        "total_messages": int,                   # Total message count across all databases
         "time_window_start": int | None,         # Time window start (Unix ms)
         "time_window_end": int | None,           # Time window end (Unix ms)
         "time_window_strategy": str,             # Strategy used ("commit_based", "24_hour_fallback", etc.)
         "commit_hash": str | None,               # Current git commit hash
-        "last_updated": str                      # ISO timestamp of operation
+        "last_updated": str,                     # ISO timestamp of operation
+        "data_quality": {                        # Multi-database extraction metadata
+            "databases_found": int,              # Number of workspace databases discovered
+            "databases_queried": int,            # Number of databases successfully queried
+            "databases_failed": int,             # Number of databases that failed to query
+            "status": str,                       # "complete", "partial", or "failed"
+            "failure_reasons": List[str]         # Error details for failed databases
+        }
     },
-    "chat_history": [                           # List of conversation messages
+    "chat_history": [                           # List of conversation messages (chronologically sorted)
         {
             "speaker": str,                      # "user" or "assistant"
             "text": str,                        # Message content
@@ -90,6 +109,14 @@ Main entry point for extracting complete chat history using Cursor's Composer sy
 - Returns empty structure with error indicators if workspace/database not found
 - Graceful degradation for permission errors or corrupted databases
 - All errors logged with monitoring
+
+**Multi-Database Architecture:**
+- **Workspace Databases**: Multiple SQLite databases contain session references and metadata
+- **Global Database**: Single shared database contains all conversation content and message data
+- **Automatic Discovery**: System automatically finds all relevant workspace databases
+- **Chronological Merging**: Messages from multiple databases are sorted chronologically with proper session ordering
+- **Message Order Preservation**: Within-session message order is maintained when combining from multiple sources
+- **Partial Results**: System continues with available data when some databases are inaccessible
 
 **Performance:**
 - Optimized for typical workspaces (< 500ms)
@@ -152,6 +179,52 @@ Filter databases by 48-hour modification window for performance optimization.
 **Performance Impact:**
 - 80-90% reduction in database processing for mature projects
 - Balances performance vs. completeness for typical development cycles
+
+**Message Ordering Algorithm:**
+- Uses multi-criteria sorting: `(timestamp, composerId, message_index)`
+- Ensures sessions are ordered chronologically by creation time
+- Provides deterministic ordering for sessions with identical timestamps  
+- Preserves original message order within each session during multi-database aggregation
+
+### Data Quality Metadata
+
+The `data_quality` object in the response provides transparency about multi-database extraction:
+
+**Status Values:**
+- `"complete"`: All discovered databases were successfully queried
+- `"partial"`: Some databases failed, but at least one succeeded
+- `"failed"`: No databases could be queried successfully
+
+**Usage Example:**
+```python
+result = query_cursor_chat_database()
+data_quality = result['workspace_info']['data_quality']
+
+# Check extraction completeness
+if data_quality['status'] == 'complete':
+    print("All databases queried successfully")
+elif data_quality['status'] == 'partial':
+    print(f"Partial success: {data_quality['databases_queried']} of {data_quality['databases_found']} databases")
+    print("Failed databases:")
+    for reason in data_quality['failure_reasons']:
+        print(f"  - {reason}")
+elif data_quality['status'] == 'failed':
+    print("No databases could be accessed")
+    print("Failure reasons:")
+    for reason in data_quality['failure_reasons']:
+        print(f"  - {reason}")
+
+# Continue processing with available data
+for message in result['chat_history']:
+    # Messages are chronologically sorted across all successful databases
+    process_message(message)
+```
+
+**Benefits:**
+- **Transparency**: Know exactly which databases contributed to results
+- **Debugging**: Specific error messages for failed databases
+- **Reliability**: Continue with partial data when some databases are inaccessible
+- **Monitoring**: Track database health across workspace rotations
 
 ### Lower-Level Functions
 
