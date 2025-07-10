@@ -678,7 +678,7 @@ All TDD methodology, telemetry integration, and documentation requirements remai
 The capture-context MCP tool is now fully registered and ready for use in the MCP server.
 </info added on 2025-07-10T14:05:59.451Z>
 
-## 3. Create Context Collection Function [pending]
+## 3. Create Context Collection Function [done]
 ### Dependencies: None
 ### Description: Implement collect_recent_journal_context() using JournalParser to extract recent journal entries and AI captures for enriching commit journal generation.
 ### Details:

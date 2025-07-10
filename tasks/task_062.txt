@@ -5,16 +5,22 @@
 # Priority: medium
 # Description: Enhance the chat extraction system to query and merge conversations from multiple workspace databases, ensuring complete journal entries when work spans across different chat sessions.
 # Details:
-This task involves modifying the chat extraction pipeline to capture conversations across multiple database files when work spans several chat sessions:
+This task involves modifying the chat extraction pipeline to capture conversations across multiple database files when work spans several chat sessions. The current implementation uses find_workspace_composer_databases() which returns only one database pair (workspace + global), causing us to miss chat history from older databases.
 
+Architecture Implementation Strategy:
+- One global database: globalStorage/state.vscdb (shared across all workspaces)
+- Multiple workspace databases: workspaceStorage/{hash}/state.vscdb (each contains session references)
+- Implementation: Create multiple ComposerChatProvider instances, each pairing a workspace database with the same global database
+
+Key Implementation Requirements:
 1. Refactor `query_cursor_chat_database()` to utilize `discover_all_cursor_databases()` instead of only querying a single workspace database.
 2. Implement a mechanism to query all workspace databases that fall within the commit time window:
-   - Identify all relevant database files using `discover_all_cursor_databases()`
+   - Leverage existing discover_all_cursor_databases() which already handles finding multiple workspace database files
+   - The 48-hour filtering is already implemented in the discovery function
    - Filter databases based on timestamp metadata to match commit timeframe
-   - Execute queries against all matching databases
 
 3. Develop a merging algorithm to combine results from multiple databases:
-   - Sort all conversation entries chronologically
+   - Sort all conversation entries chronologically by timestamp
    - Handle potential duplicates across databases
    - Preserve conversation threading and context
 
@@ -23,10 +29,11 @@ This task involves modifying the chat extraction pipeline to capture conversatio
    - Make the multi-database querying transparent to calling code
    - Preserve existing behavior for single-database scenarios
 
-5. Optimize performance:
-   - Implement parallel querying where appropriate
-   - Add caching mechanisms to prevent redundant database access
-   - Monitor and optimize query execution time to minimize impact on git hooks
+5. Implement error handling and partial results:
+   - Continue with available data when some databases fail
+   - Add data quality metadata to response with failure_reasons for debugging
+   - Maintain all existing error handling and telemetry
+   - Add telemetry attributes for databases discovered/queried/failed
 
 6. Handle edge cases:
    - Overlapping chat sessions
@@ -49,23 +56,36 @@ The implementation will be verified through a comprehensive testing approach:
    - Verify correct discovery of all relevant database files
    - Test the merging algorithm with various scenarios (overlapping conversations, identical timestamps)
    - Validate deduplication logic works correctly
+   - Test that query_cursor_chat_database() uses discover_all_cursor_databases()
+   - Verify all discovered workspace databases are paired with single global database
+   - Test chronological ordering of combined results from multiple providers
+   - Test handling when some databases are corrupted/inaccessible (partial results)
+   - Test backward compatibility with single database scenario
+   - Test error handling and partial results
 
 2. Integration Tests:
    - Set up a test environment with multiple database files spanning different time periods
    - Simulate a commit that spans multiple chat sessions
    - Verify all relevant conversations are extracted and merged correctly
    - Confirm chronological ordering of merged results
+   - Test with databases from different time periods
+   - Verify correct session filtering (time window overlap)
+   - Test performance with multiple large databases
+   - Verify graceful handling of permission errors
+   - Test data quality metadata accuracy
 
 3. Performance Tests:
    - Benchmark query execution time with varying numbers of database files (1, 3, 5, 10)
    - Ensure performance remains within acceptable thresholds for git hook execution
    - Test with large database files to identify potential bottlenecks
+   - Verify memory usage remains reasonable with multiple databases
 
 4. Edge Case Tests:
    - Test with corrupted or incomplete database files
    - Verify behavior with overlapping chat sessions
    - Test with extreme time ranges (very short and very long commits)
    - Validate handling of databases with identical timestamps
+   - Test databases with different schema versions (graceful degradation)
 
 5. Regression Tests:
    - Ensure existing functionality works correctly for single-database scenarios

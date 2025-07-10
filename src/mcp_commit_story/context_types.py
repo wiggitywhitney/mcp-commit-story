@@ -94,5 +94,21 @@ class ToneMoodSection(TypedDict):
 class DiscussionNotesSection(TypedDict):
     discussion_notes: List[Union[str, Dict[str, str]]]  # Discussion points, with optional speaker attribution
 
+class RecentJournalContext(TypedDict):
+    """Recent journal context for enriching commit journal generation.
+    
+    Contains the most recent journal entry plus any AI captures or reflections
+    added after that entry to avoid duplication while ensuring new insights
+    are available for journal generation.
+    
+    Args:
+        latest_entry: Most recent journal entry content (None if no entries found)
+        additional_context: List of AI captures/reflections added after latest entry
+        metadata: File information, timestamps, and collection statistics
+    """
+    latest_entry: Optional[str]  # Most recent journal entry content
+    additional_context: List[str]  # AI captures/reflections after latest entry
+    metadata: Dict[str, Union[str, int, bool]]  # File info, timestamps, statistics
+
 class CommitMetadataSection(TypedDict):
     commit_metadata: Dict[str, str]  # Key-value pairs of commit statistics and metadata 
