@@ -1,0 +1,137 @@
+---
+description: Always check actual system time before using timestamps in documentation, changelogs, and manual entries
+globs: *.md, *.py, *.json, *.txt
+alwaysApply: true
+---
+
+# Accurate Timestamp Usage Rule
+
+**Always verify actual system time before writing any timestamp in documentation, changelogs, analysis documents, or any manual time entries.**
+
+## Core Principle
+
+- **NEVER guess or assume dates/times**
+- **ALWAYS check system time first: `date` command or equivalent**
+- **Include both date AND time for same-day tracking**
+- **Use timezone abbreviation for clarity**
+
+## Implementation Patterns
+
+### ✅ DO: Check System Time First
+
+```bash
+# Always run this first
+date
+# Output: Fri Jul 11 07:39:24 CDT 2025
+
+# Then use in documentation
+### Subtask 63.1 Completed - 2025-07-11 07:39 CDT
+```
+
+### ✅ DO: Include Date and Time
+
+```markdown
+# ✅ Good - includes date and time for same-day tracking
+### Subtask 63.1 Completed - 2025-07-11 07:39 CDT
+### Subtask 63.2 Completed - 2025-07-11 09:15 CDT
+
+# ✅ Good - for longer intervals, date may be sufficient
+### Task 63 Completed - 2025-07-11
+```
+
+### ✅ DO: Use Consistent Format
+
+```markdown
+# ✅ Consistent format across all entries
+- 2025-07-11 07:39 CDT
+- 2025-07-11 09:15 CDT
+- 2025-07-11 14:22 CDT
+```
+
+### ❌ DON'T: Guess or Assume Timestamps
+
+```markdown
+# ❌ Wrong - guessing dates
+### Subtask 63.1 Completed - 2025-01-27
+
+# ❌ Wrong - vague time references  
+### Completed this morning
+
+# ❌ Wrong - no time for same-day tracking
+### Subtask 63.1 Completed - 2025-07-11
+### Subtask 63.2 Completed - 2025-07-11
+```
+
+## When This Rule Applies
+
+### **Documentation Updates**
+- Changelogs in analysis documents
+- Task completion tracking
+- README updates with timestamps
+- Any manual documentation entry
+
+### **Code Comments with Timestamps**
+- TODO comments with dates
+- Bug fix timestamps
+- Implementation notes with timing
+
+### **Configuration and Data Files**
+- JSON files with timestamp fields
+- Configuration updates
+- Manual data entries
+
+## Required Process
+
+1. **Before writing any timestamp:**
+   ```bash
+   date
+   ```
+
+2. **Extract the relevant parts:**
+   - Date: 2025-07-11
+   - Time: 07:39
+   - Timezone: CDT
+
+3. **Format consistently:**
+   - Full: `2025-07-11 07:39 CDT`
+   - Date only (for longer intervals): `2025-07-11`
+
+## Examples in Context
+
+### **Analysis Documents**
+```markdown
+## Changelog
+### Subtask 63.1 Completed - 2025-07-11 07:39 CDT
+- Initial analysis completed
+- Identified 18 total items
+
+### Subtask 63.2 Completed - 2025-07-11 09:15 CDT  
+- Created module structure
+- Moved core classes
+```
+
+### **Task Updates**
+```json
+{
+  "lastUpdated": "2025-07-11 07:39 CDT",
+  "completedAt": "2025-07-11 07:39 CDT"
+}
+```
+
+### **Code Comments**
+```python
+# Fixed circular import issue - 2025-07-11 07:39 CDT
+# TODO: Refactor this pattern - 2025-07-11 07:39 CDT
+```
+
+## Benefits
+
+- **Accuracy**: No more wrong dates/times
+- **Same-day tracking**: Can distinguish between subtasks completed on the same day
+- **Timezone clarity**: Clear what timezone the work was done in
+- **Professional**: Demonstrates attention to detail
+
+## Related Rules
+
+- [Git Timestamps](mdc:.cursor/rules/git_timestamps.mdc) - for git-related operations
+- [Documentation](mdc:.cursor/rules/documentation.mdc) - for general doc standards
