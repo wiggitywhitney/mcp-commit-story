@@ -106,8 +106,14 @@ class TestCursorDatabaseAccessError:
     
     @patch('src.mcp_commit_story.cursor_db.ComposerChatProvider')
     @patch('src.mcp_commit_story.cursor_db.discover_all_cursor_databases')
-    def test_database_access_permission_error(self, mock_discover_databases, mock_provider_class):
+    @patch('src.mcp_commit_story.cursor_db.detect_workspace_for_repo')
+    def test_database_access_permission_error(self, mock_detect_workspace, mock_discover_databases, mock_provider_class):
         """Test handling when database access is denied due to permissions."""
+        # Setup workspace detection mock to return a valid workspace
+        mock_workspace = Mock()
+        mock_workspace.workspace_folder = "/workspace"
+        mock_detect_workspace.return_value = mock_workspace
+        
         # Arrange - database found but access denied
         mock_discover_databases.return_value = ["/workspace.vscdb"]
         mock_provider = Mock()
@@ -132,8 +138,14 @@ class TestCursorDatabaseAccessError:
     
     @patch('src.mcp_commit_story.cursor_db.ComposerChatProvider')
     @patch('src.mcp_commit_story.cursor_db.discover_all_cursor_databases')
-    def test_database_locked_error_handling(self, mock_discover_databases, mock_provider_class):
+    @patch('src.mcp_commit_story.cursor_db.detect_workspace_for_repo')
+    def test_database_locked_error_handling(self, mock_detect_workspace, mock_discover_databases, mock_provider_class):
         """Test handling when database is locked by another process."""
+        # Setup workspace detection mock to return a valid workspace
+        mock_workspace = Mock()
+        mock_workspace.workspace_folder = "/workspace"
+        mock_detect_workspace.return_value = mock_workspace
+        
         mock_discover_databases.return_value = ["/workspace.vscdb"]
         mock_provider = Mock()
         mock_provider_class.return_value = mock_provider
@@ -157,8 +169,14 @@ class TestCursorDatabaseSchemaError:
     
     @patch('src.mcp_commit_story.cursor_db.ComposerChatProvider')
     @patch('src.mcp_commit_story.cursor_db.discover_all_cursor_databases')
-    def test_schema_version_mismatch_error(self, mock_discover_databases, mock_provider_class):
+    @patch('src.mcp_commit_story.cursor_db.detect_workspace_for_repo')
+    def test_schema_version_mismatch_error(self, mock_detect_workspace, mock_discover_databases, mock_provider_class):
         """Test handling when database schema doesn't match expectations."""
+        # Setup workspace detection mock to return a valid workspace
+        mock_workspace = Mock()
+        mock_workspace.workspace_folder = "/workspace"
+        mock_detect_workspace.return_value = mock_workspace
+        
         mock_discover_databases.return_value = ["/workspace.vscdb"]
         mock_provider = Mock()
         mock_provider_class.return_value = mock_provider
@@ -203,8 +221,14 @@ class TestCursorDatabaseQueryError:
     
     @patch('src.mcp_commit_story.cursor_db.ComposerChatProvider')
     @patch('src.mcp_commit_story.cursor_db.discover_all_cursor_databases')
-    def test_invalid_sql_error_handling(self, mock_discover_databases, mock_provider_class):
+    @patch('src.mcp_commit_story.cursor_db.detect_workspace_for_repo')
+    def test_invalid_sql_error_handling(self, mock_detect_workspace, mock_discover_databases, mock_provider_class):
         """Test handling when SQL query has syntax errors."""
+        # Setup workspace detection mock to return a valid workspace
+        mock_workspace = Mock()
+        mock_workspace.workspace_folder = "/workspace"
+        mock_detect_workspace.return_value = mock_workspace
+        
         mock_discover_databases.return_value = ["/workspace.vscdb"]
         mock_provider = Mock()
         mock_provider_class.return_value = mock_provider
@@ -225,8 +249,14 @@ class TestCursorDatabaseQueryError:
     
     @patch('src.mcp_commit_story.cursor_db.ComposerChatProvider')
     @patch('src.mcp_commit_story.cursor_db.discover_all_cursor_databases')
-    def test_parameter_mismatch_error_handling(self, mock_discover_databases, mock_provider_class):
+    @patch('src.mcp_commit_story.cursor_db.detect_workspace_for_repo')
+    def test_parameter_mismatch_error_handling(self, mock_detect_workspace, mock_discover_databases, mock_provider_class):
         """Test handling when SQL parameters don't match placeholders."""
+        # Setup workspace detection mock to return a valid workspace
+        mock_workspace = Mock()
+        mock_workspace.workspace_folder = "/workspace"
+        mock_detect_workspace.return_value = mock_workspace
+        
         mock_discover_databases.return_value = ["/workspace.vscdb"]
         mock_provider = Mock()
         mock_provider_class.return_value = mock_provider
@@ -308,8 +338,14 @@ class TestGracefulDegradation:
         """Test recovery when some operations succeed and others fail."""
         with patch('src.mcp_commit_story.cursor_db.discover_all_cursor_databases') as mock_discover, \
              patch('src.mcp_commit_story.cursor_db.find_workspace_composer_databases') as mock_find_workspace, \
+             patch('src.mcp_commit_story.cursor_db.detect_workspace_for_repo') as mock_detect_workspace, \
              patch('src.mcp_commit_story.cursor_db.ComposerChatProvider') as mock_provider_class:
-            
+
+            # Setup workspace detection mock to return a valid workspace
+            mock_workspace = Mock()
+            mock_workspace.workspace_folder = "/workspace"
+            mock_detect_workspace.return_value = mock_workspace
+
             # Workspace database found, but global database fails
             mock_discover.return_value = ["/workspace.vscdb"]  # Only workspace DB found
             mock_find_workspace.return_value = (None, None)  # Mock the fallback global DB lookup too
@@ -318,9 +354,9 @@ class TestGracefulDegradation:
             mock_provider.getChatHistoryForCommit.return_value = [
                 {'role': 'user', 'content': 'Partial data test'}
             ]
-            
+
             result = query_cursor_chat_database()
-            
+
             # Should still return available data
             assert len(result['chat_history']) > 0
             # Workspace database path should contain the expected database
