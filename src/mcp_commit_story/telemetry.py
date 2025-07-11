@@ -136,6 +136,12 @@ class CircuitBreaker:
         if self.state == "half_open":
             self.state = "closed"
             self.failure_count = 0
+
+    def reset(self):
+        """Reset circuit breaker to initial state."""
+        self.failure_count = 0
+        self.last_failure_time = 0
+        self.state = "closed"
     
     def call(self, func, *args, **kwargs):
         """Execute function with circuit breaker protection."""
@@ -172,6 +178,13 @@ _config_circuit_breakers = {
     "reload": CircuitBreaker(), 
     "validate": CircuitBreaker(),
 }
+
+def reset_circuit_breaker():
+    """Reset all circuit breakers to their initial state for testing purposes."""
+    global _telemetry_circuit_breaker, _config_circuit_breakers
+    _telemetry_circuit_breaker.reset()
+    for breaker in _config_circuit_breakers.values():
+        breaker.reset()
 
 @contextlib.contextmanager
 def memory_tracking_context(operation_name: str, baseline_threshold_mb: float = PERFORMANCE_THRESHOLDS["memory_threshold_mb"]) -> Generator[MemorySnapshot, None, None]:

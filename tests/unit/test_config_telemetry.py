@@ -243,6 +243,10 @@ class TestConfigurationValidationTelemetry:
 
     def test_validation_error_categorization(self):
         """Test that validation errors are properly categorized."""
+        # Reset circuit breaker to ensure clean state
+        from mcp_commit_story.telemetry import reset_circuit_breaker
+        reset_circuit_breaker()
+        
         test_cases = [
             ({}, 'missing_field'),  # Missing journal.path
             ({'journal': {'path': 123}, 'git': {'exclude_patterns': []}, 'telemetry': {'enabled': True}}, 'type_error'),
