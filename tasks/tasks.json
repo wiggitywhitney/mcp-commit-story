@@ -896,6 +896,17 @@
               "64.2"
             ],
             "parentTaskId": 64
+          },
+          {
+            "id": 4,
+            "title": "Telemetry Verification",
+            "description": "Extend existing telemetry integration tests to verify that AI invocation refactoring preserved all telemetry functionality, decorators, and performance characteristics.",
+            "details": "**Implementation Plan:**\n\n**EXTEND TELEMETRY INTEGRATION TESTS**\n- Extend tests/integration/test_telemetry_validation_integration.py\n- Test each migrated generator individually\n- Verify telemetry decorators preserved\n- Test performance characteristics (5%/10% thresholds)\n- Use TelemetryCollector from existing patterns\n- Test that all generators create proper spans\n- Verify metrics are recorded for success/failure\n- Check span attributes are preserved\n- RUN TESTS - VERIFY THEY PASS\n\n**PERFORMANCE VERIFICATION**\n- Compare performance before/after refactoring (within 5%/10% thresholds)\n- Ensure no significant regression\n- Test with various context sizes\n- Skip dedicated performance testing (KISS principle)\n- RUN TESTS - VERIFY THEY PASS\n\n**DOCUMENT AND COMPLETE**\n- Update telemetry documentation if needed\n- Verify all performance thresholds are met\n- MARK COMPLETE",
+            "status": "pending",
+            "dependencies": [
+              "64.3"
+            ],
+            "parentTaskId": 64
           }
         ]
       },

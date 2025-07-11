@@ -230,7 +230,7 @@ class TestPipelineIntegration:
         mock_commit.hexsha = "abc123"
         
         # Setup complete pipeline mocks
-        mock_discover.return_value = (["/workspace/path"], "/global/path")
+        mock_discover.return_value = ["/workspace/path1", "/workspace/path2"]
         mock_time.return_value = (1000000, 2000000)
         mock_git_context.return_value = {
             'metadata': {'hash': 'abc123', 'message': 'Test commit'},

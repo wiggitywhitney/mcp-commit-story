@@ -38,10 +38,16 @@ def reset_circuit_breaker_fixture():
 class TestCursorDatabaseNotFoundError:
     """Test handling when Composer databases are missing."""
     
+    @patch('src.mcp_commit_story.cursor_db.discover_all_cursor_databases')
+    @patch('src.mcp_commit_story.cursor_db.detect_workspace_for_repo')
     @patch('src.mcp_commit_story.cursor_db.find_workspace_composer_databases')
-    def test_database_not_found_graceful_degradation(self, mock_find_databases):
+    def test_database_not_found_graceful_degradation(self, mock_find_databases, mock_detect_workspace, mock_discover_databases):
         """Test graceful degradation when Composer databases cannot be found."""
-        # Arrange - simulate database not found
+        # Arrange - simulate database not found in both paths
+        mock_detect_workspace.side_effect = CursorDatabaseNotFoundError(
+            "Workspace not found",
+            path="/nonexistent/workspace"
+        )
         mock_find_databases.side_effect = CursorDatabaseNotFoundError(
             "Composer databases not found",
             path="/nonexistent/workspace"
@@ -59,9 +65,16 @@ class TestCursorDatabaseNotFoundError:
         assert 'error_info' in result['workspace_info']
         assert result['workspace_info']['error_info']['error_type'] == 'CursorDatabaseNotFoundError'
     
+    @patch('src.mcp_commit_story.cursor_db.discover_all_cursor_databases')
+    @patch('src.mcp_commit_story.cursor_db.detect_workspace_for_repo')
     @patch('src.mcp_commit_story.cursor_db.find_workspace_composer_databases')
-    def test_database_not_found_logging(self, mock_find_databases, caplog):
+    def test_database_not_found_logging(self, mock_find_databases, mock_detect_workspace, mock_discover_databases, caplog):
         """Test that database not found errors are properly logged."""
+        # Arrange - simulate database not found in both paths
+        mock_detect_workspace.side_effect = CursorDatabaseNotFoundError(
+            "Workspace not found",
+            path="/missing/path"
+        )
         mock_find_databases.side_effect = CursorDatabaseNotFoundError(
             "Composer databases not found",
             path="/missing/path"
@@ -96,7 +109,7 @@ class TestCursorDatabaseAccessError:
     def test_database_access_permission_error(self, mock_discover_databases, mock_provider_class):
         """Test handling when database access is denied due to permissions."""
         # Arrange - database found but access denied
-        mock_discover_databases.return_value = (["/workspace.vscdb"], "/global.vscdb")
+        mock_discover_databases.return_value = ["/workspace.vscdb"]
         mock_provider = Mock()
         mock_provider_class.return_value = mock_provider
         mock_provider.getChatHistoryForCommit.side_effect = CursorDatabaseAccessError(
@@ -121,7 +134,7 @@ class TestCursorDatabaseAccessError:
     @patch('src.mcp_commit_story.cursor_db.discover_all_cursor_databases')
     def test_database_locked_error_handling(self, mock_discover_databases, mock_provider_class):
         """Test handling when database is locked by another process."""
-        mock_discover_databases.return_value = (["/workspace.vscdb"], "/global.vscdb")
+        mock_discover_databases.return_value = ["/workspace.vscdb"]
         mock_provider = Mock()
         mock_provider_class.return_value = mock_provider
         mock_provider.getChatHistoryForCommit.side_effect = CursorDatabaseAccessError(
@@ -146,7 +159,7 @@ class TestCursorDatabaseSchemaError:
     @patch('src.mcp_commit_story.cursor_db.discover_all_cursor_databases')
     def test_schema_version_mismatch_error(self, mock_discover_databases, mock_provider_class):
         """Test handling when database schema doesn't match expectations."""
-        mock_discover_databases.return_value = (["/workspace.vscdb"], "/global.vscdb")
+        mock_discover_databases.return_value = ["/workspace.vscdb"]
         mock_provider = Mock()
         mock_provider_class.return_value = mock_provider
         mock_provider.getChatHistoryForCommit.side_effect = CursorDatabaseSchemaError(
@@ -192,7 +205,7 @@ class TestCursorDatabaseQueryError:
     @patch('src.mcp_commit_story.cursor_db.discover_all_cursor_databases')
     def test_invalid_sql_error_handling(self, mock_discover_databases, mock_provider_class):
         """Test handling when SQL query has syntax errors."""
-        mock_discover_databases.return_value = (["/workspace.vscdb"], "/global.vscdb")
+        mock_discover_databases.return_value = ["/workspace.vscdb"]
         mock_provider = Mock()
         mock_provider_class.return_value = mock_provider
         mock_provider.getChatHistoryForCommit.side_effect = CursorDatabaseQueryError(
@@ -214,7 +227,7 @@ class TestCursorDatabaseQueryError:
     @patch('src.mcp_commit_story.cursor_db.discover_all_cursor_databases')
     def test_parameter_mismatch_error_handling(self, mock_discover_databases, mock_provider_class):
         """Test handling when SQL parameters don't match placeholders."""
-        mock_discover_databases.return_value = (["/workspace.vscdb"], "/global.vscdb")
+        mock_discover_databases.return_value = ["/workspace.vscdb"]
         mock_provider = Mock()
         mock_provider_class.return_value = mock_provider
         mock_provider.getChatHistoryForCommit.side_effect = CursorDatabaseQueryError(
@@ -298,7 +311,7 @@ class TestGracefulDegradation:
              patch('src.mcp_commit_story.cursor_db.ComposerChatProvider') as mock_provider_class:
             
             # Workspace database found, but global database fails
-            mock_discover.return_value = (["/workspace.vscdb"], None)  # Global DB missing
+            mock_discover.return_value = ["/workspace.vscdb"]  # Only workspace DB found
             mock_find_workspace.return_value = (None, None)  # Mock the fallback global DB lookup too
             mock_provider = Mock()
             mock_provider_class.return_value = mock_provider
