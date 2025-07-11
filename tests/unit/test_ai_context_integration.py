@@ -219,9 +219,10 @@ class TestPipelineIntegration:
     @patch('mcp_commit_story.cursor_db.ComposerChatProvider')
     @patch('mcp_commit_story.cursor_db.get_commit_time_window')
     @patch('mcp_commit_story.cursor_db.discover_all_cursor_databases')
+    @patch('mcp_commit_story.cursor_db.find_workspace_composer_databases')
     @patch('mcp_commit_story.cursor_db.detect_workspace_for_repo')
     @patch('mcp_commit_story.context_collection.collect_git_context')
-    def test_end_to_end_pipeline_with_ai_filtering(self, mock_git_context, mock_detect_workspace, mock_discover, mock_time, mock_provider, mock_filter):
+    def test_end_to_end_pipeline_with_ai_filtering(self, mock_git_context, mock_detect_workspace, mock_find_workspace, mock_discover, mock_time, mock_provider, mock_filter):
         """Test complete pipeline from orchestrator through AI filtering"""
         # Reset circuit breaker to ensure clean test state
         from mcp_commit_story.cursor_db import reset_circuit_breaker
@@ -237,6 +238,7 @@ class TestPipelineIntegration:
         
         # Setup complete pipeline mocks
         mock_discover.return_value = ["/workspace/path1", "/workspace/path2"]
+        mock_find_workspace.return_value = ("/workspace/single.vscdb", "/global.vscdb")
         mock_time.return_value = (1000000, 2000000)
         mock_git_context.return_value = {
             'metadata': {'hash': 'abc123', 'message': 'Test commit'},

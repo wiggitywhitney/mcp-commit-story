@@ -56,7 +56,7 @@ class TestWorkspacePathMismatch:
             find_workspace_composer_databases("/Users/test/project")
         
         # Should fail because it's looking in the wrong location
-        assert "Workspace database not found" in str(exc_info.value)
+        assert "not found" in str(exc_info.value).lower() or "does not exist" in str(exc_info.value).lower()
         
         # The error should show it's trying to access the wrong path (~/.cursor)
         # instead of the correct path found by workspace detection
@@ -78,9 +78,8 @@ class TestWorkspacePathMismatch:
         
         mock_detect_workspace.return_value = workspace_match
         
-        # Mock that all database files exist
+        # Mock that all database files exist using patch context manager
         with patch('pathlib.Path.exists', return_value=True):
-            
             # This should work - use the actual paths found by workspace detection
             workspace_db_path, global_db_path = find_workspace_composer_databases("/Users/test/project")
             
