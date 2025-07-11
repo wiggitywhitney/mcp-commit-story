@@ -907,6 +907,28 @@
               "64.3"
             ],
             "parentTaskId": 64
+          },
+          {
+            "id": 5,
+            "title": "Integration Testing",
+            "description": "Verify that AI invocation refactoring maintains all existing functionality through comprehensive integration testing using existing test infrastructure.",
+            "details": "**Implementation Plan:**\n\n**WRITE JOURNAL GENERATION TESTS**\n- Update tests/integration/test_journal_generation_integration.py\n- Test complete journal generation with all migrated generators\n- Mock invoke_ai to provide controlled responses\n- Verify all sections are generated correctly\n- Test integration between generators\n- RUN TESTS - VERIFY THEY PASS\n\n**WRITE ERROR HANDLING TESTS**\n- Test graceful degradation when AI unavailable\n- Test each generator returns appropriate defaults on failure\n- Test partial failures (some generators fail, others succeed)\n- Verify journal generation continues despite AI failures\n- Test error telemetry collection and reporting\n- RUN TESTS - VERIFY THEY PASS\n\n**MANUAL TESTING CHECKLIST**\n- Test with real OpenAI API (if available)\n- Generate actual journal entries\n- Verify quality is maintained\n- Check all sections appear correctly\n- MARK COMPLETE",
+            "status": "pending",
+            "dependencies": [
+              "64.4"
+            ],
+            "parentTaskId": 64
+          },
+          {
+            "id": 6,
+            "title": "Cleanup and Documentation",
+            "description": "Complete the AI invocation refactoring by safely removing ai_function_executor.py, updating all documentation, and ensuring comprehensive cleanup of all references.",
+            "details": "**Implementation Plan:**\n\n**BACKUP AND DELETE OLD CODE**\n- Backup ai_function_executor.py before removal\n- Remove ai_function_executor.py\n- Search for any remaining imports using comprehensive search patterns\n- RUN ALL TESTS - VERIFY NOTHING BREAKS\n\n**UPDATE AI PATTERN DOCUMENTATION**\n- Update docs/ai_function_pattern.md:\n  - Remove Pattern 1 for journal generators\n  - Add examples of new direct invocation\n  - Keep Pattern 2 for ai_context_filter.py\n- Update docs/ai-provider-setup.md if needed\n\n**UPDATE ARCHITECTURE DOCUMENTATION**\n- Remove references to abstraction layer\n- Update component diagrams if any\n- Simplify AI invocation descriptions\n- Update docs/architecture.md\n\n**UPDATE CODE DOCUMENTATION**\n- Final pass on all generator docstrings\n- Ensure they explain direct AI invocation\n- Remove any stale comments about abstraction\n- Write migration guide for future reference\n\n**FINAL VERIFICATION**\n- Run entire test suite\n- Check test coverage hasn't decreased\n- Verify no references to ai_function_executor remain\n- Create summary of changes for future reference\n- Documentation completeness check\n- MARK COMPLETE",
+            "status": "pending",
+            "dependencies": [
+              "64.5"
+            ],
+            "parentTaskId": 64
           }
         ]
       },
