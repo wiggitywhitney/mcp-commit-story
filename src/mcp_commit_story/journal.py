@@ -689,6 +689,16 @@ def append_to_journal_file(text, file_path):
 @trace_mcp_operation("journal.generate_summary", attributes={"operation_type": "ai_generation", "section_type": "summary"})
 def generate_summary_section(journal_context) -> SummarySection:
     """
+    You are helping build a high-quality development journal system that tracks coding work across commits. Your job is to generate a summary section. The quality of the entire journal depends on your output.
+
+    Input: JournalContext containing git metadata, chat history, and previous journal entries.
+    Output: Return the TypedDict structure defined in the function signature.
+
+    AVAILABLE DATA in JournalContext:
+    - git: Git context with commit metadata, diffs, changed files, and statistics
+    - chat: Developer's conversations with AI coding assistants (may contain more than what's relevant to the current commit - think critically about what chat should be considered)
+    - journal: Recent journal entries for context and continuity (don't duplicate content, but feel free to weave in quotes from reflections if relevant)
+
     AI Prompt for Summary Section Generation
 
     Purpose: Generate a narrative paragraph that captures the essential "story" of what changed and why, using conversational language that preserves the developer's authentic voice and technical context.
@@ -842,6 +852,16 @@ def generate_summary_section(journal_context) -> SummarySection:
 @trace_mcp_operation("journal.generate_technical_synopsis", attributes={"operation_type": "ai_generation", "section_type": "technical_synopsis"})
 def generate_technical_synopsis_section(journal_context: JournalContext) -> TechnicalSynopsisSection:
     """
+    You are helping build a high-quality development journal system that tracks coding work across commits. Your job is to generate a technical synopsis section. The quality of the entire journal depends on your output.
+
+    Input: JournalContext containing git metadata, chat history, and previous journal entries.
+    Output: Return the TypedDict structure defined in the function signature.
+
+    AVAILABLE DATA in JournalContext:
+    - git: Git context with commit metadata, diffs, changed files, and statistics
+    - chat: Developer's conversations with AI coding assistants (may contain more than what's relevant to the current commit - think critically about what chat should be considered)
+    - journal: Recent journal entries for context and continuity (don't duplicate content, but feel free to weave in quotes from reflections if relevant)
+
     AI Prompt for Technical Synopsis Section Generation
 
     Purpose: Generate a code-focused analysis of what changed in this commit, providing technical implementation details that complement the narrative summary.
@@ -969,6 +989,16 @@ def generate_technical_synopsis_section(journal_context: JournalContext) -> Tech
 @trace_mcp_operation("journal.generate_accomplishments", attributes={"operation_type": "ai_generation", "section_type": "accomplishments"})
 def generate_accomplishments_section(journal_context: JournalContext) -> AccomplishmentsSection:
     """
+    You are helping build a high-quality development journal system that tracks coding work across commits. Your job is to generate an accomplishments section. The quality of the entire journal depends on your output.
+
+    Input: JournalContext containing git metadata, chat history, and previous journal entries.
+    Output: Return the TypedDict structure defined in the function signature.
+
+    AVAILABLE DATA in JournalContext:
+    - git: Git context with commit metadata, diffs, changed files, and statistics
+    - chat: Developer's conversations with AI coding assistants (may contain more than what's relevant to the current commit - think critically about what chat should be considered)
+    - journal: Recent journal entries for context and continuity (don't duplicate content, but feel free to weave in quotes from reflections if relevant)
+
     AI Prompt for Accomplishments Section Generation
 
     Purpose: Generate a list of what was successfully completed or achieved in this commit, capturing the developer's authentic sense of accomplishment and satisfaction with their work.
@@ -1124,6 +1154,16 @@ def generate_accomplishments_section(journal_context: JournalContext) -> Accompl
 @trace_mcp_operation("journal.generate_frustrations", attributes={"operation_type": "ai_generation", "section_type": "frustrations"})
 def generate_frustrations_section(journal_context: JournalContext) -> FrustrationsSection:
     """
+    You are helping build a high-quality development journal system that tracks coding work across commits. Your job is to generate a frustrations section. The quality of the entire journal depends on your output.
+
+    Input: JournalContext containing git metadata, chat history, and previous journal entries.
+    Output: Return the TypedDict structure defined in the function signature.
+
+    AVAILABLE DATA in JournalContext:
+    - git: Git context with commit metadata, diffs, changed files, and statistics
+    - chat: Developer's conversations with AI coding assistants (may contain more than what's relevant to the current commit - think critically about what chat should be considered)
+    - journal: Recent journal entries for context and continuity (don't duplicate content, but feel free to weave in quotes from reflections if relevant)
+
     AI Prompt for Frustrations Section Generation
 
     Purpose: Generate a list of challenges, blocks, or difficulties encountered during this commit, capturing the developer's authentic experience with obstacles and setbacks.
@@ -1215,6 +1255,16 @@ def generate_frustrations_section(journal_context: JournalContext) -> Frustratio
 @trace_mcp_operation("journal.generate_tone_mood", attributes={"operation_type": "ai_generation", "section_type": "tone_mood"})
 def generate_tone_mood_section(journal_context: JournalContext) -> ToneMoodSection:
     """
+    You are helping build a high-quality development journal system that tracks coding work across commits. Your job is to generate a tone/mood section. The quality of the entire journal depends on your output.
+
+    Input: JournalContext containing git metadata, chat history, and previous journal entries.
+    Output: Return the TypedDict structure defined in the function signature.
+
+    AVAILABLE DATA in JournalContext:
+    - git: Git context with commit metadata, diffs, changed files, and statistics
+    - chat: Developer's conversations with AI coding assistants (may contain more than what's relevant to the current commit - think critically about what chat should be considered)
+    - journal: Recent journal entries for context and continuity (don't duplicate content, but feel free to weave in quotes from reflections if relevant)
+
     AI Prompt for Tone/Mood Section Generation
 
     Purpose: Generate a tone and mood assessment based on the developer's language and emotional indicators in their chat messages, capturing the authentic emotional context of the work session.
@@ -1236,16 +1286,6 @@ def generate_tone_mood_section(journal_context: JournalContext) -> ToneMoodSecti
     - Stress/pressure indicators: "under pressure", "tight deadline", "stressed about", "relaxed"
     - Confidence levels: "confident this will work", "uncertain about", "sure that", "confused by"
     - Enthusiasm markers: exclamation points, caps, enthusiastic language, excitement
-
-    Mood Categories (select the most accurate):
-    - **Productive/Focused**: Steady progress, clear thinking, engaged with the work
-    - **Excited/Enthusiastic**: High energy, eager to implement, positive about outcomes
-    - **Frustrated/Challenged**: Facing obstacles, working through difficulties, problem-solving under pressure
-    - **Determined/Persistent**: Pushing through challenges, committed to solutions, resilient
-    - **Experimental/Curious**: Trying new approaches, learning-oriented, exploratory
-    - **Satisfied/Accomplished**: Content with progress, feeling successful, positive closure
-    - **Stressed/Pressured**: Time constraints, high stakes, feeling overwhelmed
-    - **Reflective/Analytical**: Thoughtful analysis, careful consideration, methodical approach
 
     Tone Assessment:
     Evaluate the overall communication tone:
@@ -1340,6 +1380,16 @@ def generate_tone_mood_section(journal_context: JournalContext) -> ToneMoodSecti
 @trace_mcp_operation("journal.generate_discussion_notes", attributes={"operation_type": "ai_generation", "section_type": "discussion_notes"})
 def generate_discussion_notes_section(journal_context: JournalContext) -> DiscussionNotesSection:
     """
+    You are helping build a high-quality development journal system that tracks coding work across commits. Your job is to generate a discussion notes section. The quality of the entire journal depends on your output.
+
+    Input: JournalContext containing git metadata, chat history, and previous journal entries.
+    Output: Return the TypedDict structure defined in the function signature.
+
+    AVAILABLE DATA in JournalContext:
+    - git: Git context with commit metadata, diffs, changed files, and statistics
+    - chat: Developer's conversations with AI coding assistants (may contain more than what's relevant to the current commit - think critically about what chat should be considered)
+    - journal: Recent journal entries for context and continuity (don't duplicate content, but feel free to weave in quotes from reflections if relevant)
+
     AI Prompt for Discussion Notes Section Generation
 
     Purpose: Extract and curate relevant discussion points from chat history that provide insight into the thinking process, technical reasoning, decisions, and key exchanges, filtering out routine conversation.

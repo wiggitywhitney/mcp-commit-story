@@ -125,10 +125,20 @@ defaults = {
 - [x] Created shared utility function for prompt formatting
 - [x] Implemented `format_ai_prompt()` with TDD approach
 - [x] All utility tests passing (5/5)
+- [x] Added role/context framing to all 6 AI-executed generators
+- [x] Provides clear system role and data context for fresh AI instances
+- [x] Maintains existing prompt content unchanged (MVP scope)
+- [x] Updated generators: summary, technical_synopsis, accomplishments, frustrations, tone_mood, discussion_notes
+- [x] Skipped generate_commit_metadata_section (programmatic, not AI-executed)
+- [x] All journal tests passing (43 passed, 22 xfailed as expected)
 
 ### 🔄 Next Steps (Subtask 64.2)
+- [ ] **Add role/context framing** at the top of all generator prompts for fresh AI instances:
+  - [ ] Start with "You are helping build a high-quality development journal system..."
+  - [ ] Emphasize importance and how quality of whole project depends on it
+  - [ ] Keep rest of existing prompts unchanged (MVP approach - Task 65 handles deeper optimization)
 - [ ] Update simple list generators (accomplishments, frustrations, discussion_notes)
-- [ ] Update simple text generators (summary, technical_synopsis)
+- [ ] Update simple text generators (summary, technical_synopsis) 
 - [ ] Update complex generators (tone_mood, commit_metadata)
 - [ ] Remove `ai_function_executor.py` imports from tests
 - [ ] Remove `ai_function_executor.py` file
