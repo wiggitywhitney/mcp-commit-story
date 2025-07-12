@@ -13,6 +13,9 @@ yarn-debug.log*
 yarn-error.log*
 dev-debug.log
 
+# Claude Code
+.claude/settings.local.json
+
 # MCP signal files (local AI processing artifacts)
 .mcp-commit-story/
 

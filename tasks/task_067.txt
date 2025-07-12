@@ -1,0 +1,260 @@
+# Task ID: 67
+# Title: Add Code Diff Collection to Git Context
+# Status: pending
+# Dependencies: 42
+# Priority: medium
+# Description: Extend git context collection to include actual code diffs alongside existing metadata, enabling AI generators to analyze specific code changes when creating journal entries.
+# Details:
+This task involves extending the git context collection functionality to include actual code diffs, providing AI generators with more detailed information about code changes:
+
+1. **Update GitContext TypedDict**:
+   - Modify `context_types.py` to add a new `file_diffs` field to the GitContext TypedDict:
+   ```python
+   class GitContext(TypedDict):
+       # Existing fields
+       commit_hash: str
+       commit_message: str
+       commit_time: str
+       author_name: str
+       author_email: str
+       files_changed: list[str]
+       # New field
+       file_diffs: dict[str, str]  # Mapping of file paths to their diffs
+   ```
+
+2. **Extend get_commit_file_diffs() in git_utils.py**:
+   - Modify the function to collect actual diff content using GitPython's `commit.diff(parent, create_patch=True)`
+   - Implement size limits and filtering logic:
+   ```python
+   def get_commit_file_diffs(repo, commit, max_file_size=10*1024, max_total_size=50*1024):
+       """Get the diffs for files changed in a commit with size limits.
+       
+       Args:
+           repo: GitPython repository object
+           commit: GitPython commit object
+           max_file_size: Maximum size in bytes for individual file diffs (default: 10KB)
+           max_total_size: Maximum total size in bytes for all diffs combined (default: 50KB)
+           
+       Returns:
+           dict: Mapping of file paths to their diffs
+       """
+       file_diffs = {}
+       total_size = 0
+       
+       # Get parent commit (or None for initial commit)
+       parent = commit.parents[0] if commit.parents else None
+       
+       # Process each file in the commit
+       for diff_item in commit.diff(parent, create_patch=True):
+           # Skip binary files
+           if diff_item.binary:
+               continue
+               
+           # Skip generated files (based on path patterns)
+           file_path = diff_item.b_path
+           if is_generated_file(file_path):
+               continue
+               
+           # Get the diff content
+           diff_content = diff_item.diff.decode('utf-8', errors='replace')
+           
+           # Apply size limits
+           if len(diff_content) > max_file_size:
+               # Truncate with message
+               diff_content = diff_content[:max_file_size] + "\n[... diff truncated due to size limits ...]"
+           
+           # Check if adding this diff would exceed total size limit
+           if total_size + len(diff_content) > max_total_size:
+               # If we've already collected some diffs, stop here
+               if file_diffs:
+                   file_diffs["__truncated__"] = "Additional diffs omitted due to total size limits"
+                   break
+               # If this is the first diff and it's already too large, include it truncated
+               diff_content = diff_content[:max_total_size] + "\n[... remaining diffs truncated due to size limits ...]"
+           
+           # Add to collection
+           file_diffs[file_path] = diff_content
+           total_size += len(diff_content)
+       
+       return file_diffs
+   ```
+
+3. **Add helper functions for file filtering**:
+   ```python
+   def is_generated_file(file_path):
+       """Determine if a file is likely generated based on path patterns."""
+       generated_patterns = [
+           r'\.min\.(js|css)$',
+           r'package-lock\.json$',
+           r'yarn\.lock$',
+           r'__pycache__/',
+           r'\.pyc$',
+           r'build/|dist/',
+           r'node_modules/'
+       ]
+       return any(re.search(pattern, file_path) for pattern in generated_patterns)
+   ```
+
+4. **Modify collect_git_context() in context_collection.py**:
+   - Update to include the file diffs in the returned GitContext:
+   ```python
+   def collect_git_context(repo_path=None, max_file_diff_size=10*1024, max_total_diff_size=50*1024, include_diffs=True):
+       """Collect git context for the current repository state.
+       
+       Args:
+           repo_path: Path to git repository (default: current directory)
+           max_file_diff_size: Maximum size for individual file diffs
+           max_total_diff_size: Maximum total size for all diffs
+           include_diffs: Whether to include file diffs (can be disabled for performance)
+           
+       Returns:
+           GitContext: Context information about the git repository
+       """
+       # Existing code to get basic git context...
+       
+       # Add file diffs if enabled
+       if include_diffs:
+           context["file_diffs"] = get_commit_file_diffs(
+               repo, 
+               commit, 
+               max_file_size=max_file_diff_size,
+               max_total_size=max_total_diff_size
+           )
+       else:
+           context["file_diffs"] = {}
+           
+       return context
+   ```
+
+5. **Add configuration options**:
+   - Update configuration schema to include diff collection settings:
+   ```python
+   # In config.py or similar
+   DEFAULT_CONFIG = {
+       # Existing config...
+       "git_context": {
+           "include_diffs": True,
+           "max_file_diff_size": 10 * 1024,  # 10KB
+           "max_total_diff_size": 50 * 1024,  # 50KB
+           "file_type_whitelist": [".py", ".js", ".ts", ".jsx", ".tsx", ".html", ".css", ".md", ".txt"],
+           "exclude_generated_files": True
+       }
+   }
+   ```
+
+6. **Add telemetry for performance monitoring**:
+   ```python
+   @trace_mcp_operation
+   def get_commit_file_diffs(repo, commit, max_file_size=10*1024, max_total_size=50*1024):
+       telemetry.start_span("get_commit_file_diffs")
+       try:
+           # Implementation as above
+           telemetry.add_attribute("num_files_processed", len(file_diffs))
+           telemetry.add_attribute("total_diff_size", total_size)
+           return file_diffs
+       finally:
+           telemetry.end_span()
+   ```
+
+7. **Ensure backward compatibility**:
+   - Make sure existing code that uses GitContext still works by providing defaults or handling missing fields
+   - Update any AI generators to take advantage of the new diff information when available
+
+# Test Strategy:
+To verify the correct implementation of code diff collection in git context:
+
+1. **Unit Tests for Diff Collection**:
+   ```python
+   def test_get_commit_file_diffs():
+       """Test that commit file diffs are correctly collected with size limits."""
+       # Create a test repository with a commit containing multiple files
+       repo = create_test_repo()
+       add_test_files(repo, ["file1.py", "file2.py", "large_file.py", "binary_file.bin"])
+       commit = make_test_commit(repo)
+       
+       # Test basic diff collection
+       diffs = get_commit_file_diffs(repo, commit)
+       assert "file1.py" in diffs
+       assert "file2.py" in diffs
+       assert isinstance(diffs["file1.py"], str)
+       
+       # Test binary file exclusion
+       assert "binary_file.bin" not in diffs
+       
+       # Test size limits
+       diffs = get_commit_file_diffs(repo, commit, max_file_size=10, max_total_size=15)
+       assert len(diffs["file1.py"]) <= 10
+       assert "truncated" in diffs["file1.py"]
+       assert "__truncated__" in diffs
+   ```
+
+2. **Integration Tests with Context Collection**:
+   ```python
+   def test_git_context_with_diffs():
+       """Test that git context includes diffs when requested."""
+       # Setup test repository
+       repo_path = setup_test_repo()
+       
+       # Test with diffs enabled
+       context = collect_git_context(repo_path, include_diffs=True)
+       assert "file_diffs" in context
+       assert len(context["file_diffs"]) > 0
+       
+       # Test with diffs disabled
+       context = collect_git_context(repo_path, include_diffs=False)
+       assert "file_diffs" in context
+       assert len(context["file_diffs"]) == 0
+   ```
+
+3. **Configuration Tests**:
+   ```python
+   def test_git_context_config():
+       """Test that git context respects configuration settings."""
+       # Setup test repository
+       repo_path = setup_test_repo()
+       
+       # Test with custom config
+       config = {
+           "git_context": {
+               "include_diffs": True,
+               "max_file_diff_size": 100,
+               "max_total_diff_size": 200
+           }
+       }
+       context = collect_git_context(repo_path, 
+                                    max_file_diff_size=config["git_context"]["max_file_diff_size"],
+                                    max_total_diff_size=config["git_context"]["max_total_diff_size"],
+                                    include_diffs=config["git_context"]["include_diffs"])
+       
+       # Verify size limits were applied
+       for diff in context["file_diffs"].values():
+           assert len(diff) <= 100
+   ```
+
+4. **Performance Tests**:
+   ```python
+   def test_diff_collection_performance():
+       """Test performance of diff collection with large repositories."""
+       # Setup large test repository
+       repo_path = setup_large_test_repo()
+       
+       # Measure performance
+       start_time = time.time()
+       context = collect_git_context(repo_path)
+       duration = time.time() - start_time
+       
+       # Assert reasonable performance
+       assert duration < 2.0  # Should complete in under 2 seconds
+   ```
+
+5. **Manual Testing**:
+   - Test with real repositories of varying sizes
+   - Verify that diff collection works with different types of changes (additions, deletions, modifications)
+   - Check that the diffs are correctly formatted and readable
+   - Verify that binary files are correctly excluded
+   - Test with repositories containing non-ASCII characters
+
+6. **AI Generator Integration Test**:
+   - Create a test that passes the enhanced git context to an AI generator
+   - Verify that the generator can access and utilize the diff information
+   - Check that the generated content references specific code changes from the diffs
