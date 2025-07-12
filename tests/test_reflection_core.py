@@ -13,8 +13,8 @@ from datetime import datetime
 from unittest.mock import patch, mock_open
 import pytest
 
-# Import existing function from journal.py
-from src.mcp_commit_story.journal import ensure_journal_directory
+# Import existing function from journal_generate.py
+from mcp_commit_story.journal import ensure_journal_directory
 
 # Import new functions from reflection_core (to be created)
 from src.mcp_commit_story.reflection_core import (

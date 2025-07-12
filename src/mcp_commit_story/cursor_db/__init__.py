@@ -255,6 +255,16 @@ def query_cursor_chat_database(commit=None) -> Dict[str, Any]:
                 workspace_db_path, global_db_path = find_workspace_composer_databases(repo_path)
                 workspace_db_paths = [workspace_db_path] if workspace_db_path else []
                 
+                # Try to discover additional databases for multi-database support
+                try:
+                    additional_dbs = discover_all_cursor_databases(workspace_root)
+                    # Add any additional databases not already in our list
+                    for db in additional_dbs:
+                        if db not in workspace_db_paths:
+                            workspace_db_paths.append(db)
+                except Exception as discover_error:
+                    logger.debug(f"Multi-database discovery failed, continuing with single database: {discover_error}")
+                
             except Exception as workspace_detection_error:
                 logger.warning(f"Multi-database detection failed, trying fallback: {workspace_detection_error}")
                 

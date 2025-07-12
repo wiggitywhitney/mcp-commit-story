@@ -116,7 +116,7 @@ class TestJournalContextIntegration:
     def test_ai_function_executor_compatibility(self):
         """Test that AI function executor can handle JournalContext with journal field."""
         from src.mcp_commit_story.ai_function_executor import execute_ai_function
-        from src.mcp_commit_story.journal import generate_summary_section
+        from mcp_commit_story.journal import generate_summary_section
         
         # Verify that the functions exist and can be imported
         assert callable(execute_ai_function)

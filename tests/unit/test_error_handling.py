@@ -1,5 +1,6 @@
 import pytest
-from mcp_commit_story import context_collection, journal
+from mcp_commit_story import context_collection
+from mcp_commit_story import journal_generate as journal
 from mcp_commit_story.context_types import ChatHistory, GitContext, JournalContext
 from unittest.mock import patch
 

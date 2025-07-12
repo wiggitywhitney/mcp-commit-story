@@ -169,12 +169,29 @@ def _parse_ai_response(response: str, expected_field: str, fallback_value: Any =
     
     response = response.strip()
     
+    # Strip markdown code blocks if present
+    if response.startswith('```json') and response.endswith('```'):
+        response = response[7:-3].strip()  # Remove ```json and ```
+    elif response.startswith('```') and response.endswith('```'):
+        response = response[3:-3].strip()  # Remove ``` and ```
+    
     # Try to parse as JSON first
     try:
         parsed_json = json.loads(response)
         if isinstance(parsed_json, dict):
             if expected_field in parsed_json:
-                return parsed_json[expected_field]
+                field_value = parsed_json[expected_field]
+                # If the field value is a dict but we expected a string, convert it
+                if isinstance(field_value, dict) and not parse_as_list and isinstance(fallback_value, str):
+                    # Convert dict to string representation
+                    if 'description' in field_value:
+                        return field_value['description']
+                    elif 'text' in field_value:
+                        return field_value['text']
+                    else:
+                        # Fallback to JSON string representation
+                        return json.dumps(field_value)
+                return field_value
             else:
                 # Valid JSON but missing expected field - return fallback instead of whole response
                 return fallback_value
@@ -1519,15 +1536,6 @@ def generate_tone_mood_section(journal_context: JournalContext) -> ToneMoodSecti
     - Confidence levels: "confident this will work", "uncertain about", "sure that", "confused by"
     - Enthusiasm markers: exclamation points, caps, enthusiastic language, excitement
 
-    Tone Assessment:
-    Evaluate the overall communication tone:
-    - **Professional**: Clear, structured, business-focused communication
-    - **Casual/Conversational**: Relaxed, informal, natural expression
-    - **Technical/Analytical**: Detail-oriented, precise, methodical language
-    - **Emotional/Expressive**: Open about feelings, authentic emotional language
-    - **Collaborative**: Team-oriented, seeking input, inclusive language
-    - **Independent/Self-directed**: Solo problem-solving, autonomous approach
-
     Language Translation Guidelines:
     When analyzing developer's emotional language from chat, translate respectfully:
     - Preserve authentic emotional expression including colorful language
@@ -1549,14 +1557,14 @@ def generate_tone_mood_section(journal_context: JournalContext) -> ToneMoodSecti
 
     Output Format:
     - Dict with 'mood' and 'indicators' keys
-    - **mood**: Single primary mood category that best describes the session
+    - **mood**: Choose a mood that describes this session
     - **indicators**: Specific evidence from chat that supports the mood assessment
     - Return empty dict if no clear emotional indicators are found and omit the section
 
     CHECKLIST:
     - [ ] Searched chat history for explicit emotional language and tone indicators
     - [ ] Identified clear mood patterns and emotional expression
-    - [ ] Selected most accurate mood category based on evidence
+    - [ ] Selected most accurate mood based on evidence
     - [ ] Provided specific indicators that support the mood assessment
     - [ ] Applied language translation guidelines while preserving authentic emotional expression
     - [ ] Used only emotional evidence directly supported by chat transcript
@@ -1654,30 +1662,14 @@ def generate_discussion_notes_section(journal_context: JournalContext) -> Discus
     AI Prompt for Discussion Notes Section Generation
 
     Purpose: Extract and curate relevant discussion points from chat history that provide insight into the thinking process, technical reasoning, decisions, and key exchanges, filtering out routine conversation.
-
-    Instructions: Extract meaningful conversation excerpts from chat history to preserve important technical reasoning, decision-making discussions, and insights. Focus on content that reveals thought processes, technical considerations, and valuable exchanges while excluding routine conversation.
-    
-    CRITICAL: AVOID RECENCY BIAS
-    - Start your analysis from the BEGINNING of the chat history (oldest messages first)
-    - Work chronologically forward to ensure older context isn't overlooked
-    - Give equal weight to conversations regardless of when they occurred
     
     VERBATIM QUOTES REQUIRED: Extract actual quotes from the conversation with speaker attribution. DO NOT paraphrase, summarize, or rewrite. The goal is to preserve the authentic voice and tone of the development process.
 
-    Priority for Content Sources:
-    1. Chat history from journal_context.chat_history - the only source for discussion content
-    2. No other sources - discussion notes can only come from actual conversations
-
-    Priority Types (in descending order of importance):
-    1. **Technical decision reasoning** - explaining why specific technical choices were made
-    2. **Problem-solving discussions** - working through challenges, debugging, solution approaches
-    3. **Questions and clarifications** - meaningful Q&A that reveals understanding or requirements
-    4. **Important context or background** - setup, constraints, requirements, or context that frames the work
-    5. **Learning moments** - insights, discoveries, or "aha!" moments during conversation
-    6. **Emotional expressions** - authentic frustration, excitement, satisfaction that adds human context
+    You will likely be given more chat history than what is relevant to the current commit. Use the git data and journal context to determine what is relevant. The earliest messages are less likely to be relevant to the current commit.
 
     Content Filtering Guidelines:
     **Include discussion that:**
+    - Makes the human seem wise
     - Reveals technical reasoning or decision-making process
     - Shows problem-solving approaches or debugging strategies
     - Contains meaningful questions that led to insights
@@ -1714,7 +1706,7 @@ def generate_discussion_notes_section(journal_context: JournalContext) -> Discus
       > **Human:** "exact quote here"
       > **AI:** "exact response here"
     - Present in chronological order, grouping messages by topic with blank lines between different topics
-    - Trust AI judgment to recognize natural topic boundaries and appropriate granularity
+
     - Preserve natural conversation flow and connections between related messages when length permits
 
     Language Translation Guidelines:
@@ -1737,17 +1729,22 @@ def generate_discussion_notes_section(journal_context: JournalContext) -> Discus
     - Never combine separate conversations or create composite quotes
 
     Output Format:
-    - List of strings or dicts with 'speaker' and 'text' fields for attributed quotes
-    - Return empty list if no relevant discussion notes are found and omit the section
-    - Maintain chronological order grouped by topic
-    - Include `[...]` notation when content has been shortened
-    - MUST present as VERBATIM QUOTES with speaker attribution
+    Return a list of strings, each formatted as:
+    > **Speaker:** "exact quote here"
+
+    Example:
+    > **Human:** "This is frustrating. The generators aren't working."
+    > **Assistant:** "Let me help debug this issue."
 
     CHECKLIST:
+    - [ ] Used git data and journal context to determine what chat content is relevant to current commit
     - [ ] Started analysis from oldest messages in chat history and worked chronologically forward
     - [ ] Searched chat history for content matching priority criteria (emotions, decisions, problem-solving, questions, technical discussion)
+    - [ ] Applied content filtering guidelines - included wisdom, technical reasoning, problem-solving, insights, learning moments, authentic emotions
+    - [ ] Excluded routine content - greetings, simple confirmations, basic status updates, off-topic conversations
     - [ ] Extracted actual conversation content as VERBATIM QUOTES without paraphrasing or invention
-    - [ ] Applied appropriate length limits with excerpt notation when needed
+    - [ ] Used proper speaker attribution format: > **Speaker:** "exact quote here"
+    - [ ] Applied appropriate length limits with excerpt notation ([...]) when needed
     - [ ] Included sufficient context to make quotes meaningful
     - [ ] Preserved conversational flow and speaker attribution when possible
     - [ ] Grouped by topic with appropriate granularity and blank lines between topics

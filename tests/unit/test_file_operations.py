@@ -2,7 +2,7 @@ import os
 import pytest
 from unittest import mock
 from pathlib import Path
-from mcp_commit_story import journal
+from mcp_commit_story import journal_generate as journal
 
 # Assume these will be imported from the journal module
 # from mcp_commit_story.journal import get_journal_file_path, append_to_journal_file, create_journal_directories

@@ -1,5 +1,5 @@
 import pytest
-from mcp_commit_story import journal
+from mcp_commit_story import journal_generate as journal
 from mcp_commit_story.context_types import JournalContext
 
 def test_journal_entry_full_round_trip():
@@ -43,7 +43,12 @@ def test_journal_entry_full_round_trip():
     assert parsed.technical_synopsis == entry.technical_synopsis
     assert parsed.accomplishments == entry.accomplishments
     assert parsed.frustrations == entry.frustrations
-    assert parsed.tone_mood == entry.tone_mood
+    # Handle tone_mood: empty dict serializes to no section and parses back as None
+    if entry.tone_mood and (entry.tone_mood.get('mood') or entry.tone_mood.get('indicators')):
+        assert parsed.tone_mood == entry.tone_mood
+    else:
+        # Empty tone_mood serializes to no section and parses back as None
+        assert parsed.tone_mood is None
     assert parsed.discussion_notes == entry.discussion_notes
     assert parsed.commit_metadata == entry.commit_metadata
 

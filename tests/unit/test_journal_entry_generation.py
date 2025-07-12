@@ -13,7 +13,7 @@ from pathlib import Path
 
 # Import the function we'll be testing (this will fail initially - that's expected in TDD)
 from src.mcp_commit_story.journal_workflow import generate_journal_entry, is_journal_only_commit
-from src.mcp_commit_story.journal import JournalEntry
+from src.mcp_commit_story.journal_generate import JournalEntry
 
 # Import related classes and types
 from src.mcp_commit_story.context_types import JournalContext

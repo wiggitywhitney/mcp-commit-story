@@ -2,7 +2,7 @@ import pytest
 from typing import get_type_hints
 from mcp_commit_story.context_types import ChatMessage, ChatHistory, GitMetadata, GitContext, JournalContext, AccomplishmentsSection, FrustrationsSection, SummarySection, TechnicalSynopsisSection, ToneMoodSection, DiscussionNotesSection, CommitMetadataSection
 from mcp_commit_story.context_collection import collect_chat_history
-from mcp_commit_story import journal, git_utils
+from mcp_commit_story import journal_generate as journal, git_utils
 
 def test_chat_history_type():
     # Mocked chat history with enhanced Composer metadata
@@ -111,7 +111,7 @@ def test_edge_cases_empty_and_none():
     assert ctx['chat'] is None
 
 def test_section_generators_accept_journal_context():
-    from mcp_commit_story import journal
+    from mcp_commit_story import journal_generate as journal
     from mcp_commit_story.context_types import JournalContext
     ctx = JournalContext(
         chat={'messages': [{'speaker': 'user', 'text': 'hi', 'timestamp': 1640995200000, 'composerId': 'comp123', 'bubbleId': 'bubble123'}]},
@@ -139,7 +139,7 @@ def test_section_generators_accept_journal_context():
             assert key in result
 
 def test_type_safety_enforcement():
-    from mcp_commit_story import journal
+    from mcp_commit_story import journal_generate as journal
     # Invalid JournalContext structure
     invalid_ctx = {'chat': 'not_a_dict', 'git': None}
     # Should raise or handle gracefully

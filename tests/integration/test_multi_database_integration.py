@@ -28,8 +28,10 @@ class TestMultiDatabaseIntegration:
     @patch('mcp_commit_story.cursor_db.find_workspace_composer_databases')
     @patch('mcp_commit_story.cursor_db.ComposerChatProvider')
     @patch('mcp_commit_story.cursor_db.detect_workspace_for_repo')
+    @patch('mcp_commit_story.cursor_db.get_commit_time_window')
     def test_time_window_filtering_across_multiple_databases(
         self,
+        mock_get_time_window,
         mock_detect_workspace,
         mock_composer_provider_class,
         mock_find_workspace,
@@ -47,10 +49,16 @@ class TestMultiDatabaseIntegration:
         mock_detect_workspace.return_value = mock_workspace_match
         mock_discover_all.return_value = [
             "/workspace1/state.vscdb",  # Old database
-            "/workspace2/state.vscdb",  # Recent database  
+            "/workspace2/state.vscdb",  # Recent database
             "/workspace3/state.vscdb"   # Future database
         ]
-        mock_find_workspace.return_value = (None, "/global/state.vscdb")
+        mock_find_workspace.return_value = ("/workspace1/state.vscdb", "/global/state.vscdb")
+        
+        # Mock the time window calculation to avoid git validation
+        mock_get_time_window.return_value = (
+            int((base_time - timedelta(hours=1)).timestamp() * 1000),  # start_timestamp_ms
+            int((base_time + timedelta(hours=1)).timestamp() * 1000)   # end_timestamp_ms
+        )
         
         # Create providers that return messages from different time periods
         mock_provider_old = Mock()
@@ -104,8 +112,10 @@ class TestMultiDatabaseIntegration:
     @patch('mcp_commit_story.cursor_db.find_workspace_composer_databases')
     @patch('mcp_commit_story.cursor_db.ComposerChatProvider')
     @patch('mcp_commit_story.cursor_db.detect_workspace_for_repo')
+    @patch('mcp_commit_story.cursor_db.get_commit_time_window')
     def test_permission_error_handling_with_mixed_access(
         self,
+        mock_get_time_window,
         mock_detect_workspace,
         mock_composer_provider_class,
         mock_find_workspace,
@@ -126,6 +136,12 @@ class TestMultiDatabaseIntegration:
             "/another_accessible/state.vscdb"
         ]
         mock_find_workspace.return_value = (None, "/global/state.vscdb")
+        
+        # Mock the time window calculation to avoid git validation
+        mock_get_time_window.return_value = (
+            int((datetime.now() - timedelta(hours=1)).timestamp() * 1000),  # start_timestamp_ms
+            int(datetime.now().timestamp() * 1000)                         # end_timestamp_ms
+        )
         
         # Set up providers - one fails with permission error
         mock_provider_good1 = Mock()
@@ -170,8 +186,10 @@ class TestMultiDatabaseIntegration:
     @patch('mcp_commit_story.cursor_db.find_workspace_composer_databases')
     @patch('mcp_commit_story.cursor_db.ComposerChatProvider')
     @patch('mcp_commit_story.cursor_db.detect_workspace_for_repo')
+    @patch('mcp_commit_story.cursor_db.get_commit_time_window')
     def test_performance_with_large_databases(
         self,
+        mock_get_time_window,
         mock_detect_workspace,
         mock_composer_provider_class,
         mock_find_workspace,
@@ -192,6 +210,12 @@ class TestMultiDatabaseIntegration:
             "/large_db3/state.vscdb"
         ]
         mock_find_workspace.return_value = (None, "/global/state.vscdb")
+        
+        # Mock the time window calculation to avoid git validation
+        mock_get_time_window.return_value = (
+            int((datetime.now() - timedelta(hours=2)).timestamp() * 1000),  # start_timestamp_ms
+            int(datetime.now().timestamp() * 1000)                         # end_timestamp_ms
+        )
         
         # Create large result sets (simulate 1000 messages per database)
         def create_large_message_set(db_index, message_count=1000):
@@ -257,8 +281,10 @@ class TestMultiDatabaseIntegration:
     @patch('mcp_commit_story.cursor_db.find_workspace_composer_databases')
     @patch('mcp_commit_story.cursor_db.ComposerChatProvider')
     @patch('mcp_commit_story.cursor_db.detect_workspace_for_repo')
+    @patch('mcp_commit_story.cursor_db.get_commit_time_window')
     def test_empty_and_corrupted_database_handling(
         self,
+        mock_get_time_window,
         mock_detect_workspace,
         mock_composer_provider_class,
         mock_find_workspace,
@@ -279,6 +305,12 @@ class TestMultiDatabaseIntegration:
             "/corrupted/state.vscdb"
         ]
         mock_find_workspace.return_value = (None, "/global/state.vscdb")
+        
+        # Mock the time window calculation to avoid git validation
+        mock_get_time_window.return_value = (
+            int((datetime.now() - timedelta(hours=1)).timestamp() * 1000),  # start_timestamp_ms
+            int(datetime.now().timestamp() * 1000)                         # end_timestamp_ms
+        )
         
         # Set up providers with different scenarios
         mock_provider_normal = Mock()
@@ -320,8 +352,10 @@ class TestMultiDatabaseIntegration:
     @patch('mcp_commit_story.cursor_db.find_workspace_composer_databases')
     @patch('mcp_commit_story.cursor_db.ComposerChatProvider')
     @patch('mcp_commit_story.cursor_db.detect_workspace_for_repo')
+    @patch('mcp_commit_story.cursor_db.get_commit_time_window')
     def test_data_quality_metadata_accuracy(
         self,
+        mock_get_time_window,
         mock_detect_workspace,
         mock_composer_provider_class,
         mock_find_workspace,
@@ -344,6 +378,12 @@ class TestMultiDatabaseIntegration:
             "/corrupted/state.vscdb"    # Corruption failure
         ]
         mock_find_workspace.return_value = (None, "/global/state.vscdb")
+        
+        # Mock the time window calculation to avoid git validation
+        mock_get_time_window.return_value = (
+            int((datetime.now() - timedelta(hours=1)).timestamp() * 1000),  # start_timestamp_ms
+            int(datetime.now().timestamp() * 1000)                         # end_timestamp_ms
+        )
         
         # Set up mixed provider scenarios
         mock_providers = []
@@ -399,8 +439,10 @@ class TestMultiDatabaseIntegration:
     @patch('mcp_commit_story.cursor_db.discover_all_cursor_databases')
     @patch('mcp_commit_story.cursor_db.find_workspace_composer_databases')
     @patch('mcp_commit_story.cursor_db.detect_workspace_for_repo')
+    @patch('mcp_commit_story.cursor_db.get_commit_time_window')
     def test_48_hour_database_filtering_integration(
         self,
+        mock_get_time_window,
         mock_detect_workspace,
         mock_find_workspace,
         mock_discover_all,
@@ -415,6 +457,12 @@ class TestMultiDatabaseIntegration:
         mock_workspace_match.workspace_folder = "/test/workspace"
         mock_detect_workspace.return_value = mock_workspace_match
         mock_find_workspace.return_value = (None, "/global/state.vscdb")
+        
+        # Mock the time window calculation to avoid git validation
+        mock_get_time_window.return_value = (
+            int((datetime.now() - timedelta(hours=48)).timestamp() * 1000),  # start_timestamp_ms
+            int(datetime.now().timestamp() * 1000)                          # end_timestamp_ms
+        )
         
         # Mock discover_all_cursor_databases to return filtered results
         # (This represents the existing 48-hour filtering logic)
@@ -447,8 +495,10 @@ class TestMultiDatabaseIntegration:
     @patch('mcp_commit_story.cursor_db.find_workspace_composer_databases')
     @patch('mcp_commit_story.cursor_db.ComposerChatProvider')
     @patch('mcp_commit_story.cursor_db.detect_workspace_for_repo')
+    @patch('mcp_commit_story.cursor_db.get_commit_time_window')
     def test_comprehensive_telemetry_and_logging(
         self,
+        mock_get_time_window,
         mock_detect_workspace,
         mock_composer_provider_class,
         mock_find_workspace,
@@ -468,6 +518,12 @@ class TestMultiDatabaseIntegration:
             "/db2/state.vscdb"
         ]
         mock_find_workspace.return_value = (None, "/global/state.vscdb")
+        
+        # Mock the time window calculation to avoid git validation
+        mock_get_time_window.return_value = (
+            int((datetime.now() - timedelta(hours=1)).timestamp() * 1000),  # start_timestamp_ms
+            int(datetime.now().timestamp() * 1000)                         # end_timestamp_ms
+        )
         
         # Set up successful providers
         mock_provider1 = Mock()

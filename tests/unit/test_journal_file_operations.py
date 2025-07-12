@@ -16,7 +16,7 @@ from unittest.mock import patch, mock_open, MagicMock
 import pytest
 
 from src.mcp_commit_story.journal_workflow import save_journal_entry
-from src.mcp_commit_story.journal import JournalEntry
+from mcp_commit_story.journal import JournalEntry
 
 
 class TestSaveJournalEntry:
@@ -256,7 +256,7 @@ class TestQuarterlyFilePathSupport:
     
     def test_quarterly_file_path_q1(self):
         """Test quarterly file path generation for Q1 (Jan-Mar)."""
-        from src.mcp_commit_story.journal import get_journal_file_path
+        from mcp_commit_story.journal import get_journal_file_path
         
         # Test February (Q1)
         result = get_journal_file_path("2025-02-15", "quarterly_summary")
@@ -265,7 +265,7 @@ class TestQuarterlyFilePathSupport:
     
     def test_quarterly_file_path_q2(self):
         """Test quarterly file path generation for Q2 (Apr-Jun)."""
-        from src.mcp_commit_story.journal import get_journal_file_path
+        from mcp_commit_story.journal import get_journal_file_path
         
         # Test May (Q2)
         result = get_journal_file_path("2025-05-20", "quarterly_summary")
@@ -274,7 +274,7 @@ class TestQuarterlyFilePathSupport:
     
     def test_quarterly_file_path_q3(self):
         """Test quarterly file path generation for Q3 (Jul-Sep)."""
-        from src.mcp_commit_story.journal import get_journal_file_path
+        from mcp_commit_story.journal import get_journal_file_path
         
         # Test August (Q3)
         result = get_journal_file_path("2025-08-10", "quarterly_summary")
@@ -283,7 +283,7 @@ class TestQuarterlyFilePathSupport:
     
     def test_quarterly_file_path_q4(self):
         """Test quarterly file path generation for Q4 (Oct-Dec)."""
-        from src.mcp_commit_story.journal import get_journal_file_path
+        from mcp_commit_story.journal import get_journal_file_path
         
         # Test December (Q4)
         result = get_journal_file_path("2025-12-31", "quarterly_summary")
@@ -292,7 +292,7 @@ class TestQuarterlyFilePathSupport:
     
     def test_quarterly_file_path_all_quarters(self):
         """Test quarterly file path generation for all quarter boundaries."""
-        from src.mcp_commit_story.journal import get_journal_file_path
+        from mcp_commit_story.journal import get_journal_file_path
         
         # Test all quarter boundary months
         test_cases = [
