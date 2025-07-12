@@ -149,6 +149,99 @@ def _get_size_bucket(size: int) -> str:
     else:
         return "xlarge"
 
+
+def _parse_ai_response(response: str, expected_field: str, fallback_value: Any = "", parse_as_list: bool = False) -> Any:
+    """
+    Parse AI response that could be JSON or plain text.
+    
+    Args:
+        response: The AI response string
+        expected_field: The JSON field name to extract (e.g., "summary", "accomplishments")
+        fallback_value: Value to return if parsing fails or field not found
+        parse_as_list: If True, parse plain text response as list (split by newlines)
+    
+    Returns:
+        The extracted field value if JSON parsing succeeds, otherwise the original response
+        (or split by newlines if parse_as_list=True)
+    """
+    if not response or not response.strip():
+        return fallback_value
+    
+    response = response.strip()
+    
+    # Try to parse as JSON first
+    try:
+        parsed_json = json.loads(response)
+        if isinstance(parsed_json, dict):
+            if expected_field in parsed_json:
+                return parsed_json[expected_field]
+            else:
+                # Valid JSON but missing expected field - return fallback instead of whole response
+                return fallback_value
+    except (json.JSONDecodeError, TypeError):
+        # Not valid JSON, treat as plain text
+        pass
+    
+    # Fall back to treating as plain text
+    if parse_as_list:
+        # Handle special case where AI returns '[]' to indicate no items
+        if response == '[]':
+            return []
+        # Split by newlines, strip, and filter empty lines
+        lines = response.split('\n')
+        return [line.strip() for line in lines if line.strip()]
+    else:
+        return response
+
+
+def _parse_tone_mood_response(response: str) -> Dict[str, str]:
+    """
+    Parse tone/mood response that could be JSON or plain text with regex patterns.
+    
+    Args:
+        response: The AI response string
+        
+    Returns:
+        Dict with 'mood' and 'indicators' keys
+    """
+    if not response or not response.strip():
+        return {"mood": "", "indicators": ""}
+    
+    response = response.strip()
+    
+    # Try to parse as JSON first
+    try:
+        parsed_json = json.loads(response)
+        if isinstance(parsed_json, dict):
+            return {
+                "mood": parsed_json.get("mood", ""),
+                "indicators": parsed_json.get("indicators", "")
+            }
+    except (json.JSONDecodeError, TypeError):
+        # Not valid JSON, try regex parsing
+        pass
+    
+    # Fall back to regex parsing for plain text
+    mood_match = re.search(r'Mood:\s*(.+?)(?=\n|$)', response, re.IGNORECASE)
+    indicators_match = re.search(r'Indicators:\s*(.+?)(?=\n|$)', response, re.IGNORECASE)
+    
+    mood = mood_match.group(1).strip() if mood_match else ""
+    indicators = indicators_match.group(1).strip() if indicators_match else ""
+    
+    # Final fallback: if patterns not found, use first two lines
+    if not mood and not indicators:
+        lines = [line.strip() for line in response.split('\n') if line.strip()]
+        if len(lines) >= 1:
+            mood = lines[0]
+        if len(lines) >= 2:
+            indicators = lines[1]
+    
+    return {
+        "mood": mood,
+        "indicators": indicators
+    }
+
+
 class JournalEntry:
     """
     Represents a single engineering journal entry, with Markdown serialization.
@@ -829,8 +922,8 @@ def generate_summary_section(journal_context) -> SummarySection:
         # Call AI with the formatted prompt
         response = invoke_ai(full_prompt, {})
         
-        # Parse response (for summary: use response directly)
-        summary = response.strip() if response else ""
+        # Parse response (extract 'summary' field from JSON or use as plain text)
+        summary = _parse_ai_response(response, "summary", "")
         result = SummarySection(summary=summary)
         
         duration = time.time() - start_time
@@ -988,8 +1081,8 @@ def generate_technical_synopsis_section(journal_context: JournalContext) -> Tech
         # Call AI with the formatted prompt
         response = invoke_ai(full_prompt, {})
         
-        # Parse response (for technical synopsis: use response directly)
-        technical_synopsis = response.strip() if response else ""
+        # Parse response (extract 'technical_synopsis' field from JSON or use as plain text)
+        technical_synopsis = _parse_ai_response(response, "technical_synopsis", "")
         result = TechnicalSynopsisSection(technical_synopsis=technical_synopsis)
         
         duration = time.time() - start_time
@@ -1188,15 +1281,8 @@ def generate_accomplishments_section(journal_context: JournalContext) -> Accompl
         # Call AI with the formatted prompt
         response = invoke_ai(full_prompt, {})
         
-        # Parse response (for accomplishments: split by newlines, strip, filter empty)
-        accomplishments = []
-        if response:
-            # Handle case where AI returns '[]' to indicate no accomplishments
-            if response.strip() == '[]':
-                accomplishments = []
-            else:
-                lines = response.split('\n')
-                accomplishments = [line.strip() for line in lines if line.strip()]
+        # Parse response (extract 'accomplishments' field from JSON or parse as list)
+        accomplishments = _parse_ai_response(response, "accomplishments", [], parse_as_list=True)
         
         # If AI returns empty but we have meaningful git context, use fallback
         if not accomplishments and journal_context:
@@ -1378,15 +1464,8 @@ def generate_frustrations_section(journal_context: JournalContext) -> Frustratio
         # Call AI with the formatted prompt
         response = invoke_ai(full_prompt, {})
         
-        # Parse response (for frustrations: split by newlines, strip, filter empty)
-        frustrations = []
-        if response:
-            # Handle case where AI returns '[]' to indicate no frustrations
-            if response.strip() == '[]':
-                frustrations = []
-            else:
-                lines = response.split('\n')
-                frustrations = [line.strip() for line in lines if line.strip()]
+        # Parse response (extract 'frustrations' field from JSON or parse as list)
+        frustrations = _parse_ai_response(response, "frustrations", [], parse_as_list=True)
         
         result = FrustrationsSection(frustrations=frustrations)
         
@@ -1516,29 +1595,10 @@ def generate_tone_mood_section(journal_context: JournalContext) -> ToneMoodSecti
         # Call AI with the formatted prompt
         response = invoke_ai(full_prompt, {})
         
-        # Parse response (for tone_mood: regex search for "Mood:" and "Indicators:" patterns)
-        mood = ""
-        indicators = ""
+        # Parse response (extract mood/indicators from JSON or regex patterns)
+        parsed_mood = _parse_tone_mood_response(response)
         
-        if response:
-            # First try regex patterns for "Mood:" and "Indicators:"
-            mood_match = re.search(r'Mood:\s*(.+?)(?=\n|$)', response, re.IGNORECASE)
-            indicators_match = re.search(r'Indicators:\s*(.+?)(?=\n|$)', response, re.IGNORECASE)
-            
-            if mood_match:
-                mood = mood_match.group(1).strip()
-            if indicators_match:
-                indicators = indicators_match.group(1).strip()
-                
-            # Fallback: if patterns not found, use first two lines
-            if not mood and not indicators:
-                lines = [line.strip() for line in response.split('\n') if line.strip()]
-                if len(lines) >= 1:
-                    mood = lines[0]
-                if len(lines) >= 2:
-                    indicators = lines[1]
-        
-        result = ToneMoodSection(mood=mood, indicators=indicators)
+        result = ToneMoodSection(mood=parsed_mood["mood"], indicators=parsed_mood["indicators"])
         
         duration = time.time() - start_time
         _record_ai_generation_metrics("tone_mood", duration, True)
@@ -1727,15 +1787,8 @@ def generate_discussion_notes_section(journal_context: JournalContext) -> Discus
         # Call AI with the formatted prompt
         response = invoke_ai(full_prompt, {})
         
-        # Parse response (for discussion notes: split by newlines, strip, filter empty)
-        discussion_notes = []
-        if response:
-            # Handle case where AI returns '[]' to indicate no discussion notes
-            if response.strip() == '[]':
-                discussion_notes = []
-            else:
-                lines = response.split('\n')
-                discussion_notes = [line.strip() for line in lines if line.strip()]
+        # Parse response (extract 'discussion_notes' field from JSON or parse as list)
+        discussion_notes = _parse_ai_response(response, "discussion_notes", [], parse_as_list=True)
         
         result = DiscussionNotesSection(discussion_notes=discussion_notes)
         

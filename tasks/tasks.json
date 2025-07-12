@@ -792,7 +792,7 @@
             "title": "Migrate Complex Generators",
             "description": "Migrate generators with complex parsing or structured outputs (reflection, discussion_notes, code_changes, decision_points) to direct OpenAI client calls, preserving specialized parsing logic and context handling.",
             "details": "**Implementation Plan:**\n\n**WRITE TESTS FIRST - REFLECTION**\n- Create/update tests/unit/test_reflection_generator.py\n- Test successful markdown response parsing\n- Test section header extraction\n- Test bullet point preservation\n- Test empty response returns empty string\n- Test multiline response handling\n- Test telemetry preservation\n- RUN TESTS - VERIFY THEY FAIL\n\n**IMPLEMENT REFLECTION GENERATOR**\n- Update generate_reflection():\n  - Direct invoke_ai() call with format_ai_prompt()\n  - Complex parsing: preserve markdown formatting, section headers, bullet points\n  - Handle multiline responses correctly\n  - Preserve all telemetry\n  - Return ReflectionSection with parsed content\n- RUN TESTS - VERIFY THEY PASS\n\n**WRITE TESTS FIRST - DISCUSSION NOTES**\n- Create/update tests/unit/test_discussion_notes_generator.py\n- Test user message extraction\n- Test conversation flow preservation\n- Test speaker attribution if present\n- RUN TESTS - VERIFY THEY FAIL\n\n**IMPLEMENT DISCUSSION NOTES GENERATOR**\n- Complex parsing for user messages and conversation flow\n- Preserve any speaker attribution\n- Handle various discussion formats\n- RUN TESTS - VERIFY THEY PASS\n\n**WRITE TESTS FIRST - CODE CHANGES**\n- Create/update tests/unit/test_code_changes_generator.py\n- Test file path extraction\n- Test code block preservation\n- Test change description parsing\n- RUN TESTS - VERIFY THEY FAIL\n\n**IMPLEMENT CODE CHANGES GENERATOR**\n- Complex parsing for file paths, code blocks, change descriptions\n- Preserve code formatting\n- Handle various change description formats\n- RUN TESTS - VERIFY THEY PASS\n\n**WRITE TESTS FIRST - DECISION POINTS**\n- Create/update tests/unit/test_decision_points_generator.py\n- Test structured decision documentation\n- Test decision rationale parsing\n- RUN TESTS - VERIFY THEY FAIL\n\n**IMPLEMENT DECISION POINTS GENERATOR**\n- Complex parsing for structured decision documentation\n- Preserve decision rationale and context\n- Handle various decision formats\n- RUN TESTS - VERIFY THEY PASS\n\n**UPDATE CALLERS AND COMPLETE**\n- Remove execute_ai_function import from journal_workflow.py\n- Update any other callers found in 64.1\n- Verify all unit tests pass\n- MARK COMPLETE",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               "64.2"
             ],
@@ -875,7 +875,7 @@
     ],
     "metadata": {
       "created": "2025-06-21T07:52:11.612Z",
-      "updated": "2025-07-12T21:12:35.847Z",
+      "updated": "2025-07-12T21:50:33.817Z",
       "description": "Tasks for master context"
     }
   }
