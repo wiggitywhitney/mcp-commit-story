@@ -407,7 +407,7 @@ def _yearly_summary_exists(date: date, summaries_path: Path) -> bool:
 
 from mcp_commit_story.telemetry import trace_mcp_operation
 from mcp_commit_story.journal_workflow_types import DailySummary
-from mcp_commit_story.journal import JournalEntry
+from mcp_commit_story.journal_generate import JournalEntry
 
 
 def load_journal_entries_for_date(date_str: str, config: Dict) -> List[JournalEntry]:
@@ -423,7 +423,7 @@ def load_journal_entries_for_date(date_str: str, config: Dict) -> List[JournalEn
     entries = []
     try:
         # Use the established journal file path utility
-        from mcp_commit_story.journal import get_journal_file_path
+        from mcp_commit_story.journal_generate import get_journal_file_path
         
         journal_file_path = get_journal_file_path(date_str, "daily")
         
@@ -436,7 +436,7 @@ def load_journal_entries_for_date(date_str: str, config: Dict) -> List[JournalEn
             content = f.read()
         
         # Parse journal entries using the established parser
-        from mcp_commit_story.journal import JournalParser
+        from mcp_commit_story.journal_generate import JournalParser
         
         # Split on entry headers (### timestamp — Commit hash)
         # This pattern matches the header format used by JournalEntry.to_markdown()
@@ -548,7 +548,7 @@ def _call_ai_for_daily_summary(entries: List[JournalEntry], date_str: str, confi
         # In a real implementation, this would call the configured AI model
         # For now, we'll generate a more realistic mock response based on the entries
         
-        from mcp_commit_story.journal import log_ai_agent_interaction
+        from mcp_commit_story.journal_generate import log_ai_agent_interaction
         log_ai_agent_interaction(prompt, None, debug_mode=True)
         
         # Generate a more realistic response based on actual entry content
@@ -1241,7 +1241,7 @@ def save_daily_summary(summary: DailySummary, config: Dict) -> str:
     """
     try:
         # Use established journal file utilities
-        from mcp_commit_story.journal import get_journal_file_path, ensure_journal_directory
+        from mcp_commit_story.journal_generate import get_journal_file_path, ensure_journal_directory
         
         # Get the summary file path (summaries are stored in summaries/daily/)
         date_str = summary['date']

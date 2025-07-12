@@ -81,7 +81,7 @@ def test_task5_init_does_not_use_create_journal_directories():
 
 def test_file_operations_work_without_upfront_directory_creation(tmp_path):
     """File operations should succeed with only on-demand directory creation (no upfront creation)."""
-    from mcp_commit_story.journal import append_to_journal_file
+    from mcp_commit_story.journal_generate import append_to_journal_file
     test_file = tmp_path / "journal" / "daily" / "2025-05-28-journal.md"
     entry = "Test entry\n"
     # Should not raise

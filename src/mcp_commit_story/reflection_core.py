@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Union, Dict, Any
 
 # Import existing directory utility and telemetry
-from .journal import ensure_journal_directory, get_journal_file_path, append_to_journal_file
+from .journal_generate import ensure_journal_directory, get_journal_file_path, append_to_journal_file
 from .config import load_config
 from .telemetry import trace_mcp_operation, get_mcp_metrics
 

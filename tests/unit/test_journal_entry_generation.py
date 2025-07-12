@@ -24,13 +24,13 @@ class TestGenerateJournalEntry:
     
     @patch('src.mcp_commit_story.context_collection.collect_git_context')
     @patch('src.mcp_commit_story.context_collection.collect_chat_history')
-    @patch('src.mcp_commit_story.journal.generate_summary_section')
-    @patch('src.mcp_commit_story.journal.generate_technical_synopsis_section')
-    @patch('src.mcp_commit_story.journal.generate_accomplishments_section')
-    @patch('src.mcp_commit_story.journal.generate_frustrations_section')
-    @patch('src.mcp_commit_story.journal.generate_tone_mood_section')
-    @patch('src.mcp_commit_story.journal.generate_discussion_notes_section')
-    @patch('src.mcp_commit_story.journal.generate_commit_metadata_section')
+    @patch('src.mcp_commit_story.journal_generate.generate_summary_section')
+    @patch('src.mcp_commit_story.journal_generate.generate_technical_synopsis_section')
+    @patch('src.mcp_commit_story.journal_generate.generate_accomplishments_section')
+    @patch('src.mcp_commit_story.journal_generate.generate_frustrations_section')
+    @patch('src.mcp_commit_story.journal_generate.generate_tone_mood_section')
+    @patch('src.mcp_commit_story.journal_generate.generate_discussion_notes_section')
+    @patch('src.mcp_commit_story.journal_generate.generate_commit_metadata_section')
     @patch('src.mcp_commit_story.journal_workflow.is_journal_only_commit')
     def test_successful_complete_journal_entry(
         self,
@@ -142,7 +142,7 @@ class TestGenerateJournalEntry:
         with patch('src.mcp_commit_story.context_collection.collect_chat_history', side_effect=Exception("Chat collection failed")), \
              patch('src.mcp_commit_story.context_collection.collect_git_context', side_effect=Exception("Git collection failed")), \
              patch('src.mcp_commit_story.journal_workflow.is_journal_only_commit', return_value=False), \
-             patch('src.mcp_commit_story.journal.generate_summary_section', return_value={'summary': 'Test summary'}):
+             patch('src.mcp_commit_story.journal_generate.generate_summary_section', return_value={'summary': 'Test summary'}):
             
             result = generate_journal_entry(mock_commit, mock_config, debug=False)
         
@@ -173,9 +173,9 @@ class TestGenerateJournalEntry:
                  'diff_summary': '', 'changed_files': [], 'file_stats': {}, 'commit_context': {}
              }), \
              patch('src.mcp_commit_story.journal_workflow.is_journal_only_commit', return_value=False), \
-             patch('src.mcp_commit_story.journal.generate_summary_section', return_value={'summary': 'Working summary'}), \
-             patch('src.mcp_commit_story.journal.generate_technical_synopsis_section', side_effect=Exception("Synopsis failed")), \
-             patch('src.mcp_commit_story.journal.generate_accomplishments_section', side_effect=Exception("Accomplishments failed")):
+             patch('src.mcp_commit_story.journal_generate.generate_summary_section', return_value={'summary': 'Working summary'}), \
+             patch('src.mcp_commit_story.journal_generate.generate_technical_synopsis_section', side_effect=Exception("Synopsis failed")), \
+             patch('src.mcp_commit_story.journal_generate.generate_accomplishments_section', side_effect=Exception("Accomplishments failed")):
             
             result = generate_journal_entry(mock_commit, mock_config, debug=False)
         
@@ -209,13 +209,13 @@ class TestGenerateJournalEntry:
                  'diff_summary': 'Config-driven changes', 'changed_files': ['config.py'], 'file_stats': {}, 'commit_context': {}
              }), \
              patch('src.mcp_commit_story.journal_workflow.is_journal_only_commit', return_value=False), \
-             patch('src.mcp_commit_story.journal.generate_summary_section', return_value={'summary': 'Configuration summary'}), \
-             patch('src.mcp_commit_story.journal.generate_technical_synopsis_section', return_value={'technical_synopsis': 'Config technical details'}), \
-             patch('src.mcp_commit_story.journal.generate_accomplishments_section', return_value={'accomplishments': ['Config updated']}), \
-             patch('src.mcp_commit_story.journal.generate_frustrations_section', return_value={'frustrations': []}), \
-             patch('src.mcp_commit_story.journal.generate_tone_mood_section', return_value={'mood': 'systematic', 'indicators': 'organized approach'}), \
-             patch('src.mcp_commit_story.journal.generate_discussion_notes_section', return_value={'discussion_notes': []}), \
-             patch('src.mcp_commit_story.journal.generate_commit_metadata_section', return_value={'commit_metadata': {'type': 'config'}}):
+             patch('src.mcp_commit_story.journal_generate.generate_summary_section', return_value={'summary': 'Configuration summary'}), \
+             patch('src.mcp_commit_story.journal_generate.generate_technical_synopsis_section', return_value={'technical_synopsis': 'Config technical details'}), \
+             patch('src.mcp_commit_story.journal_generate.generate_accomplishments_section', return_value={'accomplishments': ['Config updated']}), \
+             patch('src.mcp_commit_story.journal_generate.generate_frustrations_section', return_value={'frustrations': []}), \
+             patch('src.mcp_commit_story.journal_generate.generate_tone_mood_section', return_value={'mood': 'systematic', 'indicators': 'organized approach'}), \
+             patch('src.mcp_commit_story.journal_generate.generate_discussion_notes_section', return_value={'discussion_notes': []}), \
+             patch('src.mcp_commit_story.journal_generate.generate_commit_metadata_section', return_value={'commit_metadata': {'type': 'config'}}):
             
             result = generate_journal_entry(mock_commit, mock_config, debug=False)
         
@@ -251,13 +251,13 @@ class TestGenerateJournalEntry:
                  'diff_summary': '', 'changed_files': [], 'file_stats': {}, 'commit_context': {}
              }), \
              patch('src.mcp_commit_story.journal_workflow.is_journal_only_commit', return_value=False), \
-             patch('src.mcp_commit_story.journal.generate_summary_section', return_value={'summary': 'Debug summary'}), \
-             patch('src.mcp_commit_story.journal.generate_technical_synopsis_section', return_value={'technical_synopsis': 'Debug technical'}), \
-             patch('src.mcp_commit_story.journal.generate_accomplishments_section', return_value={'accomplishments': ['Debug feature']}), \
-             patch('src.mcp_commit_story.journal.generate_frustrations_section', return_value={'frustrations': []}), \
-             patch('src.mcp_commit_story.journal.generate_tone_mood_section', return_value={'mood': 'investigative', 'indicators': 'thorough testing'}), \
-             patch('src.mcp_commit_story.journal.generate_discussion_notes_section', return_value={'discussion_notes': []}), \
-             patch('src.mcp_commit_story.journal.generate_commit_metadata_section', return_value={'commit_metadata': {'debug': 'true'}}):
+             patch('src.mcp_commit_story.journal_generate.generate_summary_section', return_value={'summary': 'Debug summary'}), \
+             patch('src.mcp_commit_story.journal_generate.generate_technical_synopsis_section', return_value={'technical_synopsis': 'Debug technical'}), \
+             patch('src.mcp_commit_story.journal_generate.generate_accomplishments_section', return_value={'accomplishments': ['Debug feature']}), \
+             patch('src.mcp_commit_story.journal_generate.generate_frustrations_section', return_value={'frustrations': []}), \
+             patch('src.mcp_commit_story.journal_generate.generate_tone_mood_section', return_value={'mood': 'investigative', 'indicators': 'thorough testing'}), \
+             patch('src.mcp_commit_story.journal_generate.generate_discussion_notes_section', return_value={'discussion_notes': []}), \
+             patch('src.mcp_commit_story.journal_generate.generate_commit_metadata_section', return_value={'commit_metadata': {'debug': 'true'}}):
             
             # Test with debug=True - should work exactly the same
             result = generate_journal_entry(mock_commit, mock_config, debug=True)
@@ -290,7 +290,7 @@ class TestGenerateJournalEntry:
                  'diff_summary': '', 'changed_files': [], 'file_stats': {}, 'commit_context': {}
              }), \
              patch('src.mcp_commit_story.journal_workflow.is_journal_only_commit', return_value=False), \
-             patch('src.mcp_commit_story.journal.generate_summary_section', return_value={'summary': 'Timestamp summary'}):
+             patch('src.mcp_commit_story.journal_generate.generate_summary_section', return_value={'summary': 'Timestamp summary'}):
             
             result = generate_journal_entry(mock_commit, mock_config, debug=False)
         

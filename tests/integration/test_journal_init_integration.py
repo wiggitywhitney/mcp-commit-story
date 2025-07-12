@@ -2,7 +2,7 @@ import pytest
 import subprocess
 from pathlib import Path
 from mcp_commit_story.journal_init import initialize_journal
-from mcp_commit_story.journal import append_to_journal_file, get_journal_file_path
+from mcp_commit_story.journal_generate import append_to_journal_file, get_journal_file_path
 
 
 def test_journal_clean_init(tmp_path):

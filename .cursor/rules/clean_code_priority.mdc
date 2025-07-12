@@ -1,0 +1,56 @@
+---
+description: Prioritize clean code and maintainability over backwards compatibility since there are no external users
+globs: src/**/*.py, tests/**/*.py, **/*.py
+alwaysApply: true
+---
+
+## Clean Code Over Backwards Compatibility
+
+**This project has no external users - prioritize code quality over compatibility.**
+
+- **Breaking Changes Are Acceptable**
+  - Refactor freely to improve code structure
+  - Remove deprecated patterns without transition periods
+  - Rename functions, classes, and modules for clarity
+  - Change APIs to be more intuitive or consistent
+
+- **Code Quality Principles**
+  - **DRY (Don't Repeat Yourself)**: Remove duplicate code aggressively
+  - **KISS (Keep It Simple, Stupid)**: Simplify complex implementations
+  - **Single Responsibility**: Split overly complex functions/classes
+  - **Clear Naming**: Use descriptive names even if it requires breaking changes
+
+- **Refactoring Guidelines**
+  - Remove dead code immediately rather than deprecating
+  - Consolidate similar functions into cleaner interfaces
+  - Extract common patterns into reusable utilities
+  - Fix import paths and module organization without compatibility layers
+
+- **Examples of Clean Code Priority**
+  ```python
+  # ✅ DO: Clean, direct approach
+  from mcp_commit_story.journal_generate import generate_summary_section
+  
+  # ❌ DON'T: Backwards compatibility shims
+  # Re-export old function names "for compatibility"
+  from mcp_commit_story.journal import old_function_name as generate_summary_section
+  ```
+
+- **When This Rule Applies**
+  - **Always** - until the project has external users
+  - During refactoring and code organization
+  - When fixing import paths and module structure
+  - When consolidating duplicate functionality
+
+- **When To Reconsider**
+  - Once external users depend on the APIs
+  - When the project reaches stable release (1.0+)
+  - If breaking changes would affect documented public interfaces
+
+- **Implementation Strategy**
+  - Make changes in focused commits for easy tracking
+  - Update all references systematically in the same change
+  - Remove old patterns completely rather than leaving them
+  - Prioritize readability and maintainability in all decisions
+
+**Remember**: Clean, maintainable code is more valuable than compatibility when there are no users to break.

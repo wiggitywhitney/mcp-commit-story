@@ -10,7 +10,7 @@ from typing import Optional
 from datetime import datetime
 
 from .telemetry import trace_mcp_operation
-from .journal import JournalEntry
+from .journal_generate import JournalEntry
 from .context_types import JournalContext
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ def generate_journal_entry(commit, config, debug=False) -> Optional[JournalEntry
         JournalEntry: Complete journal entry object, or None if commit should be skipped
     """
     from .context_collection import collect_chat_history, collect_git_context, collect_recent_journal_context
-    from .journal import (
+    from .journal_generate import (
         generate_summary_section, generate_technical_synopsis_section,
         generate_accomplishments_section, generate_frustrations_section,
         generate_tone_mood_section, generate_discussion_notes_section,
@@ -242,7 +242,7 @@ def save_journal_entry(journal_entry, config, debug=False, date_str=None):
     Returns:
         str: Path to the saved file
     """
-    from .journal import append_to_journal_file, ensure_journal_directory, get_journal_file_path
+    from .journal_generate import append_to_journal_file, ensure_journal_directory, get_journal_file_path
     from pathlib import Path
     
     # Use provided date or fall back to current date

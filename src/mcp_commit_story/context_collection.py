@@ -501,7 +501,7 @@ def collect_recent_journal_context(commit) -> RecentJournalContext:
     
     try:
         # Import required utilities
-        from mcp_commit_story.journal import get_journal_file_path, JournalParser
+        from mcp_commit_story.journal_generate import get_journal_file_path, JournalParser
         
         # Get journal file path using commit date
         relative_file_path = get_journal_file_path(commit_date_str, "daily")

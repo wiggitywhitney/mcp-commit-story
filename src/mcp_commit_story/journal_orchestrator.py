@@ -20,7 +20,7 @@ from pathlib import Path
 from mcp_commit_story.telemetry import trace_mcp_operation, get_mcp_metrics
 from mcp_commit_story.context_types import JournalContext, ChatHistory, GitContext
 from mcp_commit_story.context_collection import collect_git_context, collect_chat_history, collect_recent_journal_context
-from mcp_commit_story.journal import (
+from mcp_commit_story.journal_generate import (
     JournalEntry,
     generate_summary_section,
     generate_technical_synopsis_section,

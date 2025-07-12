@@ -4,7 +4,7 @@ import tempfile
 import pytest
 from pathlib import Path
 
-from mcp_commit_story.journal import ensure_journal_directory
+from mcp_commit_story.journal_generate import ensure_journal_directory
 
 def setup_temp_dir():
     temp_dir = tempfile.mkdtemp()

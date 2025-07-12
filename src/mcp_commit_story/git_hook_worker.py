@@ -586,7 +586,7 @@ def _run_emergency_synchronous_generation(commit_hash: str, repo_path: str) -> D
         
         # Import and run journal generation synchronously
         from mcp_commit_story.journal_orchestrator import orchestrate_journal_generation
-        from mcp_commit_story.journal import get_journal_file_path
+        from mcp_commit_story.journal_generate import get_journal_file_path
         from datetime import datetime
         
         # Get journal file path

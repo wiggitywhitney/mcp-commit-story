@@ -41,14 +41,16 @@ from mcp_commit_story.journal import (
     JournalEntry,
     get_journal_file_path,
     append_to_journal_file,
+    ensure_journal_directory
+)
+from mcp_commit_story.journal_generate import (
     generate_summary_section,
     generate_technical_synopsis_section,
     generate_accomplishments_section,
     generate_frustrations_section,
     generate_tone_mood_section,
     generate_discussion_notes_section,
-    generate_commit_metadata_section,
-    ensure_journal_directory
+    generate_commit_metadata_section
 )
 from mcp_commit_story.context_types import JournalContext, ChatHistory
 from opentelemetry import trace, metrics

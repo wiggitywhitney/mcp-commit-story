@@ -35,7 +35,7 @@ def test_generate_technical_synopsis_section_none():
 def test_append_to_journal_file_permission_error(tmp_path):
     """append_to_journal_file should raise ValueError if file cannot be written due to permissions."""
     file_path = tmp_path / "file.md"
-    with patch("mcp_commit_story.journal.open", side_effect=PermissionError("Permission denied")):
+    with patch("mcp_commit_story.journal_generate.open", side_effect=PermissionError("Permission denied")):
         with pytest.raises(ValueError) as excinfo:
             journal.append_to_journal_file("entry", file_path)
 

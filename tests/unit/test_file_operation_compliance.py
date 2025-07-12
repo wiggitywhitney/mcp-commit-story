@@ -35,7 +35,7 @@ class TestFileOperationCompliance:
 
     def test_append_to_journal_file_calls_ensure_directory(self):
         """Test that append_to_journal_file calls ensure_journal_directory before writing."""
-        with patch('mcp_commit_story.journal.ensure_journal_directory') as mock_ensure, \
+        with patch('mcp_commit_story.journal_generate.ensure_journal_directory') as mock_ensure, \
              patch('builtins.open', create=True) as mock_open, \
              patch('os.path.exists', return_value=True):
             
@@ -137,7 +137,7 @@ class TestFileOperationCompliance:
     def test_file_operations_use_ensure_pattern(self):
         """Test that file operations consistently use ensure_journal_directory pattern."""
         # Test that append_to_journal_file follows the pattern
-        with patch('mcp_commit_story.journal.ensure_journal_directory') as mock_ensure, \
+        with patch('mcp_commit_story.journal_generate.ensure_journal_directory') as mock_ensure, \
              patch('builtins.open', create=True), \
              patch('os.path.exists', return_value=True):
             

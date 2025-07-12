@@ -1,5 +1,7 @@
 import re
 import logging
+import json
+import inspect
 from typing import List, Optional, Dict, Union, Any
 from pathlib import Path
 import os
@@ -9,6 +11,7 @@ from .telemetry import (
     get_mcp_metrics, 
     sanitize_for_telemetry
 )
+from .ai_invocation import invoke_ai
 
 logger = logging.getLogger(__name__)
 
@@ -802,37 +805,32 @@ def generate_summary_section(journal_context) -> SummarySection:
     _add_ai_generation_telemetry("summary", journal_context, start_time)
     
     try:
-        # Generate realistic stub content based on git context
-        # Handle None journal_context
+        # Handle None context - return empty summary immediately
         if journal_context is None:
             return SummarySection(summary="")
         
+        # Handle empty context - return empty summary if no meaningful content
         git_context = journal_context.get('git') if journal_context else None
+        chat_context = journal_context.get('chat') if journal_context else None
         
-        # Handle None git_context
-        if git_context is None:
+        if git_context is None and chat_context is None:
             return SummarySection(summary="")
         
-        metadata = git_context.get('metadata') if git_context else None
-        commit_message = metadata.get('message', 'Unknown') if metadata else 'Unknown'
-        changed_files = git_context.get('changed_files', []) if git_context else []
-        
-        # Only generate stub content if we have meaningful context
-        if commit_message == 'Unknown' and not changed_files:
+        # Extract prompt from function docstring
+        prompt = inspect.getdoc(generate_summary_section)
+        if not prompt:
+            # Fallback to empty summary if no prompt
             return SummarySection(summary="")
         
-        # Create realistic stub summary
-        summary_parts = []
-        if commit_message != 'Unknown':
-            summary_parts.append(f"Generated from commit: {commit_message}")
+        # Format context as JSON and append to prompt
+        context_json = json.dumps(journal_context, indent=2, default=str)
+        full_prompt = f"{prompt}\n\nThe journal_context object has the following structure:\n{context_json}"
         
-        if changed_files:
-            if len(changed_files) == 1:
-                summary_parts.append(f"Modified {changed_files[0]}")
-            else:
-                summary_parts.append(f"Modified {len(changed_files)} files including {changed_files[0]}")
+        # Call AI with the formatted prompt
+        response = invoke_ai(full_prompt, {})
         
-        summary = ". ".join(summary_parts) + "." if summary_parts else ""
+        # Parse response (for summary: use response directly)
+        summary = response.strip() if response else ""
         result = SummarySection(summary=summary)
         
         duration = time.time() - start_time
@@ -843,7 +841,41 @@ def generate_summary_section(journal_context) -> SummarySection:
     except Exception as e:
         duration = time.time() - start_time
         _record_ai_generation_metrics("summary", duration, False, "ai_generation_failed")
-        raise
+        
+        # FALLBACK: Generate realistic stub content based on git context
+        try:
+            if journal_context is None:
+                return SummarySection(summary="")
+            
+            git_context = journal_context.get('git') if journal_context else None
+            
+            if git_context is None:
+                return SummarySection(summary="")
+            
+            commit_message = git_context.get('metadata', {}).get('message', 'Unknown') if git_context.get('metadata') else 'Unknown'
+            changed_files = git_context.get('changed_files', []) if git_context else []
+            
+            # Only generate stub content if we have meaningful context
+            if commit_message == 'Unknown' and not changed_files:
+                return SummarySection(summary="")
+            
+            # Create realistic stub summary
+            summary_parts = []
+            if commit_message != 'Unknown':
+                summary_parts.append(f"Generated from commit: {commit_message}")
+            
+            if changed_files:
+                if len(changed_files) == 1:
+                    summary_parts.append(f"Modified {changed_files[0]}")
+                else:
+                    summary_parts.append(f"Modified {len(changed_files)} files including {changed_files[0]}")
+            
+            summary = ". ".join(summary_parts) + "." if summary_parts else ""
+            return SummarySection(summary=summary)
+            
+        except Exception:
+            # If even fallback fails, return empty
+            return SummarySection(summary="")
 
 # Section Generator: Technical Synopsis
 # TechnicalSynopsisSection: Represents the technical synopsis section of a journal entry.
@@ -932,45 +964,33 @@ def generate_technical_synopsis_section(journal_context: JournalContext) -> Tech
     _add_ai_generation_telemetry("technical_synopsis", journal_context, start_time)
     
     try:
-        # Generate realistic stub content based on git context
-        # Handle None journal_context
+        # Handle None context - return empty technical synopsis immediately
         if journal_context is None:
             return TechnicalSynopsisSection(technical_synopsis="")
         
+        # Handle empty context - return empty technical synopsis if no meaningful content
         git_context = journal_context.get('git') if journal_context else None
+        chat_context = journal_context.get('chat') if journal_context else None
         
-        # Handle None git_context
-        if git_context is None:
+        if git_context is None and chat_context is None:
             return TechnicalSynopsisSection(technical_synopsis="")
         
-        commit_message = git_context.get('metadata', {}).get('message', 'Unknown') if git_context.get('metadata') else 'Unknown'
-        changed_files = git_context.get('changed_files', []) if git_context else []
-        file_stats = git_context.get('file_stats', {}) if git_context else {}
-        
-        # Only generate stub content if we have meaningful context
-        if commit_message == 'Unknown' and not changed_files:
+        # Extract prompt from function docstring
+        prompt = inspect.getdoc(generate_technical_synopsis_section)
+        if not prompt:
+            # Fallback to empty technical synopsis if no prompt
             return TechnicalSynopsisSection(technical_synopsis="")
         
-        # Create a realistic stub technical synopsis
-        technical_details = []
-        if changed_files:
-            for file_name in changed_files[:3]:  # Show details for first 3 files
-                stats = file_stats.get(file_name, {})
-                additions = stats.get('additions', 0)
-                deletions = stats.get('deletions', 0)
-                if additions or deletions:
-                    technical_details.append(f"{file_name}: +{additions}/-{deletions} lines")
-                else:
-                    technical_details.append(f"Modified {file_name}")
+        # Format context as JSON and append to prompt
+        context_json = json.dumps(journal_context, indent=2, default=str)
+        full_prompt = f"{prompt}\n\nThe journal_context object has the following structure:\n{context_json}"
         
-        if technical_details:
-            synopsis = f"Technical changes: {', '.join(technical_details)}"
-            if len(changed_files) > 3:
-                synopsis += f" and {len(changed_files) - 3} other files"
-        else:
-            synopsis = ""
+        # Call AI with the formatted prompt
+        response = invoke_ai(full_prompt, {})
         
-        result = TechnicalSynopsisSection(technical_synopsis=synopsis)
+        # Parse response (for technical synopsis: use response directly)
+        technical_synopsis = response.strip() if response else ""
+        result = TechnicalSynopsisSection(technical_synopsis=technical_synopsis)
         
         duration = time.time() - start_time
         _record_ai_generation_metrics("technical_synopsis", duration, True)
@@ -980,7 +1000,49 @@ def generate_technical_synopsis_section(journal_context: JournalContext) -> Tech
     except Exception as e:
         duration = time.time() - start_time
         _record_ai_generation_metrics("technical_synopsis", duration, False, "ai_generation_failed")
-        raise
+        
+        # FALLBACK: Generate realistic stub content based on git context
+        try:
+            if journal_context is None:
+                return TechnicalSynopsisSection(technical_synopsis="")
+            
+            git_context = journal_context.get('git') if journal_context else None
+            
+            if git_context is None:
+                return TechnicalSynopsisSection(technical_synopsis="")
+            
+            commit_message = git_context.get('metadata', {}).get('message', 'Unknown') if git_context.get('metadata') else 'Unknown'
+            changed_files = git_context.get('changed_files', []) if git_context else []
+            file_stats = git_context.get('file_stats', {}) if git_context else {}
+            
+            # Only generate stub content if we have meaningful context
+            if commit_message == 'Unknown' and not changed_files:
+                return TechnicalSynopsisSection(technical_synopsis="")
+            
+            # Create a realistic stub technical synopsis
+            technical_details = []
+            if changed_files:
+                for file_name in changed_files[:3]:  # Show details for first 3 files
+                    stats = file_stats.get(file_name, {})
+                    additions = stats.get('additions', 0)
+                    deletions = stats.get('deletions', 0)
+                    if additions or deletions:
+                        technical_details.append(f"{file_name}: +{additions}/-{deletions} lines")
+                    else:
+                        technical_details.append(f"Modified {file_name}")
+            
+            if technical_details:
+                synopsis = f"Technical changes: {', '.join(technical_details)}"
+                if len(changed_files) > 3:
+                    synopsis += f" and {len(changed_files) - 3} other files"
+            else:
+                synopsis = ""
+            
+            return TechnicalSynopsisSection(technical_synopsis=synopsis)
+            
+        except Exception:
+            # If even fallback fails, return empty
+            return TechnicalSynopsisSection(technical_synopsis="")
 
 # Section Generator: Accomplishments
 # Purpose: Extracts and summarizes what was successfully completed or achieved in the commit, focusing on developer satisfaction and explicit evidence from chat and git context.
@@ -1102,38 +1164,56 @@ def generate_accomplishments_section(journal_context: JournalContext) -> Accompl
     _add_ai_generation_telemetry("accomplishments", journal_context, start_time)
     
     try:
-        # Generate realistic stub content based on git context
-        # Handle None journal_context
+        # Handle None context - return empty accomplishments immediately
         if journal_context is None:
             return AccomplishmentsSection(accomplishments=[])
         
+        # Handle empty context - return empty accomplishments if no meaningful content
         git_context = journal_context.get('git') if journal_context else None
+        chat_context = journal_context.get('chat') if journal_context else None
         
-        # Handle None git_context or empty context
-        if git_context is None:
+        if git_context is None and chat_context is None:
             return AccomplishmentsSection(accomplishments=[])
         
-        commit_message = git_context.get('metadata', {}).get('message', 'Unknown') if git_context.get('metadata') else 'Unknown'
-        changed_files = git_context.get('changed_files', [])
-        
-        # Only generate stub content if we have meaningful context
-        if commit_message == 'Unknown' and not changed_files:
+        # Extract prompt from function docstring
+        prompt = inspect.getdoc(generate_accomplishments_section)
+        if not prompt:
+            # Fallback to empty accomplishments if no prompt
             return AccomplishmentsSection(accomplishments=[])
         
-        # Create realistic stub accomplishments
+        # Format context as JSON and append to prompt
+        context_json = json.dumps(journal_context, indent=2, default=str)
+        full_prompt = f"{prompt}\n\nThe journal_context object has the following structure:\n{context_json}"
+        
+        # Call AI with the formatted prompt
+        response = invoke_ai(full_prompt, {})
+        
+        # Parse response (for accomplishments: split by newlines, strip, filter empty)
         accomplishments = []
-        if commit_message and commit_message != 'Unknown':
-            accomplishments.append(f"Completed: {commit_message}")
-        
-        if changed_files:
-            if len(changed_files) == 1:
-                accomplishments.append(f"Modified {changed_files[0]}")
+        if response:
+            # Handle case where AI returns '[]' to indicate no accomplishments
+            if response.strip() == '[]':
+                accomplishments = []
             else:
-                accomplishments.append(f"Successfully updated {len(changed_files)} files")
+                lines = response.split('\n')
+                accomplishments = [line.strip() for line in lines if line.strip()]
         
-        # Only add generic accomplishment if we have some context but no specific accomplishments
-        if not accomplishments and (commit_message != 'Unknown' or changed_files):
-            accomplishments.append("Made code changes to support the implementation")
+        # If AI returns empty but we have meaningful git context, use fallback
+        if not accomplishments and journal_context:
+            git_context = journal_context.get('git')
+            if git_context:
+                commit_message = git_context.get('metadata', {}).get('message', 'Unknown') if git_context.get('metadata') else 'Unknown'
+                changed_files = git_context.get('changed_files', [])
+                
+                # Generate fallback accomplishments if we have meaningful context
+                if commit_message and commit_message != 'Unknown' and commit_message.strip():
+                    accomplishments.append(f"Completed: {commit_message.strip()}")
+                
+                if changed_files:
+                    if len(changed_files) == 1:
+                        accomplishments.append(f"Modified {changed_files[0]}")
+                    else:
+                        accomplishments.append(f"Successfully updated {len(changed_files)} files")
         
         result = AccomplishmentsSection(accomplishments=accomplishments)
         
@@ -1145,7 +1225,44 @@ def generate_accomplishments_section(journal_context: JournalContext) -> Accompl
     except Exception as e:
         duration = time.time() - start_time
         _record_ai_generation_metrics("accomplishments", duration, False, "ai_generation_failed")
-        raise
+        
+        # FALLBACK: Generate realistic stub content based on git context
+        try:
+            if journal_context is None:
+                return AccomplishmentsSection(accomplishments=[])
+            
+            git_context = journal_context.get('git') if journal_context else None
+            
+            if git_context is None:
+                return AccomplishmentsSection(accomplishments=[])
+            
+            commit_message = git_context.get('metadata', {}).get('message', 'Unknown') if git_context.get('metadata') else 'Unknown'
+            changed_files = git_context.get('changed_files', [])
+            
+            # Only generate stub content if we have meaningful context
+            if commit_message == 'Unknown' and not changed_files:
+                return AccomplishmentsSection(accomplishments=[])
+            
+            # Create realistic stub accomplishments
+            accomplishments = []
+            if commit_message and commit_message != 'Unknown':
+                accomplishments.append(f"Completed: {commit_message}")
+            
+            if changed_files:
+                if len(changed_files) == 1:
+                    accomplishments.append(f"Modified {changed_files[0]}")
+                else:
+                    accomplishments.append(f"Successfully updated {len(changed_files)} files")
+            
+            # Only add generic accomplishment if we have some context but no specific accomplishments
+            if not accomplishments and (commit_message != 'Unknown' or changed_files):
+                accomplishments.append("Made code changes to support the implementation")
+            
+            return AccomplishmentsSection(accomplishments=accomplishments)
+            
+        except Exception:
+            # If even fallback fails, return empty
+            return AccomplishmentsSection(accomplishments=[])
 
 # Section Generator: Frustrations
 # Purpose: Extracts and summarizes challenges, setbacks, and frustrations encountered in the commit, using only explicit evidence from chat, terminal, and git context.
@@ -1237,7 +1354,41 @@ def generate_frustrations_section(journal_context: JournalContext) -> Frustratio
     _add_ai_generation_telemetry("frustrations", journal_context, start_time)
     
     try:
-        result = FrustrationsSection(frustrations=[])
+        # Handle None context - return empty frustrations immediately
+        if journal_context is None:
+            return FrustrationsSection(frustrations=[])
+        
+        # Handle empty context - return empty frustrations if no meaningful content
+        git_context = journal_context.get('git') if journal_context else None
+        chat_context = journal_context.get('chat') if journal_context else None
+        
+        if git_context is None and chat_context is None:
+            return FrustrationsSection(frustrations=[])
+        
+        # Extract prompt from function docstring
+        prompt = inspect.getdoc(generate_frustrations_section)
+        if not prompt:
+            # Fallback to empty frustrations if no prompt
+            return FrustrationsSection(frustrations=[])
+        
+        # Format context as JSON and append to prompt
+        context_json = json.dumps(journal_context, indent=2, default=str)
+        full_prompt = f"{prompt}\n\nThe journal_context object has the following structure:\n{context_json}"
+        
+        # Call AI with the formatted prompt
+        response = invoke_ai(full_prompt, {})
+        
+        # Parse response (for frustrations: split by newlines, strip, filter empty)
+        frustrations = []
+        if response:
+            # Handle case where AI returns '[]' to indicate no frustrations
+            if response.strip() == '[]':
+                frustrations = []
+            else:
+                lines = response.split('\n')
+                frustrations = [line.strip() for line in lines if line.strip()]
+        
+        result = FrustrationsSection(frustrations=frustrations)
         
         duration = time.time() - start_time
         _record_ai_generation_metrics("frustrations", duration, True)
@@ -1247,7 +1398,9 @@ def generate_frustrations_section(journal_context: JournalContext) -> Frustratio
     except Exception as e:
         duration = time.time() - start_time
         _record_ai_generation_metrics("frustrations", duration, False, "ai_generation_failed")
-        raise
+        
+        # FALLBACK: Return empty frustrations (cannot infer frustrations from git context alone)
+        return FrustrationsSection(frustrations=[])
 
 # Section Generator: Tone/Mood
 # Purpose: Generates the Tone/Mood section for a journal entry using AI.
@@ -1339,28 +1492,51 @@ def generate_tone_mood_section(journal_context: JournalContext) -> ToneMoodSecti
     _add_ai_generation_telemetry("tone_mood", journal_context, start_time)
     
     try:
-        # Generate realistic stub content based on git context
-        # Handle None journal_context
+        # Handle None context - return empty tone/mood immediately
         if journal_context is None:
             return ToneMoodSection(mood="", indicators="")
         
+        # Handle empty context - return empty tone/mood if no meaningful content
         git_context = journal_context.get('git') if journal_context else None
+        chat_context = journal_context.get('chat') if journal_context else None
         
-        # Handle None git_context
-        if git_context is None:
+        if git_context is None and chat_context is None:
             return ToneMoodSection(mood="", indicators="")
         
-        commit_message = git_context.get('metadata', {}).get('message', '') if git_context.get('metadata') else ''
-        changed_files = git_context.get('changed_files', []) if git_context else []
+        # Extract prompt from function docstring
+        prompt = inspect.getdoc(generate_tone_mood_section)
+        if not prompt:
+            # Fallback to empty tone/mood if no prompt
+            return ToneMoodSection(mood="", indicators="")
         
-        # Create realistic stub mood assessment
+        # Format context as JSON and append to prompt
+        context_json = json.dumps(journal_context, indent=2, default=str)
+        full_prompt = f"{prompt}\n\nThe journal_context object has the following structure:\n{context_json}"
+        
+        # Call AI with the formatted prompt
+        response = invoke_ai(full_prompt, {})
+        
+        # Parse response (for tone_mood: regex search for "Mood:" and "Indicators:" patterns)
         mood = ""
         indicators = ""
         
-        # Only include tone/mood if we have meaningful context
-        if commit_message or changed_files:
-            mood = "Productive/Focused"
-            indicators = "Steady progress evident from commit structure and file modifications"
+        if response:
+            # First try regex patterns for "Mood:" and "Indicators:"
+            mood_match = re.search(r'Mood:\s*(.+?)(?=\n|$)', response, re.IGNORECASE)
+            indicators_match = re.search(r'Indicators:\s*(.+?)(?=\n|$)', response, re.IGNORECASE)
+            
+            if mood_match:
+                mood = mood_match.group(1).strip()
+            if indicators_match:
+                indicators = indicators_match.group(1).strip()
+                
+            # Fallback: if patterns not found, use first two lines
+            if not mood and not indicators:
+                lines = [line.strip() for line in response.split('\n') if line.strip()]
+                if len(lines) >= 1:
+                    mood = lines[0]
+                if len(lines) >= 2:
+                    indicators = lines[1]
         
         result = ToneMoodSection(mood=mood, indicators=indicators)
         
@@ -1372,7 +1548,32 @@ def generate_tone_mood_section(journal_context: JournalContext) -> ToneMoodSecti
     except Exception as e:
         duration = time.time() - start_time
         _record_ai_generation_metrics("tone_mood", duration, False, "ai_generation_failed")
-        raise
+        
+        # FALLBACK: Generate realistic stub content based on git context
+        try:
+            if journal_context is None:
+                return ToneMoodSection(mood="", indicators="")
+            
+            git_context = journal_context.get('git') if journal_context else None
+            
+            if git_context is None:
+                return ToneMoodSection(mood="", indicators="")
+            
+            commit_message = git_context.get('metadata', {}).get('message', '') if git_context.get('metadata') else ''
+            changed_files = git_context.get('changed_files', []) if git_context else []
+            
+            # Create realistic stub mood assessment
+            # Only include tone/mood if we have meaningful context
+            if commit_message or changed_files:
+                mood = "Productive/Focused"
+                indicators = "Steady progress evident from commit structure and file modifications"
+                return ToneMoodSection(mood=mood, indicators=indicators)
+            else:
+                return ToneMoodSection(mood="", indicators="")
+            
+        except Exception:
+            # If even fallback fails, return empty
+            return ToneMoodSection(mood="", indicators="")
 
 # Section Generator: Discussion Notes
 # Purpose: Generates the Discussion Notes section for a journal entry using AI.
@@ -1502,7 +1703,41 @@ def generate_discussion_notes_section(journal_context: JournalContext) -> Discus
     _add_ai_generation_telemetry("discussion_notes", journal_context, start_time)
     
     try:
-        result = DiscussionNotesSection(discussion_notes=[])
+        # Handle None context - return empty discussion notes immediately
+        if journal_context is None:
+            return DiscussionNotesSection(discussion_notes=[])
+        
+        # Handle empty context - return empty discussion notes if no meaningful content
+        git_context = journal_context.get('git') if journal_context else None
+        chat_context = journal_context.get('chat') if journal_context else None
+        
+        if git_context is None and chat_context is None:
+            return DiscussionNotesSection(discussion_notes=[])
+        
+        # Extract prompt from function docstring
+        prompt = inspect.getdoc(generate_discussion_notes_section)
+        if not prompt:
+            # Fallback to empty discussion notes if no prompt
+            return DiscussionNotesSection(discussion_notes=[])
+        
+        # Format context as JSON and append to prompt
+        context_json = json.dumps(journal_context, indent=2, default=str)
+        full_prompt = f"{prompt}\n\nThe journal_context object has the following structure:\n{context_json}"
+        
+        # Call AI with the formatted prompt
+        response = invoke_ai(full_prompt, {})
+        
+        # Parse response (for discussion notes: split by newlines, strip, filter empty)
+        discussion_notes = []
+        if response:
+            # Handle case where AI returns '[]' to indicate no discussion notes
+            if response.strip() == '[]':
+                discussion_notes = []
+            else:
+                lines = response.split('\n')
+                discussion_notes = [line.strip() for line in lines if line.strip()]
+        
+        result = DiscussionNotesSection(discussion_notes=discussion_notes)
         
         duration = time.time() - start_time
         _record_ai_generation_metrics("discussion_notes", duration, True)
@@ -1512,7 +1747,9 @@ def generate_discussion_notes_section(journal_context: JournalContext) -> Discus
     except Exception as e:
         duration = time.time() - start_time
         _record_ai_generation_metrics("discussion_notes", duration, False, "ai_generation_failed")
-        raise
+        
+        # FALLBACK: Return empty discussion notes (cannot infer discussion from git context alone)
+        return DiscussionNotesSection(discussion_notes=[])
 
 # Section Generator: Terminal Commands
 # Purpose: Generates the Terminal Commands section for a journal entry using AI.

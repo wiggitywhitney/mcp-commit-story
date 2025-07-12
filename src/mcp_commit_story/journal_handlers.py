@@ -11,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional
 
-from .journal import get_journal_file_path, append_to_journal_file
+from .journal_generate import get_journal_file_path, append_to_journal_file
 from .config import load_config
 from .telemetry import trace_mcp_operation, get_mcp_metrics
 from .ai_invocation import invoke_ai

@@ -161,7 +161,7 @@ class TestErrorHandling:
         mock_commit.hexsha = "abc123456789"  # Add hexsha attribute
         
         # Mock get_journal_file_path to return a non-existent file path
-        with patch('mcp_commit_story.journal.get_journal_file_path') as mock_path:
+        with patch('mcp_commit_story.journal_generate.get_journal_file_path') as mock_path:
             mock_path.return_value = "/tmp/non-existent-file-12345.md"
             
             result = collect_recent_journal_context(mock_commit)

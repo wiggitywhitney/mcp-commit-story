@@ -27,7 +27,7 @@ from mcp_commit_story import telemetry
 from mcp_commit_story.telemetry import trace_mcp_operation, get_mcp_metrics
 from mcp_commit_story.journal_init import initialize_journal
 from mcp_commit_story.git_utils import install_post_commit_hook
-from mcp_commit_story.journal import append_to_journal_file
+from mcp_commit_story.journal_generate import append_to_journal_file
 from mcp_commit_story.reflection_core import add_manual_reflection
 from mcp_commit_story.journal_orchestrator import orchestrate_journal_generation
 from mcp_commit_story.journal_handlers import handle_journal_capture_context
@@ -298,7 +298,7 @@ async def generate_journal_entry(request: JournalNewEntryRequest) -> JournalNewE
         
         # Get journal file path (create default if not specified)
         from datetime import datetime
-        from mcp_commit_story.journal import get_journal_file_path
+        from mcp_commit_story.journal_generate import get_journal_file_path
         
         # Extract date from commit
         commit_date_str = git_metadata["date"]

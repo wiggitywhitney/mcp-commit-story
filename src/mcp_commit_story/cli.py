@@ -4,7 +4,7 @@ import click
 from pathlib import Path
 import datetime
 import getpass
-from mcp_commit_story.journal import JournalEntry, append_to_journal_file, ensure_journal_directory
+from mcp_commit_story.journal_generate import JournalEntry, append_to_journal_file, ensure_journal_directory
 from mcp_commit_story.journal_init import initialize_journal
 from mcp_commit_story.git_utils import install_post_commit_hook
 

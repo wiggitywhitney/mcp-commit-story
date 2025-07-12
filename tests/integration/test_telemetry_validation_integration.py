@@ -52,7 +52,7 @@ from mcp_commit_story.context_types import (
     ChatHistory,
     GitContext,
 )
-from mcp_commit_story.journal import (
+from mcp_commit_story.journal_generate import (
     generate_summary_section,
     generate_technical_synopsis_section,
     generate_accomplishments_section,
@@ -546,7 +546,7 @@ class TestMCPToolChainTelemetry:
         with patch("mcp_commit_story.telemetry.setup_telemetry", return_value=True):
             # Simulate MCP tool execution chain
             with patch(
-                "mcp_commit_story.journal.generate_summary_section"
+                "mcp_commit_story.journal_generate.generate_summary_section"
             ) as mock_summary:
                 mock_summary.return_value = {"content": "Test summary"}
 
@@ -985,13 +985,13 @@ class TestEndToEndTelemetryIntegration:
             # Mock journal generation pipeline
             with (
                 patch(
-                    "mcp_commit_story.journal.generate_summary_section"
+                    "mcp_commit_story.journal_generate.generate_summary_section"
                 ) as mock_summary,
                 patch(
-                    "mcp_commit_story.journal.generate_technical_synopsis_section"
+                    "mcp_commit_story.journal_generate.generate_technical_synopsis_section"
                 ) as mock_technical,
                 patch(
-                    "mcp_commit_story.journal.generate_accomplishments_section"
+                    "mcp_commit_story.journal_generate.generate_accomplishments_section"
                 ) as mock_accomplishments,
             ):
 

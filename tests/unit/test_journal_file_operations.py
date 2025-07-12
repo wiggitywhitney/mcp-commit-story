@@ -23,8 +23,8 @@ class TestSaveJournalEntry:
     """Test the save_journal_entry function for writing journal entries to daily files."""
     
     @patch('src.mcp_commit_story.journal_workflow.datetime')
-    @patch('src.mcp_commit_story.journal.append_to_journal_file')
-    @patch('src.mcp_commit_story.journal.ensure_journal_directory')
+    @patch('src.mcp_commit_story.journal_generate.append_to_journal_file')
+    @patch('src.mcp_commit_story.journal_generate.ensure_journal_directory')
     @patch('builtins.open', new_callable=mock_open)
     def test_save_new_daily_file_with_header(self, mock_file, mock_ensure_dir, mock_append, mock_datetime):
         """Test saving journal entry to a new daily file with proper header."""
@@ -59,8 +59,8 @@ class TestSaveJournalEntry:
         assert "daily/2025-06-03-journal.md" in result
     
     @patch('src.mcp_commit_story.journal_workflow.datetime')
-    @patch('src.mcp_commit_story.journal.append_to_journal_file')
-    @patch('src.mcp_commit_story.journal.ensure_journal_directory')
+    @patch('src.mcp_commit_story.journal_generate.append_to_journal_file')
+    @patch('src.mcp_commit_story.journal_generate.ensure_journal_directory')
     def test_save_to_existing_daily_file(self, mock_ensure_dir, mock_append, mock_datetime):
         """Test appending journal entry to existing daily file."""
         # No need to mock datetime since we're providing date_str
@@ -93,7 +93,7 @@ class TestSaveJournalEntry:
         assert "daily/2025-06-03-journal.md" in result
     
     @patch('src.mcp_commit_story.journal_workflow.datetime')
-    @patch('src.mcp_commit_story.journal.ensure_journal_directory')
+    @patch('src.mcp_commit_story.journal_generate.ensure_journal_directory')
     def test_config_object_vs_dict_handling(self, mock_ensure_dir, mock_datetime):
         """Test that both Config objects and dict configurations work."""
         # Mock datetime.strptime for the new implementation
@@ -124,7 +124,7 @@ class TestSaveJournalEntry:
             mock_file.assert_called()
     
     @patch('src.mcp_commit_story.journal_workflow.datetime')
-    @patch('src.mcp_commit_story.journal.ensure_journal_directory')
+    @patch('src.mcp_commit_story.journal_generate.ensure_journal_directory')
     def test_file_permission_error_handling(self, mock_ensure_dir, mock_datetime):
         """Test error handling for file permission issues."""
         # Mock datetime.strptime for the new implementation
@@ -147,8 +147,8 @@ class TestSaveJournalEntry:
                 save_journal_entry(journal_entry, config, date_str="2025-06-03")
     
     @patch('src.mcp_commit_story.journal_workflow.datetime')
-    @patch('src.mcp_commit_story.journal.append_to_journal_file')
-    @patch('src.mcp_commit_story.journal.ensure_journal_directory')
+    @patch('src.mcp_commit_story.journal_generate.append_to_journal_file')
+    @patch('src.mcp_commit_story.journal_generate.ensure_journal_directory')
     def test_debug_mode_behavior(self, mock_ensure_dir, mock_append, mock_datetime):
         """Test debug mode logging behavior."""
         # No need to mock datetime since we're providing date_str
@@ -181,7 +181,7 @@ class TestSaveJournalEntry:
             config = {'journal': {'path': 'test'}}
             
             with patch('pathlib.Path.exists', return_value=False), \
-                 patch('src.mcp_commit_story.journal.ensure_journal_directory'), \
+                 patch('src.mcp_commit_story.journal_generate.ensure_journal_directory'), \
                  patch('builtins.open', mock_open()):
                 
                 result = save_journal_entry(journal_entry, config, date_str="2025-12-31")

@@ -32,7 +32,7 @@ if __name__ == '__main__':
     sys.path.insert(0, str(src_dir))
 
 from mcp_commit_story.journal_orchestrator import orchestrate_journal_generation
-from mcp_commit_story.journal import get_journal_file_path, append_to_journal_file
+from mcp_commit_story.journal_generate import get_journal_file_path, append_to_journal_file
 from mcp_commit_story.telemetry import get_mcp_metrics
 from mcp_commit_story.config import load_config
 

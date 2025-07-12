@@ -1,6 +1,7 @@
 import pytest
-from mcp_commit_story.journal import (
-    JournalEntry, generate_summary_section, generate_technical_synopsis_section,
+from mcp_commit_story.journal import JournalEntry
+from mcp_commit_story.journal_generate import (
+    generate_summary_section, generate_technical_synopsis_section,
     generate_frustrations_section, generate_tone_mood_section, generate_discussion_notes_section,
     generate_commit_metadata_section
 )
