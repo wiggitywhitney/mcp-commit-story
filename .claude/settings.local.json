@@ -1,8 +1,16 @@
 {
-  "enableAllProjectMcpServers": false,
   "permissions": {
     "allow": [
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(python3:*)",
+      "Bash(PYTHONPATH=/Users/wiggitywhitney/Repos/mcp-commit-story/src python3 -c \"\nimport sys\nimport os\nsys.path.insert(0, ''/Users/wiggitywhitney/Repos/mcp-commit-story/src'')\n\ntry:\n    from mcp_commit_story.cursor_db import query_cursor_chat_database\n    from mcp_commit_story.git_utils import get_repo\n    \n    repo = get_repo()\n    commit = repo.commit(''eb69e5d'')\n    chat_data = query_cursor_chat_database(commit=commit)\n    \n    print(''Chat data keys:'', chat_data.keys())\n    print(''Chat history length:'', len(chat_data.get(''chat_history'', [])))\n    print(''Workspace info:'', chat_data.get(''workspace_info'', {}))\n    if ''error_info'' in chat_data.get(''workspace_info'', {}):\n        print(''Error:'', chat_data[''workspace_info''][''error_info''])\nexcept ImportError as e:\n    print(''Import error:'', e)\nexcept Exception as e:\n    print(''Error:'', e)\n\")",
+      "Bash(pip install:*)",
+      "Bash(PYTHONPATH=/Users/wiggitywhitney/Repos/mcp-commit-story/src python3 -c \"\nimport sys\nimport os\nsys.path.insert(0, ''/Users/wiggitywhitney/Repos/mcp-commit-story/src'')\n\ntry:\n    from mcp_commit_story.cursor_db import query_cursor_chat_database\n    from mcp_commit_story.git_utils import get_repo\n    \n    repo = get_repo()\n    commit = repo.commit(''eb69e5d'')\n    chat_data = query_cursor_chat_database(commit=commit)\n    \n    print(''Chat data keys:'', chat_data.keys())\n    print(''Chat history length:'', len(chat_data.get(''chat_history'', [])))\n    workspace_info = chat_data.get(''workspace_info'', {})\n    print(''Total messages in workspace:'', workspace_info.get(''total_messages'', 0))\n    print(''Time window strategy:'', workspace_info.get(''time_window_strategy'', ''unknown''))\n    if ''error_info'' in workspace_info:\n        print(''Error:'', workspace_info[''error_info''])\n    if ''data_quality'' in workspace_info:\n        print(''Data quality:'', workspace_info[''data_quality''])\nexcept Exception as e:\n    print(''Error:'', e)\n    import traceback\n    traceback.print_exc()\n\")",
+      "Bash(PYTHONPATH=/Users/wiggitywhitney/Repos/mcp-commit-story/src python3 -c \"\nimport sys\nimport os\nsys.path.insert(0, ''/Users/wiggitywhitney/Repos/mcp-commit-story/src'')\n\nfrom mcp_commit_story.cursor_db.multiple_database_discovery import discover_all_cursor_databases\nfrom mcp_commit_story.cursor_db.workspace_detection import detect_workspace_for_repo\n\ntry:\n    # Try to detect workspace first\n    repo_path = os.getcwd()\n    print(f''Repo path: {repo_path}'')\n    \n    workspace_match = detect_workspace_for_repo(repo_path)\n    print(f''Workspace match found: {workspace_match}'')\n    \n    workspace_root = workspace_match.workspace_folder\n    if workspace_root.startswith(''file://''):\n        workspace_root = workspace_root[7:]\n    \n    print(f''Workspace root: {workspace_root}'')\n    \n    # Try to discover databases\n    databases = discover_all_cursor_databases(workspace_root)\n    print(f''Databases found: {len(databases)}'')\n    for db in databases:\n        print(f''  - {db}'')\n        \nexcept Exception as e:\n    print(f''Error during discovery: {e}'')\n    import traceback\n    traceback.print_exc()\n\")",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(PYTHONPATH:*)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": false
 }
