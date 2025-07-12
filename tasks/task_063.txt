@@ -908,7 +908,7 @@ Important Notes:
 - PAUSE FOR MANUAL APPROVAL if major documentation restructuring seems needed
 
 ## 9. Final Cleanup and Verification [pending]
-### Dependencies: ["63.8"]
+### Dependencies: 63.8
 ### Description: Complete the journal.py refactoring by safely removing the old file, verifying all imports work correctly, and ensuring comprehensive cleanup of all references.
 ### Details:
 UPDATE ANALYSIS DOCUMENT

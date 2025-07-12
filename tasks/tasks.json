@@ -848,7 +848,7 @@
             "details": "UPDATE ANALYSIS DOCUMENT\n\nOpen journal_refactoring_analysis.md\nUpdate \"Current Status\" to: \"Working on Subtask 63.9 - Final Cleanup and Verification\"\n\n\nVERIFY JOURNAL.PY IS READY FOR REMOVAL\n\nOpen src/mcp_commit_story/journal.py\nVerify it only contains imports from the new modules (no actual implementation)\nIf it has any actual code left, PAUSE FOR MANUAL APPROVAL - something was missed\n\n\nSAFE DELETION PROCESS\n\nCreate backup: cp src/mcp_commit_story/journal.py src/mcp_commit_story/journal.py.bak\nDelete the old journal.py: rm src/mcp_commit_story/journal.py\nThis forces any missed imports to fail immediately during testing\n\n\nCOMPREHENSIVE IMPORT SEARCH\n\nSearch entire codebase for missed imports:\n```bash\ngrep -r \"from mcp_commit_story.journal import\" . --include=\"*.py\"\ngrep -r \"import mcp_commit_story.journal\" . --include=\"*.py\"\ngrep -r \"mcp_commit_story\\.journal[^.]\" . --include=\"*.py\"\nrg \"from.*journal import\" --type py\n```\n\nIf any are found:\n- Update them to import from the correct new module\n- Run tests after each fix to ensure it works\n\n\nCOMPREHENSIVE DOCUMENTATION SEARCH\n\nSearch all files for references to journal.py:\n```bash\ngrep -r \"journal\\.py\" . --include=\"*.py\" --include=\"*.md\"\nrg \"journal\\.py\" --type py --type md\n```\n\nCheck specifically:\n- All files in docs/\n- README.md (root)\n- engineering-mcp-journal-spec-final.md\n- scripts/mcp-commit-story-prd.md\n- Any Python files with hardcoded references\n\nUpdate any references to describe the modular structure instead\n\n\nVERIFY MODULE IMPORTS WORK\n\nTest importing each new module in Python:\n```bash\npython -c \"from mcp_commit_story.journal.models import JournalEntry\"\npython -c \"from mcp_commit_story.journal.file_utils import append_to_journal_file\"\npython -c \"from mcp_commit_story.journal.config_utils import load_journal_context\"\npython -c \"from mcp_commit_story.journal.sections.summary import generate_summary_section\"\n```\n\nIf any circular import errors occur, PAUSE FOR MANUAL APPROVAL to resolve\n\n\nVERIFY MAIN ENTRY POINTS\n\nCheck key entry points use correct imports:\n- src/mcp_commit_story/server.py\n- src/mcp_commit_story/cli.py\n- src/mcp_commit_story/__main__.py\n- Any other entry points\n\nEnsure they import from the new module structure\n\n\nRUN COMPLETE TEST SUITE (MAIN VERIFICATION)\n\nRun ALL tests: `python -m pytest tests/ --cov=src`\nEnsure 100% pass rate\n**This is the primary verification that refactoring succeeded**\nIf any fail, fix them before proceeding\n\n\nFINAL CLEANUP SWEEP\n\nSearch for any remaining references:\n```bash\ngrep -r \"journal\\.py\" . --exclude-dir=.git\nrg \"journal\\.py|mcp_commit_story\\.journal[^.]\" --type py --type md\n```\n\nCheck for any comments in code mentioning journal.py\nEnsure no historical references remain anywhere\n\n\nUPDATE ANALYSIS DOCUMENT - FINAL\n\nUpdate \"Current Status\" to: \"Task 63 Complete - Journal.py Successfully Refactored\"\nAdd final summary to Changelog:\n- Original file size: 2400+ lines\n- New module count: X modules  \n- All tests passing: ✓\n- Documentation updated: ✓\n\nList the final module structure\n\n\nARCHIVE ANALYSIS DOCUMENT\n\nChoose one approach:\n1. Create docs/completed/ directory and move journal_refactoring_analysis.md there\n2. Add \"COMPLETED\" header with completion date at top of journal_refactoring_analysis.md\n\nRemove backup file: rm src/mcp_commit_story/journal.py.bak\nMARK TASK 63 COMPLETE\n\n\nImportant Notes\n\nThis is the final checkpoint - be thorough\nThe main verification is that ALL TESTS PASS after journal.py removal\nCheck BOTH code and documentation for journal.py references\nSafe deletion process ensures we can recover if something breaks\nFocus on comprehensive search - better to find too many references than miss one\nPAUSE FOR MANUAL APPROVAL if any critical issues are discovered",
             "status": "pending",
             "dependencies": [
-              "[\"63.8\"]"
+              "63.8"
             ],
             "parentTaskId": 63
           }
@@ -870,9 +870,7 @@
             "description": "Analyze the current AI invocation system and create shared utilities for the migration.",
             "details": "ANALYZE CURRENT IMPLEMENTATION\n\nDocument how ai_function_executor.py works\nList all generators and their return types\nNote the telemetry patterns used\nIdentify all callers\nDocument the parsing logic for each generator type\n\n\nWRITE TESTS FOR SHARED UTILITY\n\nCreate tests/unit/test_journal_sections_utilities.py\nTest format_ai_prompt() function:\n- Test with valid docstring and context\n- Test with empty docstring\n- Test with None context\n- Test JSON formatting is correct\nRUN TESTS - VERIFY THEY FAIL\n\n\nIMPLEMENT SHARED UTILITY\n\nAdd to journal/sections/utilities.py:\n```python\ndef format_ai_prompt(docstring: str, context: JournalContext) -> str:\n    \"\"\"Format AI prompt with JSON context for direct invocation.\"\"\"\n```\n- Simple JSON formatting of context\n- Include docstring explaining this replaces the abstraction layer\nRUN TESTS - VERIFY THEY PASS\n\n\nDOCUMENT AND COMPLETE\n\nCreate migration checklist for all generators\nDocument parsing requirements for each\nNote which files import ai_function_executor\nMARK COMPLETE",
             "status": "done",
-            "dependencies": [
-              null
-            ],
+            "dependencies": [],
             "parentTaskId": 64
           },
           {
@@ -880,7 +878,7 @@
             "title": "Migrate Simple List Generators",
             "description": "Migrate simple list generators (tag_list, key_takeaways_list, improvement_list) to direct OpenAI client calls, removing ai_function_executor.py dependency with TDD approach.",
             "details": "**Implementation Strategy:**\n\n**TDD Cycle:**\n1. Write failing tests for direct invocation behavior\n2. Implement direct OpenAI client calls \n3. Run tests to verify functionality\n4. Refactor for optimization\n\n**Technical Details:**\n- Update: `generate_tag_list()`, `generate_key_takeaways_list()`, `generate_improvement_list()`\n- Implement direct `openai.chat.completions.create()` calls\n- Preserve exact parsing logic: split by newlines, strip formatting, filter empty\n- Maintain error handling and telemetry decorators\n- Use simple prompts without JSON context injection\n\n**Testing Requirements:**\n- Test direct OpenAI integration\n- Verify list parsing behavior (bullet points → clean items)\n- Confirm telemetry preservation \n- Test error handling for malformed responses\n\n**Success Criteria:**\n- All tests pass with direct client calls\n- No functional changes to generator outputs\n- Telemetry decorators preserved\n- ai_function_executor imports removed from these generators",
-            "status": "pending",
+            "status": "in-progress",
             "dependencies": [
               "64.1"
             ],
@@ -961,7 +959,7 @@
     ],
     "metadata": {
       "created": "2025-06-21T07:52:11.612Z",
-      "updated": "2025-07-10T21:06:19.381Z",
+      "updated": "2025-07-12T16:42:11.727Z",
       "description": "Tasks for master context"
     }
   }
