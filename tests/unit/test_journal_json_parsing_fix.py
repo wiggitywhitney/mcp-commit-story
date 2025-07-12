@@ -175,3 +175,91 @@ class TestEdgeCasesForJSONParsing:
         
         # Should return fallback value when JSON is valid but expected field missing
         assert result['summary'] == "" 
+
+
+class TestCodeBlockParsing:
+    """Test the _parse_ai_response function's handling of different code block formats"""
+    
+    def test_python_code_block_with_json_array(self):
+        """Test that ```python blocks containing JSON arrays are parsed correctly"""
+        from src.mcp_commit_story.journal_generate import _parse_ai_response
+        
+        # This is the exact case from the user's issue
+        response = '```python\n[]\n```'
+        result = _parse_ai_response(response, 'accomplishments', fallback_value=[], parse_as_list=True)
+        
+        # Should parse to empty array, not ['python', '[]']
+        assert result == []
+        assert isinstance(result, list)
+    
+    def test_python_code_block_with_json_object(self):
+        """Test that ```python blocks containing JSON objects are parsed correctly"""
+        from src.mcp_commit_story.journal_generate import _parse_ai_response
+        
+        response = '```python\n{"summary": "Fixed the parsing issue"}\n```'
+        result = _parse_ai_response(response, 'summary', fallback_value='')
+        
+        # Should extract the summary field value
+        assert result == "Fixed the parsing issue"
+    
+    def test_python_code_block_with_list_content(self):
+        """Test that ```python blocks with list content are parsed correctly"""
+        from src.mcp_commit_story.journal_generate import _parse_ai_response
+        
+        response = '```python\n["First item", "Second item", "Third item"]\n```'
+        result = _parse_ai_response(response, 'accomplishments', fallback_value=[], parse_as_list=True)
+        
+        # Should parse to the actual list content
+        expected = ["First item", "Second item", "Third item"]
+        assert result == expected
+    
+    def test_json_code_block_still_works(self):
+        """Test that existing ```json blocks still work after adding python support"""
+        from src.mcp_commit_story.journal_generate import _parse_ai_response
+        
+        response = '```json\n{"summary": "This should still work"}\n```'
+        result = _parse_ai_response(response, 'summary', fallback_value='')
+        
+        # Should extract the summary field value (regression test)
+        assert result == "This should still work"
+    
+    def test_generic_code_block_fallback(self):
+        """Test that generic ``` blocks work as fallback"""
+        from src.mcp_commit_story.journal_generate import _parse_ai_response
+        
+        response = '```\n{"frustrations": ["Generic block test"]}\n```'
+        result = _parse_ai_response(response, 'frustrations', fallback_value=[], parse_as_list=True)
+        
+        # Should parse the JSON content even without language specifier
+        assert result == ["Generic block test"]
+    
+    def test_malformed_python_block_fallback(self):
+        """Test that malformed JSON in python blocks falls back to plain text"""
+        from src.mcp_commit_story.journal_generate import _parse_ai_response
+        
+        response = '```python\n[incomplete json\n```'
+        result = _parse_ai_response(response, 'accomplishments', fallback_value=[], parse_as_list=True)
+        
+        # Should fall back to treating as plain text and split by lines
+        assert result == ['[incomplete json']
+    
+    def test_nested_dict_extraction_in_python_block(self):
+        """Test that nested dict structures in python blocks are handled correctly"""
+        from src.mcp_commit_story.journal_generate import _parse_ai_response
+        
+        # Test case where AI returns nested structure
+        response = '```python\n{"technical_synopsis": {"description": "Nested content"}}\n```'
+        result = _parse_ai_response(response, 'technical_synopsis', fallback_value='')
+        
+        # Should extract the nested description field
+        assert result == "Nested content"
+    
+    def test_empty_python_block(self):
+        """Test that empty python blocks are handled gracefully"""
+        from src.mcp_commit_story.journal_generate import _parse_ai_response
+        
+        response = '```python\n\n```'
+        result = _parse_ai_response(response, 'summary', fallback_value='')
+        
+        # Should return fallback value for empty content
+        assert result == '' 

@@ -172,6 +172,8 @@ def _parse_ai_response(response: str, expected_field: str, fallback_value: Any =
     # Strip markdown code blocks if present
     if response.startswith('```json') and response.endswith('```'):
         response = response[7:-3].strip()  # Remove ```json and ```
+    elif response.startswith('```python') and response.endswith('```'):
+        response = response[9:-3].strip()  # Remove ```python and ```
     elif response.startswith('```') and response.endswith('```'):
         response = response[3:-3].strip()  # Remove ``` and ```
     
