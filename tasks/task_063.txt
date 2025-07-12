@@ -530,7 +530,7 @@ Most likely outcome: Discover that orchestration already exists in the appropria
 PAUSE FOR MANUAL APPROVAL at key decision points - don't make assumptions about where code should go
 
 ## 6. Telemetry Verification After Refactoring [pending]
-### Dependencies: 63.2, 63.3, 63.4, 63.5, 63.6
+### Dependencies: 63.2, 63.3, 63.4, 63.5
 ### Description: Extend existing telemetry integration tests to verify that the journal.py refactoring preserved all telemetry functionality, decorators, and performance characteristics.
 ### Details:
 UPDATE ANALYSIS DOCUMENT

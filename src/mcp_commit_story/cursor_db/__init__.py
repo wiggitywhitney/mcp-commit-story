@@ -251,11 +251,9 @@ def query_cursor_chat_database(commit=None) -> Dict[str, Any]:
                 if workspace_root.startswith("file://"):
                     workspace_root = workspace_root[7:]
                 
-                # Discover all workspace databases 
-                workspace_db_paths = discover_all_cursor_databases(workspace_root)
-                
-                # Get global database using the standard method
-                _, global_db_path = find_workspace_composer_databases(repo_path)
+                # Get workspace and global databases using the working method
+                workspace_db_path, global_db_path = find_workspace_composer_databases(repo_path)
+                workspace_db_paths = [workspace_db_path] if workspace_db_path else []
                 
             except Exception as workspace_detection_error:
                 logger.warning(f"Multi-database detection failed, trying fallback: {workspace_detection_error}")

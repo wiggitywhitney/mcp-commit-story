@@ -138,6 +138,115 @@
    - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
 
+### Subtask 50.4: Telemetry Verification After Signal Replacement
+**Objective**: Extend existing telemetry integration tests to verify that the signal-to-direct-call replacement preserved all telemetry functionality, decorators, and performance characteristics.
+
+#### Steps:
+
+1. **EXTEND EXISTING TELEMETRY TESTS**
+   - Open `tests/integration/test_telemetry_validation_integration.py`
+   - Add new test class: `TestDirectJournalGenerationTelemetry`
+   - Import existing test infrastructure:
+     ```python
+     from tests.integration.test_telemetry_validation_integration import (
+         TelemetryCollector,
+         assert_operation_traced,
+         assert_trace_continuity,
+         assert_performance_within_bounds,
+         assert_error_telemetry
+     )
+     ```
+
+2. **VERIFY DECORATOR PRESERVATION ON DIRECT CALLS**
+   - Test that `generate_journal_entry_safe()` retains `@trace_git_operation` decorator
+   - Verify `journal_workflow.generate_journal_entry()` maintains its telemetry
+   - Use `assert_operation_traced()` with operation names "git_hook.journal_generation" and "journal.generate_entry"
+   - Test both successful and error scenarios
+
+3. **VALIDATE GIT HOOK SPECIFIC TELEMETRY PATTERNS**
+   - Test that git hook telemetry patterns are preserved:
+     - `git_hook.journal_generation_duration_seconds` metrics
+     - `git_hook.operations_total` counters
+     - Error categories: `journal_generation_failed`, `git_repo_detection_failed`, etc.
+   - Use existing assertion helpers with git hook specific patterns
+
+4. **VERIFY TRACE CONTINUITY THROUGH DIRECT CALLS**
+   - Use `assert_trace_continuity()` to verify:
+     - Git hook spans have journal generation child spans
+     - Direct calls don't break parent-child relationships
+     - Trace context propagates correctly through new call path
+     - No telemetry gaps between git hook and journal workflow
+
+5. **PERFORMANCE REGRESSION TESTING**
+   - Use `assert_performance_within_bounds()` with correct thresholds:
+     - Individual operations: ≤5% overhead
+     - Git hook operations: ≤10% overhead
+   - Compare direct call performance vs previous signal-based approach
+   - Document any performance changes
+
+6. **COMPREHENSIVE ERROR TELEMETRY TESTING**
+   - Use `assert_error_telemetry()` to test direct call error scenarios:
+     - Git repository detection failures
+     - Configuration loading failures  
+     - Journal generation failures
+     - Commit object creation failures
+   - Force each error type and verify proper telemetry capture
+
+7. **FINAL VERIFICATION**
+   - Run extended telemetry tests multiple times for consistency
+   - Run existing telemetry tests to ensure no regressions
+   - Verify coverage of all direct call paths
+   - **MARK COMPLETE**
+
+### Subtask 50.5: Documentation Updates
+**Objective**: Update all documentation to reflect the direct journal generation approach, writing for future developers with zero project knowledge and ensuring all code examples use correct call patterns.
+
+#### Steps:
+
+1. **UPDATE GIT-HOOK-WORKER.MD**
+   - Update module documentation to describe direct journal generation approach
+   - Add code examples showing `generate_journal_entry_safe()` usage
+   - Remove any references to signal-based architecture
+   - Write as if direct calls have always been the approach
+
+2. **UPDATE ARCHITECTURE.MD**
+   - In the "Git Hook Integration" section, update to describe direct call flow
+   - Update any diagrams or flow descriptions to show:
+     ```
+     Git Hook → git_hook_worker.py → journal_workflow.generate_journal_entry()
+     ```
+   - Remove signal-based flow references
+
+3. **UPDATE IMPLEMENTATION-GUIDE.MD**
+   - In the "Git Hook Setup" section, describe the current direct approach
+   - Update any code examples that show git hook implementation
+   - Ensure guidance reflects the streamlined direct call pattern
+
+4. **COMPREHENSIVE DOCUMENTATION SEARCH**
+   - Search all .md files for these patterns and update them:
+     - `create_tool_signal_safe()`
+     - Signal-based journal generation references
+     - Git hook signal creation examples
+   - Files to specifically check:
+     - `git-integration.md`
+     - `testing_standards.md`
+     - Any example code blocks in all documentation files
+
+5. **UPDATE README.MD IN DOCS FOLDER**
+   - If it describes git hook integration, update to current direct approach
+   - Ensure quick navigation links still work
+   - Write as if this approach has always existed
+
+6. **FINAL VERIFICATION**
+   - Do a comprehensive search across all docs for:
+     - `create_tool_signal_safe`
+     - Signal-based references
+     - Any remaining historical references
+   - Verify all code examples would actually work with current implementation
+   - Ensure NO historical references remain (no "previously", "after changes", etc.)
+   - Verify a new developer could understand the system without knowing signal history
+   - **MARK COMPLETE**
+
 ## Key Dependencies and Notes
 
 - **Task 64** must be complete before 50.2 (AI generators must be standalone)
