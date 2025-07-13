@@ -40,7 +40,7 @@ def generate_journal_entry(commit, config, debug=False) -> Optional[JournalEntry
         generate_summary_section, generate_technical_synopsis_section,
         generate_accomplishments_section, generate_frustrations_section,
         generate_tone_mood_section, generate_discussion_notes_section,
-        generate_commit_metadata_section
+        generate_discussion_notes_section_simple, generate_commit_metadata_section
     )
     
     if debug:
@@ -123,6 +123,7 @@ def generate_journal_entry(commit, config, debug=False) -> Optional[JournalEntry
         ('frustrations', generate_frustrations_section),
         ('tone_mood', generate_tone_mood_section),
         ('discussion_notes', generate_discussion_notes_section),
+        ('discussion_notes_simple', generate_discussion_notes_section_simple),
         ('commit_metadata', generate_commit_metadata_section)
     ]
     
@@ -151,6 +152,8 @@ def generate_journal_entry(commit, config, debug=False) -> Optional[JournalEntry
                     }
             elif section_name == 'discussion_notes':
                 sections[section_name] = section_content.get('discussion_notes', [])
+            elif section_name == 'discussion_notes_simple':
+                sections[section_name] = section_content.get('discussion_notes', [])
             elif section_name == 'commit_metadata':
                 sections[section_name] = section_content.get('commit_metadata', {})
                 
@@ -178,6 +181,7 @@ def generate_journal_entry(commit, config, debug=False) -> Optional[JournalEntry
         frustrations=sections.get('frustrations'),
         tone_mood=sections.get('tone_mood'),
         discussion_notes=sections.get('discussion_notes'),
+        discussion_notes_simple=sections.get('discussion_notes_simple'),
         commit_metadata=sections.get('commit_metadata')
     )
     
@@ -336,6 +340,7 @@ def handle_journal_entry_creation(commit, config, debug=False):
                     journal_entry.frustrations,
                     journal_entry.tone_mood,
                     journal_entry.discussion_notes,
+                    journal_entry.discussion_notes_simple,
                     journal_entry.commit_metadata
                 ] if s
             ])

@@ -193,6 +193,16 @@ def _parse_ai_response(response: str, expected_field: str, fallback_value: Any =
                     else:
                         # Fallback to JSON string representation
                         return json.dumps(field_value)
+                
+                # Special handling for string field values when parse_as_list=True
+                if parse_as_list and isinstance(field_value, str):
+                    # Handle special case where AI returns '[]' to indicate no items
+                    if field_value == '[]':
+                        return []
+                    # Split by newlines, strip, and filter empty lines
+                    lines = field_value.split('\n')
+                    return [line.strip() for line in lines if line.strip()]
+                
                 return field_value
             else:
                 # Valid JSON but missing expected field - return fallback instead of whole response
@@ -282,8 +292,8 @@ class JournalEntry:
         technical_synopsis: Optional[str] = None,
         accomplishments: Optional[List[str]] = None,
         frustrations: Optional[List[str]] = None,
-
         discussion_notes: Optional[List[Union[str, Dict[str, str]]]] = None,
+        discussion_notes_simple: Optional[List[Union[str, Dict[str, str]]]] = None,
         tone_mood: Optional[Dict[str, str]] = None,  # {'mood': str, 'indicators': str}
         commit_metadata: Optional[Dict[str, str]] = None,
     ):
@@ -293,8 +303,8 @@ class JournalEntry:
         self.technical_synopsis = technical_synopsis
         self.accomplishments = accomplishments or []
         self.frustrations = frustrations or []
-
         self.discussion_notes = discussion_notes or []
+        self.discussion_notes_simple = discussion_notes_simple or []
         self.tone_mood = tone_mood
         self.commit_metadata = commit_metadata or {}
 
@@ -395,7 +405,28 @@ class JournalEntry:
                             dn_lines.append(f"> {l}")
                 lines += section("Discussion Notes (from chat)", dn_lines)
 
-
+            # 7. Discussion Notes (Simple Version)
+            if self.discussion_notes_simple:
+                sn_lines = []
+                prev_speaker = None
+                for note in self.discussion_notes_simple:
+                    if isinstance(note, dict) and 'speaker' in note and 'text' in note:
+                        speaker = note['speaker']
+                        text_lines = note['text'].splitlines()
+                        if prev_speaker is not None and speaker != prev_speaker:
+                            sn_lines.append("")  # blank line on speaker change
+                        if text_lines:
+                            sn_lines.append(f"> **{speaker}:** {text_lines[0]}")
+                            for l in text_lines[1:]:
+                                sn_lines.append(f"> {l}")
+                        else:
+                            sn_lines.append(f"> **{speaker}:**")
+                        prev_speaker = speaker
+                    else:
+                        text_lines = str(note).splitlines()
+                        for l in text_lines:
+                            sn_lines.append(f"> {l}")
+                lines += section("Discussion Notes (Simple Version)", sn_lines)
 
             # 8. Commit Metadata
             if self.commit_metadata:
@@ -481,7 +512,8 @@ class JournalParser:
             
             # Parse H4 (####) headers for all sections
             def extract_section(header):
-                pattern = rf"#### {header}\n(.+?)(?=\n#### |\Z)"
+                escaped_header = re.escape(header)
+                pattern = rf"#### {escaped_header}\n(.+?)(?=\n#### |\Z)"
                 m = re.search(pattern, md, re.DOTALL)
                 return m.group(1).strip() if m else ''
             
@@ -536,6 +568,20 @@ class JournalParser:
                         elif l.startswith('> '):
                             discussion_notes.append(l[2:])
                 
+                # Discussion Notes (Simple Version)
+                discussion_notes_simple = []
+                sn_section = extract_section("Discussion Notes (Simple Version)")
+                if sn_section:
+                    for l in sn_section.splitlines():
+                        l = l.strip()
+                        if l.startswith('> **'):
+                            # Speaker-attributed
+                            m = re.match(r'> \*\*(.+?):\*\* (.+)', l)
+                            if m:
+                                discussion_notes_simple.append({"speaker": m.group(1), "text": m.group(2)})
+                        elif l.startswith('> '):
+                            discussion_notes_simple.append(l[2:])
+                
                 # Commit Metadata
                 commit_metadata = {}
                 cm_section = extract_section("Commit Metadata")
@@ -554,6 +600,7 @@ class JournalParser:
                     1 if frustrations else 0,
                     1 if tone_mood else 0,
                     1 if discussion_notes else 0,
+                    1 if discussion_notes_simple else 0,
 
                     1 if commit_metadata else 0
                 ])
@@ -584,9 +631,9 @@ class JournalParser:
                     technical_synopsis=technical_synopsis,
                     accomplishments=accomplishments,
                     frustrations=frustrations,
-                    tone_mood=tone_mood,
                     discussion_notes=discussion_notes,
-
+                    discussion_notes_simple=discussion_notes_simple,
+                    tone_mood=tone_mood,
                     commit_metadata=commit_metadata,
                 )
             
@@ -1796,8 +1843,10 @@ def generate_discussion_notes_section(journal_context: JournalContext) -> Discus
         
         # If no discussion notes found, check if AI provided an explanation
         if not discussion_notes and response and response.strip():
-            # Include the AI's explanation as a single discussion note
-            discussion_notes = [response.strip()]
+            # Don't treat '[]' as an explanation - it means no discussion notes
+            if response.strip() != '[]':
+                # Include the AI's explanation as a single discussion note
+                discussion_notes = [response.strip()]
         
         result = DiscussionNotesSection(discussion_notes=discussion_notes)
         
