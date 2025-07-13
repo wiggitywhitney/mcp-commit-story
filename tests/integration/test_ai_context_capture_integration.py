@@ -79,7 +79,7 @@ Some captured knowledge after the commit.
         mock_commit.hexsha = "abc123456789"  # Add hexsha attribute
         
         # Mock get_journal_file_path to return our test file
-        with patch('mcp_commit_story.journal.get_journal_file_path') as mock_path:
+        with patch('mcp_commit_story.journal_generate.get_journal_file_path') as mock_path:
             mock_path.return_value = str(journal_file)
             
             result = collect_recent_journal_context(mock_commit)
