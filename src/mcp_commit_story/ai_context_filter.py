@@ -308,33 +308,36 @@ Return your response as JSON with this structure:
         
         filtered_messages = messages[boundary_index:]
         
-        logger.info(f"Filtered {len(messages)} → {len(filtered_messages)} messages using AI boundary")
-        return filtered_messages
+        # Streamline chat data - remove unnecessary metadata
+        streamlined_messages = []
+        for msg in filtered_messages:
+            streamlined_messages.append({
+                "speaker": msg.get("speaker", "Unknown"),
+                "text": msg.get("text", "")
+            })
+        
+        logger.info(f"Filtered {len(messages)} → {len(streamlined_messages)} messages using AI boundary (streamlined)")
+        return streamlined_messages
 
     except Exception as e:
         logger.error(f"Error in AI context filtering: {e}")
         
-        # Error handling strategies
-        if os.getenv('AI_FILTER_ERROR_STRATEGY') == 'aggressive':
-            # Return empty list (aggressive filtering)
-            logger.info("Using aggressive error strategy: returning empty list")
-            return []
-        elif os.getenv('AI_FILTER_ERROR_STRATEGY') == 'raise':
-            # Re-raise the exception (let caller decide)
-            raise
-        elif os.getenv('AI_FILTER_ERROR_STRATEGY') == 'smart_fallback':
-            # Smart fallback: return last 250 messages instead of all messages
-            if len(messages) > 250:
-                fallback_messages = messages[-250:]
-                logger.info(f"Using smart fallback error strategy: returning last 250 messages ({len(fallback_messages)} total)")
-                return fallback_messages
-            else:
-                logger.info(f"Using smart fallback error strategy: returning all messages (fewer than 250 total)")
-                return messages
+        # Smart fallback: return last 250 messages instead of all messages
+        if len(messages) > 250:
+            fallback_messages = messages[-250:]
         else:
-            # Conservative approach: return all messages (default)
-            logger.info("Using conservative error strategy: returning all messages")
-            return messages
+            fallback_messages = messages
+            
+        # Streamline fallback messages too - remove unnecessary metadata
+        streamlined_fallback = []
+        for msg in fallback_messages:
+            streamlined_fallback.append({
+                "speaker": msg.get("speaker", "Unknown"), 
+                "text": msg.get("text", "")
+            })
+        
+        logger.info(f"AI filtering failed, using smart fallback: returning {len(streamlined_fallback)} streamlined messages")
+        return streamlined_fallback
 
 
 def _parse_ai_response(ai_response: str) -> BoundaryResponse:

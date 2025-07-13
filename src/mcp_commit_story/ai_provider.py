@@ -56,11 +56,21 @@ class OpenAIProvider:
             >>> response = provider.call(prompt, context)
         """
         try:
+            # Debug logging for 400 errors
+            prompt_size = len(prompt)
+            context_str = str(context)
+            context_size = len(context_str)
+            
+            if prompt_size > 50000:  # 50KB
+                print(f"WARNING: Large prompt size: {prompt_size:,} characters")
+            if context_size > 10000:  # 10KB  
+                print(f"WARNING: Large context size: {context_size:,} characters")
+                
             response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": prompt},
-                    {"role": "user", "content": str(context)}
+                    {"role": "user", "content": context_str}
                 ],
                 timeout=30
             )
@@ -70,6 +80,13 @@ class OpenAIProvider:
             return content if content is not None else ""
             
         except Exception as e:
+            # Log the actual error details for debugging
+            print(f"OpenAI API Error: {e}")
+            print(f"Error type: {type(e).__name__}")
+            if hasattr(e, 'response'):
+                print(f"Response status: {getattr(e.response, 'status_code', 'N/A')}")
+                print(f"Response text: {getattr(e.response, 'text', 'N/A')}")
+            
             # Graceful degradation - return empty string on any error
             # This allows journal generation to continue with programmatic sections
             return "" 

@@ -1870,11 +1870,13 @@ def generate_discussion_notes_section_simple(journal_context: JournalContext) ->
     """
     Find the 10 most interesting quotes from the conversation that are relevant to this commit.
     
-    Look for quotes that:
+    Look for quotes that have one or more of these qualities, or are otherwise particularly interesting:
     - Show technical reasoning or decision-making
     - Make the human seem wise or insightful
     - Relate to the files that were changed in this commit
     - Demonstrate problem-solving or learning moments
+    - Reveal interesting perspectives, frustrations, or breakthroughs
+    - Show authentic developer experience and emotions
     
     Return quotes as verbatim text with speaker attribution in this format:
     > **Speaker:** "exact quote here"

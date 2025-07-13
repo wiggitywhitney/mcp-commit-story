@@ -146,9 +146,14 @@ def generate_journal_entry(commit, config, debug=False) -> Optional[JournalEntry
             elif section_name == 'tone_mood':
                 mood_data = section_content
                 if mood_data.get('mood') or mood_data.get('indicators'):
+                    # Handle indicators - could be list or string
+                    indicators = mood_data.get('indicators', '')
+                    if isinstance(indicators, list):
+                        indicators = '\n'.join(f"- {item}" for item in indicators)
+                    
                     sections[section_name] = {
                         'mood': mood_data.get('mood', ''),
-                        'indicators': mood_data.get('indicators', '')
+                        'indicators': indicators
                     }
             elif section_name == 'discussion_notes':
                 sections[section_name] = section_content.get('discussion_notes', [])
