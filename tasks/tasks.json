@@ -778,7 +778,62 @@
           "50"
         ],
         "priority": "medium",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Extend GitContext and Git Utils for Diff Collection",
+            "description": "Implement adaptive diff collection with size limits that scale based on file count, including binary file exclusion and generated file filtering.",
+            "details": "WRITE TESTS FIRST\n- Create tests/unit/test_git_diff_collection.py\n- Test get_commit_file_diffs() function\n- Test cases: basic diff collection, adaptive size limits (≤5 files: 10KB each, 6-20 files: 2.5KB each, >20 files: 1KB each + file count ceiling), binary file exclusion, generated file filtering, empty commits, merge commits\n- RUN TESTS - VERIFY THEY FAIL\n\nIMPLEMENT FUNCTIONALITY\n- Update GitContext in src/mcp_commit_story/context_types.py to add required file_diffs: Dict[str, str] field\n- Implement get_commit_file_diffs() in src/mcp_commit_story/git_utils.py with adaptive size limits:\n  - If ≤5 files: 10KB per file (50KB total max)\n  - If 6-20 files: 2.5KB per file (50KB total max)\n  - If >20 files: 1KB per file with 50 file ceiling (50KB total max)\n- Add is_generated_file() helper function for filtering\n- RUN TESTS - VERIFY THEY PASS\n\nDOCUMENT AND COMPLETE\n- Add documentation explaining adaptive diff collection, size limits scaling by file count, and filtering logic\n- Run the entire test suite and make sure all tests are passing\n- Double check all subtask requirements are met before marking this subtask as complete\n- MARK COMPLETE",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 67
+          },
+          {
+            "id": 2,
+            "title": "Update Context Collection to Include Diffs",
+            "description": "Modify context collection to call the new diff collection functionality and ensure all GitContext objects include the file_diffs field.",
+            "details": "WRITE TESTS FIRST\n- Extend tests/unit/test_context_collection.py\n- Test collect_git_context() includes file_diffs field\n- Test cases: successful diff collection, performance with large repos, error handling when diffs fail\n- RUN TESTS - VERIFY THEY FAIL\n\nIMPLEMENT FUNCTIONALITY\n- Update collect_git_context() in src/mcp_commit_story/context_collection.py to call get_commit_file_diffs()\n- Ensure all GitContext objects include the file_diffs field\n- RUN TESTS - VERIFY THEY PASS\n\nDOCUMENT AND COMPLETE\n- Update function documentation to reflect diff inclusion\n- Run the entire test suite and make sure all tests are passing\n- Double check all subtask requirements are met before marking this subtask as complete\n- MARK COMPLETE",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 67
+          },
+          {
+            "id": 3,
+            "title": "Update Journal Generators to Use Diff Information",
+            "description": "Modify journal generator functions to utilize file_diffs when creating content, focusing on technical synopsis and summary sections that benefit most from diff analysis.",
+            "details": "WRITE TESTS FIRST\n- Extend tests/unit/test_journal_generate.py\n- Test that generator functions can access and use file_diffs from GitContext\n- Test cases: generators produce different output when diffs are available vs empty\n- RUN TESTS - VERIFY THEY FAIL\n\nIMPLEMENT FUNCTIONALITY\n- Update journal generator functions in src/mcp_commit_story/journal_generate.py to utilize file_diffs when creating content\n- Focus on technical synopsis and summary sections that can benefit most from diff analysis\n- RUN TESTS - VERIFY THEY PASS\n\nDOCUMENT AND COMPLETE\n- Document how generators use diff information for better technical analysis\n- Run the entire test suite and make sure all tests are passing\n- Double check all subtask requirements are met before marking this subtask as complete\n- MARK COMPLETE",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 67
+          },
+          {
+            "id": 4,
+            "title": "Integration Testing and Performance Validation",
+            "description": "Verify diff collection works correctly in complete journal generation pipeline and validate performance meets acceptable thresholds.",
+            "details": "WRITE TESTS FIRST\n- Create tests/integration/test_git_diff_integration.py\n- Test end-to-end diff collection through journal generation workflow\n- Test cases: various repository sizes, different commit types, performance under load\n- RUN TESTS - VERIFY THEY FAIL\n\nIMPLEMENT FUNCTIONALITY\n- Verify diff collection works correctly in complete journal generation pipeline\n- Test with real repositories of different sizes and characteristics\n- Validate performance meets acceptable thresholds\n- RUN TESTS - VERIFY THEY PASS\n\nDOCUMENT AND COMPLETE\n- Document integration test results and performance characteristics\n- Run the entire test suite and make sure all tests are passing\n- Double check all subtask requirements are met before marking this subtask as complete\n- MARK COMPLETE",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 67
+          },
+          {
+            "id": 5,
+            "title": "Telemetry Integration",
+            "description": "Add telemetry decorators and metrics to diff collection operations, tracking performance and size limit enforcement effectiveness.",
+            "details": "WRITE TESTS FIRST\n- Extend telemetry tests to cover diff collection metrics\n- Test cases: diff collection duration, file count metrics, size limit enforcement tracking\n- RUN TESTS - VERIFY THEY FAIL\n\nIMPLEMENT FUNCTIONALITY\n- Add telemetry decorators and metrics to get_commit_file_diffs() function\n- Track performance metrics for diff collection operations\n- Monitor size limit enforcement and file filtering effectiveness\n- RUN TESTS - VERIFY THEY PASS\n\nDOCUMENT AND COMPLETE\n- Document telemetry integration for diff collection\n- Run the entire test suite and make sure all tests are passing\n- Double check all subtask requirements are met before marking this subtask as complete\n- MARK COMPLETE",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 67
+          },
+          {
+            "id": 6,
+            "title": "Documentation Updates",
+            "description": "Update module documentation to reflect diff collection capabilities with examples and clear documentation of size limiting strategy and file filtering logic.",
+            "details": "WRITE TESTS FIRST\n- No tests required for documentation updates\n\nIMPLEMENT FUNCTIONALITY\n- Update module documentation to reflect diff collection capabilities\n- Add examples of how diff information enhances journal entries\n- Document size limiting strategy and file filtering logic\n\nDOCUMENT AND COMPLETE\n- Update all relevant documentation files\n- Run the entire test suite and make sure all tests are passing\n- Double check all subtask requirements are met before marking this subtask as complete\n- MARK COMPLETE",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 67
+          }
+        ]
       },
       {
         "id": 68,

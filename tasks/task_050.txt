@@ -235,7 +235,7 @@ def test_end_to_end_with_git_hook():
 6. Check logs to ensure telemetry is being recorded correctly
 
 # Subtasks:
-## 1. Create Direct Journal Generation Wrapper [in-progress]
+## 1. Create Direct Journal Generation Wrapper [done]
 ### Dependencies: None
 ### Description: Implement a safe wrapper function that converts git_hook_worker's repo path input into the commit object and config required by journal_workflow.generate_journal_entry().
 ### Details:
@@ -264,6 +264,36 @@ def test_end_to_end_with_git_hook():
    - **Run the entire test suite and make sure all tests are passing**
    - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
+<info added on 2025-07-13T14:46:53.830Z>
+#### TDD Steps:
+
+1. **WRITE TESTS FIRST**
+   - Create `tests/unit/test_git_hook_signal_replacement.py`
+   - Test the replacement of signal creation with direct journal calls
+   - Test cases: verify signal_creation.py functions are no longer called
+   - Mock journal generation functions to verify they're called instead
+   - Test proper parameter passing from old signal functions to new journal calls
+   - Test error handling and fallback mechanisms
+   - **RUN TESTS - VERIFY THEY FAIL**
+
+2. **IMPLEMENT FUNCTIONALITY**
+   - Identify all locations where signal creation is used for journal generation
+   - Replace signal creation calls with direct calls to `generate_journal_entry_safe()`
+   - Update the git hook worker to use the new direct journal generation
+   - Remove any unnecessary signal-related code that's now obsolete
+   - Ensure proper error handling is maintained during the transition
+   - Update any configuration or setup code that referenced signals
+   - **RUN TESTS - VERIFY THEY PASS**
+
+3. **DOCUMENT AND COMPLETE**
+   - Update documentation to reflect the architectural change
+   - Add comments explaining the removal of the signal pattern
+   - Update any diagrams or flow documentation
+   - Verify no regressions in the full test suite
+   - Ensure performance is maintained or improved
+   - **Run the entire test suite and make sure all tests are passing**
+   - **MARK COMPLETE**
+</info added on 2025-07-13T14:46:53.830Z>
 
 ## 2. Replace Signal Creation with Direct Journal Calls [pending]
 ### Dependencies: None

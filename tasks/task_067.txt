@@ -258,3 +258,133 @@ To verify the correct implementation of code diff collection in git context:
    - Create a test that passes the enhanced git context to an AI generator
    - Verify that the generator can access and utilize the diff information
    - Check that the generated content references specific code changes from the diffs
+
+# Subtasks:
+## 1. Extend GitContext and Git Utils for Diff Collection [pending]
+### Dependencies: None
+### Description: Implement adaptive diff collection with size limits that scale based on file count, including binary file exclusion and generated file filtering.
+### Details:
+WRITE TESTS FIRST
+- Create tests/unit/test_git_diff_collection.py
+- Test get_commit_file_diffs() function
+- Test cases: basic diff collection, adaptive size limits (≤5 files: 10KB each, 6-20 files: 2.5KB each, >20 files: 1KB each + file count ceiling), binary file exclusion, generated file filtering, empty commits, merge commits
+- RUN TESTS - VERIFY THEY FAIL
+
+IMPLEMENT FUNCTIONALITY
+- Update GitContext in src/mcp_commit_story/context_types.py to add required file_diffs: Dict[str, str] field
+- Implement get_commit_file_diffs() in src/mcp_commit_story/git_utils.py with adaptive size limits:
+  - If ≤5 files: 10KB per file (50KB total max)
+  - If 6-20 files: 2.5KB per file (50KB total max)
+  - If >20 files: 1KB per file with 50 file ceiling (50KB total max)
+- Add is_generated_file() helper function for filtering
+- RUN TESTS - VERIFY THEY PASS
+
+DOCUMENT AND COMPLETE
+- Add documentation explaining adaptive diff collection, size limits scaling by file count, and filtering logic
+- Run the entire test suite and make sure all tests are passing
+- Double check all subtask requirements are met before marking this subtask as complete
+- MARK COMPLETE
+
+## 2. Update Context Collection to Include Diffs [pending]
+### Dependencies: None
+### Description: Modify context collection to call the new diff collection functionality and ensure all GitContext objects include the file_diffs field.
+### Details:
+WRITE TESTS FIRST
+- Extend tests/unit/test_context_collection.py
+- Test collect_git_context() includes file_diffs field
+- Test cases: successful diff collection, performance with large repos, error handling when diffs fail
+- RUN TESTS - VERIFY THEY FAIL
+
+IMPLEMENT FUNCTIONALITY
+- Update collect_git_context() in src/mcp_commit_story/context_collection.py to call get_commit_file_diffs()
+- Ensure all GitContext objects include the file_diffs field
+- RUN TESTS - VERIFY THEY PASS
+
+DOCUMENT AND COMPLETE
+- Update function documentation to reflect diff inclusion
+- Run the entire test suite and make sure all tests are passing
+- Double check all subtask requirements are met before marking this subtask as complete
+- MARK COMPLETE
+
+## 3. Update Journal Generators to Use Diff Information [pending]
+### Dependencies: None
+### Description: Modify journal generator functions to utilize file_diffs when creating content, focusing on technical synopsis and summary sections that benefit most from diff analysis.
+### Details:
+WRITE TESTS FIRST
+- Extend tests/unit/test_journal_generate.py
+- Test that generator functions can access and use file_diffs from GitContext
+- Test cases: generators produce different output when diffs are available vs empty
+- RUN TESTS - VERIFY THEY FAIL
+
+IMPLEMENT FUNCTIONALITY
+- Update journal generator functions in src/mcp_commit_story/journal_generate.py to utilize file_diffs when creating content
+- Focus on technical synopsis and summary sections that can benefit most from diff analysis
+- RUN TESTS - VERIFY THEY PASS
+
+DOCUMENT AND COMPLETE
+- Document how generators use diff information for better technical analysis
+- Run the entire test suite and make sure all tests are passing
+- Double check all subtask requirements are met before marking this subtask as complete
+- MARK COMPLETE
+
+## 4. Integration Testing and Performance Validation [pending]
+### Dependencies: None
+### Description: Verify diff collection works correctly in complete journal generation pipeline and validate performance meets acceptable thresholds.
+### Details:
+WRITE TESTS FIRST
+- Create tests/integration/test_git_diff_integration.py
+- Test end-to-end diff collection through journal generation workflow
+- Test cases: various repository sizes, different commit types, performance under load
+- RUN TESTS - VERIFY THEY FAIL
+
+IMPLEMENT FUNCTIONALITY
+- Verify diff collection works correctly in complete journal generation pipeline
+- Test with real repositories of different sizes and characteristics
+- Validate performance meets acceptable thresholds
+- RUN TESTS - VERIFY THEY PASS
+
+DOCUMENT AND COMPLETE
+- Document integration test results and performance characteristics
+- Run the entire test suite and make sure all tests are passing
+- Double check all subtask requirements are met before marking this subtask as complete
+- MARK COMPLETE
+
+## 5. Telemetry Integration [pending]
+### Dependencies: None
+### Description: Add telemetry decorators and metrics to diff collection operations, tracking performance and size limit enforcement effectiveness.
+### Details:
+WRITE TESTS FIRST
+- Extend telemetry tests to cover diff collection metrics
+- Test cases: diff collection duration, file count metrics, size limit enforcement tracking
+- RUN TESTS - VERIFY THEY FAIL
+
+IMPLEMENT FUNCTIONALITY
+- Add telemetry decorators and metrics to get_commit_file_diffs() function
+- Track performance metrics for diff collection operations
+- Monitor size limit enforcement and file filtering effectiveness
+- RUN TESTS - VERIFY THEY PASS
+
+DOCUMENT AND COMPLETE
+- Document telemetry integration for diff collection
+- Run the entire test suite and make sure all tests are passing
+- Double check all subtask requirements are met before marking this subtask as complete
+- MARK COMPLETE
+
+## 6. Documentation Updates [pending]
+### Dependencies: None
+### Description: Update module documentation to reflect diff collection capabilities with examples and clear documentation of size limiting strategy and file filtering logic.
+### Details:
+WRITE TESTS FIRST
+- No tests required for documentation updates
+
+IMPLEMENT FUNCTIONALITY
+- Update module documentation to reflect diff collection capabilities
+- Add examples of how diff information enhances journal entries
+- Document size limiting strategy and file filtering logic
+
+DOCUMENT AND COMPLETE
+- Update all relevant documentation files
+- Run the entire test suite and make sure all tests are passing
+- Double check all subtask requirements are met before marking this subtask as complete
+- MARK COMPLETE
+
