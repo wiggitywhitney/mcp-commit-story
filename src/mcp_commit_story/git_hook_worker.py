@@ -706,18 +706,25 @@ def generate_journal_entry_safe(repo_path: str) -> bool:
             signal_creation_telemetry("journal_generation_direct", success=False, error_type="config_loading_failed")
             return False
         
-        # Generate journal entry
+        # Generate and save journal entry
         try:
-            journal_entry = journal_workflow.generate_journal_entry(commit, config_obj)
+            result = journal_workflow.handle_journal_entry_creation(commit, config_obj)
             
-            if journal_entry:
-                log_hook_activity(f"Journal entry generated successfully for commit {commit.hexsha}", "info", repo_path)
-                signal_creation_telemetry("journal_generation_direct", success=True)
-                return True
+            if result['success']:
+                if result.get('skipped'):
+                    log_hook_activity(f"Journal entry skipped: {result.get('reason', 'unknown reason')}", "info", repo_path)
+                    signal_creation_telemetry("journal_generation_direct", success=True)  # Not an error - just skipped
+                    return True
+                else:
+                    log_hook_activity(f"Journal entry generated successfully for commit {commit.hexsha}", "info", repo_path)
+                    log_hook_activity(f"Journal entry saved to: {result.get('file_path', 'unknown path')}", "info", repo_path)
+                    signal_creation_telemetry("journal_generation_direct", success=True)
+                    return True
             else:
-                log_hook_activity("Journal entry generation returned None (possibly journal-only commit)", "info", repo_path)
-                signal_creation_telemetry("journal_generation_direct", success=True)  # Not an error - just skipped
-                return True
+                error_msg = result.get('error', 'Unknown journal creation error')
+                log_hook_activity(f"Journal generation failed: {error_msg}", "error", repo_path)
+                signal_creation_telemetry("journal_generation_direct", success=False, error_type="journal_generation_failed")
+                return False
                 
         except Exception as e:
             log_hook_activity(f"Journal generation failed: {str(e)}", "error", repo_path)

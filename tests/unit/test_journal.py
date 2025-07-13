@@ -4,6 +4,10 @@ import pytest
 from mcp_commit_story import journal_generate as journal
 from mcp_commit_story.context_types import JournalContext, AccomplishmentsSection, FrustrationsSection, ToneMoodSection, DiscussionNotesSection
 from mcp_commit_story.context_collection import collect_chat_history
+import tempfile
+import os
+from pathlib import Path
+from unittest.mock import patch
 
 # Sample markdown for a daily note entry
 DAILY_NOTE_MD = '''
@@ -76,8 +80,11 @@ def test_handle_malformed_entry():
         journal.JournalParser.parse(MALFORMED_MD)
 
 
-@pytest.mark.xfail(reason="Requires AI agent or mock AI")
-def test_generate_summary_section_basic_commit():
+@patch('mcp_commit_story.journal_generate.invoke_ai')
+def test_generate_summary_section_basic_commit(mock_invoke_ai):
+    # Mock AI response
+    mock_invoke_ai.return_value = "Added user authentication feature to auth.py because security is important for protecting user data"
+    
     ctx = JournalContext(
         chat=None,
         git={
@@ -103,8 +110,11 @@ def test_generate_summary_section_basic_commit():
     assert any(word in summary.lower() for word in ['why', 'reason', 'intent', 'motivation', 'goal', 'purpose', 'because', 'to ', 'for '])
 
 
-@pytest.mark.xfail(reason="Requires AI agent or mock AI")
-def test_generate_summary_section_with_chat_reasoning():
+@patch('mcp_commit_story.journal_generate.invoke_ai')
+def test_generate_summary_section_with_chat_reasoning(mock_invoke_ai):
+    # Mock AI response
+    mock_invoke_ai.return_value = "Added user authentication feature because security discussion indicated need to protect user data"
+    
     ctx = JournalContext(
         chat={'messages': [
             {'speaker': 'Human', 'text': 'We need to add authentication to protect user data.'},

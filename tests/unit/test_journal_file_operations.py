@@ -230,8 +230,8 @@ class TestJournalFileOperationsIntegration:
                 
                 result_path2 = save_journal_entry(journal_entry2, config, date_str="2025-06-03")
             
-            # Verify file was created (path includes 'journal' directory from get_journal_file_path)
-            expected_path = Path(temp_dir) / "journal" / "daily" / "2025-06-03-journal.md"
+            # Verify file was created (after fix for double journal/ prefix bug)
+            expected_path = Path(temp_dir) / "daily" / "2025-06-03-journal.md"
             assert expected_path.exists()
             assert result_path == str(expected_path)
             

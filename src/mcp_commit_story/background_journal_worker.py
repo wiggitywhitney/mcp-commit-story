@@ -150,7 +150,7 @@ def generate_journal_entry_background(commit_hash: str, repo_path: str) -> Dict[
                 if result.get('skipped'):
                     logger.info(f"Journal entry skipped: {result.get('reason', 'unknown reason')}")
                 else:
-                logger.info(f"Background journal generation completed successfully in {execution_time:.2f}s")
+                    logger.info(f"Background journal generation completed successfully in {execution_time:.2f}s")
                     logger.info(f"Journal entry saved to {result.get('file_path')}")
                 
                 # Record successful telemetry

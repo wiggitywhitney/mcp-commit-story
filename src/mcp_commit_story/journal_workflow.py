@@ -266,6 +266,12 @@ def save_journal_entry(journal_entry, config, debug=False, date_str=None):
     
     # Get relative path and combine with configured journal path
     relative_path = get_journal_file_path(date_str, "daily")
+    
+    # Fix double "journal/" prefix bug: get_journal_file_path returns "journal/daily/..."
+    # but config.journal_path is also "journal", so we need to remove the prefix
+    if relative_path.startswith("journal/"):
+        relative_path = relative_path[8:]  # Remove "journal/" prefix
+    
     full_path = Path(journal_path) / relative_path
     
     # Check if this is a new daily file
