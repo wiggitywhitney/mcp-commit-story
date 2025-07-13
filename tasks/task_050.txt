@@ -1,7 +1,7 @@
 # Task ID: 50
 # Title: Create Standalone Journal Generator
 # Status: pending
-# Dependencies: 63, 64, 65
+# Dependencies: 63, 65
 # Priority: high
 # Description: Convert git_hook_worker.py from signal-based to direct journal generation using existing infrastructure.
 # Details:

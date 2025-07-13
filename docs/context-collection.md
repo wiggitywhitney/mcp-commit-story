@@ -221,7 +221,7 @@ This ensures journal files are excluded from context analysis.
    - **Context Preservation**: Maintains conversation flow and relationships
    - **File References**: Links to code files discussed in conversations
 
-4. **AI-Powered Context Filtering**: Uses Pattern 2 AI functions to:
+4. **AI-Powered Context Filtering**: Uses specialized AI processing functions (Pattern 2) to:
    - Identify conversation boundaries relevant to specific commits
    - Filter out unrelated discussions while preserving important context
    - Maintain conversation coherence and narrative flow

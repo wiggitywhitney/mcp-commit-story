@@ -106,7 +106,7 @@ Each AI generator has an AI prompt in its docstring and returns a placeholder fo
 #### Layer 5: AI Invocation (Infrastructure)
 The AI invocation happens for content generation:
 
-1. **Section Generation**: `execute_ai_function(func, context)` executes AI-powered generators, reads docstring prompts, formats context, sends to AI provider, parses responses, and provides graceful degradation
+1. **Section Generation**: Each generator function directly invokes `invoke_ai(prompt, context)`, extracts prompts from docstrings using `inspect.getdoc()`, formats context as JSON, parses AI responses, and provides graceful degradation
 
 #### Data Flow
 ```

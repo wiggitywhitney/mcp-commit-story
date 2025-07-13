@@ -169,13 +169,13 @@ Each AI generator has a docstring prompt and returns a placeholder for AI execut
 
 ### Layer 4: AI Invocation (Infrastructure)
 - **Responsibility**: Execute AI-powered components with graceful degradation
-- **Single AI Invocation Point**:
+- **Direct AI Invocation Pattern**:
 
 **Section Generation** (Layer 3):
-- `execute_ai_function(func, context)` - Executes AI-powered generators
-- Reads docstring prompts and formats context
-- Sends to AI provider and parses responses
-- Provides graceful degradation (returns empty sections if AI unavailable)
+- Each generator function makes direct calls to `invoke_ai(prompt, context)`
+- Extracts prompts from function docstrings using `inspect.getdoc()`
+- Formats `JournalContext` as JSON for AI consumption
+- Parses AI responses and provides graceful degradation (returns empty sections if AI unavailable)
 
 **Direct Integration**: Chat history comes pre-structured and chronologically ordered directly from the chat history system.
 
@@ -230,7 +230,7 @@ def generate_journal_entry_standalone(commit_hash: Optional[str] = None, hook_ty
         for section_name, generator_func in AI_GENERATORS.items():
             try:
                 if is_ai_available():
-                    journal_sections[section_name] = execute_ai_function(generator_func, context)  # AI Calls
+                    journal_sections[section_name] = generator_func(context)  # Direct AI invocation
                 else:
                     log_info(f"AI unavailable, skipping {section_name} section")
                     journal_sections[section_name] = {}

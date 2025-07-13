@@ -6,9 +6,9 @@ This guide explains how to configure AI for the MCP Commit Story system. The sys
 
 The system employs **two distinct AI function patterns**:
 
-1. **Pattern 1 (AI Agent Contract)**: Used for journal section generation where the AI agent has full conversational context. These functions contain prompts in docstrings and return placeholders that the AI agent replaces during execution.
+1. **Pattern 1 (Direct AI Invocation for Journal Generators)**: Used for journal section generation. These functions extract prompts from docstrings, format context as JSON, and make direct calls to `invoke_ai()` with graceful error handling.
 
-2. **Pattern 2 (Direct AI API Call)**: Used for specialized processing like chat filtering and boundary detection. These functions make direct API calls with structured validation and error handling.
+2. **Pattern 2 (Direct AI API Call for Specialized Processing)**: Used for specialized processing like chat filtering and boundary detection. These functions make direct API calls with structured validation and error handling.
 
 For detailed information about these patterns, see the [AI Function Patterns documentation](ai_function_pattern.md).
 

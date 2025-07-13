@@ -113,29 +113,7 @@ class TestJournalContextIntegration:
         assert context['journal']['latest_entry'] == "Test entry"
         assert isinstance(context['journal']['additional_context'], list)
 
-    def test_ai_function_executor_compatibility(self):
-        """Test that AI function executor can handle JournalContext with journal field."""
-        from src.mcp_commit_story.ai_function_executor import execute_ai_function
-        from mcp_commit_story.journal import generate_summary_section
-        
-        # Verify that the functions exist and can be imported
-        assert callable(execute_ai_function)
-        assert callable(generate_summary_section)
-        
-        # Create journal context structure
-        journal_context = JournalContext(
-            chat=None,
-            git={'metadata': {'hash': 'abc123', 'author': 'test', 'date': '2025-01-01', 'message': 'test'}},
-            journal={
-                'latest_entry': "AI executor test entry",
-                'additional_context': ["AI executor context"],
-                'metadata': {'date': '2025-01-01', 'file_exists': True}
-            }
-        )
-        
-        # Verify the structure is correct
-        assert journal_context['journal'] is not None
-        assert journal_context['journal']['latest_entry'] == "AI executor test entry"
+
 
     def test_collect_recent_journal_context_function_exists(self):
         """Test that collect_recent_journal_context function exists and is importable."""
@@ -152,20 +130,7 @@ class TestJournalContextIntegration:
         # Should have at least one parameter (commit)
         assert len(params) >= 1
 
-    def test_journal_context_backwards_compatibility(self):
-        """Test that existing code works when journal context is None."""
-        from src.mcp_commit_story.ai_function_executor import parse_response
-        
-        # Test that parsing still works with context that has None journal field
-        journal_context = JournalContext(
-            chat=None,
-            git={'metadata': {'hash': 'abc123', 'author': 'test', 'date': '2025-01-01', 'message': 'test'}},
-            journal=None
-        )
-        
-        # This should not raise any errors
-        result = parse_response("generate_summary_section", "Test summary response")
-        assert result['summary'] == "Test summary response"
+
 
     def test_integration_components_ready(self):
         """Test that all integration components are ready and compatible."""

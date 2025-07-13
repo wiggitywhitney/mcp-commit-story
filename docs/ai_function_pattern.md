@@ -4,46 +4,81 @@ This codebase uses **two distinct AI function patterns** depending on the use ca
 
 ---
 
-## Pattern 1: AI Agent Contract Pattern
+## Pattern 1: Direct AI Invocation Pattern (Journal Generators)
 
-**Use Case:** Journal section generation where the AI agent has **full conversational context** and memory.
+**Use Case:** Journal section generation using direct AI API calls with structured context and parsing.
 
 ### How It Works
-- Place the canonical AI prompt in the function docstring. The prompt should fully describe the extraction/generation task, anti-hallucination rules, and output format.
-- Return a placeholder value (e.g., an empty TypedDict or list, or an empty string for simple sections).
-- Do not perform any logic or AI calls in the function body. The function is a contract for the AI agent.
-- The AI agent, when invoked, reads the docstring and executes the instructions, returning the real value in place of the placeholder.
+- Extract AI prompt from the function docstring using `inspect.getdoc()`
+- Format the `JournalContext` as JSON and inject it into the prompt
+- Make direct AI API calls using `invoke_ai()` with the formatted prompt
+- Parse the AI response according to the expected output format (text, list, or complex)
+- Return structured data with proper error handling and telemetry
 
-### AI Execution Model
-When the AI agent encounters a function following this pattern during execution:
-1. **Read the docstring** as the complete AI prompt/instruction set
-2. **Execute the described task** using full conversational context and memory
-3. **Return the real data** in the specified format instead of the placeholder
-4. **Do NOT** execute the function body - treat it as a placeholder contract only
-
-The function body serves only as a type hint and placeholder - the AI agent completely replaces the return value with actual generated content.
+### Implementation Pattern
+```python
+def generate_summary_section(journal_context: JournalContext) -> SummarySection:
+    """[AI Prompt in docstring describing the task]"""
+    try:
+        # Extract prompt from docstring
+        prompt = inspect.getdoc(generate_summary_section)
+        
+        # Format context as JSON and inject into prompt
+        context_json = json.dumps(journal_context, indent=2, default=str)
+        full_prompt = f"{prompt}\n\nThe journal_context object has the following structure:\n{context_json}"
+        
+        # Make direct AI call
+        response = invoke_ai(full_prompt, {})
+        
+        # Parse response (simple text for summary)
+        return SummarySection(summary=response.strip())
+        
+    except Exception as e:
+        logger.error(f"AI generation failed: {e}")
+        return SummarySection(summary="")  # Graceful fallback
+```
 
 ### When to Use Pattern 1
 - Journal section generation (summaries, insights, accomplishments)
-- Content creation requiring conversational context
-- Tasks where AI agent's memory and ongoing conversation are valuable
-- Simple extraction tasks with well-defined output formats
+- Content creation requiring git/chat context
+- Tasks with well-defined output formats (text, list, complex parsing)
+- Functions that need to work with `JournalContext` structure
 
 ### Benefits
-- Leverages the AI's full conversational context and memory (especially for chat/terminal history extraction).
-- Avoids unnecessary serialization, prompt building, or API complexity.
-- Ensures anti-hallucination and narrative fidelity by working directly with the real context.
-- Provides a consistent, simple, and robust developer experience.
+- **Direct AI integration** with full context visibility
+- **Structured parsing** for different output types (text, list, complex)
+- **Graceful error handling** with fallback values
+- **Telemetry integration** for monitoring and debugging
+- **Consistent context formatting** across all journal generators
+
+### Response Parsing Types
+- **Simple text**: Use response directly (summary, technical_synopsis)
+- **Simple list**: Split by newlines, strip, filter empty (accomplishments, frustrations)
+- **Complex parsing**: Use regex/custom logic (tone_mood with mood/indicators)
 
 ### Example
 ```python
-def collect_chat_history() -> ChatHistory:
-    """[Elaborate AI Prompt Here]"""
-    return ChatHistory(messages=[])  # AI agent replaces this with real data
-
-def generate_summary_section(journal_context: JournalContext) -> SummarySection:
-    """[Elaborate AI Prompt Here]"""
-    return SummarySection(summary="")  # AI agent replaces this with real data
+def generate_accomplishments_section(journal_context: JournalContext) -> AccomplishmentsSection:
+    """Generate a list of accomplishments from the journal context..."""
+    try:
+        prompt = inspect.getdoc(generate_accomplishments_section)
+        context_json = json.dumps(journal_context, indent=2, default=str)
+        full_prompt = f"{prompt}\n\nThe journal_context object has the following structure:\n{context_json}"
+        
+        response = invoke_ai(full_prompt, {})
+        
+        # Parse as list: split by newlines, strip, filter empty
+        accomplishments = [
+            line.strip().lstrip('•').lstrip('-').strip() 
+            for line in response.split('\n') 
+            if line.strip()
+        ]
+        
+        return AccomplishmentsSection(accomplishments=accomplishments)
+        
+    except Exception as e:
+        logger.error(f"AI generation failed: {e}")
+        return AccomplishmentsSection(accomplishments=[])
 ```
 
 ---
@@ -137,42 +172,49 @@ except Exception as e:
 
 ## Choosing the Right Pattern
 
-### Use Pattern 1 (AI Agent Contract) When:
-- ✅ AI agent has full conversational context
-- ✅ Task benefits from ongoing conversation memory
-- ✅ Simple, well-defined output format
-- ✅ Content creation or narrative generation
-- ✅ Working within an active AI conversation
+### Use Pattern 1 (Direct AI Invocation for Journal Generators) When:
+- ✅ Journal section generation from `JournalContext`
+- ✅ Content creation requiring structured context formatting
+- ✅ Well-defined output formats (text, list, complex parsing)
+- ✅ Functions that can gracefully fall back to empty/default values
+- ✅ Working with git/chat/journal context data
 
-### Use Pattern 2 (Direct AI API Call) When:
-- ✅ Need controlled, predictable AI behavior
-- ✅ Require structured input/output validation
-- ✅ Complex analysis with specific processing requirements
-- ✅ Need immediate processing independent of agent context
-- ✅ Error handling and fallback behavior is critical
-- ✅ Production systems requiring reliability
+### Use Pattern 2 (Direct AI API Call for Specialized Processing) When:
+- ✅ Need controlled, predictable AI behavior with custom prompts
+- ✅ Complex analysis requiring specific input/output contracts
+- ✅ Multi-step processing with custom validation logic
+- ✅ Functions requiring immediate processing with custom error handling
+- ✅ Specialized filtering, boundary detection, or data transformation
+- ✅ Production systems requiring custom reliability patterns
 
 ### Examples in the Codebase
 
 **Pattern 1 Usage:**
-- `journal.py` - All section generation functions
-- Content creation for journal entries
-- Narrative synthesis tasks
+- `journal_generate.py` - All journal section generation functions
+  - `generate_summary_section()`
+  - `generate_accomplishments_section()`
+  - `generate_frustrations_section()`
+  - `generate_tone_mood_section()`
+  - `generate_discussion_notes_section()`
+  - `generate_technical_synopsis_section()`
 
 **Pattern 2 Usage:**
 - `ai_context_filter.py` - `filter_chat_for_commit()`
 - Boundary detection and chat filtering
-- Structured analysis with validation
+- Structured analysis with custom validation
 
 ---
 
 ## Implementation Guidelines
 
 ### For Pattern 1 Functions:
-- Keep docstrings comprehensive and self-contained
-- Include anti-hallucination rules in prompts
-- Specify exact output format requirements
-- Return properly typed placeholder values
+- Keep docstrings comprehensive and self-contained (they become AI prompts)
+- Include anti-hallucination rules and output format requirements in docstrings
+- Use `inspect.getdoc()` to extract prompts from docstrings
+- Format `JournalContext` as JSON consistently across all generators
+- Implement proper response parsing for output type (text, list, complex)
+- Return graceful fallback values on AI failures (empty strings, empty lists)
+- Always use try/catch blocks around AI calls for error handling
 
 ### For Pattern 2 Functions:
 - Always use appropriate telemetry decorators
@@ -183,9 +225,11 @@ except Exception as e:
 
 ### Common Anti-Patterns:
 - ❌ Mixing both patterns in a single function
-- ❌ Making API calls in Pattern 1 functions
+- ❌ Inconsistent context formatting in Pattern 1 functions
+- ❌ Missing error handling in Pattern 1 AI calls
 - ❌ Skipping validation in Pattern 2 functions
 - ❌ Missing telemetry on Pattern 2 functions
 - ❌ Poor error handling in production Pattern 2 functions
+- ❌ Hardcoding prompts instead of using docstrings in Pattern 1
 
 This dual-pattern approach provides flexibility for different AI integration needs while maintaining consistency and reliability across the codebase. 

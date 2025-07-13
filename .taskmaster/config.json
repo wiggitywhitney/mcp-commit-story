@@ -27,6 +27,7 @@
     "projectName": "Taskmaster",
     "ollamaBaseUrl": "http://localhost:11434/api",
     "azureOpenaiBaseUrl": "https://your-endpoint.openai.azure.com/",
-    "userId": "1234567890"
+    "userId": "1234567890",
+    "defaultTag": "master"
   }
-} 
+}
