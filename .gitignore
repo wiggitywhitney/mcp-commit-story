@@ -22,8 +22,10 @@ dev-debug.log
 # Dependency directories
 node_modules/
 
-# Journal directory - test artifacts
-journal/
+# Journal directories - test artifacts (but not Python package)
+/journal/
+/sandbox-journal/
+/test-journal/
 
 # Environment variables
 
