@@ -1,7 +1,7 @@
 # Task ID: 67
 # Title: Add Code Diff Collection to Git Context
 # Status: pending
-# Dependencies: 42
+# Dependencies: 50
 # Priority: medium
 # Description: Extend git context collection to include actual code diffs alongside existing metadata, enabling AI generators to analyze specific code changes when creating journal entries.
 # Details:

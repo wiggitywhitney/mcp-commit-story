@@ -1,7 +1,7 @@
 # Task ID: 52
 # Title: Add Machine-Readable Journal Format
 # Status: pending
-# Dependencies: 50
+# Dependencies: 69
 # Priority: medium
 # Description: Enhance journal entries with structured metadata for future AI parsing and analysis by implementing YAML frontmatter with standardized fields.
 # Details:

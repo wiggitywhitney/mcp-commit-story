@@ -1,0 +1,385 @@
+# Task ID: 70
+# Title: Create Pip-Installable Package with CLI Interface
+# Status: pending
+# Dependencies: 26, 50, 53, 68
+# Priority: high
+# Description: Develop a pip-installable Python package that allows users to easily install, configure, and use the MCP Commit Story system in their own projects, complete with CLI commands for setup and server management.
+# Details:
+## Implementation Details
+
+### 1. Package Structure Setup
+Create a standard Python package structure:
+```
+mcp-commit-story/
+├── pyproject.toml
+├── setup.py
+├── src/
+│   └── mcp_commit_story/
+│       ├── __init__.py
+│       ├── cli/
+│       │   ├── __init__.py
+│       │   ├── commands.py
+│       │   └── main.py
+│       ├── server/
+│       │   ├── __init__.py
+│       │   └── mcp_server.py
+│       ├── hooks/
+│       │   ├── __init__.py
+│       │   └── git_hooks.py
+│       └── config/
+│           ├── __init__.py
+│           └── default_config.py
+├── README.md
+└── docs/
+    ├── installation.md
+    └── usage.md
+```
+
+### 2. Package Configuration
+Set up `pyproject.toml` and `setup.py` with proper metadata:
+```python
+# setup.py
+from setuptools import setup, find_packages
+
+setup(
+    name="mcp-commit-story",
+    version="0.1.0",
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
+    include_package_data=True,
+    install_requires=[
+        "click>=8.0.0",
+        "pyyaml>=6.0",
+        "gitpython>=3.1.0",
+        # Add other dependencies
+    ],
+    entry_points={
+        "console_scripts": [
+            "mcp-commit-story=mcp_commit_story.cli.main:main",
+        ],
+    },
+    python_requires=">=3.8",
+)
+```
+
+### 3. CLI Command Structure
+Implement a CLI interface using Click:
+```python
+# src/mcp_commit_story/cli/main.py
+import click
+
+@click.group()
+def main():
+    """MCP Commit Story - Git journal and storytelling tool."""
+    pass
+
+@main.command()
+@click.option("--config", "-c", help="Path to custom config file")
+def init(config):
+    """Initialize MCP Commit Story in the current repository."""
+    from mcp_commit_story.cli.commands import initialize_project
+    initialize_project(config_path=config)
+
+@main.command()
+@click.option("--host", default="127.0.0.1", help="Host to bind the server to")
+@click.option("--port", default=8000, help="Port to bind the server to")
+def server(host, port):
+    """Start the MCP server for AI tool integration."""
+    from mcp_commit_story.server.mcp_server import start_server
+    start_server(host=host, port=port)
+
+@main.command()
+@click.option("--date", help="Generate summary for specific date (YYYY-MM-DD)")
+def summary(date):
+    """Generate a daily summary."""
+    from mcp_commit_story.cli.commands import generate_summary
+    generate_summary(date=date)
+
+if __name__ == "__main__":
+    main()
+```
+
+### 4. Project Initialization Command
+Implement the initialization command to set up a new project:
+```python
+# src/mcp_commit_story/cli/commands.py
+import os
+import shutil
+from pathlib import Path
+import yaml
+from mcp_commit_story.config.default_config import DEFAULT_CONFIG
+
+def initialize_project(config_path=None):
+    """Set up MCP Commit Story in the current repository."""
+    # 1. Check if we're in a git repository
+    if not os.path.exists(".git"):
+        print("Error: Not a git repository. Please run 'git init' first.")
+        return False
+    
+    # 2. Create config directory
+    config_dir = Path(".mcp-commit-story")
+    config_dir.mkdir(exist_ok=True)
+    
+    # 3. Create config file
+    if config_path and os.path.exists(config_path):
+        # Copy user-provided config
+        with open(config_path, "r") as f:
+            config = yaml.safe_load(f)
+    else:
+        # Use default config
+        config = DEFAULT_CONFIG
+    
+    with open(config_dir / "config.yaml", "w") as f:
+        yaml.dump(config, f, default_flow_style=False)
+    
+    # 4. Create journal directories
+    journal_dir = Path(config["journal"]["path"])
+    journal_dir.mkdir(exist_ok=True)
+    (journal_dir / "daily").mkdir(exist_ok=True)
+    (journal_dir / "commits").mkdir(exist_ok=True)
+    
+    # 5. Install git hooks
+    hooks_dir = Path(".git/hooks")
+    install_git_hooks(hooks_dir)
+    
+    print("MCP Commit Story initialized successfully!")
+    return True
+
+def install_git_hooks(hooks_dir):
+    """Install git hooks for journal generation."""
+    from mcp_commit_story.hooks.git_hooks import POST_COMMIT_HOOK
+    
+    # Create post-commit hook
+    with open(hooks_dir / "post-commit", "w") as f:
+        f.write(POST_COMMIT_HOOK)
+    
+    # Make hook executable
+    os.chmod(hooks_dir / "post-commit", 0o755)
+```
+
+### 5. Default Configuration
+Create a default configuration that works out of the box:
+```python
+# src/mcp_commit_story/config/default_config.py
+DEFAULT_CONFIG = {
+    "journal": {
+        "path": "journal",
+        "format": "markdown",
+        "include_machine_readable": True
+    },
+    "ai": {
+        "provider": "openai",
+        "model": "gpt-4",
+        "api_key_env": "OPENAI_API_KEY"
+    },
+    "git": {
+        "ignore_merge_commits": True,
+        "max_diff_size": 10000
+    },
+    "server": {
+        "host": "127.0.0.1",
+        "port": 8000,
+        "auto_start": False
+    }
+}
+```
+
+### 6. MCP Server Entry Point
+Implement the server start functionality:
+```python
+# src/mcp_commit_story/server/mcp_server.py
+import os
+import yaml
+from pathlib import Path
+
+def load_config():
+    """Load configuration from .mcp-commit-story/config.yaml"""
+    config_path = Path(".mcp-commit-story/config.yaml")
+    if config_path.exists():
+        with open(config_path, "r") as f:
+            return yaml.safe_load(f)
+    else:
+        from mcp_commit_story.config.default_config import DEFAULT_CONFIG
+        return DEFAULT_CONFIG
+
+def start_server(host=None, port=None):
+    """Start the MCP server for AI tool integration."""
+    config = load_config()
+    
+    # Override with CLI arguments if provided
+    if host:
+        config["server"]["host"] = host
+    if port:
+        config["server"]["port"] = port
+    
+    # Import here to avoid circular imports
+    from mcp_commit_story.server.mcp_implementation import run_mcp_server
+    
+    print(f"Starting MCP server on {config['server']['host']}:{config['server']['port']}")
+    run_mcp_server(
+        host=config["server"]["host"],
+        port=config["server"]["port"],
+        config=config
+    )
+```
+
+### 7. Git Hook Implementation
+Create the git hook script:
+```python
+# src/mcp_commit_story/hooks/git_hooks.py
+POST_COMMIT_HOOK = """#!/bin/sh
+# MCP Commit Story post-commit hook
+
+# Get the commit hash
+COMMIT_HASH=$(git rev-parse HEAD)
+
+# Run the journal generator
+mcp-commit-story journal --commit $COMMIT_HASH
+
+exit 0
+"""
+
+def create_journal_command():
+    """Implement the journal command for CLI."""
+    import click
+    
+    @click.command()
+    @click.option("--commit", help="Generate journal for specific commit hash")
+    def journal(commit):
+        """Generate a journal entry for a commit."""
+        from mcp_commit_story.standalone.journal_generator import generate_journal_entry_safe
+        generate_journal_entry_safe(commit_hash=commit)
+    
+    return journal
+```
+
+### 8. Documentation
+Create comprehensive documentation for installation and usage:
+```markdown
+# Installation Guide
+
+## Quick Start
+
+1. Install the package:
+   ```
+   pip install mcp-commit-story
+   ```
+
+2. Initialize in your git repository:
+   ```
+   cd your-project
+   mcp-commit-story init
+   ```
+
+3. Start using the journal system! Make commits as usual, and journal entries will be automatically generated.
+
+## Configuration
+
+The default configuration is created in `.mcp-commit-story/config.yaml`. You can edit this file to customize:
+
+- Journal location and format
+- AI provider settings
+- Git hook behavior
+- Server configuration
+
+## Advanced Usage
+
+### Starting the MCP Server
+
+To use AI tools with the MCP server:
+
+```
+mcp-commit-story server
+```
+
+This will start the server on localhost:8000 by default.
+```
+
+### 9. Package Distribution Files
+Create necessary files for PyPI distribution:
+- LICENSE file
+- MANIFEST.in for including non-Python files
+- README.md with project overview
+- requirements.txt for development dependencies
+
+# Test Strategy:
+## Test Strategy
+
+### 1. Package Installation Testing
+- Create a clean virtual environment and install the package using pip:
+  ```bash
+  python -m venv test_env
+  source test_env/bin/activate  # or test_env\Scripts\activate on Windows
+  pip install .
+  ```
+- Verify the package installs without errors and all dependencies are correctly resolved
+- Confirm the CLI command is available in PATH:
+  ```bash
+  which mcp-commit-story  # or where mcp-commit-story on Windows
+  ```
+
+### 2. CLI Command Testing
+- Test each CLI command with various arguments:
+  ```bash
+  # Test init command
+  mcp-commit-story init
+  mcp-commit-story init --config custom_config.yaml
+  
+  # Test server command
+  mcp-commit-story server --port 8080
+  
+  # Test other commands
+  mcp-commit-story summary
+  ```
+- Verify each command produces the expected output and creates the correct files/directories
+
+### 3. Git Hook Integration Testing
+- Create a test git repository:
+  ```bash
+  mkdir test_repo
+  cd test_repo
+  git init
+  mcp-commit-story init
+  ```
+- Make test commits and verify journal entries are generated:
+  ```bash
+  echo "test" > test.txt
+  git add test.txt
+  git commit -m "Test commit"
+  ```
+- Check that journal files are created in the expected location
+
+### 4. Configuration Testing
+- Test with various configuration options:
+  - Different journal paths
+  - Different AI providers
+  - Custom server settings
+- Verify the system respects all configuration options
+
+### 5. Package Distribution Testing
+- Build the package distribution files:
+  ```bash
+  python -m build
+  ```
+- Verify the resulting wheel and source distribution are valid:
+  ```bash
+  twine check dist/*
+  ```
+- Test installation from the built distributions in a clean environment
+
+### 6. Cross-Platform Testing
+- Test installation and functionality on:
+  - Linux
+  - macOS
+  - Windows
+- Ensure git hooks work correctly on all platforms
+
+### 7. Integration Testing with Existing Components
+- Test integration with the journal generation system
+- Test integration with the MCP server
+- Verify all components work together seamlessly
+
+### 8. Documentation Testing
+- Review all documentation for accuracy
+- Follow the installation and usage instructions as a new user would
+- Verify all examples work as documented

@@ -1,0 +1,86 @@
+# Task ID: 69
+# Title: Clean Up Obsolete MCP and Signal Architecture
+# Status: pending
+# Dependencies: 50, 67, 53
+# Priority: medium
+# Description: Remove architectural bloat by eliminating signal-based code, redundant MCP tools, and unused infrastructure while preserving essential components for the remaining valuable MCP tools.
+# Details:
+This task involves a systematic cleanup of obsolete architecture components to reduce codebase bloat and improve maintainability:
+
+1. **Remove Signal-Based Architecture**:
+   - Delete all signal file creation, reading, and processing functions
+   - Remove signal file templates and related resources
+   - Eliminate signal file path configurations and constants
+   - Delete the `.mcp-commit-story/signals/` directory structure and related code
+   - Remove all signal-based MCP tool signaling mechanisms
+
+2. **Clean Up Redundant MCP Tools**:
+   - Remove the following 4 MCP tools and their implementations:
+     - `journal_new_entry`: Replaced by standalone journal generation
+     - `journal_generate_daily_summary`: Replaced by background generation
+     - `journal_init`: No longer needed with direct architecture
+     - `journal_install_hook`: Simplified installation process makes this obsolete
+   - Delete associated handler code in the MCP server
+   - Remove test files specific to these tools
+
+3. **Preserve Essential MCP Tools**:
+   - Keep and refactor as needed:
+     - `journal_add_reflection`: Valuable for interactive reflection capture
+     - `journal_capture_context`: Important for capturing additional context
+   - Ensure these tools work properly with the new architecture
+
+4. **Clean Up MCP Infrastructure**:
+   - Remove unused MCP server components that only supported signal-based tools
+   - Update MCP server registration to only include the remaining tools
+   - Simplify MCP server startup and configuration
+   - Remove file watcher pattern code from Task 37
+
+5. **Update Documentation and Tests**:
+   - Update all documentation to reflect the new streamlined architecture
+   - Remove obsolete test files and update remaining tests
+   - Ensure test coverage remains high for preserved functionality
+
+6. **Code Cleanup**:
+   - Run static analysis tools to identify any orphaned imports or unused code
+   - Remove any debug/development code that was specific to the signal architecture
+   - Ensure clean separation between the preserved MCP tools and the standalone generation
+
+# Test Strategy:
+To verify the successful completion of this cleanup task:
+
+1. **Static Code Analysis**:
+   - Run a grep or similar tool to search for signal-related terms across the codebase
+   - Verify no references to signal files, signal processing, or signal directories remain
+   - Check for any orphaned imports or unused functions with tools like flake8 or pylint
+
+2. **Functional Testing**:
+   - Verify the two preserved MCP tools still function correctly:
+     ```python
+     def test_journal_add_reflection_still_works():
+         # Setup test repository and configuration
+         # Call the preserved MCP tool
+         # Verify reflection was added correctly
+     
+     def test_journal_capture_context_still_works():
+         # Setup test repository and configuration
+         # Call the preserved MCP tool
+         # Verify context was captured correctly
+     ```
+
+3. **Integration Testing**:
+   - Ensure the standalone journal generation works without any signal dependencies
+   - Verify daily summary generation works correctly without MCP tools
+   - Test the full workflow from git commit to journal entry creation
+
+4. **Regression Testing**:
+   - Run the full test suite to ensure no functionality was broken
+   - Verify all CI/CD pipelines pass with the cleaned-up codebase
+
+5. **Package Testing**:
+   - Build the package and verify it installs correctly
+   - Test the installation in a clean environment
+   - Verify the correct entry points are available and work properly
+
+6. **Documentation Verification**:
+   - Review all documentation to ensure it accurately reflects the new architecture
+   - Verify no references to removed components remain in the documentation
