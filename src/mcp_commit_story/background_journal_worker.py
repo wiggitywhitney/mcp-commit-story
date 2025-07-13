@@ -31,8 +31,8 @@ if __name__ == '__main__':
     src_dir = script_dir.parent.parent
     sys.path.insert(0, str(src_dir))
 
-from mcp_commit_story.journal_orchestrator import orchestrate_journal_generation
-from mcp_commit_story.journal_generate import get_journal_file_path, append_to_journal_file
+from mcp_commit_story.journal_workflow import handle_journal_entry_creation
+from mcp_commit_story.git_utils import get_repo
 from mcp_commit_story.telemetry import get_mcp_metrics
 from mcp_commit_story.config import load_config
 
@@ -134,19 +134,24 @@ def generate_journal_entry_background(commit_hash: str, repo_path: str) -> Dict[
         os.chdir(repo_path)
         
         try:
-            # Get journal file path for today
-            date_str = operation_start.strftime("%Y-%m-%d")
-            journal_path = get_journal_file_path(date_str, "daily")
+            # Load config and get commit object - use the working workflow  
+            config = load_config()
+            repo = get_repo(repo_path)
+            commit = repo.commit(commit_hash)
             
-            logger.info(f"Journal will be written to: {journal_path}")
+            logger.info(f"Using working journal workflow for commit {commit_hash[:8]}")
             
-            # Run journal generation orchestration
-            result = orchestrate_journal_generation(commit_hash, str(journal_path))
+            # Use the proven working workflow instead of duplicate orchestrator
+            result = handle_journal_entry_creation(commit, config, debug=True)
             
             execution_time = time.time() - start_time
             
             if result.get('success'):
+                if result.get('skipped'):
+                    logger.info(f"Journal entry skipped: {result.get('reason', 'unknown reason')}")
+                else:
                 logger.info(f"Background journal generation completed successfully in {execution_time:.2f}s")
+                    logger.info(f"Journal entry saved to {result.get('file_path')}")
                 
                 # Record successful telemetry
                 record_background_telemetry('generation', True, execution_time)
@@ -154,9 +159,10 @@ def generate_journal_entry_background(commit_hash: str, repo_path: str) -> Dict[
                 return {
                     'status': 'success',
                     'execution_time': execution_time,
-                    'journal_path': str(journal_path),
+                    'journal_path': result.get('file_path', ''),
                     'commit_hash': commit_hash,
-                    'telemetry': result.get('telemetry', {})
+                    'skipped': result.get('skipped', False),
+                    'entry_sections': result.get('entry_sections', 0)
                 }
             else:
                 error_msg = result.get('error', 'Unknown orchestration error')

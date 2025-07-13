@@ -49,7 +49,7 @@ class TestMultiDatabaseIntegration:
         mock_detect_workspace.return_value = mock_workspace_match
         mock_discover_all.return_value = [
             "/workspace1/state.vscdb",  # Old database
-            "/workspace2/state.vscdb",  # Recent database
+            "/workspace2/state.vscdb",  # Recent database  
             "/workspace3/state.vscdb"   # Future database
         ]
         mock_find_workspace.return_value = ("/workspace1/state.vscdb", "/global/state.vscdb")
