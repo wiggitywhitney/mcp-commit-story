@@ -565,7 +565,7 @@
             "id": 2,
             "title": "Replace Signal Creation with Direct Journal Calls",
             "description": "Remove the 3 create_tool_signal_safe() calls in git_hook_worker.py and replace them with direct calls to generate_journal_entry_safe(), eliminating the signal-based indirection.",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
             "details": "#### TDD Steps:\n\n1. **WRITE TESTS FIRST**\n   - Extend `tests/unit/test_git_hook_worker_journal_integration.py`\n   - Test that `main()` calls `generate_journal_entry_safe()` instead of `create_tool_signal_safe()`\n   - Test cases: normal git hook operation, daily summary trigger, signal creation disabled\n   - Mock all dependencies to verify the call flow\n   - Test telemetry shows direct generation instead of signal creation\n   - **RUN TESTS - VERIFY THEY FAIL**\n\n2. **IMPLEMENT FUNCTIONALITY**\n   - Replace the 3 `create_tool_signal_safe()` calls at lines 684, 700, 714 in `git_hook_worker.py`\n   - Replace with calls to `generate_journal_entry_safe()` using appropriate parameters\n   - Preserve all existing error handling and logging patterns\n   - Update telemetry to reflect direct generation vs signal-based generation\n   - Remove unused signal creation imports if no longer needed\n   - **RUN TESTS - VERIFY THEY PASS**\n\n3. **DOCUMENT AND COMPLETE**\n   - Update function docstrings to reflect the direct generation approach\n   - Remove any references to signal creation in comments\n   - **Run the entire test suite and make sure all tests are passing**\n   - Double check all subtask requirements are met before marking this subtask as complete\n   - **MARK COMPLETE**",
             "testStrategy": ""
@@ -942,7 +942,7 @@
     ],
     "metadata": {
       "created": "2025-06-21T07:52:11.612Z",
-      "updated": "2025-07-13T14:47:02.423Z",
+      "updated": "2025-07-13T15:29:14.305Z",
       "description": "Tasks for master context"
     }
   }

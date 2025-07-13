@@ -1,14 +1,16 @@
 """
-Git hook worker module for daily summary triggering and background journal generation.
+Git hook worker module for daily summary triggering and direct journal generation.
 
 This module is called by the enhanced git post-commit hook to handle:
+- Direct journal generation with bridge to journal_workflow 
 - File-creation-based daily summary triggering
 - Period summary boundary detection  
 - MCP server communication for summary generation
 - Background journal generation with detached processes (Task 57.4)
 - Graceful error handling that never blocks git operations
 
-Based on approved design decisions for subtask 27.3 and Task 57.4.
+Based on approved design decisions for subtask 27.3, Task 50, and Task 57.4.
+Direct journal generation replaces signal-based indirection for journal entry creation.
 """
 
 import sys
@@ -319,13 +321,14 @@ def count_commits_today(repo_path: str, date_str: str) -> int:
 
 @handle_errors_gracefully
 def extract_commit_metadata(repo_path: str) -> Dict[str, Any]:
-    """Extract commit metadata for signal creation.
+    """Extract commit metadata for signal creation and telemetry.
     
     Args:
         repo_path: Path to the git repository
         
     Returns:
-        Dictionary containing commit metadata following approved design
+        Dictionary containing commit metadata following approved design.
+        Used for both signal creation (summaries) and telemetry tracking (direct journal generation).
     """
     try:
         from mcp_commit_story.git_utils import get_repo, get_current_commit, get_commit_details
@@ -731,6 +734,11 @@ def generate_journal_entry_safe(repo_path: str) -> bool:
 def main() -> None:
     """Main entry point called by the git hook.
     
+    Handles post-commit processing including:
+    - Direct journal entry generation via generate_journal_entry_safe()
+    - Daily/period summary signal creation when appropriate
+    - Comprehensive error handling to ensure git operations are never blocked
+    
     Expected to be called as:
     python -m mcp_commit_story.git_hook_worker "$PWD"
     """
@@ -753,7 +761,7 @@ def main() -> None:
             log_hook_activity(f"Not a git repository: {repo_path}", "warning", repo_path)
             return
         
-        # Extract commit metadata once for all signal creation
+        # Extract commit metadata once for signals and telemetry tracking
         commit_metadata = extract_commit_metadata(repo_path)
         
         # 1. Check if daily summary should be generated
@@ -789,14 +797,13 @@ def main() -> None:
                         log_hook_activity(f"{period.title()} summary signal creation failed", "warning", repo_path)
         
         # 3. Always attempt to generate journal entry (maintains existing behavior)
-        log_hook_activity("Creating journal entry signal", "info", repo_path)
-        # Create signal for AI processing
-        create_tool_signal_safe(
-            "journal_new_entry", 
-            {},  # ✅ Minimal - repo location inferred from signal file location
-            commit_metadata, 
-            repo_path
-        )
+        log_hook_activity("Generating journal entry directly", "info", repo_path)
+        # Generate journal entry directly using our bridge function
+        journal_success = generate_journal_entry_safe(repo_path)
+        if journal_success:
+            log_hook_activity("Journal entry generated successfully", "info", repo_path)
+        else:
+            log_hook_activity("Journal entry generation failed", "warning", repo_path)
         
         log_hook_activity("=== Git hook worker completed ===", "info", repo_path)
         

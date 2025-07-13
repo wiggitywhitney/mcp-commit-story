@@ -295,7 +295,7 @@ def test_end_to_end_with_git_hook():
    - **MARK COMPLETE**
 </info added on 2025-07-13T14:46:53.830Z>
 
-## 2. Replace Signal Creation with Direct Journal Calls [pending]
+## 2. Replace Signal Creation with Direct Journal Calls [done]
 ### Dependencies: None
 ### Description: Remove the 3 create_tool_signal_safe() calls in git_hook_worker.py and replace them with direct calls to generate_journal_entry_safe(), eliminating the signal-based indirection.
 ### Details:
