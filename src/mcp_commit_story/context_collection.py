@@ -193,11 +193,11 @@ def collect_git_context(commit_hash=None, repo=None, journal_path=None) -> GitCo
     - This function enforces the in-memory-only rule for context data.
     - If journal_path is provided, all journal files are filtered from changed_files, file_stats, and diff_summary to prevent recursion.
     """
-    # Handle repo parameter - can be None, string path, or git.Repo object
+    # Handle repo parameter - can be None, string path, Path object, or git.Repo object
     if repo is None:
         repo = get_repo()
-    elif isinstance(repo, str):
-        repo = get_repo(repo)
+    elif isinstance(repo, (str, Path)):
+        repo = get_repo(str(repo))
     # If it's already a git.Repo object, use it as-is
     
     # Get commit with error handling
@@ -276,10 +276,11 @@ def collect_git_context(commit_hash=None, repo=None, journal_path=None) -> GitCo
     if journal_path:
         # If journal_path is already a relative path, use it as-is
         # If it's an absolute path, make it relative to the working tree
-        if os.path.isabs(journal_path):
-            journal_rel = os.path.relpath(journal_path, repo.working_tree_dir)
+        # Always convert to string to handle Path objects
+        if os.path.isabs(str(journal_path)):
+            journal_rel = os.path.relpath(str(journal_path), repo.working_tree_dir)
         else:
-            journal_rel = journal_path
+            journal_rel = str(journal_path)
         
         original_count = len(changed_files)
         changed_files = [f for f in changed_files if not f.startswith(journal_rel)]
