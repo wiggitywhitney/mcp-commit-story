@@ -1868,8 +1868,11 @@ def generate_discussion_notes_section(journal_context: JournalContext) -> Discus
 @trace_mcp_operation("journal.generate_discussion_notes_simple", attributes={"operation_type": "ai_generation", "section_type": "discussion_notes_simple"})
 def generate_discussion_notes_section_simple(journal_context: JournalContext) -> DiscussionNotesSection:
     """
-    Find the 10 most interesting quotes from the conversation that are relevant to this commit.
+    Find the 5-10 most interesting quotes from the conversation.
     
+    Prioritize quotes that seem relevant to the commit.
+    Prioritize quotes by the user over quotes from the AI.
+
     Look for quotes that have one or more of these qualities, or are otherwise particularly interesting:
     - Show technical reasoning or decision-making
     - Make the human seem wise or insightful
@@ -1877,11 +1880,12 @@ def generate_discussion_notes_section_simple(journal_context: JournalContext) ->
     - Demonstrate problem-solving or learning moments
     - Reveal interesting perspectives, frustrations, or breakthroughs
     - Show authentic developer experience and emotions
+    - Show the human questioning the AI
     
     Return quotes as verbatim text with speaker attribution in this format:
     > **Speaker:** "exact quote here"
     
-    If you return 0 quotes, explain why no relevant discussion was found.
+    Return at least one user quote.
     """
     import time
     

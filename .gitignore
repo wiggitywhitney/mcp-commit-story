@@ -24,7 +24,7 @@ node_modules/
 
 # Journal directories - test artifacts (but not Python package)
 /journal/
-/sandbox-journal/
+
 /test-journal/
 
 # Environment variables
