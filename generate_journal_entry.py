@@ -71,7 +71,7 @@ def test_single_function(function_name, generator_func, journal_context):
         return None
 
 def main():
-    commit_hash = "0780769"
+    commit_hash = "76ed2d3"
     
     try:
         # Get the repository and commit object
