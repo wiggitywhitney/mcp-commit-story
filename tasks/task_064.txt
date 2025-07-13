@@ -240,7 +240,7 @@ MARK COMPLETE
 - Remove `ai_function_executor.py` dependency
 </info added on 2025-07-12T17:27:46.315Z>
 
-## 3. Migrate Complex Generators [pending]
+## 3. Migrate Complex Generators [done]
 ### Dependencies: 64.2
 ### Description: Migrate generators with complex parsing or structured outputs (reflection, discussion_notes, code_changes, decision_points) to direct OpenAI client calls, preserving specialized parsing logic and context handling.
 ### Details:
@@ -309,7 +309,7 @@ MARK COMPLETE
 - Verify all unit tests pass
 - MARK COMPLETE
 
-## 4. Telemetry Verification [pending]
+## 4. Telemetry Verification [done]
 ### Dependencies: 64.3
 ### Description: Extend existing telemetry integration tests to verify that AI invocation refactoring preserved all telemetry functionality, decorators, and performance characteristics.
 ### Details:
