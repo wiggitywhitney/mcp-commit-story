@@ -4,7 +4,7 @@
 # Journal settings
 journal:
   # Base path for all journal files (relative to repo root)
-  path: "journal/"
+  path: "sandbox-journal/"
 
 # Git repository settings
 git:
