@@ -692,6 +692,7 @@ def generate_journal_entry_safe(repo_path: str) -> bool:
             current_span.set_attribute("error.type", "invalid_input")
             current_span.set_status(trace.Status(trace.StatusCode.ERROR, "Invalid repo path"))
             log_hook_activity(f"Invalid repo path: {repo_path}", "error", repo_path)
+            signal_creation_telemetry("journal_generation_direct", success=False, error_type="invalid_input")
             return False
         
         current_span.set_attribute("repo_path", repo_path)
@@ -703,6 +704,7 @@ def generate_journal_entry_safe(repo_path: str) -> bool:
             current_span.set_attribute("error.type", "git_repo_detection_failed")
             current_span.set_status(trace.Status(trace.StatusCode.ERROR, f"Git repository detection failed: {str(e)}"))
             log_hook_activity(f"Git repository detection failed: {str(e)}", "error", repo_path)
+            signal_creation_telemetry("journal_generation_direct", success=False, error_type="git_repo_detection_failed")
             return False
         
         # Get current commit
@@ -713,6 +715,7 @@ def generate_journal_entry_safe(repo_path: str) -> bool:
             current_span.set_attribute("error.type", "git_commit_retrieval_failed")
             current_span.set_status(trace.Status(trace.StatusCode.ERROR, f"Git commit retrieval failed: {str(e)}"))
             log_hook_activity(f"Git commit retrieval failed: {str(e)}", "error", repo_path)
+            signal_creation_telemetry("journal_generation_direct", success=False, error_type="git_commit_retrieval_failed")
             return False
         
         # Load configuration
@@ -722,6 +725,7 @@ def generate_journal_entry_safe(repo_path: str) -> bool:
             current_span.set_attribute("error.type", "config_loading_failed")
             current_span.set_status(trace.Status(trace.StatusCode.ERROR, f"Configuration loading failed: {str(e)}"))
             log_hook_activity(f"Configuration loading failed: {str(e)}", "error", repo_path)
+            signal_creation_telemetry("journal_generation_direct", success=False, error_type="config_loading_failed")
             return False
         
         # Generate and save journal entry
@@ -738,6 +742,9 @@ def generate_journal_entry_safe(repo_path: str) -> bool:
                     current_span.set_attribute("journal.file_path", result.get('file_path', 'unknown'))
                     log_hook_activity(f"Journal entry generated successfully for commit {commit.hexsha}", "info", repo_path)
                     log_hook_activity(f"Journal entry saved to: {result.get('file_path', 'unknown path')}", "info", repo_path)
+                
+                # Record telemetry for successful journal generation (preserving legacy telemetry pattern)
+                signal_creation_telemetry("journal_generation_direct", success=True)
                 return True
             else:
                 error_msg = result.get('error', 'Unknown journal creation error')
@@ -745,12 +752,18 @@ def generate_journal_entry_safe(repo_path: str) -> bool:
                 current_span.set_attribute("journal.error_message", error_msg)
                 current_span.set_status(trace.Status(trace.StatusCode.ERROR, error_msg))
                 log_hook_activity(f"Journal generation failed: {error_msg}", "error", repo_path)
+                
+                # Record telemetry for failed journal generation (preserving legacy telemetry pattern)
+                signal_creation_telemetry("journal_generation_direct", success=False, error_type="journal_generation_failed")
                 return False
                 
         except Exception as e:
             current_span.set_attribute("error.type", "journal_generation_failed")
             current_span.set_status(trace.Status(trace.StatusCode.ERROR, f"Journal generation failed: {str(e)}"))
             log_hook_activity(f"Journal generation failed: {str(e)}", "error", repo_path)
+            
+            # Record telemetry for exception during journal generation (preserving legacy telemetry pattern)
+            signal_creation_telemetry("journal_generation_direct", success=False, error_type="journal_generation_failed")
             return False
             
     except Exception as e:
@@ -758,6 +771,7 @@ def generate_journal_entry_safe(repo_path: str) -> bool:
         current_span.set_attribute("error.type", "unexpected_error")
         current_span.set_status(trace.Status(trace.StatusCode.ERROR, f"Unexpected error: {str(e)}"))
         log_hook_activity(f"Unexpected error in generate_journal_entry_safe: {str(e)}", "error", repo_path)
+        signal_creation_telemetry("journal_generation_direct", success=False, error_type="unexpected_error")
         return False
 
 
