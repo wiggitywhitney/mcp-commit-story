@@ -1,7 +1,7 @@
 # Task ID: 50
 # Title: Create Standalone Journal Generator
-# Status: pending
-# Dependencies: 63
+# Status: in-progress
+# Dependencies: None
 # Priority: high
 # Description: Convert git_hook_worker.py from signal-based to direct journal generation using existing infrastructure.
 # Details:
@@ -235,7 +235,7 @@ def test_end_to_end_with_git_hook():
 6. Check logs to ensure telemetry is being recorded correctly
 
 # Subtasks:
-## 1. Create Direct Journal Generation Wrapper [pending]
+## 1. Create Direct Journal Generation Wrapper [in-progress]
 ### Dependencies: None
 ### Description: Implement a safe wrapper function that converts git_hook_worker's repo path input into the commit object and config required by journal_workflow.generate_journal_entry().
 ### Details:

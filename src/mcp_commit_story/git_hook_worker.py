@@ -21,6 +21,11 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 import git
 
+# Import additional modules for direct journal generation
+from . import journal_workflow
+from . import config
+from . import git_utils
+
 # Configure logging for hook operations
 logger = logging.getLogger(__name__)
 
@@ -646,6 +651,81 @@ def _record_background_spawn_telemetry(success: bool, error_type: str = None) ->
     except Exception:
         # Silent failure for telemetry - don't let telemetry issues block operations
         pass
+
+
+@handle_errors_gracefully
+def generate_journal_entry_safe(repo_path: str) -> bool:
+    """
+    Safe wrapper function that converts git_hook_worker's repo path input into the commit object 
+    and config required by journal_workflow.generate_journal_entry().
+    
+    This function bridges the gap between git hook operations (which work with repo paths) 
+    and the journal workflow system (which expects commit objects and config objects).
+    
+    Args:
+        repo_path: Path to the git repository
+        
+    Returns:
+        bool: True if journal entry was generated successfully, False otherwise
+        
+    Note:
+        This function follows the existing *_safe() wrapper pattern for error handling
+        and ensures git operations are never blocked by journal generation failures.
+    """
+    try:
+        # Validate input
+        if not repo_path:
+            log_hook_activity(f"Invalid repo path: {repo_path}", "error", repo_path)
+            signal_creation_telemetry("journal_generation_direct", success=False, error_type="invalid_input")
+            return False
+        
+        # Get repository object
+        try:
+            repo = git_utils.get_repo(repo_path)
+        except git.InvalidGitRepositoryError as e:
+            log_hook_activity(f"Git repository detection failed: {str(e)}", "error", repo_path)
+            signal_creation_telemetry("journal_generation_direct", success=False, error_type="git_repo_detection_failed")
+            return False
+        
+        # Get current commit
+        try:
+            commit = git_utils.get_current_commit(repo)
+        except Exception as e:
+            log_hook_activity(f"Git commit retrieval failed: {str(e)}", "error", repo_path)
+            signal_creation_telemetry("journal_generation_direct", success=False, error_type="git_commit_retrieval_failed")
+            return False
+        
+        # Load configuration
+        try:
+            config_obj = config.load_config()
+        except Exception as e:
+            log_hook_activity(f"Configuration loading failed: {str(e)}", "error", repo_path)
+            signal_creation_telemetry("journal_generation_direct", success=False, error_type="config_loading_failed")
+            return False
+        
+        # Generate journal entry
+        try:
+            journal_entry = journal_workflow.generate_journal_entry(commit, config_obj)
+            
+            if journal_entry:
+                log_hook_activity(f"Journal entry generated successfully for commit {commit.hexsha}", "info", repo_path)
+                signal_creation_telemetry("journal_generation_direct", success=True)
+                return True
+            else:
+                log_hook_activity("Journal entry generation returned None (possibly journal-only commit)", "info", repo_path)
+                signal_creation_telemetry("journal_generation_direct", success=True)  # Not an error - just skipped
+                return True
+                
+        except Exception as e:
+            log_hook_activity(f"Journal generation failed: {str(e)}", "error", repo_path)
+            signal_creation_telemetry("journal_generation_direct", success=False, error_type="journal_generation_failed")
+            return False
+            
+    except Exception as e:
+        # Catch-all for any unexpected errors
+        log_hook_activity(f"Unexpected error in generate_journal_entry_safe: {str(e)}", "error", repo_path)
+        signal_creation_telemetry("journal_generation_direct", success=False, error_type="unexpected_error")
+        return False
 
 
 def main() -> None:
