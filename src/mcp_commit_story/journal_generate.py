@@ -1656,6 +1656,8 @@ def generate_discussion_notes_section(journal_context: JournalContext) -> Discus
     """
     You are helping build a high-quality development journal system that tracks coding work across commits. Your job is to generate a discussion notes section. The quality of the entire journal depends on your output.
 
+    IMPORTANT: If you return 0 quotes, you must explain why no relevant discussion was found.
+
     Input: JournalContext containing git metadata, chat history, and previous journal entries.
     Output: Return the TypedDict structure defined in the function signature.
 
@@ -1792,6 +1794,11 @@ def generate_discussion_notes_section(journal_context: JournalContext) -> Discus
         # Parse response (extract 'discussion_notes' field from JSON or parse as list)
         discussion_notes = _parse_ai_response(response, "discussion_notes", [], parse_as_list=True)
         
+        # If no discussion notes found, check if AI provided an explanation
+        if not discussion_notes and response and response.strip():
+            # Include the AI's explanation as a single discussion note
+            discussion_notes = [response.strip()]
+        
         result = DiscussionNotesSection(discussion_notes=discussion_notes)
         
         duration = time.time() - start_time
@@ -1805,6 +1812,85 @@ def generate_discussion_notes_section(journal_context: JournalContext) -> Discus
         
         # FALLBACK: Return empty discussion notes (cannot infer discussion from git context alone)
         return DiscussionNotesSection(discussion_notes=[])
+
+
+# Section Generator: Discussion Notes (Simple Version)
+# Purpose: Simplified discussion notes generation focusing on results over complex filtering.
+@trace_mcp_operation("journal.generate_discussion_notes_simple", attributes={"operation_type": "ai_generation", "section_type": "discussion_notes_simple"})
+def generate_discussion_notes_section_simple(journal_context: JournalContext) -> DiscussionNotesSection:
+    """
+    Find the 10 most interesting quotes from the conversation that are relevant to this commit.
+    
+    Look for quotes that:
+    - Show technical reasoning or decision-making
+    - Make the human seem wise or insightful
+    - Relate to the files that were changed in this commit
+    - Demonstrate problem-solving or learning moments
+    
+    Return quotes as verbatim text with speaker attribution in this format:
+    > **Speaker:** "exact quote here"
+    
+    If you return 0 quotes, explain why no relevant discussion was found.
+    """
+    import time
+    
+    start_time = time.time()
+    _add_ai_generation_telemetry("discussion_notes_simple", journal_context, start_time)
+    
+    try:
+        # Handle None context - return empty discussion notes immediately
+        if journal_context is None:
+            return DiscussionNotesSection(discussion_notes=[])
+        
+        # Handle empty context - return empty discussion notes if no meaningful content
+        git_context = journal_context.get('git') if journal_context else None
+        chat_context = journal_context.get('chat') if journal_context else None
+        
+        if git_context is None and chat_context is None:
+            return DiscussionNotesSection(discussion_notes=[])
+        
+        # Extract prompt from function docstring and format with git context
+        base_prompt = inspect.getdoc(generate_discussion_notes_section_simple)
+        if not base_prompt:
+            # Fallback to empty discussion notes if no prompt
+            return DiscussionNotesSection(discussion_notes=[])
+        
+        # Add git context information to the prompt
+        git_ctx = git_context or {}
+        commit_message = git_ctx.get('metadata', {}).get('message', 'N/A')
+        changed_files = git_ctx.get('changed_files', [])
+        diff_summary = git_ctx.get('diff_summary', 'N/A')
+        
+        # Append git context to the base prompt
+        formatted_prompt = f"""{base_prompt}
+        
+Commit information:
+- Message: {commit_message}
+- Changed files: {changed_files}
+- Diff summary: {diff_summary}"""
+        
+        # Format context as JSON and append to prompt
+        context_json = json.dumps(journal_context, indent=2, default=str)
+        full_prompt = f"{formatted_prompt}\n\nThe journal_context object has the following structure:\n{context_json}"
+        
+        # Call AI to generate discussion notes
+        ai_response = invoke_ai(full_prompt, {})
+        
+        # Parse AI response to extract discussion notes
+        parsed_response = _parse_ai_response(ai_response, 'discussion_notes', fallback_value=[], parse_as_list=True)
+        
+        duration = time.time() - start_time
+        _record_ai_generation_metrics("discussion_notes_simple", duration, True)
+        
+        return DiscussionNotesSection(discussion_notes=parsed_response)
+        
+    except Exception as e:
+        duration = time.time() - start_time
+        _record_ai_generation_metrics("discussion_notes_simple", duration, False, "ai_generation_failed")
+        
+        # FALLBACK: Return empty discussion notes (cannot infer discussion from git context alone)
+        return DiscussionNotesSection(discussion_notes=[])
+
 
 # Section Generator: Terminal Commands
 # Purpose: Generates the Terminal Commands section for a journal entry using AI.
