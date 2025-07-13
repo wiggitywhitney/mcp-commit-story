@@ -267,8 +267,9 @@ class TestPipelineIntegration:
         # Verify the complete flow
         mock_discover.assert_called_once()
         mock_time.assert_called_once_with(mock_commit.hexsha)
-        # ComposerChatProvider is called once per database (workspace + global)
-        assert mock_provider.call_count == 2
+        # ComposerChatProvider is called once per workspace database
+        # Primary workspace: 1 + Additional discovered: 2 = 3 total calls
+        assert mock_provider.call_count == 3
         mock_filter.assert_called_once()
         
         # Verify final result has filtered messages

@@ -197,6 +197,9 @@ def _parse_ai_response(response: str, expected_field: str, fallback_value: Any =
             else:
                 # Valid JSON but missing expected field - return fallback instead of whole response
                 return fallback_value
+        elif isinstance(parsed_json, list):
+            # Handle case where AI returns JSON array directly (e.g., ["item1", "item2"])
+            return parsed_json
     except (json.JSONDecodeError, TypeError):
         # Not valid JSON, treat as plain text
         pass

@@ -164,6 +164,19 @@ def filter_chat_for_commit(
         # Get previous journal entry for additional context
         previous_journal = get_previous_journal_entry(commit)
         
+        # Limit to last 250 messages to reduce AI context overload
+        limited_messages = messages[-250:] if len(messages) > 250 else messages
+        
+        # Simplify message structure for AI - only essential fields
+        simplified_messages = []
+        for msg in limited_messages:
+            simplified_messages.append({
+                "bubbleId": msg.get("bubbleId", ""),
+                "speaker": msg.get("speaker", "Unknown"),
+                "timestamp": msg.get("timestamp", ""),
+                "preview": msg.get("text", "")[:100] + ("..." if len(msg.get("text", "")) > 100 else "")
+            })
+        
         # Format the comprehensive AI prompt with all context
         prompt = f"""You are helping build a high-quality development journal system that tracks 
 coding work across commits. Your job is to analyze a conversation and identify 
@@ -225,8 +238,8 @@ Always respond with valid JSON in exactly this structure:
   "reasoning": "explanation of why this is the boundary"
 }}
 
-Messages to analyze:
-{json.dumps(messages, indent=2)}
+Messages to analyze (limited to last 250 for clarity):
+{json.dumps(simplified_messages, indent=2)}
 
 Current commit:
 {json.dumps(git_context, indent=2)}
@@ -258,10 +271,20 @@ Return your response as JSON with this structure:
         # Validate the bubbleId exists in the messages
         valid_bubble_ids = {msg['bubbleId'] for msg in messages}
         if boundary_result['bubbleId'] not in valid_bubble_ids:
-            logger.warning(f"AI returned invalid bubbleId '{boundary_result['bubbleId']}', using first message")
-            boundary_result['bubbleId'] = messages[0]['bubbleId']
+            # Smart fallback: default to last 250 messages instead of all messages
+            if len(messages) > 250:
+                fallback_index = len(messages) - 250
+                fallback_bubble_id = messages[fallback_index]['bubbleId']
+                fallback_reasoning = "AI returned invalid bubbleId, defaulted to last 250 messages"
+            else:
+                fallback_index = 0
+                fallback_bubble_id = messages[0]['bubbleId']
+                fallback_reasoning = "AI returned invalid bubbleId, defaulted to first message (fewer than 250 total)"
+            
+            logger.warning(f"AI returned invalid bubbleId '{boundary_result['bubbleId']}', using fallback at index {fallback_index}")
+            boundary_result['bubbleId'] = fallback_bubble_id
             boundary_result['confidence'] = 1
-            boundary_result['reasoning'] = "AI returned invalid bubbleId, defaulted to first message"
+            boundary_result['reasoning'] = fallback_reasoning
 
         # Log confidence and reasoning
         confidence = boundary_result['confidence']
@@ -294,6 +317,15 @@ Return your response as JSON with this structure:
         elif os.getenv('AI_FILTER_ERROR_STRATEGY') == 'raise':
             # Re-raise the exception (let caller decide)
             raise
+        elif os.getenv('AI_FILTER_ERROR_STRATEGY') == 'smart_fallback':
+            # Smart fallback: return last 250 messages instead of all messages
+            if len(messages) > 250:
+                fallback_messages = messages[-250:]
+                logger.info(f"Using smart fallback error strategy: returning last 250 messages ({len(fallback_messages)} total)")
+                return fallback_messages
+            else:
+                logger.info(f"Using smart fallback error strategy: returning all messages (fewer than 250 total)")
+                return messages
         else:
             # Conservative approach: return all messages (default)
             logger.info("Using conservative error strategy: returning all messages")
