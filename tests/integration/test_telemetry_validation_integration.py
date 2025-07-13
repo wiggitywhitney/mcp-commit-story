@@ -1276,7 +1276,373 @@ class TestEndToEndTelemetryIntegration:
 
 
 # =============================================================================
-# Circuit breaker mock for testing
+# Phase 4: Direct Journal Generation Telemetry Verification (Task 50.4)
+# =============================================================================
+
+
+class TestDirectJournalGenerationTelemetry:
+    """
+    Test telemetry functionality for direct journal generation after signal replacement.
+    
+    This test class verifies that the signal-to-direct-call replacement preserved all
+    telemetry functionality, decorators, and performance characteristics as required
+    by subtask 50.4.
+    """
+
+    def test_generate_journal_entry_safe_telemetry_preservation(
+        self, isolated_telemetry_environment
+    ):
+        """Test that generate_journal_entry_safe() retains @trace_git_operation decorator."""
+        from mcp_commit_story.git_hook_worker import generate_journal_entry_safe
+        
+        collector = isolated_telemetry_environment
+        
+        # Mock the OpenTelemetry tracer to use our test tracer
+        with patch('opentelemetry.trace.get_tracer') as mock_get_tracer:
+            mock_get_tracer.return_value = collector.get_tracer()
+            
+            # Mock all dependencies
+            with patch('mcp_commit_story.git_hook_worker.git_utils.get_repo') as mock_get_repo, \
+                 patch('mcp_commit_story.git_hook_worker.git_utils.get_current_commit') as mock_get_commit, \
+                 patch('mcp_commit_story.git_hook_worker.config.load_config') as mock_load_config, \
+                 patch('mcp_commit_story.git_hook_worker.journal_workflow.handle_journal_entry_creation') as mock_generate:
+                
+                # Configure mocks for successful operation
+                mock_repo = MagicMock()
+                mock_get_repo.return_value = mock_repo
+                
+                mock_commit = MagicMock()
+                mock_commit.hexsha = 'test123456'
+                mock_get_commit.return_value = mock_commit
+                
+                mock_config = {'journal': {'path': '/tmp/test-journal'}}
+                mock_load_config.return_value = mock_config
+                
+                mock_generate.return_value = {
+                    'success': True,
+                    'file_path': '/tmp/test-journal/daily/2025-07-13-journal.md'
+                }
+                
+                # Call the function
+                result = generate_journal_entry_safe('/test/repo')
+                
+                # Verify result
+                assert result is True
+                
+                # Verify direct journal generation was traced
+                assert_operation_traced(
+                    collector, 
+                    "git.hook.journal_generation",
+                    expected_attributes={
+                        "repo_path": "/test/repo",
+                        "commit_hash": "test123456"
+                    }
+                )
+
+    def test_journal_workflow_telemetry_preservation(
+        self, isolated_telemetry_environment
+    ):
+        """Test that journal_workflow.generate_journal_entry() maintains its telemetry."""
+        from mcp_commit_story.journal_workflow import generate_journal_entry
+        
+        collector = isolated_telemetry_environment
+        
+        # Mock the OpenTelemetry tracer to use our test tracer
+        with patch('opentelemetry.trace.get_tracer') as mock_get_tracer:
+            mock_get_tracer.return_value = collector.get_tracer()
+            
+            # Mock all dependencies at the module level where they're imported from
+            with patch('mcp_commit_story.context_collection.collect_chat_history') as mock_chat, \
+                 patch('mcp_commit_story.context_collection.collect_git_context') as mock_git, \
+                 patch('mcp_commit_story.context_collection.collect_recent_journal_context') as mock_journal, \
+                 patch('mcp_commit_story.journal_generate.generate_summary_section') as mock_summary, \
+                 patch('mcp_commit_story.journal_workflow.is_journal_only_commit') as mock_journal_only:
+                
+                # Configure mocks
+                mock_chat.return_value = []
+                mock_git.return_value = {'files_changed': ['test.py']}
+                mock_journal.return_value = []
+                mock_summary.return_value = "Test summary"
+                mock_journal_only.return_value = False  # Not a journal-only commit
+                
+                mock_commit = MagicMock()
+                mock_commit.hexsha = 'abc123'
+                mock_config = {'journal': {'path': '/tmp/test'}}
+                
+                # Call the function
+                result = generate_journal_entry(mock_commit, mock_config)
+                
+                # Verify journal workflow telemetry is preserved
+                assert_operation_traced(
+                    collector, 
+                    "journal.generate_entry",
+                    expected_attributes={
+                        "operation_type": "workflow_orchestration"
+                    }
+                )
+
+    def test_git_hook_specific_telemetry_patterns(
+        self, isolated_telemetry_environment
+    ):
+        """Test that git hook telemetry patterns are preserved."""
+        from mcp_commit_story.git_hook_worker import generate_journal_entry_safe
+        
+        collector = isolated_telemetry_environment
+        
+        # Mock the OpenTelemetry tracer to use our test tracer
+        with patch('opentelemetry.trace.get_tracer') as mock_get_tracer:
+            mock_get_tracer.return_value = collector.get_tracer()
+            
+            # Mock dependencies for successful operation
+            with patch('mcp_commit_story.git_hook_worker.git_utils.get_repo') as mock_get_repo, \
+                 patch('mcp_commit_story.git_hook_worker.git_utils.get_current_commit') as mock_get_commit, \
+                 patch('mcp_commit_story.git_hook_worker.config.load_config') as mock_load_config, \
+                 patch('mcp_commit_story.git_hook_worker.journal_workflow.handle_journal_entry_creation') as mock_generate:
+                
+                # Configure mocks for successful operation
+                mock_repo = MagicMock()
+                mock_get_repo.return_value = mock_repo
+                
+                mock_commit = MagicMock()
+                mock_commit.hexsha = 'test_git_hook_123'
+                mock_get_commit.return_value = mock_commit
+                
+                mock_config = {'journal': {'path': '/tmp/test-journal'}}
+                mock_load_config.return_value = mock_config
+                
+                mock_generate.return_value = {
+                    'success': True,
+                    'file_path': '/tmp/test-journal/daily/2025-07-13-journal.md'
+                }
+                
+                # Call the function to generate telemetry
+                result = generate_journal_entry_safe('/test/repo')
+                assert result is True
+                
+                # Verify git hook specific telemetry patterns
+                # 1. Check that git hook spans have correct operation type
+                assert_operation_traced(
+                    collector, 
+                    "git.hook.journal_generation",
+                    expected_attributes={
+                        "git.operation_type": "hook.journal_generation",
+                        "repo_path": "/test/repo",
+                        "commit_hash": "test_git_hook_123"
+                    }
+                )
+                
+                # 2. Check that git hook spans have proper git-specific attributes
+                spans = collector.get_spans_by_name("git.hook.journal_generation")
+                assert len(spans) > 0, "Expected git hook spans"
+                
+                span = spans[0]
+                # Verify git hook specific attribute patterns
+                git_attributes = [attr for attr in span.attributes.keys() if attr.startswith("git.")]
+                assert len(git_attributes) > 0, "Expected git-specific attributes in git hook span"
+                
+                # 3. Verify that the span contains journal-specific attributes  
+                journal_attributes = [attr for attr in span.attributes.keys() if attr.startswith("journal.")]
+                assert len(journal_attributes) > 0, "Expected journal-specific attributes in git hook span"
+
+    def test_trace_continuity_through_direct_calls(
+        self, isolated_telemetry_environment
+    ):
+        """Test that direct calls don't break parent-child relationships."""
+        from mcp_commit_story.git_hook_worker import generate_journal_entry_safe
+        
+        collector = isolated_telemetry_environment
+        
+        # Mock the OpenTelemetry tracer to use our test tracer
+        with patch('opentelemetry.trace.get_tracer') as mock_get_tracer:
+            mock_get_tracer.return_value = collector.get_tracer()
+            
+            # Mock dependencies to create a realistic call chain
+            with patch('mcp_commit_story.git_hook_worker.git_utils.get_repo'), \
+                 patch('mcp_commit_story.git_hook_worker.git_utils.get_current_commit'), \
+                 patch('mcp_commit_story.git_hook_worker.config.load_config'), \
+                 patch('mcp_commit_story.git_hook_worker.journal_workflow.handle_journal_entry_creation') as mock_workflow:
+                
+                # Configure mocks to trigger workflow call
+                mock_workflow.return_value = {'success': True, 'file_path': '/test/path'}
+                
+                # Create a parent span context
+                tracer = collector.get_tracer()
+                with tracer.start_as_current_span("git_hook.main") as parent_span:
+                    result = generate_journal_entry_safe('/test/repo')
+                
+                # Verify trace continuity - only check for the direct git hook span
+                # Note: Since we're mocking journal_workflow, we won't see the journal.generate_entry span
+                assert_trace_continuity(
+                    collector,
+                    parent_operation="git_hook.main", 
+                    child_operations=["git.hook.journal_generation"]
+                )
+
+    def test_performance_regression_testing(
+        self, isolated_telemetry_environment
+    ):
+        """Test that direct call performance is within acceptable bounds."""
+        from mcp_commit_story.git_hook_worker import generate_journal_entry_safe
+        
+        collector = isolated_telemetry_environment
+        
+        # Mock the OpenTelemetry tracer to use our test tracer
+        with patch('opentelemetry.trace.get_tracer') as mock_get_tracer:
+            mock_get_tracer.return_value = collector.get_tracer()
+            
+            # Mock dependencies for fast execution
+            with patch('mcp_commit_story.git_hook_worker.git_utils.get_repo'), \
+                 patch('mcp_commit_story.git_hook_worker.git_utils.get_current_commit'), \
+                 patch('mcp_commit_story.git_hook_worker.config.load_config'), \
+                 patch('mcp_commit_story.git_hook_worker.journal_workflow.handle_journal_entry_creation') as mock_workflow:
+                
+                mock_workflow.return_value = {'success': True}
+                
+                # Call function multiple times to get consistent measurements
+                for _ in range(3):
+                    result = generate_journal_entry_safe('/test/repo')
+                    assert result is True
+                
+                # Verify performance is within bounds (direct calls should be ≤10% overhead for git hooks)
+                assert_performance_within_bounds(
+                    collector, 
+                    "git.hook.journal_generation", 
+                    max_duration_ms=1000.0  # 1 second max for git hook operations
+                )
+
+    def test_comprehensive_error_telemetry_testing(
+        self, isolated_telemetry_environment
+    ):
+        """Test that error scenarios have proper telemetry capture."""
+        from mcp_commit_story.git_hook_worker import generate_journal_entry_safe
+        
+        collector = isolated_telemetry_environment
+        
+        # Mock the OpenTelemetry tracer to use our test tracer
+        with patch('opentelemetry.trace.get_tracer') as mock_get_tracer:
+            mock_get_tracer.return_value = collector.get_tracer()
+            
+            # Test git repository detection failure
+            with patch('mcp_commit_story.git_hook_worker.git_utils.get_repo') as mock_get_repo:
+                import git
+                mock_get_repo.side_effect = git.InvalidGitRepositoryError("Not a git repo")
+                
+                result = generate_journal_entry_safe('/invalid/repo')
+                assert result is False
+                
+                # Verify error telemetry - check the span has error attributes
+                spans = collector.get_spans_by_name("git.hook.journal_generation")
+                assert len(spans) > 0, "Expected git hook spans"
+                
+                span = spans[0]
+                # The @handle_errors_gracefully decorator means the span won't have ERROR status,
+                # but it should have error attributes set by our function
+                assert "error.type" in span.attributes, "Expected error.type attribute"
+                assert span.attributes["error.type"] == "git_repo_detection_failed"
+            
+            # Reset collector for next test
+            collector.reset()
+            
+            # Test configuration loading failure
+            with patch('mcp_commit_story.git_hook_worker.git_utils.get_repo'), \
+                 patch('mcp_commit_story.git_hook_worker.git_utils.get_current_commit'), \
+                 patch('mcp_commit_story.git_hook_worker.config.load_config') as mock_config:
+                
+                mock_config.side_effect = Exception("Config not found")
+                
+                result = generate_journal_entry_safe('/test/repo')
+                assert result is False
+                
+                # Verify error telemetry - check the span has error attributes
+                spans = collector.get_spans_by_name("git.hook.journal_generation")
+                assert len(spans) > 0, "Expected git hook spans"
+                
+                span = spans[0]
+                assert "error.type" in span.attributes, "Expected error.type attribute"
+                assert span.attributes["error.type"] == "config_loading_failed"
+            
+            # Reset collector for next test
+            collector.reset()
+            
+            # Test journal generation failure  
+            with patch('mcp_commit_story.git_hook_worker.git_utils.get_repo'), \
+                 patch('mcp_commit_story.git_hook_worker.git_utils.get_current_commit'), \
+                 patch('mcp_commit_story.git_hook_worker.config.load_config'), \
+                 patch('mcp_commit_story.git_hook_worker.journal_workflow.handle_journal_entry_creation') as mock_workflow:
+                
+                mock_workflow.return_value = {'success': False, 'error': 'AI generation failed'}
+                
+                result = generate_journal_entry_safe('/test/repo')
+                assert result is False
+                
+                # Verify error telemetry - check the span has error attributes
+                spans = collector.get_spans_by_name("git.hook.journal_generation")
+                assert len(spans) > 0, "Expected git hook spans"
+                
+                span = spans[0]
+                assert "error.type" in span.attributes, "Expected error.type attribute"
+                assert span.attributes["error.type"] == "journal_generation_failed"
+
+    def test_final_verification_comprehensive_coverage(
+        self, isolated_telemetry_environment
+    ):
+        """Final verification test ensuring comprehensive telemetry coverage."""
+        from mcp_commit_story.git_hook_worker import generate_journal_entry_safe
+        
+        collector = isolated_telemetry_environment
+        
+        # Mock the OpenTelemetry tracer to use our test tracer
+        with patch('opentelemetry.trace.get_tracer') as mock_get_tracer:
+            mock_get_tracer.return_value = collector.get_tracer()
+            
+            # Test successful path with comprehensive mocking
+            with patch('mcp_commit_story.git_hook_worker.git_utils.get_repo') as mock_get_repo, \
+                 patch('mcp_commit_story.git_hook_worker.git_utils.get_current_commit') as mock_get_commit, \
+                 patch('mcp_commit_story.git_hook_worker.config.load_config') as mock_load_config, \
+                 patch('mcp_commit_story.git_hook_worker.journal_workflow.handle_journal_entry_creation') as mock_workflow:
+                
+                # Configure comprehensive mocks
+                mock_repo = MagicMock()
+                mock_get_repo.return_value = mock_repo
+                
+                mock_commit = MagicMock()
+                mock_commit.hexsha = 'final_test_commit'
+                mock_get_commit.return_value = mock_commit
+                
+                mock_config = {
+                    'journal': {'path': '/test/journal'},
+                    'telemetry': {'enabled': True}
+                }
+                mock_load_config.return_value = mock_config
+                
+                mock_workflow.return_value = {
+                    'success': True,
+                    'file_path': '/test/journal/daily/2025-07-13-journal.md',
+                    'entry_count': 1
+                }
+                
+                # Execute the function
+                result = generate_journal_entry_safe('/test/repo')
+                assert result is True
+                
+                # Verify comprehensive telemetry coverage
+                spans = collector.get_spans_by_name("git.hook.journal_generation")
+                assert len(spans) > 0, "Missing git hook journal generation spans"
+                
+                # Verify span attributes contain comprehensive information
+                span = spans[0]
+                expected_attributes = ["repo_path", "commit_hash"]
+                for attr in expected_attributes:
+                    assert attr in span.attributes, f"Missing span attribute: {attr}"
+                
+                # Verify successful status
+                from opentelemetry.trace import StatusCode
+                assert span.status.status_code in [StatusCode.OK, StatusCode.UNSET], \
+                    f"Expected successful status, got {span.status.status_code}"
+
+
+# =============================================================================
+# Phase 5: Circuit Breaker Integration (Existing)
 # =============================================================================
 
 

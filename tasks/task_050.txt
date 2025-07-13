@@ -360,7 +360,7 @@ def test_end_to_end_with_git_hook():
    - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
 
-## 4. Telemetry Verification After Signal Replacement [pending]
+## 4. Telemetry Verification After Signal Replacement [in-progress]
 ### Dependencies: None
 ### Description: Extend existing telemetry integration tests to verify that the signal-to-direct-call replacement preserved all telemetry functionality, decorators, and performance characteristics.
 ### Details:
