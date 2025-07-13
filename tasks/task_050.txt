@@ -360,7 +360,7 @@ def test_end_to_end_with_git_hook():
    - Double check all subtask requirements are met before marking this subtask as complete
    - **MARK COMPLETE**
 
-## 4. Telemetry Verification After Signal Replacement [in-progress]
+## 4. Telemetry Verification After Signal Replacement [done]
 ### Dependencies: None
 ### Description: Extend existing telemetry integration tests to verify that the signal-to-direct-call replacement preserved all telemetry functionality, decorators, and performance characteristics.
 ### Details:
@@ -420,6 +420,43 @@ def test_end_to_end_with_git_hook():
    - Run existing telemetry tests to ensure no regressions
    - Verify coverage of all direct call paths
    - **MARK COMPLETE**
+<info added on 2025-07-13T20:19:45.391Z>
+### Subtask 50.4 Completed - 2025-07-13 15:19 CDT
+
+Successfully implemented comprehensive telemetry verification for direct journal generation after signal replacement.
+
+#### What was accomplished:
+1. **Added @trace_git_operation decorator** to generate_journal_entry_safe() function
+2. **Created comprehensive test suite** with 7 test methods covering all telemetry aspects:
+   - TestDirectJournalGenerationTelemetry class with full telemetry verification
+   - Decorator preservation testing
+   - Git hook specific telemetry patterns validation
+   - Trace continuity verification through direct calls
+   - Performance regression testing within acceptable bounds
+   - Comprehensive error telemetry testing for all error scenarios
+   - Final verification with comprehensive coverage
+
+3. **Updated telemetry implementation** to use proper OpenTelemetry patterns:
+   - Replaced signal_creation_telemetry() calls with proper span attributes
+   - Added repo_path, commit_hash, and error categorization attributes
+   - Implemented proper error status tracking with trace.Status
+   - Added journal-specific telemetry attributes
+
+4. **All tests passing** - verified with pytest:
+   - 7/7 tests in TestDirectJournalGenerationTelemetry class pass
+   - Proper span capture verification
+   - Attribute validation working correctly
+   - Error scenarios properly traced
+
+#### Technical implementation:
+- Added @trace_git_operation("hook.journal_generation") decorator with proper configuration
+- Fixed telemetry capture in tests by patching opentelemetry.trace.get_tracer
+- Implemented comprehensive error telemetry with specific error types
+- Verified trace continuity through parent-child span relationships
+- Performance testing within ≤10% overhead bounds for git hook operations
+
+The signal-to-direct-call replacement now has complete telemetry preservation with comprehensive test coverage.
+</info added on 2025-07-13T20:19:45.391Z>
 
 ## 5. Documentation Updates [pending]
 ### Dependencies: None
