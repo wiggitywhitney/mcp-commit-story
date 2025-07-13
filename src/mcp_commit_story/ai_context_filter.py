@@ -241,7 +241,12 @@ Always respond with valid JSON in exactly this structure:
 Messages to analyze (limited to last 250 for clarity):
 {json.dumps(simplified_messages, indent=2)}
 
-Current commit:
+Current commit information:
+- **Commit Message**: {git_context.get('metadata', {}).get('message', 'N/A')}
+- **Changed Files**: {', '.join(git_context.get('changed_files', []))}
+- **Diff Summary**: {git_context.get('diff_summary', 'N/A')}
+
+Full current commit context:
 {json.dumps(git_context, indent=2)}
 
 Previous commit:
