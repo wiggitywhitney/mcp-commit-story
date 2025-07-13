@@ -50,10 +50,10 @@ Clients (such as editors or agents) should be able to connect using a configurat
 
 The server exposes these operations for journal management:
 
-1. **`journal/new-entry`** - Create a new journal entry from git, chat, and terminal context ✅ **IMPLEMENTED**
-2. **`journal/add-reflection`** - Add a manual reflection to a specific date's journal
-3. **`journal/capture-context`** - Capture AI-generated project knowledge for future context ✅ **IMPLEMENTED**
-4. **`journal/init`** - Initialize journal in current repository  
+1. **`journal/new-entry`** - Manual journal entry creation from git, chat, and terminal context
+2. **`journal/add-reflection`** - Add user reflection to today's journal entry  
+3. **`journal/capture-context`** - Capture AI context and save to journal
+4. **`journal/init`** - Initialize journal directory structure
 5. **`journal/install-hook`** - Install git post-commit hook
 
 Each operation is instrumented with appropriate traces to monitor performance and error rates.
@@ -62,8 +62,15 @@ Each operation is instrumented with appropriate traces to monitor performance an
 
 ## Operation Details
 
-### journal/new-entry ✅ **FULLY IMPLEMENTED**
-**Purpose**: Create a journal entry for the current commit
+### journal/new-entry 
+
+**Purpose**: Manual journal entry creation from comprehensive development context.
+
+**Note**: Journal entries are primarily created automatically via git post-commit hooks. This operation provides manual journal generation when needed (e.g., for missed commits, batch processing, or custom workflows).
+
+**Automatic vs Manual Generation**:
+- **Automatic** (Primary): Git hooks → `git_hook_worker.py` → direct journal generation
+- **Manual** (This operation): MCP tools → `journal/new-entry` → same journal generation logic
 
 **Implementation Status**: Complete with comprehensive TypedDict integration, full test coverage, and proper error handling.
 

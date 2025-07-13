@@ -3,7 +3,24 @@
 This guide explains how to set up and configure the MCP server for the `mcp-commit-story` project.
 
 ## What is the MCP Server?
-The MCP server is a Python service that exposes journal operations (such as `journal/new-entry`, `journal/summarize`, etc.) for engineering teams. It integrates with Git, collects commit and context data, and generates structured journal entries for retrospectives, storytelling, and analysis.
+The MCP server is a Python service that exposes journal operations (such as `journal/add-reflection`, `journal/capture-context`, etc.) for engineering teams. It integrates with Git, collects commit and context data, and provides additional functionality beyond the automatic journal generation that happens via git hooks.
+
+## Architecture Overview
+
+The MCP Commit Story system uses a hybrid approach:
+
+- **Automatic Journal Generation**: Git post-commit hooks → `git_hook_worker.py` → direct journal creation
+- **Additional Operations**: MCP server provides manual tools, reflections, context capture, and setup operations
+- **AI Integration**: Both paths use the same underlying AI-powered journal generation logic
+
+The MCP server complements the automatic git hook system by providing:
+
+1. **Manual journal operations** for special cases (missed commits, batch processing)
+2. **User interaction tools** (add reflections, capture context)  
+3. **Setup and configuration** (initialize journals, install hooks)
+4. **Summary generation** (daily, weekly, monthly summaries)
+
+This design ensures journal entries are created automatically during normal development while providing rich tooling for enhanced workflow integration.
 
 ## Installation
 1. **Clone the repository:**
@@ -78,32 +95,9 @@ server.reload_config()  # Will raise ConfigError if config is invalid
 
 ## Journal Operations: Request/Response Types
 
-The MCP server exposes journal operations such as `journal/new-entry` via async handler functions. Each handler expects a specific request dict and returns a structured response dict.
+The MCP server exposes journal operations such as `journal/add-reflection` and `journal/capture-context` via async handler functions. Each handler expects a specific request dict and returns a structured response dict.
 
-**Example: journal/new-entry**
-
-- **Request:**
-  ```python
-  {
-      "git": { ... },           # Required git context (see engineering spec)
-      "chat": { ... },          # Optional chat context
-      "terminal": { ... }       # Optional terminal context
-  }
-  ```
-- **Response:**
-  ```python
-  {
-      "status": "success",    # or "error"
-      "file_path": "journal/daily/2025-05-26-journal.md",
-      "error": None            # Error message if status == "error"
-  }
-  ```
-
-All errors are returned as a dict with `status: "error"` and an `error` message, never as a raw exception. See the engineering spec for full type details.
-
-## Journal Operations: journal/add-reflection
-
-The MCP server exposes the `journal/add-reflection` operation for adding a manual reflection to a specific day's journal file.
+**Example: journal/add-reflection**
 
 - **Request:**
   ```python
@@ -188,5 +182,8 @@ The MCP server exposes the `journal/install-hook` operation for installing or re
 All MCP tool handlers in this project use a standard error handling decorator for robust, structured error responses.
 
 - The `MCPError` class allows tool authors to raise errors with a specific status and message.
-- The `handle_mcp_error` decorator ensures that both custom and generic exceptions are caught and returned as a status+message dict, never as a raw exception.
-- This makes the server safer and more predictable for all clients. 
+- The `handle_mcp_error` decorator wraps all MCP tool functions to catch exceptions, convert them to standardized error responses, collect metrics, and log errors for debugging.
+
+When an operation succeeds, the decorator returns the original function's result. When an operation fails, it returns: `{"status": "error", "error": "error_message"}`
+
+All MCP handlers use this decorator to ensure consistent error formatting across the system.

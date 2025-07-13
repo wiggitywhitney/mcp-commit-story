@@ -184,15 +184,16 @@ Each AI generator has a docstring prompt and returns a placeholder for AI execut
 ## Complete Data Flow
 
 ```
-1. Git hook triggers → process_git_hook()
-2. Orchestrator called → generate_journal_entry_standalone()
-3. Context collectors gather → git data, chronological chat history, journal content
-4. Build JournalContext with conversation history
+1. Git hook triggers → git_hook_worker.py main()
+2. Direct journal generation → generate_journal_entry_safe()
+3. Context collectors gather → git data, chat history, journal content
+4. Journal workflow called → journal_workflow.handle_journal_entry_creation()
 5. For each generator:
    - Programmatic ones: execute directly
    - **AI Calls**: AI generators via executor
 6. Assembly → sections combined into complete journal entry
 7. Save → journal entry written to daily file
+8. Summary coordination → create signals for summary generation when applicable
 ```
 
 The system provides complete chronologically-ordered chat history with timestamps and session names directly from the chat history system.
