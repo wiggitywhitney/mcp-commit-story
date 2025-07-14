@@ -1,7 +1,7 @@
 # Task ID: 70
 # Title: Create Pip-Installable Package with CLI Interface
 # Status: pending
-# Dependencies: 26, 50, 53, 68
+# Dependencies: 26, 50, 68
 # Priority: high
 # Description: Develop a pip-installable Python package that allows users to easily install, configure, and use the MCP Commit Story system in their own projects, complete with CLI commands for setup and server management.
 # Details:

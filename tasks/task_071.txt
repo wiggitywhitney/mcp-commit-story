@@ -1,7 +1,7 @@
 # Task ID: 71
 # Title: Implement Lightweight Tagging and Narrative Threading for Journal Summaries
 # Status: pending
-# Dependencies: 53
+# Dependencies: none
 # Priority: medium
 # Description: Enhance journal summaries to automatically surface recurring themes, story arcs, and patterns from journal entries to support conference talk preparation and retrospectives.
 # Details:
