@@ -130,17 +130,23 @@ class TestGitHookBackgroundExecution:
         test_journal_dir = Path(self.test_repo_dir) / 'test-journal' / 'daily'
         test_journal_dir.mkdir(parents=True, exist_ok=True)
         
-        from datetime import datetime
-        date_str = datetime.now().strftime("%Y-%m-%d")
+        # Use a fixed date instead of current date to avoid creating files with today's date
+        date_str = "2025-03-15"  # Fixed test date
         expected_journal_path = test_journal_dir / f"{date_str}-journal.md"
         
         # Remove existing journal file if present
         if expected_journal_path.exists():
             expected_journal_path.unlink()
         
-        # Mock the journal path to use our test directory
-        with patch('mcp_commit_story.journal.get_journal_file_path') as mock_get_path:
+        # Mock the journal path and config to use our test directory completely
+        with patch('mcp_commit_story.journal.get_journal_file_path') as mock_get_path, \
+             patch('mcp_commit_story.config.load_config') as mock_load_config:
+            
+            # Configure mocks to use test directory
             mock_get_path.return_value = expected_journal_path
+            mock_config = MagicMock()
+            mock_config.journal_path = str(test_journal_dir.parent)  # test-journal directory
+            mock_load_config.return_value = mock_config
             
             # Spawn background process
             result = spawn_background_journal_generation(self.test_commit_hash, self.test_repo_dir)
