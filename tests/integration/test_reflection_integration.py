@@ -472,7 +472,8 @@ async def test_reflection_timestamp_accuracy():
                 
                 # Verify timestamp is reasonable (within a reasonable range)
                 assert timestamp.year == 2025, f"Timestamp year unexpected: {ts_str}"
-                assert 1 <= timestamp.hour <= 12, f"Timestamp hour out of range: {ts_str}"
+                # timestamp.hour is in 24-hour format even when parsed from 12-hour format
+                assert 0 <= timestamp.hour <= 23, f"Timestamp hour out of range: {ts_str}"
             
             # Verify timestamps are different (due to delays)
             # Note: With H:MM AM/PM format, timestamps may be the same if within the same minute

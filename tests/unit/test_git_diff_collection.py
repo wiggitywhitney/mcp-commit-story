@@ -212,9 +212,11 @@ class TestGetCommitFileDiffs:
         
         # Create a branch
         feature_branch = repo.create_head("feature")
-        repo.heads.main.checkout()
+        # Get the default branch (could be 'main' or 'master')
+        default_branch = repo.active_branch
+        default_branch.checkout()
         
-        # Add file to main
+        # Add file to default branch
         create_test_file(temp_dir, "main.py", "print('main')")
         repo.index.add(["main.py"])
         main_commit = repo.index.commit("Add main file")
