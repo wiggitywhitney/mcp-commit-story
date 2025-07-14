@@ -227,8 +227,8 @@ class TestGetCommitFileDiffs:
         repo.index.add(["feature.py"])
         feature_commit = repo.index.commit("Add feature file")
         
-        # Switch back to main and merge
-        repo.heads.main.checkout()
+        # Switch back to default branch and merge
+        default_branch.checkout()
         repo.git.merge("feature")
         merge_commit = repo.head.commit
         
