@@ -401,7 +401,26 @@ def signal_creation_telemetry(tool_name: str, success: bool, duration_ms: Option
 
 @handle_errors_gracefully
 def daily_summary_telemetry(success: bool, duration_ms: Optional[float] = None, error_type: Optional[str] = None) -> None:
-    """Record telemetry for git hook daily summary operations."""
+    """Record telemetry for git hook daily summary operations.
+    
+    ## Telemetry Patterns for Git Hook Daily Summary Integration
+    
+    ### Metrics Recorded
+    - `git_hook.daily_summary_trigger_total` (counter) - Git hook trigger events
+      - Labels: success="true|false", error_type (optional)
+    - `git_hook.daily_summary_duration_seconds` (histogram) - Time from trigger to completion
+      - Labels: success="true|false", error_type (optional)
+    
+    ### Error Categorization
+    - "ai_generation_error" - AI service failures
+    - "unknown_error" - Other errors
+    - No error_type label for successful operations
+    
+    ### Integration with Standalone Generation
+    - Complements daily_summary_standalone.py telemetry
+    - Records git hook specific metrics (trigger events, hook duration)
+    - Maintains consistent labeling scheme for cross-module correlation
+    """
     try:
         from mcp_commit_story.telemetry import get_mcp_metrics
         

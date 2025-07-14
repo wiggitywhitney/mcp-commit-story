@@ -1666,6 +1666,323 @@ class CircuitBreaker:
 _telemetry_circuit_breaker = CircuitBreaker()
 
 
+# =============================================================================
+# Phase 1: TestDailySummaryStandaloneTelemetry
+# =============================================================================
+
+
+class TestDailySummaryStandaloneTelemetry:
+    """Test telemetry validation for daily summary standalone operations."""
+
+    def test_standalone_generation_telemetry(self, isolated_telemetry_environment):
+        """Test that standalone daily summary generation records proper telemetry."""
+        collector = isolated_telemetry_environment
+
+        # Mock dependencies
+        mock_config = {
+            "project_root": "/test/project",
+            "journal_directory": "/test/journal",
+            "output_directory": "/test/output",
+            "ai_provider": "openai",
+            "ai_model": "gpt-4"
+        }
+
+        # Mock journal entries
+        mock_entries = [
+            {
+                "timestamp": "2025-01-15T09:00:00Z",
+                "content": "Test journal entry 1",
+                "commit_hash": "abc123"
+            },
+            {
+                "timestamp": "2025-01-15T14:30:00Z",
+                "content": "Test journal entry 2",
+                "commit_hash": "def456"
+            }
+        ]
+
+        # Mock the OpenTelemetry tracer to use our test tracer
+        with patch('opentelemetry.trace.get_tracer') as mock_get_tracer:
+            mock_get_tracer.return_value = collector.get_tracer()
+
+            # Mock the standalone generation function with telemetry
+            with patch("mcp_commit_story.daily_summary_standalone.load_config", return_value=mock_config), \
+                 patch("mcp_commit_story.daily_summary_standalone.load_journal_entries_for_date", return_value=mock_entries), \
+                 patch("mcp_commit_story.daily_summary_standalone.generate_daily_summary") as mock_generate, \
+                 patch("mcp_commit_story.daily_summary_standalone.save_daily_summary") as mock_save, \
+                 patch("mcp_commit_story.daily_summary_standalone.get_mcp_metrics") as mock_metrics:
+
+                # Set up mocks
+                mock_summary = MagicMock()
+                mock_summary.date = "2025-01-15"
+                mock_summary.content = "Test daily summary"
+                mock_generate.return_value = mock_summary
+                mock_save.return_value = "/test/output/2025-01-15-summary.md"
+
+                # Mock metrics
+                mock_metrics_instance = MagicMock()
+                mock_metrics.return_value = mock_metrics_instance
+
+                # Import after patching to ensure decorator uses our tracer
+                from mcp_commit_story.daily_summary_standalone import generate_daily_summary_standalone
+                
+                # This should create telemetry spans and metrics
+                result = generate_daily_summary_standalone("2025-01-15")
+
+                # Verify function was called correctly
+                assert result == mock_summary
+
+                # Verify telemetry span was created
+                assert_operation_traced(
+                    collector,
+                    "daily_summary.generate_standalone",
+                    expected_attributes={
+                        "operation_type": "standalone_generation",
+                        "section_type": "daily_summary",
+                        "daily_summary.generation_type": "standalone",
+                        "summary.date": "2025-01-15",
+                        "summary.entry_count": 2
+                    },
+                    min_duration_ms=0.0,
+                    max_duration_ms=5000.0
+                )
+
+                # Verify metrics were recorded
+                assert mock_metrics_instance.record_histogram.call_count >= 2  # duration and entry_count
+                assert mock_metrics_instance.record_counter.call_count >= 2  # operations and file_operations
+
+                # Verify specific metric calls
+                histogram_calls = [call.args for call in mock_metrics_instance.record_histogram.call_args_list]
+                counter_calls = [call.args for call in mock_metrics_instance.record_counter.call_args_list]
+
+                # Check that expected metrics were recorded
+                metric_names = [call[0] for call in histogram_calls] + [call[0] for call in counter_calls]
+                expected_metrics = [
+                    "daily_summary.generation_duration_seconds",
+                    "daily_summary.entry_count",
+                    "daily_summary.operations_total",
+                    "daily_summary.file_operations_total"
+                ]
+                
+                for expected_metric in expected_metrics:
+                    assert expected_metric in metric_names, f"Missing metric: {expected_metric}"
+
+    def test_git_hook_integration_telemetry(self, isolated_telemetry_environment):
+        """Test that git hook daily summary integration records proper telemetry."""
+        collector = isolated_telemetry_environment
+
+        # Mock dependencies - patch the telemetry module since it's imported inside the function
+        with patch("mcp_commit_story.telemetry.get_mcp_metrics") as mock_metrics:
+            mock_metrics_instance = MagicMock()
+            mock_metrics.return_value = mock_metrics_instance
+
+            # Mock metrics objects
+            mock_metrics_instance.git_hook_daily_summary_trigger_total = MagicMock()
+            mock_metrics_instance.git_hook_daily_summary_duration_seconds = MagicMock()
+
+            # Test successful operation
+            from mcp_commit_story.git_hook_worker import daily_summary_telemetry
+            
+            daily_summary_telemetry(success=True, duration_ms=1500.0)
+
+            # Verify telemetry was recorded
+            mock_metrics_instance.git_hook_daily_summary_trigger_total.add.assert_called_once_with(
+                1, {"success": "true"}
+            )
+            mock_metrics_instance.git_hook_daily_summary_duration_seconds.record.assert_called_once_with(
+                1.5, {"success": "true"}
+            )
+
+    def test_error_scenario_telemetry(self, isolated_telemetry_environment):
+        """Test that error scenarios produce proper telemetry."""
+        collector = isolated_telemetry_environment
+
+        # Mock the OpenTelemetry tracer to use our test tracer
+        with patch('opentelemetry.trace.get_tracer') as mock_get_tracer:
+            mock_get_tracer.return_value = collector.get_tracer()
+
+            # Mock dependencies to simulate error
+            with patch("mcp_commit_story.daily_summary_standalone.load_config", side_effect=Exception("Config error")), \
+                 patch("mcp_commit_story.daily_summary_standalone.get_mcp_metrics") as mock_metrics:
+
+                mock_metrics_instance = MagicMock()
+                mock_metrics.return_value = mock_metrics_instance
+
+                # Import after patching to ensure decorator uses our tracer
+                from mcp_commit_story.daily_summary_standalone import generate_daily_summary_standalone
+                
+                # This should raise an exception and record error telemetry
+                with pytest.raises(Exception, match="Config error"):
+                    generate_daily_summary_standalone("2025-01-15")
+
+                # Verify error telemetry was recorded
+                assert mock_metrics_instance.record_histogram.call_count >= 1  # duration
+                assert mock_metrics_instance.record_counter.call_count >= 1  # operations with failure
+
+                # Verify failure status was recorded
+                counter_calls = [call.args for call in mock_metrics_instance.record_counter.call_args_list]
+                failure_recorded = any(
+                    call[0] == "daily_summary.operations_total" and 
+                    len(call) > 2 and 
+                    call[2].get("status") == "failure"
+                    for call in counter_calls
+                )
+                assert failure_recorded, "Failure status not recorded in telemetry"
+
+    def test_git_hook_error_telemetry(self, isolated_telemetry_environment):
+        """Test that git hook error scenarios produce proper telemetry."""
+        collector = isolated_telemetry_environment
+
+        # Mock dependencies - patch the telemetry module since it's imported inside the function
+        with patch("mcp_commit_story.telemetry.get_mcp_metrics") as mock_metrics:
+            mock_metrics_instance = MagicMock()
+            mock_metrics.return_value = mock_metrics_instance
+
+            # Mock metrics objects
+            mock_metrics_instance.git_hook_daily_summary_trigger_total = MagicMock()
+            mock_metrics_instance.git_hook_daily_summary_duration_seconds = MagicMock()
+
+            # Test error operation
+            from mcp_commit_story.git_hook_worker import daily_summary_telemetry
+            
+            daily_summary_telemetry(success=False, duration_ms=500.0, error_type="ai_generation_error")
+
+            # Verify error telemetry was recorded
+            mock_metrics_instance.git_hook_daily_summary_trigger_total.add.assert_called_once_with(
+                1, {"success": "false", "error_type": "ai_generation_error"}
+            )
+            mock_metrics_instance.git_hook_daily_summary_duration_seconds.record.assert_called_once_with(
+                0.5, {"success": "false", "error_type": "ai_generation_error"}
+            )
+
+    def test_telemetry_decorator_preservation(self, isolated_telemetry_environment):
+        """Test that telemetry decorators are properly applied to moved functions."""
+        collector = isolated_telemetry_environment
+
+        # Mock the OpenTelemetry tracer to use our test tracer
+        with patch('opentelemetry.trace.get_tracer') as mock_get_tracer:
+            mock_get_tracer.return_value = collector.get_tracer()
+
+            # Mock dependencies
+            mock_config = {
+                "project_root": "/test/project",
+                "journal_directory": "/test/journal",
+                "ai_provider": "openai"
+            }
+
+            with patch("mcp_commit_story.daily_summary_standalone.load_config", return_value=mock_config), \
+                 patch("mcp_commit_story.daily_summary_standalone.load_journal_entries_for_date", return_value=[]), \
+                 patch("mcp_commit_story.daily_summary_standalone.get_mcp_metrics") as mock_metrics:
+
+                mock_metrics_instance = MagicMock()
+                mock_metrics.return_value = mock_metrics_instance
+
+                # Import after patching to ensure decorator uses our tracer
+                from mcp_commit_story.daily_summary_standalone import generate_daily_summary_standalone
+                
+                # This should return None for no entries but still record telemetry
+                result = generate_daily_summary_standalone("2025-01-15")
+
+                # Verify result is None (no entries)
+                assert result is None
+
+                # Verify telemetry decorator was applied - span should exist
+                spans = collector.get_spans_by_name("daily_summary.generate_standalone")
+                assert len(spans) > 0, "Telemetry decorator not applied - no span found"
+
+                # Verify span attributes from decorator
+                span = spans[0]
+                assert span.attributes.get("operation_type") == "standalone_generation"
+                assert span.attributes.get("section_type") == "daily_summary"
+
+    def test_performance_validation(self, isolated_telemetry_environment):
+        """Test that daily summary operations complete within acceptable time bounds."""
+        collector = isolated_telemetry_environment
+
+        # Mock the OpenTelemetry tracer to use our test tracer
+        with patch('opentelemetry.trace.get_tracer') as mock_get_tracer:
+            mock_get_tracer.return_value = collector.get_tracer()
+
+            # Mock dependencies for fast operation
+            mock_config = {
+                "project_root": "/test/project",
+                "journal_directory": "/test/journal",
+                "output_directory": "/test/output"
+            }
+
+            mock_entries = [{"content": "Quick test entry"}]
+
+            with patch("mcp_commit_story.daily_summary_standalone.load_config", return_value=mock_config), \
+                 patch("mcp_commit_story.daily_summary_standalone.load_journal_entries_for_date", return_value=mock_entries), \
+                 patch("mcp_commit_story.daily_summary_standalone.generate_daily_summary") as mock_generate, \
+                 patch("mcp_commit_story.daily_summary_standalone.save_daily_summary") as mock_save, \
+                 patch("mcp_commit_story.daily_summary_standalone.get_mcp_metrics") as mock_metrics:
+
+                # Set up fast mocks
+                mock_summary = MagicMock()
+                mock_generate.return_value = mock_summary
+                mock_save.return_value = "/test/output/summary.md"
+                mock_metrics.return_value = MagicMock()
+
+                # Import after patching to ensure decorator uses our tracer
+                from mcp_commit_story.daily_summary_standalone import generate_daily_summary_standalone
+                
+                result = generate_daily_summary_standalone("2025-01-15")
+
+                # Verify operation completed
+                assert result == mock_summary
+
+                # Verify performance is within bounds (10 seconds max for standalone operation)
+                assert_performance_within_bounds(
+                    collector,
+                    "daily_summary.generate_standalone",
+                    max_duration_ms=10000.0
+                )
+
+    def test_trace_continuity_validation(self, isolated_telemetry_environment):
+        """Test that telemetry spans have correct parent-child relationships."""
+        collector = isolated_telemetry_environment
+
+        # Mock the OpenTelemetry tracer to use our test tracer
+        with patch('opentelemetry.trace.get_tracer') as mock_get_tracer:
+            mock_get_tracer.return_value = collector.get_tracer()
+
+            # Mock dependencies
+            mock_config = {"project_root": "/test/project"}
+
+            with patch("mcp_commit_story.daily_summary_standalone.load_config", return_value=mock_config), \
+                 patch("mcp_commit_story.daily_summary_standalone.load_journal_entries_for_date", return_value=[]), \
+                 patch("mcp_commit_story.daily_summary_standalone.get_mcp_metrics") as mock_metrics:
+
+                mock_metrics.return_value = MagicMock()
+
+                # Use isolated tracer for test
+                tracer = collector.get_tracer("test_trace_continuity")
+
+                # Execute operation with parent span
+                with tracer.start_as_current_span("parent_operation"):
+                    from mcp_commit_story.daily_summary_standalone import generate_daily_summary_standalone
+                    
+                    generate_daily_summary_standalone("2025-01-15")
+
+                # Verify trace continuity exists
+                # Since we're mocking the internal functions, we mainly verify the main span is created
+                parent_spans = collector.get_spans_by_name("parent_operation")
+                child_spans = collector.get_spans_by_name("daily_summary.generate_standalone")
+                
+                assert len(parent_spans) > 0, "Parent span not found"
+                assert len(child_spans) > 0, "Child span not found"
+
+                # Verify parent-child relationship if both spans exist
+                if parent_spans and child_spans:
+                    parent_span = parent_spans[0]
+                    child_span = child_spans[0]
+                    
+                    # Check if child span has parent relationship
+                    # Note: Exact parent-child validation depends on span processor implementation
+                    assert child_span.parent_span_id is not None, "Child span missing parent relationship"
+
+
 if __name__ == "__main__":
     # Allow running individual test phases for development
     pytest.main([__file__ + "::TestMCPToolChainTelemetry", "-v"])

@@ -20,6 +20,29 @@ summary = generate_daily_summary_standalone("2025-01-15")
 ```
 
 Functions produce the same output format as MCP-based generation.
+
+## Telemetry Patterns
+
+### Span Structure
+- Main operation: `daily_summary.generate_standalone` (with @trace_mcp_operation decorator)
+- Attributes: `operation_type`, `section_type`, `daily_summary.generation_type`, `summary.date`, `summary.entry_count`
+- Child spans: AI generation operations inherit from the main span
+
+### Metrics Recorded
+- `daily_summary.generation_duration_seconds` (histogram) - End-to-end generation time
+- `daily_summary.operations_total` (counter) - Operations with success/failure labels
+- `daily_summary.entry_count` (histogram) - Number of journal entries processed
+- `daily_summary.file_operations_total` (counter) - File save operations with labels
+
+### Error Handling
+- Exceptions set span status to ERROR with error.type and error.message attributes
+- Failure metrics recorded with status="failure" label
+- Duration metrics recorded for both success and failure cases
+
+### Git Hook Integration
+- Additional telemetry in git_hook_worker.py via daily_summary_telemetry() function
+- Metrics: `git_hook.daily_summary_trigger_total`, `git_hook.daily_summary_duration_seconds`
+- Includes success/failure status and error_type for categorization
 """
 
 import os
