@@ -41,7 +41,7 @@ MCP Commit Story follows a **background generation architecture** with automatic
 - **Never blocks** git operations
 
 ### 2. Context Collection
-- **Git Context**: Commit metadata, diffs, file changes (always available)
+- **Git Context**: Commit metadata with intelligent diff collection, file changes, and adaptive size management (always available)
 - **Chat History**: Two-stage intelligent filtering (commit-based time window + AI boundary detection)
 - **Recent Journals**: Today's journal + 2 most recent daily entries for continuity
 - **Project Context**: README (or configured overview file) ensures AI always understands project goals
@@ -131,7 +131,7 @@ The journal generation process follows a **4-layer architecture** that separates
 ### Layer 1: Context Collection (Programmatic + AI Filtering)
 - **Responsibility**: Gather raw data with intelligent chat filtering
 - **Key Functions**:
-  - `collect_git_context(commit_hash)` - Git metadata, diffs, and commit info
+  - `collect_git_context(commit_hash)` - Git metadata with intelligent diff collection, file changes, and adaptive size limits
   - `collect_chat_history()` - Two-stage chat filtering (time window + AI boundary detection)
   - `collect_journal_context()` - Existing journal entries, reflections, and manual context
 

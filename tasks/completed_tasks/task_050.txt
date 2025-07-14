@@ -458,7 +458,7 @@ Successfully implemented comprehensive telemetry verification for direct journal
 The signal-to-direct-call replacement now has complete telemetry preservation with comprehensive test coverage.
 </info added on 2025-07-13T20:19:45.391Z>
 
-## 5. Documentation Updates [pending]
+## 5. Documentation Updates [done]
 ### Dependencies: None
 ### Description: Update all documentation to reflect the direct journal generation approach, writing for future developers with zero project knowledge and ensuring all code examples use correct call patterns.
 ### Details:

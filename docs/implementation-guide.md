@@ -83,7 +83,7 @@ mcp-commit-story/
 - **`cli.py`**: Click commands for setup operations
 - **`server.py`**: MCP server implementation with operation handlers
 - **`journal.py`**: Journal entry generation and formatting logic
-- **`git_utils.py`**: Git operations, hook installation, commit processing
+- **`git_utils.py`**: Git operations, intelligent diff collection, hook installation, commit processing
 - **`telemetry.py`**: OpenTelemetry setup and utilities
 - **`config.py`**: Configuration parsing and validation
 

@@ -168,6 +168,39 @@ The `collect_git_context()` function provides detailed commit analysis:
 2. **Diff Summary**: Using `get_commit_diff_summary()`
 3. **File Changes**: Smart sampling with performance limits
 4. **File Classification**: Source, config, docs, tests categorization
+5. **Diff Collection**: Intelligent collection of actual code changes with adaptive size management
+
+### Diff Collection Features
+
+The git context collection includes comprehensive diff content using `get_commit_file_diffs()`:
+
+**Adaptive Size Management**:
+- **≤5 files**: 10KB per file (optimized for detailed analysis)
+- **6-20 files**: 2.5KB per file (balanced detail vs performance)  
+- **>20 files**: 1KB per file, max 50 files (performance-first with sampling)
+
+**Intelligent Filtering**:
+- Automatically excludes binary files (images, executables)
+- Filters out generated files (`package-lock.json`, build artifacts)
+- Focuses on meaningful code changes for journal context
+
+**Error Handling**:
+- Individual file errors don't break collection
+- Size limit violations are clearly marked with truncation messages
+- Critical failures return structured error information
+
+**Integration Example**:
+```python
+# Diff collection is automatically integrated
+git_context = collect_git_context(commit_hash)
+file_diffs = git_context['file_diffs']  # Dict[str, str] mapping file paths to diffs
+
+# Special handling for metadata keys
+if "__truncated__" in file_diffs:
+    # Some diffs were omitted due to size limits
+if "__error__" in file_diffs:
+    # Error occurred during collection
+```
 
 ### Performance Optimization
 
