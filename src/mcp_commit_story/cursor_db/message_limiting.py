@@ -18,7 +18,7 @@ import copy
 from ..telemetry import trace_mcp_operation
 
 
-# Default limits based on research from Task 47.1
+# Default limits based on performance research for message filtering
 # These values cover even intense development periods while acting as safety net
 DEFAULT_MAX_HUMAN_MESSAGES = 200
 DEFAULT_MAX_AI_MESSAGES = 200

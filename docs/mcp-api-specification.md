@@ -80,8 +80,8 @@ Each operation is instrumented with appropriate traces to monitor performance an
 - `terminal: Optional[Any]` (optional) - Terminal command history context
 
 **Implementation Details**:
-- Integrates with `generate_journal_entry()` from subtask 9.1 for context collection and entry generation
-- Uses `save_journal_entry()` from subtask 9.2 for file operations and persistence  
+- Integrates with `generate_journal_entry()` for context collection and entry generation
+- Uses `save_journal_entry()` for file operations and persistence  
 - Implements comprehensive TypedDict validation for all workflow data structures
 - Includes journal-only commit detection to prevent recursion
 - Provides structured error responses with telemetry integration
@@ -381,7 +381,7 @@ The journal workflow operations utilize comprehensive TypedDict definitions to e
 
 ### Core Workflow Types
 
-#### Journal Entry Generation (Subtask 9.1)
+#### Journal Entry Generation
 ```python
 class GenerateJournalEntryInput(TypedDict):
     """Input parameters for generate_journal_entry function."""
@@ -396,7 +396,7 @@ class GenerateJournalEntryResult(TypedDict):
     skip_reason: Optional[str]  # Only present if skipped=True
 ```
 
-#### File Operations (Subtask 9.2)
+#### File Operations
 ```python
 class SaveJournalEntryInput(TypedDict):
     """Input parameters for save_journal_entry function."""

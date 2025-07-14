@@ -266,7 +266,7 @@ def collect_all_context_data(
         logger.warning(f"Chat history collection failed: {e}")
         chat_context = None
     
-    # 3. Recent journal context (new in Task 51.4 - may fail)
+    # 3. Recent journal context (optional - may fail gracefully)
     try:
         # Need commit object for journal context collection
         from mcp_commit_story.git_utils import get_repo

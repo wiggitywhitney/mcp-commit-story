@@ -560,7 +560,7 @@ Database key ordering (`ORDER BY [key]`) produces alphabetical UUID sorting, not
 - **Comprehensive failure documentation** restored to prevent future mistakes
 
 ### **Task Management:**
-- **Subtask 61.15 already marked done** ✅  
+- **Task completion verified** ✅  
 - **Task files generated** ✅
 
 ---

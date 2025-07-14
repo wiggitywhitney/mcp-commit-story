@@ -74,13 +74,13 @@ PERFORMANCE_THRESHOLDS = {
     "config_reload_duration_warning_ms": 500.0,
     "config_load_duration_warning_ms": 250.0,
     "config_validation_duration_warning_ms": 100.0,
-    # Cursor DB thresholds (approved specifications for Task 46.4)
+    # Cursor DB thresholds (performance tuning thresholds for Cursor DB operations)
     "execute_cursor_query": 50,        # Basic SQL query (milliseconds)
     "extract_prompts_data": 100,       # Query + JSON parsing (milliseconds)
     "extract_generations_data": 100,   # Query + JSON parsing (milliseconds)
     # "reconstruct_chat_history": 200,   # Removed - Composer provides chronological data
     "query_chat_database": 500,        # High-level orchestration function (milliseconds)
-    # Multiple database discovery thresholds (approved specifications for Task 46.7)
+    # Multiple database discovery thresholds (performance tuning thresholds for multiple database discovery)
     "discover_all_cursor_databases": 100,     # Database file discovery (milliseconds)
     "extract_from_multiple_databases": 500,   # Multi-database extraction (milliseconds)
 }

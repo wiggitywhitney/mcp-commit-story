@@ -5,7 +5,7 @@ Background journal worker for detached journal generation.
 This script runs as a detached background process spawned by git hooks
 to generate journal entries without blocking git operations.
 
-Implements Task 57.4 approved design decisions:
+Background journal worker implementation using these design principles:
 - 30-second max delay (generous since background)
 - Silent failure with telemetry capture
 - Detached process execution

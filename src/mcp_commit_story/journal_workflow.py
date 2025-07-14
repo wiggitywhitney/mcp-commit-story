@@ -70,7 +70,7 @@ def generate_journal_entry(commit, config, debug=False) -> Optional[JournalEntry
         context_data['chat_history'] = None
     
     # Terminal command collection removed per architectural decision
-    # See Task 56: Remove Terminal Command Collection Infrastructure
+        # Terminal command collection infrastructure has been removed
     
     # Collect git context - fixed function signature
     try:
@@ -93,7 +93,7 @@ def generate_journal_entry(commit, config, debug=False) -> Optional[JournalEntry
             'commit_context': {}
         }
     
-    # Collect recent journal context (new in Task 51.4)
+    # Collect recent journal context for better AI generation
     try:
         if debug:
             logger.debug("Collecting recent journal context")

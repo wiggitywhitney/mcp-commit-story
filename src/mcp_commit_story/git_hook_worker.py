@@ -518,7 +518,7 @@ def spawn_background_journal_generation(commit_hash: str, repo_path: str = None)
     """
     Spawn background journal generation process for the given commit.
     
-    Implements Task 57.4 approved design decisions:
+    Spawns background journal generation process using these design principles:
     - Detached background process execution
     - Immediate return (no blocking)
     - Silent failure with telemetry capture
