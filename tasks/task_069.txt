@@ -1,86 +1,312 @@
 # Task ID: 69
 # Title: Clean Up Obsolete MCP and Signal Architecture
 # Status: pending
-# Dependencies: 67
+# Dependencies: None
 # Priority: medium
 # Description: Remove architectural bloat by eliminating signal-based code, redundant MCP tools, and unused infrastructure while preserving essential components for the remaining valuable MCP tools.
-# Details:
-This task involves a systematic cleanup of obsolete architecture components to reduce codebase bloat and improve maintainability:
 
-1. **Remove Signal-Based Architecture**:
-   - Delete all signal file creation, reading, and processing functions
-   - Remove signal file templates and related resources
-   - Eliminate signal file path configurations and constants
-   - Delete the `.mcp-commit-story/signals/` directory structure and related code
-   - Remove all signal-based MCP tool signaling mechanisms
+# Requirements:
+[ ] Remove all signal-based architecture files and code completely
+[ ] Remove 4 obsolete MCP tools from server.py: journal_new_entry, journal_init, journal_install_hook, journal_generate_daily_summary
+[ ] Preserve 2 essential MCP tools: journal_add_reflection, journal_capture_context
+[ ] Remove all signal-related test files
+[ ] Update git hook worker to remove signal usage and use direct calls for all operations
+[ ] Clean up signal-related imports and dependencies throughout codebase
+[ ] Run static analysis to identify orphaned imports or unused code
+[ ] Update documentation to remove signal architecture references
+[ ] Ensure preserved MCP tools continue working correctly after cleanup
 
-2. **Clean Up Redundant MCP Tools**:
-   - Remove the following 4 MCP tools and their implementations:
-     - `journal_new_entry`: Replaced by standalone journal generation
-     - `journal_generate_daily_summary`: Replaced by background generation
-     - `journal_init`: No longer needed with direct architecture
-     - `journal_install_hook`: Simplified installation process makes this obsolete
-   - Delete associated handler code in the MCP server
-   - Remove test files specific to these tools
+# Notes:
+## Design Decisions Made:
+1. **Signal Architecture**: Complete removal - signals were never working and are not used
+2. **MCP Tools**: Remove 4 obsolete, preserve 2 essential ones
+3. **Cleanup Strategy**: File-by-file TDD approach (remove one file → run tests → fix failures → next file)
+4. **Testing**: Use comprehensive test suite to verify no regressions after each file removal
 
-3. **Preserve Essential MCP Tools**:
-   - Keep and refactor as needed:
-     - `journal_add_reflection`: Valuable for interactive reflection capture
-     - `journal_capture_context`: Important for capturing additional context
-   - Ensure these tools work properly with the new architecture
+## Implementation Strategy:
+- Remove files one at a time with immediate test feedback
+- Remove signal infrastructure files first, then update core files
+- Remove obsolete MCP tools after signal cleanup
+- Preserve journal_add_reflection and journal_capture_context functionality
+- Update git hook worker to use direct calls instead of signal creation
 
-4. **Clean Up MCP Infrastructure**:
-   - Remove unused MCP server components that only supported signal-based tools
-   - Update MCP server registration to only include the remaining tools
-   - Simplify MCP server startup and configuration
-   - Remove file watcher pattern code from Task 37
+## Broken Test Guidelines:
+When functionality is removed, handle broken tests as follows:
+- **Remove tests** that specifically test deleted functionality (e.g., `test_create_tool_signal()`)
+- **Fix tests** that test preserved functionality but happen to use removed components (e.g., `test_git_hook_worker()` that mocks removed functions)
+- **Preserve test intent** when possible - update mocks and imports rather than deleting tests for working functionality
 
-5. **Update Documentation and Tests**:
-   - Update all documentation to reflect the new streamlined architecture
-   - Remove obsolete test files and update remaining tests
-   - Ensure test coverage remains high for preserved functionality
+---
 
-6. **Code Cleanup**:
-   - Run static analysis tools to identify any orphaned imports or unused code
-   - Remove any debug/development code that was specific to the signal architecture
-   - Ensure clean separation between the preserved MCP tools and the standalone generation
+# Subtasks
 
-# Test Strategy:
-To verify the successful completion of this cleanup task:
+---
 
-1. **Static Code Analysis**:
-   - Run a grep or similar tool to search for signal-related terms across the codebase
-   - Verify no references to signal files, signal processing, or signal directories remain
-   - Check for any orphaned imports or unused functions with tools like flake8 or pylint
+## Subtask 69.1: Remove All Signal Infrastructure Files
+### Dependencies: None
+### Description: Remove all signal-related files and fix any import failures.
 
-2. **Functional Testing**:
-   - Verify the two preserved MCP tools still function correctly:
-     ```python
-     def test_journal_add_reflection_still_works():
-         # Setup test repository and configuration
-         # Call the preserved MCP tool
-         # Verify reflection was added correctly
-     
-     def test_journal_capture_context_still_works():
-         # Setup test repository and configuration
-         # Call the preserved MCP tool
-         # Verify context was captured correctly
-     ```
+### Details:
 
-3. **Integration Testing**:
-   - Ensure the standalone journal generation works without any signal dependencies
-   - Verify daily summary generation works correctly without MCP tools
-   - Test the full workflow from git commit to journal entry creation
+#### Steps:
+1. **DELETE SIGNAL FILES**
+   - Delete `src/mcp_commit_story/signal_management.py`
+   - Delete `tests/unit/test_signal_file_management.py`
+   - Delete `tests/unit/test_signal_file_cleanup.py`
+   - Delete `tests/unit/test_minimal_signal_state.py`
+   - Delete `tests/unit/test_git_hook_signal_replacement.py`
+   - Run tests: `python -m pytest`
 
-4. **Regression Testing**:
-   - Run the full test suite to ensure no functionality was broken
-   - Verify all CI/CD pipelines pass with the cleaned-up codebase
+2. **FIX IMPORT FAILURES**
+   - Fix any import errors in remaining files
+   - Update imports to remove signal_management references
+   - Remove tests that specifically test signal_management functions
+   - Fix tests that import signal_management for other purposes (update imports/mocks)
+   - Run tests: `python -m pytest`
 
-5. **Package Testing**:
-   - Build the package and verify it installs correctly
-   - Test the installation in a clean environment
-   - Verify the correct entry points are available and work properly
+#### VERIFICATION CHECKLIST
+[ ] File `src/mcp_commit_story/signal_management.py` removed
+[ ] File `tests/unit/test_signal_file_management.py` removed
+[ ] File `tests/unit/test_signal_file_cleanup.py` removed
+[ ] File `tests/unit/test_minimal_signal_state.py` removed
+[ ] File `tests/unit/test_git_hook_signal_replacement.py` removed
+[ ] All import errors fixed
+[ ] All test dependencies fixed
+[ ] Full test suite passes
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
 
-6. **Documentation Verification**:
-   - Review all documentation to ensure it accurately reflects the new architecture
-   - Verify no references to removed components remain in the documentation
+---
+
+## Subtask 69.2: Remove Signal Usage from Git Hook Worker
+### Dependencies: 69.1
+### Description: Remove signal imports and signal creation functions from git_hook_worker.py, fix broken tests.
+
+### Details:
+
+#### Steps:
+
+1. **REMOVE SIGNAL FUNCTIONALITY**
+   - Remove signal_management imports from `src/mcp_commit_story/git_hook_worker.py`
+   - Remove signal creation functions: `create_tool_signal()`, `create_tool_signal_safe()`, `signal_creation_telemetry()`
+   - Update daily/period summary triggering to use direct calls or placeholder
+   - Remove signal directory and cleanup references
+   - Run tests: `python -m pytest`
+
+2. **FIX BROKEN TESTS**
+   - Remove tests that specifically test signal creation functions (e.g., `test_create_tool_signal()`)
+   - Fix tests that test git hook functionality but use signal mocks (update to direct call mocks)
+   - Update test mocks to reflect new direct call approach
+   - Run tests: `python -m pytest`
+
+#### VERIFICATION CHECKLIST
+[ ] Signal imports removed from `src/mcp_commit_story/git_hook_worker.py`
+[ ] Functions removed: `create_tool_signal()`, `create_tool_signal_safe()`, `signal_creation_telemetry()`
+[ ] Daily/period summary triggering updated to use direct calls
+[ ] All broken tests fixed
+[ ] Test mocks updated to reflect new direct call approach
+[ ] All signal-related telemetry metrics replaced with direct call metrics
+[ ] Module-level docstring updated to remove signal architecture references
+[ ] Full test suite passes
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
+
+---
+
+## Subtask 69.3: Remove Obsolete MCP Tools from Server
+### Dependencies: 69.2
+### Description: Remove 4 obsolete MCP tools from server.py while preserving the 2 essential ones, fix broken tests.
+
+### Details:
+
+#### Steps:
+
+1. **REMOVE MCP TOOL REGISTRATIONS**
+   - Remove MCP tool registrations from `src/mcp_commit_story/server.py`:
+     - Remove `journal_new_entry` and `handle_journal_new_entry()`
+     - Remove `journal_init` and `handle_journal_init()`
+     - Remove `journal_install_hook` and `handle_journal_install_hook()`
+     - Remove `journal_generate_daily_summary` and `handle_generate_daily_summary()`
+   - Remove `generate_daily_summary_mcp_tool()` from `src/mcp_commit_story/daily_summary.py`
+   - Preserve `journal_add_reflection` and `journal_capture_context` tools
+   - Update server.py module docstring to reflect current tool set
+   - Remove unused imports related to removed tools
+   - Run tests: `python -m pytest`
+
+2. **FIX BROKEN TESTS**
+   - Remove tests that specifically test removed MCP tools (e.g., `test_handle_journal_new_entry()`)
+   - Fix tests that test server functionality but reference removed tools (update tool lists)
+   - Update test mocks to reflect remaining MCP tools only
+   - Run tests: `python -m pytest`
+
+#### VERIFICATION CHECKLIST
+[ ] MCP tool `journal_new_entry` removed from server.py
+[ ] MCP tool `journal_init` removed from server.py
+[ ] MCP tool `journal_install_hook` removed from server.py
+[ ] MCP tool `journal_generate_daily_summary` removed from server.py
+[ ] Function `generate_daily_summary_mcp_tool()` removed from daily_summary.py
+[ ] Essential MCP tools preserved: `journal_add_reflection`, `journal_capture_context`
+[ ] All broken tests fixed
+[ ] Test mocks updated to reflect remaining MCP tools only
+[ ] Server.py module docstring updated to reflect current tool set
+[ ] Unused imports removed from server.py
+[ ] MCP server starts successfully without obsolete tools
+[ ] Full test suite passes
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
+
+---
+
+## Subtask 69.4: Telemetry Verification
+### Dependencies: 69.3
+### Description: Verify that signal removal doesn't break telemetry functionality and that preserved MCP tools still have proper telemetry.
+
+### Details:
+
+#### Steps:
+
+1. **VERIFY TELEMETRY STILL WORKS**
+   - Run existing telemetry tests to ensure no telemetry functionality was broken
+   - Test that `journal_add_reflection` MCP tool telemetry still works
+   - Test that `journal_capture_context` MCP tool telemetry still works
+   - Test that git hook operations still record telemetry correctly
+
+2. **CLEAN UP SIGNAL-RELATED TELEMETRY**
+   - Remove any signal-specific telemetry metrics or spans
+   - Update telemetry tests to remove signal-related assertions
+   - Ensure no orphaned telemetry code remains for removed functionality
+
+#### VERIFICATION CHECKLIST
+[ ] All existing telemetry tests pass
+[ ] MCP tool telemetry verified working: `journal_add_reflection`, `journal_capture_context`
+[ ] Git hook operations still record telemetry correctly
+[ ] Signal-specific telemetry metrics removed
+[ ] Telemetry tests updated to remove signal-related assertions
+[ ] No orphaned telemetry code remains for removed functionality
+[ ] Full test suite passes
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
+
+---
+
+## Subtask 69.5: Integration Testing and Final Cleanup
+### Dependencies: 69.4
+### Description: Verify end-to-end functionality and clean up any remaining signal references.
+
+### Details:
+
+#### Steps:
+
+1. **CREATE INTEGRATION TEST SUITE**
+   - Create `tests/integration/test_signal_architecture_removal.py`
+   - Test that essential MCP tools work correctly after cleanup
+   - Test that git hook operations work without signal infrastructure
+   - Test that no signal-related operations are attempted
+
+2. **STATIC ANALYSIS CLEANUP**
+   - Run grep to find any remaining signal references in codebase
+   - Remove any orphaned signal imports or unused signal-related code
+   - Clean up any remaining signal configuration or constants
+
+3. **VERIFY PRESERVED FUNCTIONALITY**
+   - Test that `journal_add_reflection` MCP tool works correctly
+   - Test that `journal_capture_context` MCP tool works correctly
+   - Test that git hook operations complete successfully
+   - Verify no signal files are created during operations
+
+#### VERIFICATION CHECKLIST
+[ ] Integration test file `tests/integration/test_signal_architecture_removal.py` created
+[ ] Essential MCP tools verified working: `journal_add_reflection`, `journal_capture_context`
+[ ] Git hook operations work without signal infrastructure
+[ ] No signal files created during operations
+[ ] Static analysis shows no remaining signal references
+[ ] All orphaned signal imports removed
+[ ] No signal-related configuration or constants remain
+[ ] Full test suite passes
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
+
+---
+
+## Subtask 69.6: Documentation Updates
+### Dependencies: 69.5
+### Description: Update all documentation to remove signal architecture references and obsolete MCP tool references.
+
+### Details:
+
+#### Steps:
+
+1. **UPDATE SIGNAL ARCHITECTURE DOCUMENTATION**
+   - Update `docs/architecture.md` line 196: Remove "create signals for summary generation when applicable"
+   - Update `docs/implementation-guide.md` lines 201, 214, 245: Remove all "signals" and "signal creation" references
+   - Update `docs/server_setup.md`: Remove any signal-related setup instructions
+   - Update `docs/journal-behavior.md`: Remove any signal-related behavior descriptions
+   - Update `docs/journal-core.md`: Remove any signal-related core functionality descriptions
+
+2. **UPDATE OBSOLETE MCP TOOL DOCUMENTATION**
+   - Update `docs/README.md` lines 26, 44: Remove references to `journal_init.md` (update links to reflect current tool set)
+   - Update `docs/setup.md` line 244: Remove reference to `journal_init.md` documentation
+   - Update `docs/telemetry.md` lines 60, 61, 63, 108, 285, 290: Remove all `journal_new_entry` and `handle_journal_new_entry` telemetry examples and references
+   - Delete `docs/journal_init.md` completely (entire file is obsolete)
+   - Delete `docs/daily-summary-mcp.md` completely (entire file is obsolete - MCP tool version)
+   - Update `docs/summary-generation.md` lines 41, 53, 91, 331, 334, 377: Remove MCP tool references (`journal/generate-daily-summary`, `generate_daily_summary_mcp_tool`) and focus on standalone generation
+   - Update `engineering-mcp-journal-spec-final.md` lines 177, 192, 199-200, 205-206: Remove obsolete MCP tool specifications
+
+3. **UPDATE MAJOR MCP TOOL DOCUMENTATION FILES**
+   - Update `docs/mcp-api-specification.md` lines 53, 56, 57, 65, 73, 139, 203: Remove all 4 obsolete MCP tools (`journal/new-entry`, `journal/init`, `journal/install-hook`, `journal/generate-daily-summary`) and their entire sections
+   - Update `docs/server_setup.md` lines 120, 122, 124, 151, 153: Remove entire sections "Journal Operations: journal/init" and "Journal Operations: journal/install-hook"
+   - Update `docs/context-collection.md` line 429: Remove `journal/new-entry` reference
+   - Update `docs/architecture.md` lines 77, 78: Remove `journal/init` and `journal/install-hook` from tool lists
+   - Update `docs/implementation-guide.md` line 549: Remove `journal/init` reference
+
+4. **UPDATE MCP SERVER DOCUMENTATION**
+   - Update any MCP server documentation to reflect current tool set (only `journal_add_reflection` and `journal_capture_context`)
+   - Update git hook documentation to reflect direct call approach instead of signal creation
+   - Remove any examples or references to removed MCP tools
+
+5. **VERIFY DOCUMENTATION QUALITY**
+   - Write documentation as if signal architecture never existed
+   - Write documentation as if obsolete MCP tools never existed
+   - Ensure all examples are copy-pasteable and work correctly
+   - Write for external readers with zero project knowledge
+   - Remove any historical references to signal-based approaches
+   - Ensure all code examples use correct current patterns
+
+#### VERIFICATION CHECKLIST
+[ ] File `docs/architecture.md` line 196 updated to remove signal references
+[ ] File `docs/implementation-guide.md` lines 201, 214, 245 updated to remove signal references  
+[ ] File `docs/server_setup.md` updated to remove signal-related setup instructions
+[ ] File `docs/journal-behavior.md` updated to remove signal-related behavior descriptions
+[ ] File `docs/journal-core.md` updated to remove signal-related core functionality descriptions
+[ ] File `docs/README.md` lines 26, 44 updated to remove `journal_init.md` references
+[ ] File `docs/setup.md` line 244 updated to remove `journal_init.md` reference
+[ ] File `docs/telemetry.md` lines 60, 61, 63, 108, 285, 290 updated to remove `journal_new_entry` and `handle_journal_new_entry` references
+[ ] File `docs/journal_init.md` deleted completely
+[ ] File `docs/daily-summary-mcp.md` deleted completely
+[ ] File `docs/summary-generation.md` lines 41, 53, 91, 331, 334, 377 updated to remove MCP tool references and focus on standalone generation
+[ ] File `engineering-mcp-journal-spec-final.md` lines 177, 192, 199-200, 205-206 updated to remove obsolete MCP tool specs
+[ ] File `docs/mcp-api-specification.md` lines 53, 56, 57, 65, 73, 139, 203 updated to remove all 4 obsolete MCP tools and their sections
+[ ] File `docs/server_setup.md` lines 120, 122, 124, 151, 153 updated to remove entire obsolete MCP tool sections
+[ ] File `docs/context-collection.md` line 429 updated to remove `journal/new-entry` reference
+[ ] File `docs/architecture.md` lines 77, 78 updated to remove `journal/init` and `journal/install-hook` from tool lists
+[ ] File `docs/implementation-guide.md` line 549 updated to remove `journal/init` reference
+[ ] MCP server documentation updated to reflect current tool set only
+[ ] Git hook documentation updated to reflect direct call approach
+[ ] All code examples use correct current patterns
+[ ] Documentation written as if signal architecture never existed
+[ ] Documentation written as if obsolete MCP tools never existed
+[ ] All examples are copy-pasteable and work correctly
+[ ] Documentation written for external readers with zero project knowledge
+[ ] No historical references to signal-based approaches remain
+[ ] Full test suite passes
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
+
+---
+
+---
+
+## Task Completion
+
+Final verification:
+[ ] All requirements above completed

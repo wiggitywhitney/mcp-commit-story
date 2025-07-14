@@ -1,7 +1,7 @@
 # Task ID: 73
 # Title: Consolidate Daily Summary Functionality
 # Status: pending
-# Dependencies: None
+# Dependencies: 69
 # Priority: high
 # Description: Clean up the duplicated daily summary functionality between daily_summary.py and daily_summary_standalone.py. Currently there are two modules with overlapping functionality - one MCP-based and one standalone - which causes confusion and maintenance overhead.
 
