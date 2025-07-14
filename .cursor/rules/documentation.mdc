@@ -1,5 +1,7 @@
 ---
-alwaysApply: false
+description: Documentation standards requiring external-reader accessibility and concrete language
+globs: **/*.md, **/docs/**, **/*.rst, **/*.txt
+alwaysApply: true
 ---
 
 # Documentation Standards
@@ -7,17 +9,35 @@ alwaysApply: false
 ## Core Principle
 **Write for a future developer with zero project knowledge who needs to understand and modify this system.**
 
-## Possible Elements
-- **Complete examples**: Copy-pasteable code snippets that work
+## Required Elements
+- **Function-level docstrings** for all new functions following the core principle
+- **Module-level docstrings** for new modules explaining their purpose and approach
+- **Complete examples** that are copy-pasteable and work
+- **Technical context** explaining why decisions were made when it affects future changes
 - **Prerequisites**: What they need to install/know first
 - **Clear steps**: How to use, modify, or extend
-- **Technical context**: Why decisions were made when it affects future changes
+
+## Documentation Updates for Code Changes
+- **Evaluate existing documentation** before creating new files - determine if new information should be added to existing docs rather than creating separate files
+- **When code is changed** (as opposed to net-new), these must be evaluated and updated if needed:
+  - Documentation files
+  - README.md
+  - Engineering specifications
+  - PRD (Product Requirements Document)
 
 ## Forbidden Content
 - **Process references**: No task IDs, sprint numbers, team workflows
-- **Historical narrative**: Skip "we tried X then Y" stories
+- **Historical narrative**: Skip "we tried X then Y" stories  
 - **Assumed knowledge**: No insider team decisions or project history
 - **Personal references**: No names, meetings, or timeline details
+- **Abstract corporate speak**: Use concrete problem descriptions instead
+- **Meaningless task references**: Describe actual accomplishments, not task numbers
+
+## Writing Style Requirements
+- **Specific, concrete language** - avoid abstract buzzwords
+- **Real problem/solution statements** - not theoretical concepts
+- **External reader accessibility** - assume no prior project context
+- **Focus on what's happening** - not the development journey
 
 ## Quality Test
 **Could a new developer use this documentation successfully without asking questions?**

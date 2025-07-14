@@ -1,0 +1,92 @@
+# Contributing Workflow Patterns
+
+## Essential Communication Pattern
+
+**ALWAYS provide options, tradeoffs, and recommendations** when answering questions or making suggestions:
+
+- **Options**: Present 2-3 clear alternatives with descriptive names
+- **Tradeoffs**: Explain pros and cons for each option  
+- **Recommendations**: State which option you recommend and why
+- **Discussion**: Wait for response before proceeding to next question
+
+**Example format:**
+```
+Options:
+- Option A: [Description] 
+  - Tradeoff: [Pro vs Con]
+- Option B: [Description]
+  - Tradeoff: [Pro vs Con]
+
+My recommendation: Option A because [reasoning]
+
+What's your preference?
+```
+
+## Communication Style Requirements
+
+- **Ask ONE question at a time** - never present multiple design decisions simultaneously
+- **Provide options with tradeoffs** - present 2-3 options with clear pros/cons analysis
+- **Include recommendations** - always state which option you recommend and why
+- **Discuss before proceeding** - wait for developer response and discussion before moving to next question
+- **Be concise** - avoid lengthy explanations, focus on essential information
+- **Critical answers preferred** - honest assessment over diplomatic responses
+- **Direct communication** - no unnecessary preamble or corporate speak
+- **Concrete language** - specific problems and solutions rather than abstract buzzwords
+
+## Two-Phase Task Creation Workflow
+
+### Phase 1: Create Parent Task
+- Create task file with complete header: ID, Title, Status, Dependencies, Priority, Description
+- Write clear Requirements section (what needs to be accomplished)
+- Add Notes section with any initial context or constraints
+- Include "Design Decisions for Future Consideration" section for open questions
+- **Do NOT create subtasks yet** - leave Subtasks section empty or with placeholder
+- **Search codebase for similar implementations** to understand existing patterns
+- **Verify existing utilities** before planning new functionality
+
+### Phase 2: Design Discussion and Subtask Creation
+- Discuss design decisions [one question at a time](#essential-communication-pattern)
+- Update Notes section with "Design Decisions Made" as choices are finalized
+- Requirements may evolve during design discussions - update them as understanding improves
+- Convert Requirements section to checklist format once requirements are finalized
+- Create detailed subtasks only after design decisions are resolved
+- Add verification checklists to ALL subtasks using "[ ]" format (not "- [ ]")
+- Add "## Task Completion" section with "Final verification: [ ] All requirements above completed"
+
+## File-Based Task Management
+
+### Task Structure Requirements
+- **Requirements Section**: High-level "what" needs to be accomplished
+- **Implementation Strategy Section**: Specific "how" approaches and technical details
+- **Subtask Naming**: [TaskNumber].[SubtaskNumber] (e.g., 53.1, 53.2, 53.3)
+- **Dependencies**: Clear dependency relationships between tasks
+- **Status Management**: Use pending, in-progress, done, deferred, cancelled
+
+### Standard Subtask Types
+Most tasks should include these three boilerplate subtasks:
+1. **Integration Testing** - End-to-end workflow testing plus robust telemetry validation
+2. **Telemetry Verification** - Specific telemetry patterns and metrics validation  
+3. **Documentation Updates** - Update all relevant documentation to reflect changes
+
+## Planning Anti-Patterns to Avoid
+
+- **Making design assumptions** instead of asking the developer
+- **Over-engineering solutions** with unnecessary complexity
+- **Prescriptive implementation details** that lock in approaches too early
+- **Multiple questions at once** instead of one-at-a-time discussion
+- **Guessing at existing functionality** instead of searching codebase
+- **Asking questions answered by preferences** (e.g., "Should we use existing utilities?" - always yes)
+- **Asking questions answered by existing code** (e.g., "What pattern should we follow?" - check similar implementations)
+
+## Core Development Principles
+
+- **Solo OSS developer** valuing simple solutions over complex architectures
+- **Zero users currently** - backwards compatibility is not a concern
+- **MVP-focused** - ship working software rather than pursue architectural perfection
+- **Use existing code when possible** - don't reinvent existing functionality
+- **Follow existing patterns** - maintain consistency with established codebase patterns
+- **Verify assumptions with codebase** - check actual code instead of guessing what exists
+description:
+globs:
+alwaysApply: false
+---

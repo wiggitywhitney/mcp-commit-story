@@ -1,54 +1,52 @@
 ---
-description:
-globs:
-alwaysApply: false
+description: Task archival process for maintaining clean workspace with completed task preservation
+globs: tasks/**/*
+alwaysApply: true
 ---
-# Task Completion & Archiving Workflow
+# Task Archival Process
 
-## **Overview**
-When tasks reach "done" status, archive them to maintain a clean, performant workspace while preserving complete project history.
+## Overview
+When a task is completely finished, follow this archival process to maintain a clean, performant workspace while preserving all completed work.
 
-## **Directory Structure**
+## Step 1: Verify Completion
+[ ] All requirements in the task are met (check the Requirements checklist)
+[ ] All subtasks are marked complete
+[ ] Full test suite passes
+[ ] All deliverables are working as specified
+
+## Step 2: Archive Task File
+[ ] Move task file from `tasks/task_XXX.md` to `tasks/completed_tasks/task_XXX.md`
+[ ] Preserve all task content and history in the archived file
+
+## Step 3: Clean Up Dependencies
+[ ] Search all active task files in `tasks/` directory for dependencies on the completed task
+[ ] Remove the completed task number from dependency lists of active tasks
+[ ] Update any task descriptions that reference the completed task if needed
+
+## Directory Structure
 ```
 tasks/
-├── tasks.json                    # Active tasks only
-├── task_001.txt                  # Active task files only
-├── task_002.txt
+├── task_001.md                  # Active task files
+├── task_002.md
+├── task_003.md
 └── completed_tasks/
-    ├── completed_tasks.json      # Archived completed tasks
-    ├── task_003.txt             # Completed task files
-    ├── task_007.txt
-    └── task_015.txt
+    ├── task_010.md             # Completed task files
+    ├── task_015.md
+    └── task_020.md
 ```
 
-## **Archival Process**
+## Benefits of Archival
+- **Clean workspace**: Only active tasks visible in main tasks/ directory
+- **Preserved history**: All completed work maintained in completed_tasks/
+- **Dependency integrity**: No broken references to completed tasks
+- **Performance**: Smaller active task set for better navigation
 
-### **When to Archive**
-- ✅ Task status is "done" 
-- ✅ **ALL subtasks are "done"** (or no subtasks exist) - Archive complete task units only
-- ✅ Task has been verified/tested according to its test strategy
-- ✅ No pending dependencies from other active tasks
-
-### **Archive Unit Validation**
-- **Complete Task Units Only**: A main task can only be archived if both the main task AND all its subtasks have "done" status
-- **Incomplete Units Stay Active**: If any subtask is "pending", "in-progress", etc., the entire task unit remains in active tasks.json
-- **Preserve Work Integrity**: This prevents breaking up incomplete work and losing track of pending subtasks
-
-### **Steps to Archive a Completed Task**
-
-#### **Manual Single Task Archival**
-1. **Verify Complete Unit**: Ensure main task status is "done" AND all subtasks are "done"
-2. **Move Task File**: `mv tasks/task_XXX.txt tasks/completed_tasks/`
-3. **Update completed_tasks.json**: Add task data with completion metadata
-4. **Remove from tasks.json**: Delete task from main tasks list
-5. **Regenerate**: Use `mcp_taskmaster-ai_generate` or `task-master generate`
-
-#### **Automated Bulk Archival (Recommended)**
-Use the archival script for efficient processing of multiple completed task units:
-
-```bash
-python scripts/archive_completed_tasks.py
-```
+## Validation
+This process ensures:
+- Completed work is preserved with full context
+- Active task dependencies remain clean and accurate
+- No loss of historical information or decision context
+- Clean separation between active and completed work
 
 **This script will:**
 - ✅ Automatically identify complete task units (main + all subtasks done)

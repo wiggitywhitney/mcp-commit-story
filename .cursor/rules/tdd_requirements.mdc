@@ -1,0 +1,137 @@
+# TDD Requirements and Subtask Structure
+
+## TDD Methodology Requirements
+
+**Strict TDD methodology** is **REQUIRED** for:
+- Creating/modifying application logic
+- Adding new functions
+- Changing business logic
+- Core code changes
+
+**TDD is NOT required** for:
+- Integration testing subtasks
+- Documentation updates
+- Cleanup tasks
+- Telemetry verification
+- Boilerplate subtasks
+
+## Subtask Structure Patterns
+
+### For Core Code Changes (TDD Required)
+
+All subtasks that modify core application logic must follow this exact pattern:
+
+#### 1. GET APPROVAL FOR DESIGN CHOICES (if needed)
+```
+**PAUSE FOR MANUAL APPROVAL**: [Specific design choice 1]
+**PAUSE FOR MANUAL APPROVAL**: [Specific design choice 2]
+```
+- Include this section only if design decisions are needed
+- The developer prefers to answer design questions during planning phase rather than having pauses in implementation plans
+
+#### 2. WRITE TESTS FIRST
+```
+- Create tests/[unit|integration]/test_[module_name].py
+- Test [function_name]() function  
+- Test cases: [specific scenarios - success, failures, edge cases]
+- RUN TESTS - VERIFY THEY FAIL
+```
+
+#### 3. IMPLEMENT FUNCTIONALITY
+```
+- Implement [function_name]() in src/[module_path]/[file_name].py
+- Handle all error cases identified in tests
+- Include comprehensive telemetry with specific metrics/spans
+- RUN TESTS - VERIFY THEY PASS
+```
+
+#### 4. DOCUMENT AND COMPLETE
+```
+- Add documentation in code docstrings
+  1. Do not reference tasks
+  2. Do not reference historical implementations or development processes  
+  3. Write for the reader: A user with no preexisting project knowledge
+- Do not remove existing information unless it's incorrect
+- No approval needed - make documentation edits directly
+- Run the entire test suite and make sure all tests are passing
+- Verify that all requirements have been met
+- Double check all subtask requirements are met before marking this subtask as complete
+- MARK COMPLETE
+```
+
+### For Boilerplate Tasks (Simplified Structure)
+
+For integration testing, documentation, cleanup, and telemetry verification subtasks:
+
+#### Steps:
+```
+- [Step 1 description]
+- [Step 2 description]
+- [Step 3 description]
+- Run the entire test suite and make sure all tests are passing
+- Verify that all requirements have been met
+- MARK COMPLETE
+```
+
+## Test Requirements
+
+### Test Coverage Standards
+- **Test all error cases** - comprehensive error scenario coverage
+- **Integration tests** - verify end-to-end workflows work correctly
+- **Unit tests** - test individual functions and components
+- **Mock external dependencies** - isolate units under test
+
+### Test Execution Pattern
+1. **Write tests before implementation** - this is non-negotiable for core code changes
+2. **Run tests to verify they fail** - confirm tests are testing the right thing
+3. **Implement functionality** - make tests pass
+4. **Run tests to verify they pass** - confirm implementation works
+5. **Run full test suite** - ensure no regressions
+
+## Telemetry Requirements in Tests
+
+Every subtask involving code changes must include telemetry:
+
+### Required Telemetry Components
+- **Duration histograms** for operations: `[component].[operation]_duration_seconds`
+- **Operation counters** with success/failure labels: `[component].[operation]_total`
+- **Error categorization** with specific error types
+- **Performance correlation** tracking (e.g., context size vs duration)
+
+### Telemetry Testing Pattern
+- Use `TelemetryCollector` for isolated telemetry testing
+- Use assertion helpers: `assert_operation_traced`, `assert_trace_continuity`, `assert_performance_within_bounds`
+- Test both successful and error scenarios
+- Validate trace relationships and span attributes
+
+## Anti-Patterns to Avoid
+
+### TDD Anti-Patterns
+- **Skipping tests** or writing implementation before tests for core code changes
+- **Forcing TDD on boilerplate subtasks** like integration testing, documentation, or cleanup tasks
+- **Missing telemetry** on new functionality
+- **Poor test coverage** of error scenarios
+
+### Implementation Anti-Patterns
+- **Breaking existing patterns** instead of following established conventions
+- **Over-engineering** simple solutions
+- **Ignoring existing utilities** when they could be reused
+
+## Success Criteria
+
+### Good TDD Implementation
+- Tests written before implementation for core code changes
+- Tests fail initially, then pass after implementation
+- Comprehensive error case coverage
+- Full test suite passes
+- Appropriate telemetry included and tested
+
+### Good Boilerplate Subtasks
+- Clear, actionable steps
+- Verification that all requirements are met
+- Full test suite validation
+- Proper completion marking
+description:
+globs:
+alwaysApply: false
+---

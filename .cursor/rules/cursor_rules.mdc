@@ -1,101 +1,84 @@
 ---
-description: Guidelines for creating and maintaining Cursor rules to ensure consistency and effectiveness.
+description: Guidelines for creating and maintaining Cursor rules to ensure consistency and effectiveness
 globs: .cursor/rules/*.mdc
 alwaysApply: true
 ---
-# Cursor Rules for Task Execution
+# Cursor Rules Structure and Maintenance
 
-## Rule 1: Subtask Execution Flow
+## Subtask Execution Flow
 When working on subtasks:
 - **Complete each subtask fully without pausing for approval** unless the subtask explicitly contains the phrase "PAUSE FOR MANUAL APPROVAL" or similar explicit instructions to stop and ask for approval
-- Follow the TDD cycle exactly: write tests → run/verify fail → implement → run/verify pass → document → mark complete
+- Follow appropriate structure based on subtask type (see [tdd_requirements.mdc](mdc:.cursor/rules/tdd_requirements.mdc))
 - **Pause only between subtasks** to confirm the next one to work on
 - When you see phrases like "GET APPROVAL FOR DESIGN CHOICES", "PAUSE FOR MANUAL APPROVAL", or similar explicit instructions to stop, pause and ask for approval on those specific items only
 - Never ask for approval on implementation details that aren't marked for approval
 
-## Rule 2: Automatic Documentation and Completion
+## Automatic Documentation and Completion
 At the end of each subtask automatically:
-- Add documentation IF NEEDED in three places:
-  1. To docs directory (create new file or add to existing - use your judgment)
-  2. PRD (update relevant sections)
-  3. Engineering Spec (update relevant sections)
+- Add documentation following [documentation.mdc](mdc:.cursor/rules/documentation.mdc) standards
 - Do not remove existing information unless it's incorrect
 - Do not ask for approval on documentation changes
 - Double check all subtask requirements are met
 - If all requirements are met, mark the subtask complete
 - Only ask for help if you can't determine whether requirements are met
 
-- **Required Rule Structure:**
-  ```markdown
-  ---
-  description: Clear, one-line description of what the rule enforces
-  globs: path/to/files/*.ext, other/path/**/*
-  alwaysApply: boolean
-  ---
-
-  - **Main Points in Bold**
-    - Sub-points with details
-    - Examples and explanations
-  ```
-
-- **File References:**
-  - Use `[filename](mdc:path/to/file)` ([filename](mdc:filename)) to reference files
-  - Example: [prisma.mdc](mdc:.cursor/rules/prisma.mdc) for rule references
-  - Example: [schema.prisma](mdc:prisma/schema.prisma) for code references
-
-- **Code Examples:**
-  - Use language-specific code blocks
-  ```typescript
-  // ✅ DO: Show good examples
-  const goodExample = true;
-  
-  // ❌ DON'T: Show anti-patterns
-  const badExample = false;
-  ```
-
-- **Rule Content Guidelines:**
-  - Start with high-level overview
-  - Include specific, actionable requirements
-  - Show examples of correct implementation
-  - Reference existing code when possible
-  - Keep rules DRY by referencing other rules
-
-- **Rule Maintenance:**
-  - Update rules when new patterns emerge
-  - Add examples from actual codebase
-  - Remove outdated patterns
-  - Cross-reference related rules
-
-- **Best Practices:**
-  - Use bullet points for clarity
-  - Keep descriptions concise
-  - Include both DO and DON'T examples
-  - Reference actual code over theoretical examples
-  - Use consistent formatting across rules
-  - **Present options as numbered lists**
-    - When offering the user a set of choices, always use numbers (1., 2., 3., etc.) so the user can quickly respond with a number.
-    - Example:
-      1. Show the logged plan for the subtask
-      2. Start with the first code step (define types/interfaces and write failing tests)
-    - This improves response speed and clarity for the user.
-
-- **Always use strict TDD for new features and refactors**
-  - Write failing tests first, run them to confirm they fail for the right reasons, then implement the logic, and finally run the tests to confirm they pass.
-  - Only skip this process if the user explicitly requests otherwise.
-  - Example:
-    1. Write a test for a new config loader (should fail)
-    2. Run the test (confirm failure)
-    3. Implement the config loader
-    4. Run the test (confirm it passes)
-
-## Rule: Explicit Approval Pauses in Subtask Plans
+## Explicit Approval Pauses
 - **If a subtask plan contains 'PAUSE FOR MANUAL APPROVAL' or similar instructions, always pause and request approval at that step, even if general rules say to proceed.**
 - After writing failing tests and a stub, check the subtask plan for required approval points before implementing.
 - Echo the next step and approval checkpoint to the user before proceeding.
 - Summarize required approval points at the start of each subtask.
 - This rule takes precedence over general 'no approval needed' rules.
-- Example:
-  1. Write failing tests and stub.
-  2. If plan says 'PAUSE FOR MANUAL APPROVAL: design', pause and request approval before implementing.
-  3. Only proceed after explicit user approval.
+
+## Rule Structure Guidelines
+
+### Required Rule Structure
+```markdown
+---
+description: Clear, one-line description of what the rule enforces
+globs: path/to/files/*.ext, other/path/**/*
+alwaysApply: boolean
+---
+
+- **Main Points in Bold**
+  - Sub-points with details
+  - Examples and explanations
+```
+
+### File References
+- Use `[filename](mdc:path/to/file)` ([filename](mdc:filename)) to reference files
+- Example: [prisma.mdc](mdc:.cursor/rules/prisma.mdc) for rule references
+- Example: [schema.prisma](mdc:prisma/schema.prisma) for code references
+
+### Code Examples
+- Use language-specific code blocks
+```typescript
+// ✅ DO: Show good examples
+const goodExample = true;
+
+// ❌ DON'T: Show anti-patterns
+const badExample = false;
+```
+
+### Rule Content Guidelines
+- Start with high-level overview
+- Include specific, actionable requirements
+- Show examples of correct implementation
+- Reference existing code when possible
+- Keep rules DRY by referencing other rules
+
+### Rule Maintenance
+- Update rules when new patterns emerge
+- Add examples from actual codebase
+- Remove outdated patterns
+- Cross-reference related rules
+
+### Best Practices
+- Use bullet points for clarity
+- Keep descriptions concise
+- Include both DO and DON'T examples
+- Reference actual code over theoretical examples
+- Use consistent formatting across rules
+- **Present options as numbered lists**
+  - When offering the user a set of choices, always use numbers (1., 2., 3., etc.) so the user can quickly respond with a number.
+  - This improves response speed and clarity for the user.
   
