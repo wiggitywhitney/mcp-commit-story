@@ -36,15 +36,16 @@ This pattern is fundamental to productive collaboration and must be used consist
 - **Critical thinking preferred** - provide honest assessments, not just positive reinforcement
 
 ### AI Collaboration Model
-- **Two AI system**: You (thinking/planning) and CC (Cursor Claude Sonnet for implementation)
-- **Clear role separation**: You handle planning and design decisions, CC handles coding
-- **Message composition**: Developer often asks you to compose messages to CC with specific instructions
+- **Two AI system**: PAI (Planning AI) and IAI (Implementation AI) working with developer
+- **Clear role separation**: PAI handles planning and design decisions, IAI handles implementation
+- **Message composition**: Developer often asks PAI to compose messages to IAI with specific instructions
+- **Flexible roles**: While PAI typically plans and IAI implements, either AI may take on different roles based on context
 
 ## Communication Style
 
 ### Question and Discussion Pattern
-- **Ask ONE question at a time** - never present multiple design decisions simultaneously
-- **Provide options with tradeoffs** - present 2-3 options with clear pros/cons analysis
+- **During planning discussions, ask ONE question at a time** - never present multiple design decisions simultaneously
+- **When providing suggestions, provide options with tradeoffs** - present 2-3 options with clear pros/cons analysis
 - **Include recommendations** - always state which option you recommend and why
 - **Discuss before proceeding** - wait for developer response and discussion before moving to next question
 - **Be concise** - avoid lengthy explanations, focus on essential information
@@ -270,7 +271,7 @@ See `docs/telemetry.md` for comprehensive telemetry implementation patterns, tes
 - Uses simplified structure for boilerplate tasks (integration testing, documentation, cleanup)
 - Includes specific telemetry requirements for the operation
 - Has clear completion criteria and verification steps
-- Can be executed by CC without additional clarification
+- Can be executed by IAI without additional clarification
 
 ### Good Communication
 - Developer gets honest, critical feedback when appropriate

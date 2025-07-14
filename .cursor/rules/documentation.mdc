@@ -9,7 +9,7 @@ alwaysApply: true
 ## Core Principle
 **Write for a future developer with zero project knowledge who needs to understand and modify this system.**
 
-## Required Elements
+## Some Possible Elements
 - **Function-level docstrings** for all new functions following the core principle
 - **Module-level docstrings** for new modules explaining their purpose and approach
 - **Complete examples** that are copy-pasteable and work
