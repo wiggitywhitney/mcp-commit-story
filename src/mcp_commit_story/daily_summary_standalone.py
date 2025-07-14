@@ -609,6 +609,10 @@ def generate_daily_summary(journal_entries: List[JournalEntry], date_str: str, c
         # Extract reflections first (highest priority)
         reflections = _extract_manual_reflections(journal_entries)
         
+        # NEW: Extract full reflections from journal markdown file
+        from mcp_commit_story.daily_summary import extract_reflections_from_journal_file
+        full_reflections = extract_reflections_from_journal_file(date_str, config)
+        
         # Call AI to generate the summary
         ai_response = _call_ai_for_daily_summary(journal_entries, date_str, config)
         
@@ -621,6 +625,10 @@ def generate_daily_summary(journal_entries: List[JournalEntry], date_str: str, c
             "technical_progress": ai_response.get("technical_progress", ""),
             "daily_metrics": ai_response.get("daily_metrics", {})
         }
+        
+        # Add full reflections if available
+        if full_reflections:
+            summary_data["full_reflections"] = full_reflections
         
         # Only include optional sections if they have content
         ai_reflections = ai_response.get("reflections", []) or []
@@ -792,6 +800,17 @@ def _format_summary_as_markdown(summary: DailySummary) -> str:
             if value:
                 lines.append(f"- **{key.title()}**: {value}")
         lines.append("")
+    
+    # Add REFLECTIONS section with full reflections if available
+    if summary.get('full_reflections'):
+        lines.append("## REFLECTIONS")
+        lines.append("")
+        
+        for reflection in summary['full_reflections']:
+            lines.append(f"### {reflection['timestamp']}")
+            lines.append("")
+            lines.append(reflection['content'])
+            lines.append("")
     
     return "\n".join(lines)
 

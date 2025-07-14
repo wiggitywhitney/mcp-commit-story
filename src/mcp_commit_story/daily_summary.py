@@ -543,8 +543,8 @@ def extract_all_reflections_from_markdown(markdown_content: str) -> List[Dict[st
     if not markdown_content:
         return reflections
     
-    # Pattern to match reflection headers: ### H:MM AM/PM — Reflection
-    reflection_pattern = r'^### (\d{1,2}:\d{2} [AP]M) — Reflection\s*$'
+    # Pattern to match reflection headers: ## or ### H:MM AM/PM — Reflection
+    reflection_pattern = r'^#{2,3} (\d{1,2}:\d{2} [AP]M) — Reflection(?:\s*-\s*[\d\-\s\w:]+)?$'
     
     lines = markdown_content.split('\n')
     i = 0

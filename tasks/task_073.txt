@@ -1,0 +1,33 @@
+# Task ID: 73
+# Title: Consolidate Daily Summary Functionality
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Clean up the duplicated daily summary functionality between daily_summary.py and daily_summary_standalone.py. Currently there are two modules with overlapping functionality - one MCP-based and one standalone - which causes confusion and maintenance overhead.
+
+# Requirements:
+- Consolidate daily summary functionality into a single, clear module structure
+- Remove obsolete functions and tests that are no longer needed
+- Ensure all existing functionality (including new reflection extraction) works correctly
+- Maintain backward compatibility for any existing integrations
+- Update all references to use the consolidated approach
+- Remove code duplication between the two modules
+
+# Notes:
+## Context:
+- `daily_summary.py` contains MCP-based daily summary generation with reflection extraction
+- `daily_summary_standalone.py` contains standalone daily summary generation with reflection extraction  
+- Both modules have overlapping functions like `generate_daily_summary()`, `_format_summary_as_markdown()`, etc.
+- The standalone version is what's actually used in practice
+- Recent reflection extraction feature was added to both modules, creating more duplication
+
+## Design Decisions for Future Consideration:
+1. **Primary module choice**: Should daily_summary_standalone.py be the primary module, or should functionality be merged back into daily_summary.py?
+2. **MCP functionality**: Should MCP-based daily summary generation be preserved, removed, or refactored?
+3. **Function consolidation**: Which functions should be shared between MCP and standalone approaches vs. which should be module-specific?
+4. **Backward compatibility**: Are there existing integrations that depend on the MCP-based daily_summary.py that need to be preserved?
+5. **Testing cleanup**: Which test files should be removed or consolidated?
+6. **AI Intelligence Requirement**: User wants summaries to be executed with intelligence and include AI prompts. One of the modules does this (daily_summary_standalone.py imports `_build_daily_summary_prompt` and `_generate_mock_daily_summary_response` from daily_summary.py).
+
+# Subtasks:
+[To be created after design decisions are made] 
