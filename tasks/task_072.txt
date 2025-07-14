@@ -1,0 +1,51 @@
+# Task ID: 72
+# Title: Integrate Tagging System into Daily Summary Generation
+# Status: pending
+# Dependencies: 71
+# Priority: medium
+# Description: Update the daily summary generation system to leverage the tagging and narrative threading system from task 71, enabling daily summaries to surface story arcs, recurring themes, and emotional-technical connections.
+
+# Requirements:
+- Integrate tagging system from task 71 into daily summary generation workflow
+- Enable daily summaries to detect and display recurring themes from journal entries
+- Incorporate emotion-tech pairing insights into daily summary structure
+- Implement narrative threading to connect story arcs within daily summaries
+- Add AI-as-character elements to daily summary generation prompts
+- Maintain existing daily summary functionality while adding tagging capabilities
+- Ensure tagged content is properly preserved and displayed in summary output
+- Add comprehensive testing for tagging integration with daily summaries
+- Update telemetry to track tagging system usage and effectiveness in daily summaries
+- Maintain backward compatibility with existing daily summary consumers
+
+# Notes:
+## Initial Context:
+- Task 71 provides the core tagging system with #breakthrough, #AI-misstep, #pivot, #recurring-issue tags
+- Daily summaries should leverage this tagging to create more narrative-driven content
+- Need to consider how tagging fits into existing daily summary structure and format
+
+## Design Decisions for Future Consideration:
+
+### Architecture Questions:
+1. **Summary Structure Philosophy**: Should journal sections remain consistent between entries and summaries, or should summaries have their own specialized sections?
+
+2. **Individual Generator Pattern**: Should we create separate generators for different summary types (daily, weekly, monthly)?
+
+3. **Tagging Integration Point**: Where should tagging be applied in the daily summary workflow?
+
+4. **Narrative Threading Scope**: How much narrative context should daily summaries include?
+
+5. **Story Arc Discovery**: How should daily summaries help surface longer story arcs?
+
+## Implementation Strategy:
+- TBD after design decisions are made during Phase 2 discussion
+
+---
+
+# Subtasks
+TBD - Subtasks will be created in Phase 2 after design decisions are discussed and finalized.
+
+---
+
+## Task Completion
+Final verification:
+[ ] All requirements above completed 
