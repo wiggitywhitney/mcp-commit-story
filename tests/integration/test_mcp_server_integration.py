@@ -38,6 +38,8 @@ def test_full_workflow_success(tmp_path):
     # Note: In real usage, these would be called via MCP server
     # For integration testing, we test the handler functions directly
     from mcp_commit_story.server import handle_journal_new_entry, handle_journal_add_reflection
+    from mcp_commit_story.config import Config
+    from unittest.mock import patch
     
     # Create a test commit for context
     test_file = repo_path / "test.py"
@@ -45,42 +47,54 @@ def test_full_workflow_success(tmp_path):
     subprocess.run(["git", "add", "test.py"], cwd=repo_path, check=True)
     subprocess.run(["git", "commit", "-m", "Add test file"], cwd=repo_path, check=True)
     
+    # Setup config patching for MCP operations to use tmp_path
+    test_config = Config({
+        'journal': {'path': str(repo_path / "journal")},
+        'git': {'exclude_patterns': []},
+        'telemetry': {'enabled': False}
+    })
+    
     # Test journal/new-entry MCP operation
     import asyncio
     async def test_mcp_operations():
-        # Mock git context for new entry
-        git_context = {
-            "metadata": {
-                "hash": "abc123",
-                "author": "Test User",
-                "date": "2025-01-01T12:00:00Z",
-                "message": "Integration test commit"
-            },
-            "diff_summary": "Added test.py",
-            "changed_files": ["test.py"],
-            "file_stats": {"test.py": {"additions": 1, "deletions": 0}},
-            "commit_context": {}
-        }
-        
-        new_entry_request = {
-            "git": git_context,
-            "chat": None,
-            "terminal": None
-        }
-        
-        result = await handle_journal_new_entry(new_entry_request)
-        assert result["status"] == "success", f"New entry failed: {result.get('error')}"
-        
-        # Test journal/add-reflection MCP operation
-        reflection_request = {
-            "text": "Integration test reflection",
-            "date": "2025-01-01"
-        }
-        
-        result = await handle_journal_add_reflection(reflection_request)
-        assert result["status"] == "success", f"Add reflection failed: {result.get('error')}"
-        
-        return result["file_path"]
+        # Patch config loading to use test directory
+        with patch("mcp_commit_story.server.load_config", lambda: test_config), \
+             patch("mcp_commit_story.reflection_core.load_config", lambda: test_config), \
+             patch("mcp_commit_story.journal_handlers.load_config", lambda: test_config):
+            
+            # Mock git context for new entry
+            git_context = {
+                "metadata": {
+                    "hash": "abc123",
+                    "author": "Test User",
+                    "date": "2025-01-01T12:00:00Z",
+                    "message": "Integration test commit"
+                },
+                "diff_summary": "Added test.py",
+                "changed_files": ["test.py"],
+                "file_stats": {"test.py": {"additions": 1, "deletions": 0}},
+                "commit_context": {}
+            }
+            
+            new_entry_request = {
+                "git": git_context,
+                "chat": None,
+                "terminal": None
+            }
+            
+            result = await handle_journal_new_entry(new_entry_request)
+            assert result["status"] == "success", f"New entry failed: {result.get('error')}"
+            
+            # Test journal/add-reflection MCP operation
+            reflection_request = {
+                "text": "Integration test reflection",
+                "date": "2025-01-01"
+            }
+            
+            result = await handle_journal_add_reflection(reflection_request)
+            assert result["status"] == "success", f"Add reflection failed: {result.get('error')}"
+            
+            return result["file_path"]
     
     # Run the async MCP operations
     file_path = asyncio.run(test_mcp_operations())
@@ -115,8 +129,20 @@ def test_concurrent_operations(tmp_path):
     pass
 
 @pytest.mark.asyncio
-async def test_journal_add_reflection_integration(tmp_path):
+async def test_journal_add_reflection_integration(tmp_path, monkeypatch):
     """Integration test for MCP journal/add-reflection operation."""
+    # Mock the config to use tmp_path instead of real journal directory
+    from mcp_commit_story.config import Config
+    test_config = Config({
+        'journal': {'path': str(tmp_path / "journal")},
+        'git': {'exclude_patterns': []},
+        'telemetry': {'enabled': False}
+    })
+    # Patch all places that might call load_config during reflection handling
+    monkeypatch.setattr("mcp_commit_story.server.load_config", lambda: test_config)
+    monkeypatch.setattr("mcp_commit_story.reflection_core.load_config", lambda: test_config)
+    monkeypatch.setattr("mcp_commit_story.journal_handlers.load_config", lambda: test_config)
+    
     from mcp_commit_story.server import handle_journal_add_reflection
     request = {"text": "Integration reflection", "date": "2025-05-28"}
     result = await handle_journal_add_reflection(request)

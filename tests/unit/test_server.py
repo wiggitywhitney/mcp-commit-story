@@ -117,7 +117,19 @@ def test_journal_new_entry_handler_error_decorator():
     assert "fail" in response["error"]
 
 @pytest.mark.asyncio
-async def test_journal_add_reflection_handler(monkeypatch):
+async def test_journal_add_reflection_handler(tmp_path, monkeypatch):
+    # Mock the config to use tmp_path instead of real journal directory
+    from mcp_commit_story.config import Config
+    test_config = Config({
+        'journal': {'path': str(tmp_path / "journal")},
+        'git': {'exclude_patterns': []},
+        'telemetry': {'enabled': False}
+    })
+    # Patch all places that might call load_config during reflection handling
+    monkeypatch.setattr("mcp_commit_story.server.load_config", lambda: test_config)
+    monkeypatch.setattr("mcp_commit_story.reflection_core.load_config", lambda: test_config)
+    monkeypatch.setattr("mcp_commit_story.journal_handlers.load_config", lambda: test_config)
+    
     from mcp_commit_story.server import handle_journal_add_reflection
     class DummyRequest(dict):
         pass
