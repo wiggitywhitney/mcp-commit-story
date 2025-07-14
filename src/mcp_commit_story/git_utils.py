@@ -413,9 +413,18 @@ def classify_commit_size(insertions, deletions):
         return 'large'
 
 
+@trace_git_operation("is_generated_file",
+                    performance_thresholds={"duration": 0.1},
+                    error_categories=["filesystem", "regex"])
 def is_generated_file(file_path: str) -> bool:
     """
     Determine if a file should be excluded from diff analysis as generated/build content.
+    
+    **Telemetry Integration:**
+    This function uses @trace_git_operation decorator to track performance and errors:
+    - Performance threshold: 100ms (function should complete quickly)
+    - Error categories: ["filesystem", "regex"] for pattern matching issues
+    - Automatically tracks execution duration and success/failure status
     
     **Prerequisites:**
     - No external dependencies required
@@ -504,6 +513,13 @@ def get_commit_file_diffs(
 ) -> Dict[str, str]:
     """
     Extract diff content for all files changed in a commit with intelligent size management.
+    
+    **Telemetry Integration:**
+    This function uses @trace_git_operation decorator with comprehensive monitoring:
+    - Performance threshold: 3.0s for large repository operations
+    - Error categories: ["git", "filesystem", "memory"] for proper error classification
+    - Tracks metrics: file counts, diff sizes, truncation events, adaptive sizing decisions
+    - Available span attributes: files.processed, results.total_size_bytes, results.has_truncation
     
     **Prerequisites:**
     - GitPython must be installed: `pip install gitpython`

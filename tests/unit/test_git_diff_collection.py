@@ -321,4 +321,51 @@ class TestGitContextIntegration:
         
         # If this doesn't raise a type error, the field exists
         assert 'file_diffs' in sample_context
-        assert isinstance(sample_context['file_diffs'], dict) 
+        assert isinstance(sample_context['file_diffs'], dict)
+
+
+class TestDiffCollectionTelemetryIntegration:
+    """Smoke tests to verify telemetry decorators don't break functionality."""
+    
+    def test_get_commit_file_diffs_has_telemetry_decorator(self):
+        """Test that get_commit_file_diffs function has @trace_git_operation decorator."""
+        assert hasattr(get_commit_file_diffs, '__wrapped__'), \
+            "get_commit_file_diffs should have @trace_git_operation decorator"
+    
+    def test_is_generated_file_has_telemetry_decorator(self):
+        """Test that is_generated_file function has @trace_git_operation decorator."""
+        assert hasattr(is_generated_file, '__wrapped__'), \
+            "is_generated_file should have @trace_git_operation decorator"
+    
+    def test_telemetry_decorators_dont_crash_operations(self, temp_repo):
+        """Test that telemetry decorators don't crash normal operations."""
+        if not GIT_AVAILABLE:
+            pytest.skip("GitPython not available")
+            
+        repo, temp_dir = temp_repo
+        
+        # Create a test file and commit
+        test_file = create_test_file(temp_dir, "test.py", "print('hello')")
+        repo.index.add([test_file])
+        commit = repo.index.commit("Add test file")
+        
+        # These operations should not crash with telemetry enabled
+        diffs = get_commit_file_diffs(repo, commit)
+        is_generated = is_generated_file("test.py")
+        
+        # Verify basic functionality still works
+        assert isinstance(diffs, dict)
+        assert isinstance(is_generated, bool)
+        assert not is_generated  # test.py should not be considered generated
+    
+    @pytest.mark.parametrize('file_path,expected', [
+        ('src/main.py', False),
+        ('package-lock.json', True),
+        ('dist/bundle.min.js', True),
+        ('README.md', False),
+    ])
+    def test_is_generated_file_works_with_telemetry(self, file_path, expected):
+        """Test that is_generated_file produces correct results with telemetry enabled."""
+        # This verifies telemetry doesn't interfere with the logic
+        result = is_generated_file(file_path)
+        assert result == expected 
