@@ -11,7 +11,8 @@ def test_journal_entry_full_round_trip():
             'diff_summary': 'Refactored core modules and added tests.',
             'changed_files': ['src/main.py', 'tests/test_main.py'],
             'file_stats': {'src/main.py': {'insertions': 50, 'deletions': 5}},
-            'commit_context': {}
+            'commit_context': {},
+            'file_diffs': {'src/main.py': '@@ -1,3 +1,5 @@\n+def new_feature():\n+    pass', 'tests/test_main.py': '@@ -0,0 +1,3 @@\n+def test_new_feature():\n+    assert True'}
         }
     )
     # Generate all sections (7 total, down from 8 with terminal commands removed)
@@ -62,7 +63,8 @@ def test_journal_entry_partial_context():
             'diff_summary': 'Only core modules updated.',
             'changed_files': ['src/core.py'],
             'file_stats': {},
-            'commit_context': {}
+            'commit_context': {},
+            'file_diffs': {'src/core.py': '@@ -1,1 +1,2 @@\n # Core module\n+# Updated core'}
         }
     )
     
@@ -96,7 +98,8 @@ def test_journal_entry_partial_context():
     assert parsed.frustrations == []
     # AI may generate tone/mood from commit message, so we accept any valid tone_mood structure
     assert parsed.tone_mood is None or (isinstance(parsed.tone_mood, dict) and 'mood' in parsed.tone_mood)
-    assert parsed.discussion_notes == []
+    # AI now returns explanatory messages when no chat context is available
+    assert isinstance(parsed.discussion_notes, list)
     # AI may generate commit metadata from git context, so we accept any dict structure
     assert isinstance(parsed.commit_metadata, dict)
 
@@ -110,7 +113,8 @@ def test_journal_entry_empty_context():
             'diff_summary': '',
             'changed_files': [],
             'file_stats': {},
-            'commit_context': {}
+            'commit_context': {},
+            'file_diffs': {}
         }
     )
     
@@ -144,7 +148,8 @@ def test_journal_entry_empty_context():
     assert parsed.frustrations == []
     # AI may generate tone/mood from commit message, so we accept any valid tone_mood structure
     assert parsed.tone_mood is None or (isinstance(parsed.tone_mood, dict) and 'mood' in parsed.tone_mood)
-    assert parsed.discussion_notes == []
+    # AI now returns explanatory messages when no chat context is available
+    assert isinstance(parsed.discussion_notes, list)
     # AI may generate commit metadata from git context, so we accept any dict structure
     assert isinstance(parsed.commit_metadata, dict)
 

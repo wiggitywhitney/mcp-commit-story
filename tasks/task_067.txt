@@ -260,7 +260,7 @@ To verify the correct implementation of code diff collection in git context:
    - Check that the generated content references specific code changes from the diffs
 
 # Subtasks:
-## 1. Extend GitContext and Git Utils for Diff Collection [in-progress]
+## 1. Extend GitContext and Git Utils for Diff Collection [done]
 ### Dependencies: None
 ### Description: Implement adaptive diff collection with size limits that scale based on file count, including binary file exclusion and generated file filtering.
 ### Details:
@@ -284,8 +284,70 @@ DOCUMENT AND COMPLETE
 - Run the entire test suite and make sure all tests are passing
 - Double check all subtask requirements are met before marking this subtask as complete
 - MARK COMPLETE
+<info added on 2025-07-14T11:45:01.857Z>
+### Subtask 67.1 Completed - 2025-07-14 06:37 PST
 
-## 2. Update Context Collection to Include Diffs [pending]
+**IMPLEMENTATION COMPLETED SUCCESSFULLY**
+
+✅ **WRITE TESTS FIRST** - Created comprehensive test suite in `tests/unit/test_git_diff_collection.py` with 15 tests covering:
+- Basic diff collection functionality
+- Adaptive size limits for different file counts (≤5, 6-20, >20 files)
+- Binary file exclusion
+- Generated file filtering
+- Empty commit handling
+- Merge commit handling
+- Total size limit enforcement
+- Helper function testing
+- GitContext integration
+
+✅ **RUN TESTS - VERIFIED THEY FAIL** - All tests initially failed as expected since functions didn't exist yet
+
+✅ **IMPLEMENT FUNCTIONALITY** - Successfully implemented:
+- **Updated GitContext TypedDict** in `src/mcp_commit_story/context_types.py`:
+  - Added `file_diffs: Dict[str, str]` field to store file path → diff content mappings
+  
+- **Implemented `get_commit_file_diffs()`** in `src/mcp_commit_story/git_utils.py`:
+  - Adaptive size limits scaling by file count:
+    - ≤5 files: 10KB per file (50KB total max)
+    - 6-20 files: 2.5KB per file (50KB total max)
+    - >20 files: 1KB per file with 50 file ceiling (50KB total max)
+  - Binary file exclusion using existing `is_blob_binary()` function
+  - Generated file filtering using new `is_generated_file()` helper
+  - Robust error handling with graceful degradation
+  - Telemetry integration via `@trace_git_operation` decorator
+
+- **Implemented `is_generated_file()`** helper function:
+  - Filters minified files (`.min.js`, `.min.css`)
+  - Filters package lock files (`package-lock.json`, `yarn.lock`)
+  - Filters Python cache files (`__pycache__/`, `.pyc`)
+  - Filters build directories (`build/`, `dist/`, `node_modules/`)
+  - Case-insensitive pattern matching
+
+✅ **RUN TESTS - VERIFIED THEY PASS** - All 15 tests now pass successfully
+
+✅ **FIXED EXISTING TESTS** - Updated `tests/unit/test_context_types.py` to include new `file_diffs` field in GitContext tests
+
+✅ **DOCUMENT AND COMPLETE** - Created comprehensive documentation in `docs/git_diff_collection.md` explaining:
+- Adaptive diff collection strategy
+- Size limits scaling by file count
+- File filtering logic
+- API reference with examples
+- Performance considerations
+- Error handling approach
+
+✅ **FULL TEST SUITE PASSING** - Verified entire test suite passes with new functionality
+
+**TECHNICAL IMPLEMENTATION DETAILS:**
+- Used GitPython's `commit.diff(parent, create_patch=True)` for diff extraction
+- Implemented adaptive size limits that scale intelligently based on commit complexity
+- Added comprehensive error handling that doesn't break the collection on individual file failures
+- Integrated with existing telemetry system for performance monitoring
+- Maintained backward compatibility with existing GitContext consumers
+
+The implementation provides AI generators with rich diff information while maintaining performance through intelligent size limits and filtering. All subtask requirements have been met successfully.
+</info added on 2025-07-14T11:45:01.857Z>
+
+## 2. Update Context Collection to Include Diffs [in-progress]
 ### Dependencies: None
 ### Description: Modify context collection to call the new diff collection functionality and ensure all GitContext objects include the file_diffs field.
 ### Details:

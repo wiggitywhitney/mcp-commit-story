@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import get_type_hints
 from mcp_commit_story.context_types import ChatMessage, ChatHistory
 from mcp_commit_story.context_collection import collect_chat_history, collect_git_context
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 # Assume these will be imported from the journal module
 # from mcp_commit_story.journal import collect_commit_metadata, extract_code_diff, gather_discussion_notes, capture_file_changes, collect_chat_history, collect_ai_terminal_commands
@@ -276,4 +276,84 @@ def test_sessionname_not_collected(mock_query_cursor_chat_database, mock_filter_
     assert user_message['composerId'] == 'composer-123'
     assert user_message['bubbleId'] == 'bubble-123'
     assert assistant_message['composerId'] == 'composer-123'
-    assert assistant_message['bubbleId'] == 'bubble-456' 
+    assert assistant_message['bubbleId'] == 'bubble-456'
+
+
+# Tests for file_diffs field integration (Subtask 67.2)
+
+def test_collect_git_context_includes_file_diffs_field(tmp_path):
+    """Test that collect_git_context() includes the file_diffs field."""
+    repo, commit = setup_temp_repo_with_commit(tmp_path)
+    ctx = collect_git_context(commit.hexsha, repo=repo)
+    
+    # Verify file_diffs field is present
+    assert 'file_diffs' in ctx
+    assert isinstance(ctx['file_diffs'], dict)
+
+
+@patch('mcp_commit_story.context_collection.get_commit_file_diffs')
+def test_collect_git_context_successful_diff_collection(mock_get_diffs, tmp_path):
+    """Test successful diff collection integration."""
+    repo, commit = setup_temp_repo_with_commit(tmp_path)
+    
+    # Mock the diff collection function to return expected data
+    expected_diffs = {
+        'file.txt': '@@ -0,0 +1 @@\n+hello\n'
+    }
+    mock_get_diffs.return_value = expected_diffs
+    
+    ctx = collect_git_context(commit.hexsha, repo=repo)
+    
+    # Verify get_commit_file_diffs was called with correct parameters
+    mock_get_diffs.assert_called_once_with(repo, commit)
+    
+    # Verify file_diffs field contains the expected data
+    assert ctx['file_diffs'] == expected_diffs
+
+
+@patch('mcp_commit_story.context_collection.get_commit_file_diffs')
+def test_collect_git_context_large_repo_performance(mock_get_diffs, tmp_path):
+    """Test performance handling with large repos - diffs should still be collected."""
+    repo, commit = setup_temp_repo_with_commit(tmp_path)
+    
+    # Mock large repo scenario
+    mock_get_diffs.return_value = {'file.txt': 'diff content'}
+    
+    ctx = collect_git_context(commit.hexsha, repo=repo)
+    
+    # Even for large repos, file_diffs should be included
+    assert 'file_diffs' in ctx
+    assert ctx['file_diffs'] == {'file.txt': 'diff content'}
+    mock_get_diffs.assert_called_once()
+
+
+@patch('mcp_commit_story.context_collection.get_commit_file_diffs')
+def test_collect_git_context_handles_diff_errors(mock_get_diffs, tmp_path):
+    """Test error handling when diff collection fails."""
+    repo, commit = setup_temp_repo_with_commit(tmp_path)
+    
+    # Mock diff collection failure
+    mock_get_diffs.side_effect = Exception("Diff collection failed")
+    
+    # collect_git_context should handle the error gracefully
+    ctx = collect_git_context(commit.hexsha, repo=repo)
+    
+    # Should still have file_diffs field, but empty due to error
+    assert 'file_diffs' in ctx
+    assert ctx['file_diffs'] == {}
+
+
+@patch('mcp_commit_story.context_collection.get_commit_file_diffs')
+def test_collect_git_context_empty_diff_collection(mock_get_diffs, tmp_path):
+    """Test when diff collection returns empty results."""
+    repo, commit = setup_temp_repo_with_commit(tmp_path)
+    
+    # Mock empty diff collection
+    mock_get_diffs.return_value = {}
+    
+    ctx = collect_git_context(commit.hexsha, repo=repo)
+    
+    # Should have file_diffs field with empty dict
+    assert 'file_diffs' in ctx
+    assert ctx['file_diffs'] == {}
+    mock_get_diffs.assert_called_once_with(repo, commit) 

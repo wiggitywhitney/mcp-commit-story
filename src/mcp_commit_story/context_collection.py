@@ -20,7 +20,7 @@ import logging
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from mcp_commit_story.context_types import ChatHistory, GitContext, RecentJournalContext
-from mcp_commit_story.git_utils import get_repo, get_current_commit, get_commit_details, get_commit_diff_summary, classify_file_type, classify_commit_size, NULL_TREE
+from mcp_commit_story.git_utils import get_repo, get_current_commit, get_commit_details, get_commit_diff_summary, classify_file_type, classify_commit_size, NULL_TREE, get_commit_file_diffs
 from mcp_commit_story.telemetry import (
     trace_git_operation, 
     trace_mcp_operation,
@@ -185,12 +185,19 @@ def collect_git_context(commit_hash=None, repo=None, journal_path=None) -> GitCo
         journal_path (str, optional): Path to the journal file or directory to exclude from context (for recursion prevention).
 
     Returns:
-        GitContext: Structured git context as defined in context_types.py
+        GitContext: Structured git context as defined in context_types.py, including:
+            - metadata: Commit hash, author, date, message
+            - diff_summary: Summary of all changes
+            - changed_files: List of modified file paths
+            - file_stats: Categorized file counts
+            - commit_context: Size classification and merge status
+            - file_diffs: Per-file diff content for changed files
 
     Notes:
     - The GitContext type is a TypedDict defined in context_types.py.
     - All context is ephemeral and only persisted as part of the generated journal entry.
     - This function enforces the in-memory-only rule for context data.
+    - File diffs are collected with size limits for performance (see get_commit_file_diffs).
     - If journal_path is provided, all journal files are filtered from changed_files, file_stats, and diff_summary to prevent recursion.
     """
     # Handle repo parameter - can be None, string path, Path object, or git.Repo object
@@ -310,6 +317,13 @@ def collect_git_context(commit_hash=None, repo=None, journal_path=None) -> GitCo
         'is_merge': is_merge,
     }
     
+    # Collect file diffs
+    try:
+        file_diffs = get_commit_file_diffs(repo, commit)
+    except Exception as e:
+        logger.warning(f"Failed to collect file diffs for commit {commit.hexsha}: {e}")
+        file_diffs = {}
+    
     # Build final result
     return {
         'metadata': metadata,
@@ -317,6 +331,7 @@ def collect_git_context(commit_hash=None, repo=None, journal_path=None) -> GitCo
         'changed_files': changed_files,
         'file_stats': file_stats,
         'commit_context': commit_context,
+        'file_diffs': file_diffs,
     } 
 
 
