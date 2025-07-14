@@ -400,19 +400,19 @@ class TestSaveDailySummary:
     @patch('mcp_commit_story.daily_summary_standalone._format_summary_as_markdown')
     def test_save_summary_success(self, mock_format, mock_ensure_dir, mock_get_path):
         """Test successful summary saving."""
-        mock_get_path.return_value = "/test/journal/summaries/daily/2025-01-06-summary.md"
+        mock_get_path.return_value = "journal/summaries/daily/2025-01-06-summary.md"
         mock_format.return_value = "# Daily Summary\n\nTest content"
-        
+    
         summary = {"date": "2025-01-06", "summary": "Test summary"}
         config = create_test_config()
-        
+    
         with patch('builtins.open', mock_open()) as mock_file:
             result = save_daily_summary(summary, config)
-            
+    
             assert result == "/test/journal/summaries/daily/2025-01-06-summary.md"
             mock_ensure_dir.assert_called_once()
             mock_file.assert_called_once_with("/test/journal/summaries/daily/2025-01-06-summary.md", 
-                                            'w', encoding='utf-8')
+                                             'w', encoding='utf-8')
     
     @patch('mcp_commit_story.daily_summary_standalone.get_journal_file_path')
     @patch('mcp_commit_story.daily_summary_standalone.ensure_journal_directory')

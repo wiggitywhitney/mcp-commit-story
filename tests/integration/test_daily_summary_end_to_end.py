@@ -83,13 +83,7 @@ Added login endpoint, JWT generation, and middleware for token validation.
 Productive and focused session.
 """)
         
-        # Step 2: Install git hook with daily summary capability
-        hook_path = repo_dir / ".git" / "hooks" / "post-commit"
-        hook_content = generate_hook_content()
-        hook_path.write_text(hook_content)
-        hook_path.chmod(0o755)
-        
-        # Step 3: Create journal entry for "today" (2025-01-06) - simulates date change
+        # Step 2: Create journal entry for "today" (2025-01-06) - simulates date change
         today_journal = journal_dir / "2025-01-06-journal.md"
         today_journal.write_text("""### 2025-01-06T09:00:00-05:00 — Commit def456
 
@@ -100,13 +94,19 @@ Fixed authentication bug and improved error handling.
 Resolved JWT expiration edge case and added proper error responses.
 """)
         
-        # Step 4: Make a commit to trigger the hook
+        # Step 3: Make a commit (without hook to test trigger logic independently)
         subprocess.run(["git", "add", str(today_journal)], cwd=repo_dir, check=True)
         subprocess.run(["git", "commit", "-m", "Add today's journal entry"], cwd=repo_dir, check=True)
         
-        # Step 5: Verify that daily summary trigger would be activated
+        # Step 4: Verify that daily summary trigger would be activated
         result = should_generate_daily_summary(str(today_journal), str(summaries_dir))
         assert result == "2025-01-05", "Should trigger daily summary for yesterday"
+        
+        # Step 5: Install git hook with daily summary capability (for hook testing)
+        hook_path = repo_dir / ".git" / "hooks" / "post-commit"
+        hook_content = generate_hook_content()
+        hook_path.write_text(hook_content)
+        hook_path.chmod(0o755)
         
         # Step 6: Verify MCP tool would be called (through mock)
         # Note: The actual hook execution would call the MCP tool

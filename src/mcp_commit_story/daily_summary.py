@@ -89,7 +89,7 @@ def daily_summary_exists(date_str: str, summary_dir: str) -> bool:
         if not os.path.exists(summary_dir):
             return False
         
-        # Check for standard summary file format
+        # Check for standard summary file format (matches get_journal_file_path convention)
         summary_filename = f"{date_str}-summary.md"
         summary_path = os.path.join(summary_dir, summary_filename)
         

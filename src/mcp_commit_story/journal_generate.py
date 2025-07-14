@@ -707,7 +707,7 @@ def get_journal_file_path(date: str, entry_type: str) -> str:
             filename = f"{date}-journal.md"
             file_path = f"journal/daily/{filename}"
         elif entry_type == "daily_summary":
-            filename = f"{date}-daily.md"
+            filename = f"{date}-summary.md"
             file_path = f"journal/summaries/daily/{filename}"
         elif entry_type == "weekly_summary":
             filename = f"{date}-weekly.md"

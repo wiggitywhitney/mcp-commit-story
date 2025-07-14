@@ -6,11 +6,9 @@ This module is called by the enhanced git post-commit hook to handle:
 - File-creation-based daily summary triggering
 - Period summary boundary detection  
 - MCP server communication for summary generation
-- Background journal generation with detached processes (Task 57.4)
+- Background journal generation with detached processes
 - Graceful error handling that never blocks git operations
 
-Based on approved design decisions for subtask 27.3, Task 50, and Task 57.4.
-Direct journal generation replaces signal-based indirection for journal entry creation.
 """
 
 import sys
@@ -177,15 +175,17 @@ def check_daily_summary_trigger(repo_path: str) -> Optional[str]:
             journal_path = os.path.join(repo_path, journal_path)
         
         # Find the most recent journal file (if any)
-        if not os.path.exists(journal_path):
-            log_hook_activity(f"Journal directory not found: {journal_path}", "info", repo_path)
+        # Journal files are stored in journal_path/daily/ subdirectory
+        daily_journal_dir = os.path.join(journal_path, "daily")
+        if not os.path.exists(daily_journal_dir):
+            log_hook_activity(f"Daily journal directory not found: {daily_journal_dir}", "info", repo_path)
             return None
         
-        # Look for journal files
+        # Look for journal files in the daily subdirectory
         journal_files = []
-        for filename in os.listdir(journal_path):
+        for filename in os.listdir(daily_journal_dir):
             if filename.endswith('-journal.md'):
-                file_path = os.path.join(journal_path, filename)
+                file_path = os.path.join(daily_journal_dir, filename)
                 journal_files.append(file_path)
         
         if not journal_files:

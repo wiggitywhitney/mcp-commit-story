@@ -9,7 +9,7 @@ from mcp_commit_story import journal_generate as journal
 
 @pytest.mark.parametrize("date, entry_type, expected_path", [
     ("2025-05-14", "daily", "journal/daily/2025-05-14-journal.md"),
-    ("2025-05-14", "daily_summary", "journal/summaries/daily/2025-05-14-daily.md"),
+    ("2025-05-14", "daily_summary", "journal/summaries/daily/2025-05-14-summary.md"),
     ("2025-05-01_07", "weekly_summary", "journal/summaries/weekly/2025-05-01_07-weekly.md"),
     ("2025-05", "monthly_summary", "journal/summaries/monthly/2025-05-monthly.md"),
     ("2025", "yearly_summary", "journal/summaries/yearly/2025-yearly.md"),

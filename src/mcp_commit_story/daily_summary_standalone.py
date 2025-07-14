@@ -104,6 +104,7 @@ def daily_summary_exists(date_str: str, summary_dir: str) -> bool:
         True if summary file exists, False otherwise
     """
     try:
+        # Check for standard summary file format (matches summariesV2 convention)
         summary_filename = f"{date_str}-summary.md"
         summary_path = os.path.join(summary_dir, summary_filename)
         return os.path.exists(summary_path)
@@ -389,10 +390,19 @@ def load_journal_entries_for_date(date_str: str, config: Dict) -> List[JournalEn
     entries = []
     try:
         # Use the established journal file path utility
-        journal_file_path = get_journal_file_path(date_str, "daily")
+        relative_path = get_journal_file_path(date_str, "daily")
+        
+        # Construct full path using config
+        journal_base_path = config.get("journal", {}).get("path", "")
+        if not journal_base_path:
+            logger.error("No journal path found in config")
+            return entries
+        
+        # Convert relative path to absolute path
+        journal_file_path = os.path.join(journal_base_path, relative_path.replace("journal/", ""))
         
         if not os.path.exists(journal_file_path):
-            logger.info(f"No journal file found for date {date_str}")
+            logger.info(f"No journal file found for date {date_str} at {journal_file_path}")
             return entries
         
         # Read and parse the journal file
@@ -652,7 +662,15 @@ def save_daily_summary(summary: DailySummary, config: Dict) -> str:
     try:
         # Use established journal file utilities
         date_str = summary['date']
-        summary_path = get_journal_file_path(date_str, "daily_summary")
+        relative_path = get_journal_file_path(date_str, "daily_summary")
+        
+        # Construct full path using config
+        journal_base_path = config.get("journal", {}).get("path", "")
+        if not journal_base_path:
+            raise Exception("No journal path found in config")
+        
+        # Convert relative path to absolute path
+        summary_path = os.path.join(journal_base_path, relative_path.replace("journal/", ""))
         
         # Ensure directory exists
         ensure_journal_directory(summary_path)
