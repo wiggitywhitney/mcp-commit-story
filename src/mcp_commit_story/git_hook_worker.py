@@ -27,6 +27,7 @@ import git
 from . import journal_workflow
 from . import config
 from . import git_utils
+from .daily_summary_standalone import generate_daily_summary_standalone
 from .telemetry import trace_git_operation
 
 # Configure logging for hook operations
@@ -368,41 +369,63 @@ def extract_commit_metadata(repo_path: str) -> Dict[str, Any]:
         }
 
 
-def signal_creation_telemetry(tool_name: str, success: bool, error_type: str = None, duration_ms: float = None) -> None:
-    """Record telemetry for signal creation operations.
-    
-    Args:
-        tool_name: Name of the MCP tool for the signal
-        success: Whether signal creation was successful
-        error_type: Type of error if success=False
-        duration_ms: Duration of signal creation in milliseconds
-    """
+@handle_errors_gracefully
+def signal_creation_telemetry(tool_name: str, success: bool, duration_ms: Optional[float] = None, error_type: Optional[str] = None) -> None:
+    """Record telemetry for signal creation operations."""
     try:
         from mcp_commit_story.telemetry import get_mcp_metrics
         
         metrics = get_mcp_metrics()
         if not metrics:
-            return  # Graceful degradation if no metrics available
+            return
         
-        if success:
-            # Record success metrics
-            metrics.record_counter("signal_creation_success", 1)
-            metrics.record_counter(f"signal_creation_success_{tool_name}", 1)
-        else:
-            # Record failure metrics
-            metrics.record_counter("signal_creation_failure", 1)
-            metrics.record_counter(f"signal_creation_failure_{tool_name}", 1)
-            
-            if error_type:
-                metrics.record_counter(f"signal_creation_error_{error_type}", 1)
+        # Record operation count
+        labels = {
+            "tool_name": tool_name,
+            "success": "true" if success else "false"
+        }
         
-        # Record performance metrics if available
+        if error_type:
+            labels["error_type"] = error_type
+        
+        metrics.git_hook_signal_creation_total.add(1, labels)
+        
+        # Record duration if provided
         if duration_ms is not None:
-            metrics.record_histogram("signal_creation_duration_ms", duration_ms)
-            
+            metrics.git_hook_signal_creation_duration_seconds.record(duration_ms / 1000.0, labels)
+    
     except Exception as e:
-        # Telemetry failures should never block signal creation
-        log_hook_activity(f"Telemetry recording failed: {str(e)}", "warning")
+        # Silent failure - don't break git operations for telemetry
+        pass
+
+
+@handle_errors_gracefully
+def daily_summary_telemetry(success: bool, duration_ms: Optional[float] = None, error_type: Optional[str] = None) -> None:
+    """Record telemetry for git hook daily summary operations."""
+    try:
+        from mcp_commit_story.telemetry import get_mcp_metrics
+        
+        metrics = get_mcp_metrics()
+        if not metrics:
+            return
+        
+        # Record operation count
+        labels = {
+            "success": "true" if success else "false"
+        }
+        
+        if error_type:
+            labels["error_type"] = error_type
+        
+        metrics.git_hook_daily_summary_trigger_total.add(1, labels)
+        
+        # Record duration if provided
+        if duration_ms is not None:
+            metrics.git_hook_daily_summary_duration_seconds.record(duration_ms / 1000.0, labels)
+    
+    except Exception as e:
+        # Silent failure - don't break git operations for telemetry
+        pass
 
 
 def create_tool_signal(tool_name: str, parameters: Dict[str, Any], commit_metadata: Dict[str, Any], repo_path: str) -> Optional[str]:
@@ -812,17 +835,25 @@ def main() -> None:
         date_to_generate = check_daily_summary_trigger(repo_path)
         
         if date_to_generate:
-            # Create signal for daily summary generation
-            result = create_tool_signal_safe(
-                "generate_daily_summary", 
-                {"date": date_to_generate}, 
-                commit_metadata, 
-                repo_path
-            )
-            if result:
-                log_hook_activity(f"Daily summary signal created for {date_to_generate}: {result}", "info", repo_path)
-            else:
-                log_hook_activity(f"Daily summary signal creation failed for {date_to_generate}", "warning", repo_path)
+            # Generate daily summary directly (no signal creation)
+            import time
+            start_time = time.time()
+            
+            try:
+                result = generate_daily_summary_standalone(date_to_generate)
+                duration_ms = (time.time() - start_time) * 1000.0
+                
+                if result:
+                    log_hook_activity(f"Daily summary generated directly for {date_to_generate}", "info", repo_path)
+                    daily_summary_telemetry(success=True, duration_ms=duration_ms)
+                else:
+                    log_hook_activity(f"Daily summary generation skipped for {date_to_generate} (no entries)", "info", repo_path)
+                    daily_summary_telemetry(success=True, duration_ms=duration_ms)  # No entries is still success
+            except Exception as e:
+                duration_ms = (time.time() - start_time) * 1000.0
+                error_type = "ai_generation_error" if "ai" in str(e).lower() else "unknown_error"
+                log_hook_activity(f"Daily summary generation failed for {date_to_generate}: {str(e)}", "warning", repo_path)
+                daily_summary_telemetry(success=False, duration_ms=duration_ms, error_type=error_type)
             
             # 2. Check if period summaries should be generated
             period_triggers = check_period_summary_triggers(date_to_generate, repo_path)

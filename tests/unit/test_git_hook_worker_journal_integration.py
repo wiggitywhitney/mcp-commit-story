@@ -6,6 +6,7 @@ in git_hook_worker.py.
 """
 
 import os
+import sys
 import tempfile
 import shutil
 from pathlib import Path
@@ -335,3 +336,190 @@ def test_journal_entry_file_path_is_correct():
             # This test should now PASS because we fixed the path resolution
             assert expected_correct_path.exists(), f"Journal entry should be saved to {expected_correct_path}"
             assert not wrong_path.exists(), f"Journal entry should NOT be saved to {wrong_path}" 
+
+
+class TestDailySummaryDirectIntegration:
+    """Test the direct daily summary generation integration (replacing signal creation)."""
+
+    @patch('mcp_commit_story.git_hook_worker.generate_daily_summary_standalone')
+    @patch('mcp_commit_story.git_hook_worker.check_daily_summary_trigger')
+    @patch('mcp_commit_story.git_hook_worker.check_period_summary_triggers')
+    @patch('mcp_commit_story.git_hook_worker.generate_journal_entry_safe')
+    @patch('mcp_commit_story.git_hook_worker.extract_commit_metadata')
+    @patch('mcp_commit_story.git_hook_worker.setup_hook_logging')
+    @patch('mcp_commit_story.git_hook_worker.create_tool_signal_safe')
+    @patch('sys.exit')
+    @patch('sys.argv', ['git_hook_worker.py', '/test/repo'])
+    @patch('os.path.exists')
+    def test_daily_summary_direct_call_success(self, mock_exists, mock_sys_exit, mock_signal_create, 
+                                               mock_setup_logging, mock_extract_metadata,
+                                               mock_journal_safe, mock_period_triggers,
+                                               mock_daily_trigger, mock_generate_standalone):
+        """Test git hook worker calls generate_daily_summary_standalone directly instead of creating signals."""
+        from mcp_commit_story.git_hook_worker import main
+        
+        # Mock filesystem checks
+        mock_exists.return_value = True  # Repository exists
+        
+        # Mock trigger functions
+        mock_daily_trigger.return_value = "2025-01-15"  # Daily summary needed
+        mock_period_triggers.return_value = {
+            'weekly': False, 'monthly': False, 'quarterly': False, 'yearly': False
+        }
+        
+        # Mock successful standalone generation
+        mock_generate_standalone.return_value = {
+            'date': '2025-01-15',
+            'summary': 'Generated summary content'
+        }
+        
+        # Mock other functions
+        mock_extract_metadata.return_value = {'hash': 'test123'}
+        mock_journal_safe.return_value = True
+        
+        # Run the main function
+        main()
+        
+        # Verify standalone generation was called instead of signal creation
+        mock_generate_standalone.assert_called_once_with("2025-01-15")
+        
+        # Verify signal creation was NOT called for daily summary
+        signal_calls = mock_signal_create.call_args_list
+        daily_signal_calls = [call for call in signal_calls if call[0][0] == "generate_daily_summary"]
+        assert len(daily_signal_calls) == 0, "Should not create daily summary signals"
+    
+    @patch('mcp_commit_story.git_hook_worker.generate_daily_summary_standalone')
+    @patch('mcp_commit_story.git_hook_worker.check_daily_summary_trigger')
+    @patch('mcp_commit_story.git_hook_worker.check_period_summary_triggers')
+    @patch('mcp_commit_story.git_hook_worker.generate_journal_entry_safe')
+    @patch('mcp_commit_story.git_hook_worker.extract_commit_metadata')
+    @patch('mcp_commit_story.git_hook_worker.setup_hook_logging')
+    @patch('mcp_commit_story.git_hook_worker.create_tool_signal_safe')
+    @patch('sys.exit')
+    @patch('sys.argv', ['git_hook_worker.py', '/test/repo'])
+    @patch('os.path.exists')
+    def test_daily_summary_direct_call_failure(self, mock_exists, mock_sys_exit, mock_signal_create, 
+                                               mock_setup_logging, mock_extract_metadata,
+                                               mock_journal_safe, mock_period_triggers,
+                                               mock_daily_trigger, mock_generate_standalone):
+        """Test git hook worker handles standalone generation failure gracefully."""
+        from mcp_commit_story.git_hook_worker import main
+        
+        # Mock filesystem checks
+        mock_exists.return_value = True  # Repository exists
+        
+        # Mock trigger functions
+        mock_daily_trigger.return_value = "2025-01-15"  # Daily summary needed
+        mock_period_triggers.return_value = {
+            'weekly': False, 'monthly': False, 'quarterly': False, 'yearly': False
+        }
+        
+        # Mock failed standalone generation
+        mock_generate_standalone.side_effect = Exception("AI generation failed")
+        
+        # Mock other functions
+        mock_extract_metadata.return_value = {'hash': 'test123'}
+        mock_journal_safe.return_value = True
+        
+        # Run the main function - should not crash
+        main()
+        
+        # Verify standalone generation was attempted
+        mock_generate_standalone.assert_called_once_with("2025-01-15")
+        
+        # Verify signal creation was NOT called for daily summary
+        signal_calls = mock_signal_create.call_args_list
+        daily_signal_calls = [call for call in signal_calls if call[0][0] == "generate_daily_summary"]
+        assert len(daily_signal_calls) == 0, "Should not create daily summary signals"
+    
+    @patch('mcp_commit_story.git_hook_worker.generate_daily_summary_standalone')
+    @patch('mcp_commit_story.git_hook_worker.check_daily_summary_trigger')
+    @patch('mcp_commit_story.git_hook_worker.check_period_summary_triggers')
+    @patch('mcp_commit_story.git_hook_worker.generate_journal_entry_safe')
+    @patch('mcp_commit_story.git_hook_worker.extract_commit_metadata')
+    @patch('mcp_commit_story.git_hook_worker.setup_hook_logging')
+    @patch('mcp_commit_story.git_hook_worker.create_tool_signal_safe')
+    @patch('sys.exit')
+    @patch('sys.argv', ['git_hook_worker.py', '/test/repo'])
+    @patch('os.path.exists')
+    def test_no_daily_summary_trigger_no_call(self, mock_exists, mock_sys_exit, mock_signal_create, 
+                                              mock_setup_logging, mock_extract_metadata,
+                                              mock_journal_safe, mock_period_triggers,
+                                              mock_daily_trigger, mock_generate_standalone):
+        """Test git hook worker does not call standalone generation when no trigger conditions met."""
+        from mcp_commit_story.git_hook_worker import main
+        
+        # Mock filesystem checks
+        mock_exists.return_value = True  # Repository exists
+        
+        # Mock trigger functions - no daily summary needed
+        mock_daily_trigger.return_value = None
+        mock_period_triggers.return_value = {
+            'weekly': False, 'monthly': False, 'quarterly': False, 'yearly': False
+        }
+        
+        # Mock other functions
+        mock_extract_metadata.return_value = {'hash': 'test123'}
+        mock_journal_safe.return_value = True
+        
+        # Run the main function
+        main()
+        
+        # Verify standalone generation was NOT called
+        mock_generate_standalone.assert_not_called()
+        
+        # Verify signal creation was NOT called for daily summary
+        signal_calls = mock_signal_create.call_args_list
+        daily_signal_calls = [call for call in signal_calls if call[0][0] == "generate_daily_summary"]
+        assert len(daily_signal_calls) == 0, "Should not create daily summary signals"
+
+    @patch('mcp_commit_story.git_hook_worker.generate_daily_summary_standalone')
+    @patch('mcp_commit_story.git_hook_worker.check_daily_summary_trigger')
+    @patch('mcp_commit_story.git_hook_worker.check_period_summary_triggers')
+    @patch('mcp_commit_story.git_hook_worker.generate_journal_entry_safe')
+    @patch('mcp_commit_story.git_hook_worker.extract_commit_metadata')
+    @patch('mcp_commit_story.git_hook_worker.setup_hook_logging')
+    @patch('mcp_commit_story.git_hook_worker.create_tool_signal_safe')
+    @patch('sys.exit')
+    @patch('sys.argv', ['git_hook_worker.py', '/test/repo'])
+    @patch('os.path.exists')
+    def test_period_summaries_still_use_signals(self, mock_exists, mock_sys_exit, mock_signal_create, 
+                                               mock_setup_logging, mock_extract_metadata,
+                                               mock_journal_safe, mock_period_triggers,
+                                               mock_daily_trigger, mock_generate_standalone):
+        """Test that period summaries still use signal creation while daily summaries use direct calls."""
+        from mcp_commit_story.git_hook_worker import main
+        
+        # Mock filesystem checks
+        mock_exists.return_value = True  # Repository exists
+        
+        # Mock trigger functions
+        mock_daily_trigger.return_value = "2025-01-15"  # Daily summary needed
+        mock_period_triggers.return_value = {
+            'weekly': True, 'monthly': False, 'quarterly': False, 'yearly': False
+        }
+        
+        # Mock successful standalone generation
+        mock_generate_standalone.return_value = {
+            'date': '2025-01-15',
+            'summary': 'Generated summary content'
+        }
+        
+        # Mock other functions
+        mock_extract_metadata.return_value = {'hash': 'test123'}
+        mock_journal_safe.return_value = True
+        mock_signal_create.return_value = "/path/to/signal.json"
+        
+        # Run the main function
+        main()
+        
+        # Verify standalone generation was called for daily summary
+        mock_generate_standalone.assert_called_once_with("2025-01-15")
+        
+        # Verify signal creation was called for weekly summary but NOT for daily summary
+        signal_calls = mock_signal_create.call_args_list
+        weekly_signal_calls = [call for call in signal_calls if call[0][0] == "generate_weekly_summary"]
+        daily_signal_calls = [call for call in signal_calls if call[0][0] == "generate_daily_summary"]
+        
+        assert len(weekly_signal_calls) == 1, "Should create weekly summary signal"
+        assert len(daily_signal_calls) == 0, "Should not create daily summary signals" 

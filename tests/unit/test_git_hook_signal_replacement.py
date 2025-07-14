@@ -78,11 +78,13 @@ class TestSignalReplacement:
     @patch('mcp_commit_story.git_hook_worker.generate_journal_entry_safe')
     @patch('mcp_commit_story.git_hook_worker.check_period_summary_triggers')
     @patch('mcp_commit_story.git_hook_worker.check_daily_summary_trigger')
+    @patch('mcp_commit_story.git_hook_worker.generate_daily_summary_standalone')
     @patch('mcp_commit_story.git_hook_worker.log_hook_activity')
     @patch('sys.argv', ['git_hook_worker.py', '/fake/repo'])
-    def test_daily_summary_signals_preserved(
+    def test_daily_summary_direct_generation_replaces_signals(
         self, 
         mock_log_hook, 
+        mock_generate_standalone,
         mock_daily_check, 
         mock_period_check, 
         mock_generate_journal,
@@ -92,7 +94,7 @@ class TestSignalReplacement:
         mock_setup_logging,
         mock_path_exists
     ):
-        """Test that daily summary signals are preserved."""
+        """Test that daily summary generation is done directly instead of via signals."""
         # Setup mocks - daily summary needed
         mock_path_exists.return_value = True  # Simulate we're in a git repo
         mock_setup_logging.return_value = None  # No-op for logging setup
@@ -103,14 +105,18 @@ class TestSignalReplacement:
         mock_extract_metadata.return_value = {'commit_hash': 'abc123', 'author': 'test'}
         mock_generate_journal.return_value = True
         mock_signal_create.return_value = "/path/to/signal.json"
+        mock_generate_standalone.return_value = {'date': '2024-01-15', 'summary': 'Test summary'}
         
         # Call main function
         git_hook_worker.main()
         
-        # Verify daily summary signal was created
+        # Verify daily summary was generated directly, not via signal
+        mock_generate_standalone.assert_called_once_with("2024-01-15")
+        
+        # Verify NO daily summary signal was created
         daily_signal_calls = [call for call in mock_signal_create.call_args_list 
                              if 'generate_daily_summary' in str(call)]
-        assert len(daily_signal_calls) == 1, "generate_daily_summary signal should be created"
+        assert len(daily_signal_calls) == 0, "generate_daily_summary signal should NOT be created"
         
         # Verify direct journal call was made
         mock_generate_journal.assert_called_once_with('/fake/repo')
