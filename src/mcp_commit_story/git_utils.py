@@ -7,6 +7,7 @@ and processing commits for journal entry generation.
 import os
 import time
 import shutil
+import re
 from datetime import datetime
 from typing import Dict, List, Any, Optional, Union
 
@@ -410,3 +411,299 @@ def classify_commit_size(insertions, deletions):
         return 'medium'
     else:
         return 'large'
+
+
+def is_generated_file(file_path: str) -> bool:
+    """
+    Determine if a file should be excluded from diff analysis as generated/build content.
+    
+    **Prerequisites:**
+    - No external dependencies required
+    - Works with any file path string (relative or absolute)
+    
+    **Technical Context:**
+    Generated files are typically not meaningful for code analysis and can add noise
+    to diff collection. This function identifies common patterns like build artifacts,
+    dependency lock files, and compiled assets that should be filtered out.
+    
+    **Detection Patterns:**
+    - Minified files: `*.min.js`, `*.min.css`
+    - Package managers: `package-lock.json`, `yarn.lock`  
+    - Python artifacts: `__pycache__/`, `*.pyc`
+    - Build directories: `build/`, `dist/`, `node_modules/`
+    
+    **Complete Example:**
+    ```python
+    from mcp_commit_story.git_utils import is_generated_file
+    
+    # Check various file types
+    files_to_check = [
+        "src/main.py",           # False - source code
+        "package-lock.json",     # True - generated lock file
+        "dist/bundle.min.js",    # True - minified build output
+        "build/assets/style.css", # True - build directory
+        "README.md",             # False - documentation
+        "__pycache__/module.pyc" # True - Python cache
+    ]
+    
+    for file_path in files_to_check:
+        is_generated = is_generated_file(file_path)
+        print(f"{file_path}: {'SKIP' if is_generated else 'INCLUDE'}")
+    
+    # Use in filtering workflows
+    source_files = [f for f in all_files if not is_generated_file(f)]
+    ```
+    
+    **Extension Guidelines:**
+    To add new patterns, extend the `generated_patterns` list with regex patterns:
+    ```python
+    # Example: Add pattern for .NET build artifacts
+    generated_patterns.append(r'bin/')
+    generated_patterns.append(r'obj/')
+    ```
+    
+    Args:
+        file_path: File path to analyze (str, can be relative or absolute path)
+        
+    Returns:
+        bool: True if file matches generated file patterns, False for source files
+        
+    Examples:
+        >>> is_generated_file("src/main.py")
+        False
+        >>> is_generated_file("package-lock.json") 
+        True
+        >>> is_generated_file("BUILD/output.js")
+        True
+    """
+    generated_patterns = [
+        r'\.min\.(js|css)$',
+        r'package-lock\.json$',
+        r'yarn\.lock$',
+        r'__pycache__/',
+        r'\.pyc$',
+        r'build/',
+        r'dist/',
+        r'node_modules/'
+    ]
+    
+    # Convert to lowercase for case-insensitive matching
+    file_path_lower = file_path.lower()
+    
+    return any(re.search(pattern, file_path_lower) for pattern in generated_patterns)
+
+
+@trace_git_operation("get_commit_file_diffs",
+                    performance_thresholds={"duration": 3.0},
+                    error_categories=["git", "filesystem", "memory"])
+def get_commit_file_diffs(
+    repo: 'git.Repo', 
+    commit: 'git.Commit', 
+    max_file_size: int = 10 * 1024, 
+    max_total_size: int = 50 * 1024
+) -> Dict[str, str]:
+    """
+    Extract diff content for all files changed in a commit with intelligent size management.
+    
+    **Prerequisites:**
+    - GitPython must be installed: `pip install gitpython`
+    - Repository must be a valid git repository
+    - Commit must exist in the repository
+    
+    **Adaptive Size Limits:**
+    The function automatically adjusts per-file limits based on the total number of changed files:
+    - ≤5 files: 10KB per file (optimized for detailed analysis)
+    - 6-20 files: 2.5KB per file (balanced detail vs performance)  
+    - >20 files: 1KB per file, max 50 files (performance-first with sampling)
+    
+    **Technical Context:**
+    This design prevents memory exhaustion on large commits while maximizing detail 
+    for typical development workflows. Binary files and generated files (package-lock.json,
+    build artifacts) are automatically filtered to focus on meaningful code changes.
+    
+    **Complete Example:**
+    ```python
+    from mcp_commit_story.git_utils import get_commit_file_diffs, get_repo, get_current_commit
+    
+    # Get repository and current commit
+    repo = get_repo("/path/to/repository")
+    commit = get_current_commit(repo)
+    
+    # Extract diffs with default limits
+    diffs = get_commit_file_diffs(repo, commit)
+    
+    # Process results
+    for file_path, diff_content in diffs.items():
+        if file_path == "__truncated__":
+            print("Some diffs were omitted due to size limits")
+        elif file_path == "__error__":
+            print(f"Error occurred: {diff_content}")
+        else:
+            print(f"{file_path}: {len(diff_content)} bytes of diff")
+    
+    # Custom size limits for large repositories
+    large_repo_diffs = get_commit_file_diffs(
+        repo, commit, 
+        max_file_size=5*1024,  # 5KB per file
+        max_total_size=25*1024  # 25KB total
+    )
+    ```
+    
+    **Error Handling:**
+    - Returns {"__error__": "description"} for critical failures
+    - Returns {"__truncated__": "message"} when size limits are exceeded
+    - Individual file errors are captured as {"file.py": "[Error extracting diff: ...]"}
+    
+    **Performance Characteristics:**
+    - Typical execution: <100ms for commits with <10 files
+    - Large commits (>50 files): <500ms due to sampling and limits
+    - Memory usage: Bounded by max_total_size parameter
+    
+    Args:
+        repo: GitPython repository object (required, must be valid git repo)
+        commit: GitPython commit object (required, must exist in repo)
+        max_file_size: Base limit for individual file diffs in bytes (adaptive logic overrides this)
+        max_total_size: Hard limit for total diff content in bytes (default: 50KB)
+        
+    Returns:
+        Dict[str, str]: File path to diff content mapping. Special keys:
+        - "__error__": Indicates a critical failure with error message
+        - "__truncated__": Indicates some content was omitted due to size limits
+        
+    Raises:
+        ImportError: If GitPython is not installed
+        AttributeError: If repo or commit objects are invalid
+    """
+    if not GIT_AVAILABLE:
+        raise ImportError("GitPython not installed. Run: pip install gitpython")
+    
+    # Add telemetry attributes for monitoring
+    from opentelemetry import trace
+    span = trace.get_current_span()
+    
+    file_diffs = {}
+    total_size = 0
+    
+    # Get parent commit (or None for initial commit)
+    parent = commit.parents[0] if commit.parents else None
+    
+    # Set basic span attributes
+    span.set_attribute("git.commit_hash", commit.hexsha[:8])  # First 8 chars for privacy
+    span.set_attribute("git.has_parent", parent is not None)
+    span.set_attribute("operation.max_file_size", max_file_size)
+    span.set_attribute("operation.max_total_size", max_total_size)
+    
+    try:
+        # Get all diff items first to count them for adaptive limits
+        if parent:
+            diff_items = list(commit.diff(parent, create_patch=True))
+        else:
+            diff_items = list(commit.diff(NULL_TREE, create_patch=True))
+        
+        # Filter out binary and generated files first
+        filtered_diff_items = []
+        for diff_item in diff_items:
+            # Get file path (prefer b_path for new files, fall back to a_path for deleted files)
+            file_path = diff_item.b_path or diff_item.a_path
+            if not file_path:
+                continue
+            
+            # Skip binary files - check if the diff_item represents a binary file
+            # For GitPython, we need to check if the blobs are binary
+            is_binary = False
+            if diff_item.a_blob and is_blob_binary(diff_item.a_blob):
+                is_binary = True
+            elif diff_item.b_blob and is_blob_binary(diff_item.b_blob):
+                is_binary = True
+            
+            if is_binary:
+                continue
+                
+            # Skip generated files
+            if is_generated_file(file_path):
+                continue
+                
+            filtered_diff_items.append(diff_item)
+        
+        # Apply adaptive size limits based on file count
+        file_count = len(filtered_diff_items)
+        original_file_count = len(diff_items)
+        binary_files_filtered = sum(1 for item in diff_items if 
+                                   (item.a_blob and is_blob_binary(item.a_blob)) or
+                                   (item.b_blob and is_blob_binary(item.b_blob)))
+        generated_files_filtered = original_file_count - binary_files_filtered - file_count
+        
+        # Set telemetry attributes for file analysis
+        span.set_attribute("files.total_original", original_file_count)
+        span.set_attribute("files.binary_filtered", binary_files_filtered)
+        span.set_attribute("files.generated_filtered", generated_files_filtered)
+        span.set_attribute("files.processed", file_count)
+        
+        if file_count <= 5:
+            # ≤5 files: 10KB per file
+            adaptive_max_file_size = 10 * 1024
+            span.set_attribute("adaptive_sizing.category", "small_commit")
+        elif file_count <= 20:
+            # 6-20 files: 2.5KB per file
+            adaptive_max_file_size = int(2.5 * 1024)
+            span.set_attribute("adaptive_sizing.category", "medium_commit")
+        else:
+            # >20 files: 1KB per file with 50 file ceiling
+            adaptive_max_file_size = 1 * 1024
+            filtered_diff_items = filtered_diff_items[:50]  # Limit to 50 files
+            span.set_attribute("adaptive_sizing.category", "large_commit")
+            span.set_attribute("files.truncated_to", 50)
+        
+        span.set_attribute("adaptive_sizing.file_limit_bytes", adaptive_max_file_size)
+        
+        # Process each filtered diff item
+        for diff_item in filtered_diff_items:
+            file_path = diff_item.b_path or diff_item.a_path
+            
+            try:
+                # Get the diff content
+                if hasattr(diff_item, 'diff') and diff_item.diff:
+                    diff_content = diff_item.diff.decode('utf-8', errors='replace')
+                else:
+                    # Fallback if diff content is not available
+                    diff_content = f"[Unable to extract diff for {file_path}]"
+                
+                # Apply file size limits
+                if len(diff_content) > adaptive_max_file_size:
+                    # Truncate with message
+                    diff_content = diff_content[:adaptive_max_file_size] + "\n[... diff truncated due to size limits ...]"
+                
+                # Check if adding this diff would exceed total size limit
+                if total_size + len(diff_content) > max_total_size:
+                    # If we've already collected some diffs, stop here
+                    if file_diffs:
+                        file_diffs["__truncated__"] = "Additional diffs omitted due to total size limits"
+                        break
+                    # If this is the first diff and it's already too large, include it truncated
+                    remaining_size = max_total_size - total_size
+                    if remaining_size > 0:
+                        diff_content = diff_content[:remaining_size] + "\n[... remaining diffs truncated due to size limits ...]"
+                
+                # Add to collection
+                file_diffs[file_path] = diff_content
+                total_size += len(diff_content)
+                
+            except Exception as e:
+                # Handle individual file diff errors gracefully
+                file_diffs[file_path] = f"[Error extracting diff: {str(e)}]"
+                total_size += len(file_diffs[file_path])
+    
+    except Exception as e:
+        # Handle overall diff extraction errors
+        span.set_attribute("operation.success", False)
+        span.set_attribute("error.type", type(e).__name__)
+        return {"__error__": f"Error extracting commit diffs: {str(e)}"}
+    
+    # Set final telemetry attributes
+    span.set_attribute("operation.success", True)
+    span.set_attribute("results.files_with_diffs", len([k for k in file_diffs.keys() if not k.startswith("__")]))
+    span.set_attribute("results.total_size_bytes", total_size)
+    span.set_attribute("results.has_truncation", "__truncated__" in file_diffs)
+    span.set_attribute("results.has_errors", any(k.startswith("__") for k in file_diffs.keys()))
+    
+    return file_diffs

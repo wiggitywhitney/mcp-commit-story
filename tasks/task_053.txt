@@ -1,7 +1,7 @@
 # Task ID: 53
 # Title: Refactor Daily Summary Generation
 # Status: pending
-# Dependencies: 50, 67
+# Dependencies: 67
 # Priority: high
 # Description: Refactor existing daily summary generation from MCP-based to background, non-MCP generation using the same standalone approach as journal entries.
 # Details:

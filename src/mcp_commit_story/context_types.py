@@ -70,6 +70,7 @@ class GitContext(TypedDict):
     changed_files: List[str]
     file_stats: dict
     commit_context: dict
+    file_diffs: Dict[str, str]  # Mapping of file paths to their diffs
 
 class RecentJournalContext(TypedDict):
     """Recent journal context for enriching commit journal generation.

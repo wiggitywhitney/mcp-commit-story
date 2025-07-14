@@ -20,7 +20,8 @@ def test_git_context_type():
         'diff_summary': 'diff',
         'changed_files': ['file.py'],
         'file_stats': {},
-        'commit_context': {}
+        'commit_context': {},
+        'file_diffs': {'file.py': 'diff content'}
     }
     assert set(git.keys()) == set(GitContext.__annotations__.keys())
     assert set(git['metadata'].keys()) == set(GitMetadata.__annotations__.keys())
@@ -33,6 +34,7 @@ def test_journal_context_type():
             'diff_summary': 'diff',
             'changed_files': ['file.py'],
             'file_stats': {},
+            'file_diffs': {'file.py': 'diff content'},
             'commit_context': {}
         }
     }

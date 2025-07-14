@@ -1,7 +1,7 @@
 # Task ID: 67
 # Title: Add Code Diff Collection to Git Context
-# Status: pending
-# Dependencies: 50
+# Status: in-progress
+# Dependencies: None
 # Priority: medium
 # Description: Extend git context collection to include actual code diffs alongside existing metadata, enabling AI generators to analyze specific code changes when creating journal entries.
 # Details:
@@ -260,7 +260,7 @@ To verify the correct implementation of code diff collection in git context:
    - Check that the generated content references specific code changes from the diffs
 
 # Subtasks:
-## 1. Extend GitContext and Git Utils for Diff Collection [pending]
+## 1. Extend GitContext and Git Utils for Diff Collection [in-progress]
 ### Dependencies: None
 ### Description: Implement adaptive diff collection with size limits that scale based on file count, including binary file exclusion and generated file filtering.
 ### Details:
