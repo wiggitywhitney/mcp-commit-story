@@ -29,7 +29,7 @@ class TestEnsureJournalDirectory:
     def test_ensure_directory_creates_missing_directory(self):
         """Test that ensure_journal_directory creates missing directories."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            journal_path = os.path.join(temp_dir, "sandbox-journal", "daily", "2025-06-02-journal.md")
+            journal_path = os.path.join(temp_dir, "test-journal", "daily", "2025-06-02-journal.md")
             
             # Ensure directory doesn't exist initially
             directory = os.path.dirname(journal_path)
@@ -45,7 +45,7 @@ class TestEnsureJournalDirectory:
         """Test that ensure_journal_directory works when directory already exists."""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create directory structure first
-            journal_dir = os.path.join(temp_dir, "sandbox-journal", "daily")
+            journal_dir = os.path.join(temp_dir, "test-journal", "daily")
             os.makedirs(journal_dir)
             journal_path = os.path.join(journal_dir, "2025-06-02-journal.md")
             
@@ -215,7 +215,7 @@ class TestReflectionCoreIntegration:
     def test_end_to_end_reflection_workflow(self):
         """Test the complete workflow from directory creation to reflection addition."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            journal_path = os.path.join(temp_dir, "sandbox-journal", "daily", "2025-06-02-journal.md")
+            journal_path = os.path.join(temp_dir, "test-journal", "daily", "2025-06-02-journal.md")
             reflection_text = "This is an end-to-end test reflection."
             
             # Ensure directory doesn't exist initially
