@@ -71,7 +71,7 @@ The Daily Summary MCP Tool (`journal/generate-daily-summary`) automatically gene
 
 ### Daily Summary Structure
 
-Each daily summary contains 8 standardized sections plus source links:
+Each daily summary contains 8 standardized sections plus source links and reflections:
 
 1. **Summary** - High-level overview of the day's work
 2. **Reflections** - Manual user reflections (preserved verbatim) + AI insights
@@ -83,6 +83,54 @@ Each daily summary contains 8 standardized sections plus source links:
 8. **Tone/Mood** - Emotional context and team dynamics
 9. **Daily Metrics** - Quantitative measures (commits, files, time spent)
 10. **Source Files** - Links to constituent journal entries (automatic)
+11. **REFLECTIONS** - Complete full reflections from journal entries (NEW)
+
+### REFLECTIONS Section
+
+The REFLECTIONS section is a new feature that extracts ALL full reflections from journal entries and adds them to the end of daily summaries under a `## REFLECTIONS` header. This section captures the complete reflection content that users manually add to their journal entries.
+
+#### Key Features
+
+- **Complete Extraction**: Extracts all reflections with `### H:MM AM/PM — Reflection` headers
+- **Full Content**: Includes the entire reflection text, not just patterns or excerpts
+- **Timestamp Preservation**: Maintains original reflection timestamps
+- **Markdown Formatting**: Properly formatted with H3 headers and content blocks
+
+#### Implementation
+
+- **`extract_all_reflections_from_markdown()`** - Extracts reflections from raw markdown content
+- **`extract_reflections_from_journal_file()`** - Loads and extracts reflections from journal file
+- **`format_reflections_section()`** - Formats reflections into markdown section
+- **Updated `generate_daily_summary()`** - Includes full reflection extraction
+- **Updated `_format_summary_as_markdown()`** - Adds REFLECTIONS section to output
+
+#### Format Example
+
+```markdown
+## REFLECTIONS
+
+### 7:30 AM
+
+This is my morning reflection about the work I'm planning to do today.
+I'm feeling excited about the new features we're implementing.
+
+### 2:30 PM
+
+After lunch reflection - the architecture discussion went well.
+We decided to use the microservice approach for better scalability.
+```
+
+#### Technical Details
+
+The REFLECTIONS section is automatically generated when daily summaries are created. It:
+
+1. Reads the journal markdown file for the specified date
+2. Searches for reflection headers matching the pattern `### H:MM AM/PM — Reflection`
+3. Extracts the complete content following each reflection header
+4. Formats them into a structured markdown section
+5. Appends the section to the end of the daily summary
+
+This feature ensures that all user reflections are preserved in daily summaries, providing complete context for future reference and analysis.
 
 ### Implementation Details
 
@@ -93,7 +141,9 @@ Each daily summary contains 8 standardized sections plus source links:
 - **`load_journal_entries_for_date()`** - Loads entries for specified date
 - **`save_daily_summary()`** - Saves summary to markdown file
 - **`_extract_manual_reflections()`** - Extracts user reflections with regex
-- **`_call_ai_for_daily_summary()`** - AI generation with comprehensive prompts
+- **`extract_all_reflections_from_markdown()`** - NEW: Extracts full reflections from markdown
+- **`extract_reflections_from_journal_file()`** - NEW: Loads and extracts reflections from files
+- **`format_reflections_section()`** - NEW: Formats reflections into markdown section
 
 #### AI Prompt Engineering
 

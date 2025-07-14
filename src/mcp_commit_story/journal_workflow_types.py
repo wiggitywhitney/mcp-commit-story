@@ -113,4 +113,5 @@ class DailySummary(TypedDict):
     challenges_and_learning: Optional[List[str]]  # Only include if non-empty
     discussion_highlights: Optional[List[str]]  # Only include if non-empty
     tone_mood: Optional[Dict[str, str]]  # Only include if evidence found
-    daily_metrics: Dict[str, Any] 
+    daily_metrics: Dict[str, Any]
+    full_reflections: Optional[List[Dict[str, str]]]  # Full reflections from journal markdown 

@@ -590,3 +590,293 @@ class TestEnhancedBoundaryDetection:
         assert result["monthly"] is True  
         assert result["quarterly"] is True
         assert result["yearly"] is True 
+
+
+class TestExtractAllReflections:
+    """Test extracting all full reflections from journal markdown content."""
+    
+    def test_extract_single_reflection_from_markdown(self):
+        """Test extracting a single reflection from markdown content."""
+        markdown_content = """
+# Daily Journal - 2025-01-15
+
+### 7:30 AM — Reflection
+
+This is a test reflection about my work today.
+I'm feeling good about the progress.
+
+### 8:00 AM — Commit abc123
+
+#### Summary
+Did some work on the project.
+"""
+        
+        from src.mcp_commit_story.daily_summary import extract_all_reflections_from_markdown
+        
+        reflections = extract_all_reflections_from_markdown(markdown_content)
+        
+        assert len(reflections) == 1
+        assert reflections[0]['timestamp'] == '7:30 AM'
+        assert reflections[0]['content'] == 'This is a test reflection about my work today.\nI\'m feeling good about the progress.'
+    
+    def test_extract_multiple_reflections_from_markdown(self):
+        """Test extracting multiple reflections from markdown content."""
+        markdown_content = """
+# Daily Journal - 2025-01-15
+
+### 7:30 AM — Reflection
+
+First reflection of the day.
+
+### 8:00 AM — Commit abc123
+
+#### Summary
+Did some work.
+
+### 2:30 PM — Reflection
+
+Second reflection after lunch.
+This one has multiple lines.
+
+### 3:00 PM — Commit def456
+
+#### Summary  
+More work done.
+"""
+        
+        from src.mcp_commit_story.daily_summary import extract_all_reflections_from_markdown
+        
+        reflections = extract_all_reflections_from_markdown(markdown_content)
+        
+        assert len(reflections) == 2
+        assert reflections[0]['timestamp'] == '7:30 AM'
+        assert reflections[0]['content'] == 'First reflection of the day.'
+        assert reflections[1]['timestamp'] == '2:30 PM'
+        assert reflections[1]['content'] == 'Second reflection after lunch.\nThis one has multiple lines.'
+    
+    def test_extract_no_reflections_from_markdown(self):
+        """Test extracting reflections when there are none."""
+        markdown_content = """
+# Daily Journal - 2025-01-15
+
+### 8:00 AM — Commit abc123
+
+#### Summary
+Did some work on the project.
+
+### 9:00 AM — Commit def456
+
+#### Summary
+More work done.
+"""
+        
+        from src.mcp_commit_story.daily_summary import extract_all_reflections_from_markdown
+        
+        reflections = extract_all_reflections_from_markdown(markdown_content)
+        
+        assert len(reflections) == 0
+    
+    def test_extract_reflections_with_complex_content(self):
+        """Test extracting reflections with complex content including code blocks."""
+        markdown_content = """
+# Daily Journal - 2025-01-15
+
+### 7:30 AM — Reflection
+
+I'm thinking about the architecture:
+
+```python
+def some_function():
+    return "test"
+```
+
+This approach might work better.
+
+### 8:00 AM — Commit abc123
+
+#### Summary
+Did some work.
+"""
+        
+        from src.mcp_commit_story.daily_summary import extract_all_reflections_from_markdown
+        
+        reflections = extract_all_reflections_from_markdown(markdown_content)
+        
+        assert len(reflections) == 1
+        assert reflections[0]['timestamp'] == '7:30 AM'
+        assert '```python' in reflections[0]['content']
+        assert 'def some_function():' in reflections[0]['content']
+        assert 'This approach might work better.' in reflections[0]['content']
+
+
+class TestDailySummaryReflectionSection:
+    """Test that daily summaries include all reflections in REFLECTIONS section."""
+    
+    @patch('src.mcp_commit_story.daily_summary.extract_reflections_from_journal_file')
+    @patch('src.mcp_commit_story.daily_summary._extract_manual_reflections')
+    @patch('src.mcp_commit_story.daily_summary._call_ai_for_daily_summary')
+    def test_daily_summary_includes_reflections_section(self, mock_call_ai, mock_extract_manual, mock_extract_full):
+        """Test that daily summary includes REFLECTIONS section when reflections exist."""
+        # Mock manual reflections (existing pattern-based reflections)
+        mock_extract_manual.return_value = []
+        
+        # Mock full reflections (new full reflections)
+        mock_extract_full.return_value = [
+            {'timestamp': '7:30 AM', 'content': 'First reflection about the work'},
+            {'timestamp': '2:30 PM', 'content': 'Second reflection\nwith multiple lines'}
+        ]
+        
+        # Mock AI response
+        mock_call_ai.return_value = {
+            "summary": "Test summary",
+            "progress_made": "Test progress",
+            "key_accomplishments": ["Test accomplishment"],
+            "technical_progress": "Test technical progress",
+            "daily_metrics": {"commits": 2}
+        }
+        
+        from src.mcp_commit_story.daily_summary import generate_daily_summary
+        from mcp_commit_story.summary_utils import add_source_links_to_summary
+        
+        # Mock the source links function
+        with patch('mcp_commit_story.summary_utils.add_source_links_to_summary') as mock_add_links:
+            mock_add_links.return_value = {
+                "date": "2025-01-15",
+                "summary": "Test summary",
+                "full_reflections": [
+                    {'timestamp': '7:30 AM', 'content': 'First reflection about the work'},
+                    {'timestamp': '2:30 PM', 'content': 'Second reflection\nwith multiple lines'}
+                ]
+            }
+            
+            result = generate_daily_summary([], "2025-01-15", {"journal": {"path": "test"}})
+            
+            # Verify the function was called to extract full reflections
+            mock_extract_full.assert_called_once_with("2025-01-15", {"journal": {"path": "test"}})
+            
+            # Verify the result includes full reflections
+            assert "full_reflections" in result
+            assert len(result["full_reflections"]) == 2
+            assert result["full_reflections"][0]['timestamp'] == '7:30 AM'
+            assert result["full_reflections"][1]['timestamp'] == '2:30 PM'
+    
+    @patch('src.mcp_commit_story.daily_summary.extract_reflections_from_journal_file')
+    @patch('src.mcp_commit_story.daily_summary._extract_manual_reflections')
+    @patch('src.mcp_commit_story.daily_summary._call_ai_for_daily_summary')
+    def test_daily_summary_omits_reflections_section_when_none_exist(self, mock_call_ai, mock_extract_manual, mock_extract_full):
+        """Test that daily summary omits REFLECTIONS section when no reflections exist."""
+        # Mock no reflections found
+        mock_extract_manual.return_value = []
+        mock_extract_full.return_value = []
+        
+        # Mock AI response
+        mock_call_ai.return_value = {
+            "summary": "Test summary",
+            "progress_made": "Test progress",
+            "key_accomplishments": ["Test accomplishment"],
+            "technical_progress": "Test technical progress",
+            "daily_metrics": {"commits": 0}
+        }
+        
+        from src.mcp_commit_story.daily_summary import generate_daily_summary
+        
+        # Mock the source links function
+        with patch('mcp_commit_story.summary_utils.add_source_links_to_summary') as mock_add_links:
+            mock_add_links.return_value = {
+                "date": "2025-01-15",
+                "summary": "Test summary",
+                "full_reflections": None
+            }
+            
+            result = generate_daily_summary([], "2025-01-15", {"journal": {"path": "test"}})
+            
+            # Verify no full reflections in result
+            assert result.get("full_reflections") is None
+
+
+class TestReflectionSectionFormatting:
+    """Test formatting of the REFLECTIONS section in daily summaries."""
+    
+    def test_format_reflections_section_with_multiple_reflections(self):
+        """Test formatting multiple reflections into markdown section."""
+        reflections = [
+            {'timestamp': '7:30 AM', 'content': 'First reflection about the work'},
+            {'timestamp': '2:30 PM', 'content': 'Second reflection\nwith multiple lines'}
+        ]
+        
+        from src.mcp_commit_story.daily_summary import format_reflections_section
+        
+        result = format_reflections_section(reflections)
+        
+        assert result.startswith('## REFLECTIONS')
+        assert '### 7:30 AM' in result
+        assert '### 2:30 PM' in result
+        assert 'First reflection about the work' in result
+        assert 'Second reflection\nwith multiple lines' in result
+    
+    def test_format_reflections_section_with_single_reflection(self):
+        """Test formatting single reflection into markdown section."""
+        reflections = [
+            {'timestamp': '7:30 AM', 'content': 'Single reflection'}
+        ]
+        
+        from src.mcp_commit_story.daily_summary import format_reflections_section
+        
+        result = format_reflections_section(reflections)
+        
+        assert result.startswith('## REFLECTIONS')
+        assert '### 7:30 AM' in result
+        assert 'Single reflection' in result
+    
+    def test_format_reflections_section_with_empty_list(self):
+        """Test formatting empty reflections list."""
+        reflections = []
+        
+        from src.mcp_commit_story.daily_summary import format_reflections_section
+        
+        result = format_reflections_section(reflections)
+        
+        assert result == ""
+
+
+class TestReflectionExtraction:
+    """Test the complete reflection extraction workflow."""
+    
+    def test_extract_reflections_from_journal_file(self):
+        """Test extracting reflections from actual journal file for date."""
+        date_str = "2025-01-15"
+        config = {"journal": {"path": "test-journal"}}
+        
+        # Mock file content
+        mock_content = """
+### 7:30 AM — Reflection
+
+Test reflection content.
+
+### 8:00 AM — Commit abc123
+
+#### Summary
+Some work done.
+"""
+        
+        with patch('builtins.open', mock_open(read_data=mock_content)):
+            with patch('os.path.exists', return_value=True):
+                from src.mcp_commit_story.daily_summary import extract_reflections_from_journal_file
+                
+                reflections = extract_reflections_from_journal_file(date_str, config)
+                
+                assert len(reflections) == 1
+                assert reflections[0]['timestamp'] == '7:30 AM'
+                assert reflections[0]['content'] == 'Test reflection content.'
+    
+    def test_extract_reflections_from_nonexistent_file(self):
+        """Test extracting reflections from non-existent journal file."""
+        date_str = "2025-01-15"
+        config = {"journal": {"path": "test-journal"}}
+        
+        with patch('os.path.exists', return_value=False):
+            from src.mcp_commit_story.daily_summary import extract_reflections_from_journal_file
+            
+            reflections = extract_reflections_from_journal_file(date_str, config)
+            
+            assert len(reflections) == 0 

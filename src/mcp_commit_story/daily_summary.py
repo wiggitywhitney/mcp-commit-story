@@ -526,6 +526,133 @@ def _extract_manual_reflections(entries: List[JournalEntry]) -> List[str]:
     return unique_reflections
 
 
+def extract_all_reflections_from_markdown(markdown_content: str) -> List[Dict[str, str]]:
+    """Extract all full reflections from journal markdown content.
+    
+    This function extracts reflections with the format:
+    ### H:MM AM/PM — Reflection
+    
+    Args:
+        markdown_content: Raw markdown content from journal file
+        
+    Returns:
+        List of dictionaries with 'timestamp' and 'content' keys
+    """
+    reflections = []
+    
+    if not markdown_content:
+        return reflections
+    
+    # Pattern to match reflection headers: ### H:MM AM/PM — Reflection
+    reflection_pattern = r'^### (\d{1,2}:\d{2} [AP]M) — Reflection\s*$'
+    
+    lines = markdown_content.split('\n')
+    i = 0
+    
+    while i < len(lines):
+        line = lines[i].strip()
+        match = re.match(reflection_pattern, line)
+        
+        if match:
+            timestamp = match.group(1)
+            content_lines = []
+            
+            # Collect content until next header or end of file
+            i += 1
+            while i < len(lines):
+                next_line = lines[i]
+                # Stop at next ### header (either commit or reflection)
+                if next_line.startswith('### '):
+                    break
+                content_lines.append(next_line)
+                i += 1
+            
+            # Clean up content - remove empty lines from start and end
+            content = '\n'.join(content_lines).strip()
+            
+            if content:  # Only add non-empty reflections
+                reflections.append({
+                    'timestamp': timestamp,
+                    'content': content
+                })
+        else:
+            i += 1
+    
+    return reflections
+
+
+def extract_reflections_from_journal_file(date_str: str, config: Dict) -> List[Dict[str, str]]:
+    """Extract reflections from journal file for a specific date.
+    
+    Args:
+        date_str: Date in YYYY-MM-DD format
+        config: Configuration with journal path
+        
+    Returns:
+        List of reflection dictionaries
+    """
+    from .journal_generate import get_journal_file_path
+    
+    try:
+        # Get journal file path
+        relative_path = get_journal_file_path(date_str, "daily")
+        journal_base_path = config.get("journal", {}).get("path", "")
+        
+        if not journal_base_path:
+            logger.error("No journal path found in config")
+            return []
+        
+        # Remove double "journal/" prefix if present
+        if relative_path.startswith("journal/"):
+            relative_path = relative_path[8:]
+        
+        journal_file_path = os.path.join(journal_base_path, relative_path)
+        
+        if not os.path.exists(journal_file_path):
+            logger.debug(f"No journal file found for {date_str} at {journal_file_path}")
+            return []
+        
+        # Read file and extract reflections
+        with open(journal_file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        reflections = extract_all_reflections_from_markdown(content)
+        logger.info(f"Extracted {len(reflections)} reflections from {date_str}")
+        
+        return reflections
+        
+    except Exception as e:
+        logger.error(f"Error extracting reflections from journal file for {date_str}: {e}")
+        return []
+
+
+def format_reflections_section(reflections: List[Dict[str, str]]) -> str:
+    """Format reflections into markdown section for daily summary.
+    
+    Args:
+        reflections: List of reflection dictionaries with 'timestamp' and 'content'
+        
+    Returns:
+        Formatted markdown section string
+    """
+    if not reflections:
+        return ""
+    
+    section_lines = ["## REFLECTIONS", ""]
+    
+    for reflection in reflections:
+        timestamp = reflection['timestamp']
+        content = reflection['content']
+        
+        # Add timestamp header and content
+        section_lines.append(f"### {timestamp}")
+        section_lines.append("")
+        section_lines.append(content)
+        section_lines.append("")
+    
+    return '\n'.join(section_lines)
+
+
 def _call_ai_for_daily_summary(entries: List[JournalEntry], date_str: str, config: dict) -> Dict:
     """Call AI to generate daily summary from journal entries using comprehensive prompt.
     
@@ -1172,6 +1299,9 @@ def generate_daily_summary(journal_entries: List[JournalEntry], date_str: str, c
         # Extract reflections first (highest priority)
         reflections = _extract_manual_reflections(journal_entries)
         
+        # NEW: Extract full reflections from journal markdown file
+        full_reflections = extract_reflections_from_journal_file(date_str, config)
+        
         # Call AI to generate the summary
         ai_response = _call_ai_for_daily_summary(journal_entries, date_str, config)
         
@@ -1192,6 +1322,12 @@ def generate_daily_summary(journal_entries: List[JournalEntry], date_str: str, c
             summary_data["reflections"] = all_reflections
         else:
             summary_data["reflections"] = None
+        
+        # NEW: Add full reflections as separate REFLECTIONS section
+        if full_reflections:
+            summary_data["full_reflections"] = full_reflections
+        else:
+            summary_data["full_reflections"] = None
             
         challenges_overcome = ai_response.get("challenges_overcome", [])
         if challenges_overcome:
@@ -1348,6 +1484,18 @@ def _format_summary_as_markdown(summary: DailySummary) -> str:
     
     for key, value in summary['daily_metrics'].items():
         lines.append(f"- **{key.replace('_', ' ').title()}:** {value}")
+    
+    # Add REFLECTIONS section with full reflections if available
+    if summary.get('full_reflections'):
+        lines.append("")
+        lines.append("## REFLECTIONS")
+        lines.append("")
+        
+        for reflection in summary['full_reflections']:
+            lines.append(f"### {reflection['timestamp']}")
+            lines.append("")
+            lines.append(reflection['content'])
+            lines.append("")
     
     # Add source files section if available
     if summary.get('source_files'):
