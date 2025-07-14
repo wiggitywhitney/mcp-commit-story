@@ -35,11 +35,11 @@ class JournalParseError(Exception):
 
 def _add_ai_generation_telemetry(section_type: str, journal_context, start_time: float):
     """
-    Utility function to add consistent telemetry for AI generation operations.
+    Add basic telemetry attributes for AI generation operations.
     
     Args:
-        section_type: The type of section being generated (e.g., 'summary', 'accomplishments')
-        journal_context: The journal context being processed
+        section_type: The type of section being generated (e.g., 'summary', 'technical_synopsis')
+        journal_context: JournalContext containing git metadata, chat history, and previous entries
         start_time: The timestamp when generation started
     """
     from opentelemetry import trace
@@ -51,23 +51,32 @@ def _add_ai_generation_telemetry(section_type: str, journal_context, start_time:
         context_size = 0
         if journal_context:
             if hasattr(journal_context, 'chat_history') and journal_context.get('chat_history'):
-                context_size += len(journal_context['chat_history'].get('messages', []))
-
-            if hasattr(journal_context, 'file_changes') and journal_context.get('file_changes'):
-                context_size += len(journal_context['file_changes'])
+                context_size += len(str(journal_context['chat_history']))
+            if hasattr(journal_context, 'git') and journal_context.get('git'):
+                context_size += len(str(journal_context['git']))
+            if hasattr(journal_context, 'journal') and journal_context.get('journal'):
+                context_size += len(str(journal_context['journal']))
         
-        current_span.set_attribute("journal.context_size", context_size)
-        current_span.set_attribute("journal.entry_id", journal_context.get('commit_hash', 'unknown') if journal_context else 'unknown')
-        # AI model info would be added here if available from context
+        # Basic telemetry attributes
+        current_span.set_attribute("journal.section_type", section_type)
+        current_span.set_attribute("journal.context_size_bytes", context_size)
+        current_span.set_attribute("journal.generation_start_time", start_time)
+        
+        # Basic diff availability tracking
+        git_context = journal_context.get('git') if journal_context else None
+        file_diffs = git_context.get('file_diffs', {}) if git_context else {}
+        
+        current_span.set_attribute("journal.has_file_diffs", bool(file_diffs))
+        current_span.set_attribute("journal.diff_files_count", len(file_diffs))
 
 def _record_ai_generation_metrics(section_type: str, duration: float, success: bool, error_category: str = None):
     """
-    Utility function to record AI generation metrics consistently.
+    Record basic metrics for AI generation operations.
     
     Args:
-        section_type: The type of section being generated
-        duration: Time taken for generation
-        success: Whether the operation succeeded
+        section_type: The type of section generated
+        duration: Time taken for generation in seconds
+        success: Whether the operation completed successfully
         error_category: Category of error if operation failed
     """
     from opentelemetry import trace
@@ -85,13 +94,9 @@ def _record_ai_generation_metrics(section_type: str, duration: float, success: b
         metrics.record_tool_call(
             "journal.generation_operations_total",
             success=success,
-            section_type=section_type
+            section_type=section_type,
+            error_category=error_category if not success else None
         )
-    
-    if not success and error_category:
-        current_span = trace.get_current_span()
-        if current_span:
-            current_span.set_attribute("error.category", error_category)
 
 def log_ai_agent_interaction(context_sent: Any, response_received: Any, debug_mode: bool = False):
     """
@@ -860,7 +865,7 @@ def generate_summary_section(journal_context) -> SummarySection:
     Output: Return the TypedDict structure defined in the function signature.
 
     AVAILABLE DATA in JournalContext:
-    - git: Git context with commit metadata, diffs, changed files, and statistics
+    - git: Git context with commit metadata, changed files, statistics, and file_diffs (dict mapping file paths to actual diff content)
     - chat: Developer's conversations with AI coding assistants (may contain more than what's relevant to the current commit - think critically about what chat should be considered)
     - journal: Recent journal entries for context and continuity (don't duplicate content, but feel free to weave in quotes from reflections if relevant)
 
@@ -1052,7 +1057,7 @@ def generate_technical_synopsis_section(journal_context: JournalContext) -> Tech
     Output: Return the TypedDict structure defined in the function signature.
 
     AVAILABLE DATA in JournalContext:
-    - git: Git context with commit metadata, diffs, changed files, and statistics
+    - git: Git context with commit metadata, changed files, statistics, and file_diffs (dict mapping file paths to actual diff content)
     - chat: Developer's conversations with AI coding assistants (may contain more than what's relevant to the current commit - think critically about what chat should be considered)
     - journal: Recent journal entries for context and continuity (don't duplicate content, but feel free to weave in quotes from reflections if relevant)
 
@@ -1219,7 +1224,7 @@ def generate_accomplishments_section(journal_context: JournalContext) -> Accompl
     Output: Return the TypedDict structure defined in the function signature.
 
     AVAILABLE DATA in JournalContext:
-    - git: Git context with commit metadata, diffs, changed files, and statistics
+    - git: Git context with commit metadata, changed files, statistics, and file_diffs (dict mapping file paths to actual diff content)
     - chat: Developer's conversations with AI coding assistants (may contain more than what's relevant to the current commit - think critically about what chat should be considered)
     - journal: Recent journal entries for context and continuity (don't duplicate content, but feel free to weave in quotes from reflections if relevant)
 
@@ -1432,7 +1437,7 @@ def generate_frustrations_section(journal_context: JournalContext) -> Frustratio
     Output: Return the TypedDict structure defined in the function signature.
 
     AVAILABLE DATA in JournalContext:
-    - git: Git context with commit metadata, diffs, changed files, and statistics
+    - git: Git context with commit metadata, changed files, statistics, and file_diffs (dict mapping file paths to actual diff content)
     - chat: Developer's conversations with AI coding assistants (may contain more than what's relevant to the current commit - think critically about what chat should be considered)
     - journal: Recent journal entries for context and continuity (don't duplicate content, but feel free to weave in quotes from reflections if relevant)
 
@@ -1562,7 +1567,7 @@ def generate_tone_mood_section(journal_context: JournalContext) -> ToneMoodSecti
     Output: Return the TypedDict structure defined in the function signature.
 
     AVAILABLE DATA in JournalContext:
-    - git: Git context with commit metadata, diffs, changed files, and statistics
+    - git: Git context with commit metadata, changed files, statistics, and file_diffs (dict mapping file paths to actual diff content)
     - chat: Developer's conversations with AI coding assistants (may contain more than what's relevant to the current commit - think critically about what chat should be considered)
     - journal: Recent journal entries for context and continuity (don't duplicate content, but feel free to weave in quotes from reflections if relevant)
 
@@ -1709,7 +1714,7 @@ def generate_discussion_notes_section(journal_context: JournalContext) -> Discus
     Output: Return the TypedDict structure defined in the function signature.
 
     AVAILABLE DATA in JournalContext:
-    - git: Git context with commit metadata, diffs, changed files, and statistics
+    - git: Git context with commit metadata, changed files, statistics, and file_diffs (dict mapping file paths to actual diff content)
     - chat: Developer's conversations with AI coding assistants (may contain more than what's relevant to the current commit - think critically about what chat should be considered)
     - journal: Recent journal entries for context and continuity (don't duplicate content, but feel free to weave in quotes from reflections if relevant)
 

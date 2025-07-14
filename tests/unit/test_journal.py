@@ -60,6 +60,33 @@ EMPTY_MD = ''
 # Edge case: malformed entry (missing required sections)
 MALFORMED_MD = '## Accomplishments\n- Did something\n'
 
+# Test data for diff information tests
+SAMPLE_FILE_DIFFS = {
+    "src/auth.py": """@@ -0,0 +1,15 @@
++class UserAuthentication:
++    def __init__(self, secret_key):
++        self.secret_key = secret_key
++    
++    def authenticate(self, token):
++        # Validate JWT token
++        return self._validate_jwt(token)
++    
++    def _validate_jwt(self, token):
++        # Implementation details
++        return True
+""",
+    "src/user.py": """@@ -10,3 +10,8 @@ class User:
+     def __init__(self, username):
+         self.username = username
++    
++    def set_auth_token(self, token):
++        self.auth_token = token
++        return True
+"""
+}
+
+EMPTY_FILE_DIFFS = {}
+
 
 def test_parse_daily_note_entry():
     entry = journal.JournalParser.parse(DAILY_NOTE_MD)
@@ -576,3 +603,232 @@ def test_append_to_journal_file_permission_error(monkeypatch, tmp_path):
     monkeypatch.setattr(journal_generate_mod, "ensure_journal_directory", raise_permission_error)
     with pytest.raises(ValueError):
         append_to_journal_file(entry, file_path) 
+
+
+@patch('mcp_commit_story.journal_generate.invoke_ai')
+def test_generate_summary_section_with_file_diffs(mock_invoke_ai):
+    """Test that summary section can access and utilize file_diffs from GitContext."""
+    # Mock AI response
+    mock_invoke_ai.return_value = "Added user authentication feature with JWT validation in auth.py and token support in user.py"
+    
+    ctx = JournalContext(
+        chat=None,
+        git={
+            'metadata': {
+                'hash': 'abc123',
+                'author': 'Alice <alice@example.com>',
+                'date': '2025-05-24 12:00:00',
+                'message': 'Add user authentication feature',
+            },
+            'diff_summary': 'auth.py: added, user.py: modified',
+            'changed_files': ['src/auth.py', 'src/user.py'],
+            'file_stats': {'source': 2, 'config': 0, 'docs': 0, 'tests': 0},
+            'commit_context': {'size_classification': 'medium', 'is_merge': False},
+            'file_diffs': SAMPLE_FILE_DIFFS
+        },
+        journal=None
+    )
+    
+    result = journal.generate_summary_section(ctx)
+    
+    # Verify AI was called with context including file_diffs
+    assert mock_invoke_ai.called
+    args, kwargs = mock_invoke_ai.call_args
+    prompt_with_context = args[0]
+    
+    # Check that file_diffs are included in the JSON context
+    assert '"file_diffs"' in prompt_with_context
+    assert 'class UserAuthentication' in prompt_with_context
+    assert 'set_auth_token' in prompt_with_context
+    
+    # Verify return format
+    assert 'summary' in result
+    assert isinstance(result['summary'], str)
+
+
+@patch('mcp_commit_story.journal_generate.invoke_ai')
+def test_generate_summary_section_empty_diffs_vs_populated_diffs(mock_invoke_ai):
+    """Test that summary section produces different output when diffs are available vs empty."""
+    
+    # Test with empty diffs
+    mock_invoke_ai.return_value = "Added authentication feature"
+    ctx_empty = JournalContext(
+        chat=None,
+        git={
+            'metadata': {'hash': 'abc123', 'author': 'Alice', 'date': '2025-05-24', 'message': 'Add auth'},
+            'diff_summary': 'auth.py: added',
+            'changed_files': ['src/auth.py'],
+            'file_stats': {'source': 1, 'config': 0, 'docs': 0, 'tests': 0},
+            'commit_context': {'size_classification': 'small', 'is_merge': False},
+            'file_diffs': EMPTY_FILE_DIFFS
+        },
+        journal=None
+    )
+    
+    result_empty = journal.generate_summary_section(ctx_empty)
+    
+    # Test with populated diffs
+    mock_invoke_ai.return_value = "Added comprehensive authentication feature with JWT validation and token management"
+    ctx_with_diffs = JournalContext(
+        chat=None,
+        git={
+            'metadata': {'hash': 'abc123', 'author': 'Alice', 'date': '2025-05-24', 'message': 'Add auth'},
+            'diff_summary': 'auth.py: added',
+            'changed_files': ['src/auth.py'],
+            'file_stats': {'source': 1, 'config': 0, 'docs': 0, 'tests': 0},
+            'commit_context': {'size_classification': 'small', 'is_merge': False},
+            'file_diffs': SAMPLE_FILE_DIFFS
+        },
+        journal=None
+    )
+    
+    result_with_diffs = journal.generate_summary_section(ctx_with_diffs)
+    
+    # Verify both calls were made
+    assert mock_invoke_ai.call_count == 2
+    
+    # Verify the context sent to AI differs between calls
+    call1_context = mock_invoke_ai.call_args_list[0][0][0]
+    call2_context = mock_invoke_ai.call_args_list[1][0][0]
+    
+    # First call should have empty file_diffs
+    assert '"file_diffs": {}' in call1_context
+    
+    # Second call should have populated file_diffs
+    assert '"file_diffs": {' in call2_context
+    assert 'class UserAuthentication' in call2_context
+
+
+@patch('mcp_commit_story.journal_generate.invoke_ai')
+def test_generate_technical_synopsis_section_with_file_diffs(mock_invoke_ai):
+    """Test that technical synopsis section can access and utilize file_diffs from GitContext."""
+    # Mock AI response
+    mock_invoke_ai.return_value = "Implemented UserAuthentication class with JWT validation and User.set_auth_token method"
+    
+    ctx = JournalContext(
+        chat=None,
+        git={
+            'metadata': {
+                'hash': 'abc123',
+                'author': 'Alice <alice@example.com>',
+                'date': '2025-05-24 12:00:00',
+                'message': 'Add user authentication feature',
+            },
+            'diff_summary': 'auth.py: added, user.py: modified',
+            'changed_files': ['src/auth.py', 'src/user.py'],
+            'file_stats': {'source': 2, 'config': 0, 'docs': 0, 'tests': 0},
+            'commit_context': {'size_classification': 'medium', 'is_merge': False},
+            'file_diffs': SAMPLE_FILE_DIFFS
+        },
+        journal=None
+    )
+    
+    result = journal.generate_technical_synopsis_section(ctx)
+    
+    # Verify AI was called with context including file_diffs
+    assert mock_invoke_ai.called
+    args, kwargs = mock_invoke_ai.call_args
+    prompt_with_context = args[0]
+    
+    # Check that file_diffs are included in the JSON context
+    assert '"file_diffs"' in prompt_with_context
+    assert 'class UserAuthentication' in prompt_with_context
+    assert '_validate_jwt' in prompt_with_context
+    assert 'set_auth_token' in prompt_with_context
+    
+    # Verify return format
+    assert 'technical_synopsis' in result
+    assert isinstance(result['technical_synopsis'], str)
+
+
+@patch('mcp_commit_story.journal_generate.invoke_ai')
+def test_generate_technical_synopsis_section_empty_diffs_vs_populated_diffs(mock_invoke_ai):
+    """Test that technical synopsis section produces different output when diffs are available vs empty."""
+    
+    # Test with empty diffs
+    mock_invoke_ai.return_value = "Added authentication functionality"
+    ctx_empty = JournalContext(
+        chat=None,
+        git={
+            'metadata': {'hash': 'abc123', 'author': 'Alice', 'date': '2025-05-24', 'message': 'Add auth'},
+            'diff_summary': 'auth.py: added',
+            'changed_files': ['src/auth.py'],
+            'file_stats': {'source': 1, 'config': 0, 'docs': 0, 'tests': 0},
+            'commit_context': {'size_classification': 'small', 'is_merge': False},
+            'file_diffs': EMPTY_FILE_DIFFS
+        },
+        journal=None
+    )
+    
+    result_empty = journal.generate_technical_synopsis_section(ctx_empty)
+    
+    # Test with populated diffs
+    mock_invoke_ai.return_value = "Created UserAuthentication class with JWT validation methods and added token support to User class"
+    ctx_with_diffs = JournalContext(
+        chat=None,
+        git={
+            'metadata': {'hash': 'abc123', 'author': 'Alice', 'date': '2025-05-24', 'message': 'Add auth'},
+            'diff_summary': 'auth.py: added',
+            'changed_files': ['src/auth.py'],
+            'file_stats': {'source': 1, 'config': 0, 'docs': 0, 'tests': 0},
+            'commit_context': {'size_classification': 'small', 'is_merge': False},
+            'file_diffs': SAMPLE_FILE_DIFFS
+        },
+        journal=None
+    )
+    
+    result_with_diffs = journal.generate_technical_synopsis_section(ctx_with_diffs)
+    
+    # Verify both calls were made
+    assert mock_invoke_ai.call_count == 2
+    
+    # Verify the context sent to AI differs between calls
+    call1_context = mock_invoke_ai.call_args_list[0][0][0]
+    call2_context = mock_invoke_ai.call_args_list[1][0][0]
+    
+    # First call should have empty file_diffs
+    assert '"file_diffs": {}' in call1_context
+    
+    # Second call should have populated file_diffs
+    assert '"file_diffs": {' in call2_context
+    assert 'UserAuthentication' in call2_context
+    assert '_validate_jwt' in call2_context
+
+
+def test_file_diffs_integration_with_all_generators():
+    """Test that file_diffs field is accessible to all generator functions without errors."""
+    
+    ctx_with_diffs = JournalContext(
+        chat=None,
+        git={
+            'metadata': {'hash': 'abc123', 'author': 'Alice', 'date': '2025-05-24', 'message': 'Add auth'},
+            'diff_summary': 'auth.py: added',
+            'changed_files': ['src/auth.py'],
+            'file_stats': {'source': 1, 'config': 0, 'docs': 0, 'tests': 0},
+            'commit_context': {'size_classification': 'small', 'is_merge': False},
+            'file_diffs': SAMPLE_FILE_DIFFS
+        },
+        journal=None
+    )
+    
+    # Test that all generator functions can handle file_diffs without errors
+    with patch('mcp_commit_story.journal_generate.invoke_ai') as mock_ai:
+        mock_ai.return_value = "Test response"
+        
+        # These should not raise exceptions
+        result_summary = journal.generate_summary_section(ctx_with_diffs)
+        result_tech = journal.generate_technical_synopsis_section(ctx_with_diffs)
+        result_accomplishments = journal.generate_accomplishments_section(ctx_with_diffs)
+        result_frustrations = journal.generate_frustrations_section(ctx_with_diffs)
+        result_tone = journal.generate_tone_mood_section(ctx_with_diffs)
+        result_discussion = journal.generate_discussion_notes_section(ctx_with_diffs)
+        result_metadata = journal.generate_commit_metadata_section(ctx_with_diffs)
+        
+        # Verify all functions returned valid responses
+        assert 'summary' in result_summary
+        assert 'technical_synopsis' in result_tech
+        assert 'accomplishments' in result_accomplishments
+        assert 'frustrations' in result_frustrations
+        assert 'mood' in result_tone
+        assert 'discussion_notes' in result_discussion
+        assert 'commit_metadata' in result_metadata 
