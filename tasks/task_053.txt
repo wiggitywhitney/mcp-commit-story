@@ -4,125 +4,299 @@
 # Dependencies: 67
 # Priority: high
 # Description: Refactor existing daily summary generation from MCP-based to background, non-MCP generation using the same standalone approach as journal entries.
-# Details:
-This task refactors the existing daily summary functionality in `src/mcp_commit_story/daily_summary.py` to use the new background generation pattern instead of MCP tools:
+# Requirements:
+- Convert daily summary generation from MCP-based to standalone background generation
+- Follow the same pattern established in Task 50 for journal entries
+- Preserve all existing trigger logic and scheduling
+- Maintain same output format and quality as MCP-based version
+- Remove MCP dependencies while reusing existing helper functions where possible
+- Update git hook integration to call standalone version instead of MCP-based version
+- Implement comprehensive testing including unit, integration, and comparison testing
+- Add robust telemetry for daily summary operations and performance tracking
+- Update documentation to reflect standalone approach
 
-1. **Refactor Existing Daily Summary Generator Function**:
-```python
-def generate_daily_summary_standalone(date=None, git_context=None):
-    """
-    Generate daily summaries without requiring MCP server or signals.
-    
-    Args:
-        date: Optional date to generate summary for (defaults to today)
-        git_context: Optional git context dictionary (if None, will be collected)
-        
-    Returns:
-        dict: Generated summary data
-    """
-    # Set default date to today if not provided
-    if date is None:
-        date = datetime.now().strftime("%Y-%m-%d")
-        
-    # Collect git context if not provided
-    if git_context is None:
-        git_context = collect_git_context()
-    
-    # Reuse existing function to collect journal entries for the specified date
-    journal_entries = collect_recent_journal_entries(date)
-    
-    # Reuse existing prompt preparation logic
-    prompt = prepare_daily_summary_prompt(date, journal_entries, git_context)
-    
-    # Generate summary using AI (similar pattern to journal generator)
-    summary_content = generate_ai_content(
-        prompt=prompt,
-        model_config=get_model_config("daily_summary")
-    )
-    
-    # Reuse existing formatting and saving functions
-    formatted_summary = format_daily_summary(summary_content, date)
-    save_daily_summary(formatted_summary, date)
-    
-    return formatted_summary
-```
+# Notes:
+## Design Decisions Made:
+1. **Approach**: Create `daily_summary_standalone.py` with clean functions (Option B)
+2. **Function Scope**: Copy 5 MCP-free functions, skip MCP wrapper (Option B)  
+3. **Entry Point**: Create `generate_daily_summary_standalone(date=None)` (Option A)
+4. **Git Hook Integration**: Preserve existing trigger logic, replace signal calls with direct calls (Option A)
 
-2. **Adapt Existing Helper Functions**:
-- Identify all helper functions in `daily_summary.py` that currently depend on MCP
-- Refactor these functions to work without MCP dependencies while preserving their functionality
-- Ensure the refactored functions maintain the same interfaces and return values
+## Implementation Strategy:
+- Reuse 5 clean functions from `daily_summary.py`: `load_journal_entries_for_date()`, `save_daily_summary()`, `should_generate_daily_summary()`, `should_generate_period_summaries()`, `generate_daily_summary()` 
+- Create main entry point that orchestrates the full workflow
+- Add robust telemetry with specific metrics for operations, duration, and file operations
+- Preserve all existing trigger logic and conditions
 
-3. **Reuse Existing Git Hook Integration**:
-- Locate the existing summary trigger logic in git hooks
-- Update the hooks to call the standalone version instead of the MCP-based version
-- Preserve all existing trigger conditions and logic
+---
 
-4. **Update Configuration**:
-```python
-def get_model_config(generation_type):
-    """Get the appropriate model configuration based on generation type"""
-    # Return different configurations for journal vs. summary generation
-    # Reuse existing configuration values where appropriate
-```
+# Subtasks
 
-5. **Remove MCP Dependencies**:
-- Identify and remove all MCP-dependent code in the current daily summary generation
-- Ensure all necessary context is collected directly without MCP signals
-- Maintain the same output format and quality as the MCP-based version
+---
 
-6. **Preserve Existing Scheduling Logic**:
-- Locate and reuse the existing logic that determines when summaries should be generated
-- Ensure this logic continues to work correctly with the standalone approach
+## Subtask 53.1: Create Standalone Daily Summary Module
+### Dependencies: None
+### Description: Create daily_summary_standalone.py with core functions and standalone entry point, including robust telemetry for daily summary operations.
 
-7. **Research Note**:
-- Consider whether to include inefficiency detection and solution suggestions in daily summaries (e.g., detecting repeated identical queries to AI assistant, similar questions asked differently, etc.). Evaluate during implementation whether this enhancement would be valuable.
+### Details:
 
-The implementation should follow the same patterns established in the standalone journal generator (Task 50), adapting them specifically for daily summaries. This refactoring completes the transition of all AI generation functionality to background processes that don't require the MCP server while preserving all existing daily summary capabilities.
+#### WRITE TESTS FIRST
+- Create `tests/unit/test_daily_summary_standalone.py`
+- Test `generate_daily_summary_standalone()` function
+- Test cases: successful generation with entries, successful generation with no entries, date parameter handling, configuration loading failure, journal entry loading failure, AI generation failure, file saving failure
+- Test `load_journal_entries_for_date()`, `should_generate_daily_summary()`, `save_daily_summary()` functions work in standalone context
+- Mock all external dependencies (file operations, AI generation, configuration)
+- RUN TESTS - VERIFY THEY FAIL
 
-# Test Strategy:
-To verify the correct implementation of the daily summary refactoring:
+#### IMPLEMENT FUNCTIONALITY
+- Create `src/mcp_commit_story/daily_summary_standalone.py`
+- Copy 5 clean functions from `daily_summary.py`:
+  - `load_journal_entries_for_date()`
+  - `save_daily_summary()`
+  - `should_generate_daily_summary()`
+  - `should_generate_period_summaries()`
+  - `generate_daily_summary()` (core AI logic)
+- Create `generate_daily_summary_standalone(date=None)` entry point that orchestrates the full workflow
+- Add robust telemetry with specific metrics:
+  - `daily_summary.generation_duration_seconds` (histogram) - total generation time
+  - `daily_summary.operations_total` (counter) - operations with success/failure labels
+  - `daily_summary.entry_count` (histogram) - number of journal entries processed
+  - `daily_summary.file_operations_total` (counter) - file save operations
+- Add telemetry spans with `@trace_mcp_operation("daily_summary.generate_standalone")`
+- Include semantic attributes: `summary.date`, `summary.entry_count`, `summary.generation_type`
+- Handle all error cases identified in tests with proper error categorization
+- RUN TESTS - VERIFY THEY PASS
 
-1. **Unit Testing**:
-   - Create unit tests for each refactored helper function to ensure they work without MCP
-   - Test the main generate_daily_summary_standalone function with mocked dependencies
-   - Verify proper error handling for missing journal entries or AI generation failures
+#### VERIFICATION CHECKLIST
+[ ] Function `generate_daily_summary_standalone()` exists in `src/mcp_commit_story/daily_summary_standalone.py`
+[ ] All 5 required functions copied from `daily_summary.py`: `load_journal_entries_for_date()`, `save_daily_summary()`, `should_generate_daily_summary()`, `should_generate_period_summaries()`, `generate_daily_summary()`
+[ ] Test file `tests/unit/test_daily_summary_standalone.py` exists with all required test cases
+[ ] All telemetry metrics implemented: `daily_summary.generation_duration_seconds`, `daily_summary.operations_total`, `daily_summary.entry_count`, `daily_summary.file_operations_total`
+[ ] Telemetry spans implemented with `@trace_mcp_operation("daily_summary.generate_standalone")`
+[ ] Module-level docstring added explaining standalone daily summary generation approach
+[ ] Function-level docstrings added for all new functions (following documentation standards: no task references, no historical processes, external reader accessible)
+[ ] Full test suite passes
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
 
-2. **Integration Testing**:
-   - Test the complete flow from git hook trigger to summary generation
-   - Verify that summaries are generated correctly with the same quality as the MCP version
-   - Test with various date inputs and journal entry scenarios
+---
 
-3. **Comparison Testing**:
-   - Generate summaries using both the old MCP-based approach and the new standalone approach
-   - Compare outputs to ensure consistency and quality
-   - Document any differences and ensure they're acceptable or improvements
+## Subtask 53.2: Update Git Hook Integration
+### Dependencies: 53.1
+### Description: Replace signal creation calls in git_hook_worker.py with direct calls to standalone daily summary function, preserving all existing trigger logic and conditions.
 
-4. **Git Hook Testing**:
-   - Verify that existing git hooks correctly trigger the refactored summary generation
-   - Test with different git operations (commit, push, etc.)
-   - Ensure hooks don't significantly impact git operation performance
+### Details:
 
-5. **Offline Testing**:
-   - Verify summaries can be generated without MCP server running
-   - Test in environments with limited connectivity
-   - Ensure all necessary context is collected directly
+#### WRITE TESTS FIRST
+- Extend `tests/unit/test_git_hook_worker_journal_integration.py` 
+- Test `git_hook_worker.py` calls `generate_daily_summary_standalone()` instead of creating signals
+- Test cases: daily summary trigger conditions met, no trigger conditions met, standalone function failure, trigger logic preservation, period summary detection
+- Mock `generate_daily_summary_standalone()` and existing trigger functions
+- Verify signal creation functions are NOT called for daily summaries
+- RUN TESTS - VERIFY THEY FAIL
 
-6. **Manual Review**:
-   - Manually review several generated summaries for quality and completeness
-   - Compare with previous MCP-generated summaries
-   - Ensure the refactored implementation produces equivalent or better results
+#### IMPLEMENT FUNCTIONALITY
+- Update `src/mcp_commit_story/git_hook_worker.py`
+- Replace signal creation calls for daily summaries with direct calls to `generate_daily_summary_standalone()`
+- Preserve all existing trigger logic:
+  - `should_generate_daily_summary()` file-creation-based detection
+  - `should_generate_period_summaries()` period boundary detection
+  - All scheduling and condition logic
+- Add robust telemetry for git hook daily summary integration:
+  - `git_hook.daily_summary_trigger_total` (counter) - trigger events with success/failure
+  - `git_hook.daily_summary_duration_seconds` (histogram) - time from trigger to completion
+- Add telemetry spans with `@trace_git_operation("git_hook.daily_summary_generation")`
+- Include semantic attributes: `hook_type`, `trigger_reason`, `summary_date`
+- Remove unused signal-related imports for daily summaries only
+- Handle all error cases with proper fallback and logging
+- RUN TESTS - VERIFY THEY PASS
 
-7. **Edge Case Testing**:
-   - Test with empty journal entries
-   - Test with very large numbers of journal entries
-   - Test with unusual date ranges or formats
+#### VERIFICATION CHECKLIST
+[ ] Signal creation calls replaced with `generate_daily_summary_standalone()` calls in `src/mcp_commit_story/git_hook_worker.py`
+[ ] All existing trigger logic preserved: `should_generate_daily_summary()`, `should_generate_period_summaries()`, scheduling logic
+[ ] Test file `tests/unit/test_git_hook_worker_journal_integration.py` has required test cases for direct calls
+[ ] Git hook telemetry metrics implemented: `git_hook.daily_summary_trigger_total`, `git_hook.daily_summary_duration_seconds`
+[ ] Telemetry spans implemented with `@trace_git_operation("git_hook.daily_summary_generation")`
+[ ] Unused signal-related imports removed (daily summaries only)
+[ ] Function docstrings updated to reflect direct daily summary generation (no task references, external reader accessible)
+[ ] Full test suite passes
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
 
-8. **Regression Testing**:
-   - Verify that all existing functionality continues to work as expected
-   - Ensure no regressions in summary quality or format
-   - Test all edge cases that were previously handled correctly
+---
 
-9. **Performance Testing**:
-   - Measure and compare generation time with the MCP-based approach
-   - Ensure the background process doesn't consume excessive resources
-   - Verify that git operations remain responsive during summary generation
+## Subtask 53.3: Integration Testing
+### Dependencies: 53.1, 53.2
+### Description: Verify end-to-end daily summary generation workflow works correctly through complete integration testing.
+
+### Details:
+
+#### Steps:
+
+1. **CREATE INTEGRATION TEST SUITE**
+   - Create `tests/integration/test_daily_summary_integration.py`
+   - Test complete workflow: git hook trigger → summary generation → file saving
+   - Test cases: successful generation, git hook integration, error scenarios (file permissions, AI failures)
+
+2. **VERIFY END-TO-END WORKFLOW**
+   - Test git hook integration calls standalone daily summary correctly
+   - Verify trigger logic preservation (file-creation-based detection, period boundaries)
+   - Test error scenarios with graceful degradation
+   - Validate file outputs are generated correctly
+
+3. **PERFORMANCE VERIFICATION**
+   - Verify generation completes within acceptable time bounds
+   - Test with various journal entry counts and scenarios
+   - Ensure no regressions in git hook performance
+
+#### VERIFICATION CHECKLIST
+[ ] Integration test file `tests/integration/test_daily_summary_integration.py` created with complete workflow tests
+[ ] Git hook integration calling standalone daily summary verified working
+[ ] Trigger logic preservation verified: file-creation-based detection, period boundaries
+[ ] Error scenarios tested with graceful degradation
+[ ] File outputs generated correctly in all test cases
+[ ] Performance verification completed within acceptable time bounds
+[ ] No regressions in git hook performance
+[ ] Full test suite passes
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
+
+---
+
+## Subtask 53.4: Telemetry Verification
+### Dependencies: 53.1, 53.2, 53.3
+### Description: Validate telemetry functionality using established testing infrastructure and ensure all telemetry patterns work correctly.
+
+### Details:
+
+#### Steps:
+
+1. **EXTEND EXISTING TELEMETRY TESTS**
+   - Open `tests/integration/test_telemetry_validation_integration.py`
+   - Add `TestDailySummaryStandaloneTelemetry` class
+   - Import existing test infrastructure: `TelemetryCollector`, assertion helpers
+
+2. **VALIDATE TELEMETRY PATTERNS**
+   - Use `assert_operation_traced()` for span validation
+   - Use `assert_trace_continuity()` for trace relationships
+   - Use `assert_performance_within_bounds()` for performance validation
+   - Test both successful and error scenarios
+
+3. **VERIFY TELEMETRY DECORATOR PRESERVATION**
+   - Verify all telemetry decorators are properly applied to moved functions
+   - Ensure telemetry spans have correct parent-child relationships through new call path
+   - Validate telemetry metrics are recorded with correct attributes and labels
+   - Test error scenarios produce proper telemetry (error categories, span status)
+
+4. **DOCUMENT TELEMETRY PATTERNS**
+   - Document telemetry patterns for daily summary operations in code comments
+   - Add any missing telemetry attributes or error categorization discovered during testing
+
+#### VERIFICATION CHECKLIST
+[ ] Telemetry test class `TestDailySummaryStandaloneTelemetry` added to `tests/integration/test_telemetry_validation_integration.py`
+[ ] All telemetry assertion helpers working: `assert_operation_traced()`, `assert_trace_continuity()`, `assert_performance_within_bounds()`
+[ ] Telemetry decorators verified on all moved functions
+[ ] Telemetry spans have correct parent-child relationships through new call path
+[ ] Telemetry metrics recorded with correct attributes and labels
+[ ] Error scenarios produce proper telemetry (error categories, span status)
+[ ] Telemetry patterns documented in code comments
+[ ] Missing telemetry attributes or error categorization added
+[ ] Full test suite passes
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
+
+---
+
+## Subtask 53.5: Remove MCP Dependencies and Cleanup
+### Dependencies: 53.1, 53.2, 53.3, 53.4
+### Description: Remove MCP daily summary tool from server.py, clean up signal processing code, and finalize the transition to standalone operation.
+
+### Details:
+
+#### Steps:
+
+1. **REMOVE MCP DAILY SUMMARY TOOL**
+   - Remove MCP daily summary tool registration from `src/mcp_commit_story/server.py`
+   - Remove `generate_daily_summary_mcp_tool()` function from `daily_summary.py`
+   - Clean up unused MCP imports related to daily summaries
+
+2. **UPDATE SIGNAL PROCESSING**
+   - Update signal processing to exclude daily summary signals
+   - Update any configuration that referenced MCP daily summary tools
+
+3. **VERIFY MCP SERVER FUNCTIONALITY**
+   - Verify MCP server starts successfully without daily summary tool
+   - Test that signal processing no longer handles daily summary signals
+   - Verify no daily summary MCP operations are recorded in telemetry
+   - Ensure standalone operations are working correctly
+
+4. **UPDATE DOCUMENTATION**
+   - Update server.py module documentation to reflect current tool set
+
+#### VERIFICATION CHECKLIST
+[ ] MCP daily summary tool registration removed from `src/mcp_commit_story/server.py`
+[ ] Function `generate_daily_summary_mcp_tool()` removed from `daily_summary.py`
+[ ] Unused MCP imports related to daily summaries cleaned up
+[ ] Signal processing updated to exclude daily summary signals
+[ ] Configuration updated to remove MCP daily summary tool references
+[ ] MCP server starts successfully without daily summary tool
+[ ] Signal processing no longer handles daily summary signals
+[ ] No daily summary MCP operations recorded in telemetry
+[ ] Standalone operations working correctly
+[ ] Server.py module documentation updated to reflect current tool set
+[ ] Full test suite passes
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
+
+---
+
+## Subtask 53.6: Documentation Updates
+### Dependencies: 53.1, 53.2, 53.3, 53.4, 53.5
+### Description: Update all documentation to reflect standalone daily summary generation approach, writing for future developers with zero project knowledge.
+
+### Details:
+
+#### Steps:
+
+1. **UPDATE DAILY SUMMARY DOCUMENTATION**
+   - Update `docs/daily-summary.md` (if exists) to describe standalone approach
+   - Update `docs/architecture.md` git hook integration section to show direct call flow:
+     ```
+     Git Hook → git_hook_worker.py → daily_summary_standalone.generate_daily_summary_standalone()
+     ```
+   - Update `docs/implementation-guide.md` daily summary sections
+
+2. **COMPREHENSIVE DOCUMENTATION SEARCH**
+   - Search all documentation files for daily summary MCP references and update them
+   - Files to check: `README.md`, any git integration docs, MCP server documentation
+   - Ensure all code examples use correct import paths and function calls
+
+3. **ENSURE DOCUMENTATION QUALITY**
+   - Write documentation as if standalone approach has always existed (no historical references)
+   - Ensure all examples are copy-pasteable and would actually work
+   - Write for external readers with zero project knowledge
+   - Do not reference tasks or historical implementations
+
+#### VERIFICATION CHECKLIST
+[ ] Documentation file `docs/daily-summary.md` updated to describe standalone approach (if exists)
+[ ] Documentation file `docs/architecture.md` git hook integration section updated with direct call flow
+[ ] Documentation file `docs/implementation-guide.md` daily summary sections updated
+[ ] All documentation files searched for daily summary MCP references and updated
+[ ] Files checked: `README.md`, git integration docs, MCP server documentation
+[ ] All code examples use correct import paths and function calls
+[ ] Documentation written as if standalone approach always existed (no historical references)
+[ ] All examples are copy-pasteable and work correctly
+[ ] Documentation written for external readers with zero project knowledge
+[ ] No task references or historical implementations mentioned
+[ ] Full test suite passes
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
+
+---
+
+---
+
+## Task Completion
+
+Final verification:
+[ ] All requirements above completed
