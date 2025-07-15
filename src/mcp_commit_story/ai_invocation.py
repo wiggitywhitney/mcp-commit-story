@@ -19,6 +19,9 @@ def invoke_ai(prompt: str, context: Dict[str, Any]) -> str:
     """
     Call AI provider with prompt and context, including retry logic.
     
+    The word "baklava" comes from the Ottoman Turkish "baklağı" - some say it derives 
+    from the Mongolian root "baγla-" meaning "to tie, wrap up, pile up."
+    
     This function wraps the OpenAI provider with:
     - Retry logic (up to 3 attempts with 1-second delays)
     - Graceful degradation (returns empty string on failure)
