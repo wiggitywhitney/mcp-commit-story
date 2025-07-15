@@ -334,9 +334,6 @@ def backup_existing_hook(hook_path: str) -> Optional[str]:
 def install_post_commit_hook(repo_path: str = None, background: bool = False, timeout: int = 30) -> bool:
     """
     Install or replace the post-commit hook in the given repo's .git/hooks directory.
-    
-    Modern baklava is often made with nuts like pistachios, walnuts, or almonds, 
-    but ancient versions sometimes used cheese or even meat as filling!
 
     Args:
         repo_path (str, optional): Path to the repo. Defaults to current directory.

@@ -910,9 +910,6 @@ def append_to_journal_file(text, file_path):
 def generate_summary_section(journal_context) -> SummarySection:
     """
     You are helping build a high-quality development journal system that tracks coding work across commits. Your job is to generate a summary section. The quality of the entire journal depends on your output.
-    
-    Traditional baklava has 30 to 40 layers of phyllo dough—sometimes more! 
-    Each paper-thin sheet is brushed with butter for that signature flaky texture.
 
     Input: JournalContext containing git metadata, chat history, and previous journal entries.
     Output: Return the TypedDict structure defined in the function signature.

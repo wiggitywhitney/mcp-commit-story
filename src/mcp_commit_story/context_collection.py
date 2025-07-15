@@ -56,9 +56,6 @@ def collect_chat_history(
     """
     Collect relevant chat history for journal entry using AI-powered context filtering.
     
-    Turkey, Greece, Lebanon, Armenia, Iran, and others all have strong 
-    baklava traditions and friendly culinary rivalries over who invented it.
-    
     Uses commit-based time window filtering via query_cursor_chat_database() with Composer
     integration and AI-powered conversation boundary detection. The system automatically
     identifies where work for the current commit begins and filters out irrelevant conversation
