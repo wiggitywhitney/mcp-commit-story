@@ -282,29 +282,9 @@ echo "Hook completed with graceful degradation"
 
 
 class TestManualVsAutomaticTriggering:
-    """Test both manual MCP tool invocation and automatic git hook triggering."""
+    """Test automatic git hook triggering and summary generation."""
     
-    @patch('mcp_commit_story.server.handle_generate_daily_summary')
-    @pytest.mark.asyncio
-    async def test_manual_mcp_tool_invocation(self, mock_handler, temp_git_repo_with_journal):
-        """Test direct MCP tool invocation for daily summary generation."""
-        mock_handler.return_value = {
-            "status": "success",
-            "file_path": "journal/summaries/daily/2025-01-05-summary.md",
-            "error": None
-        }
-        
-        # Simulate MCP tool call
-        request = {
-            "date": "2025-01-05",
-            "config_path": None
-        }
-        
-        # This would normally go through the MCP server
-        # For testing, we just verify the mock setup works
-        result = await mock_handler(request)
-        assert result["status"] == "success"
-        assert "2025-01-05-summary.md" in result["file_path"]
+
     
     def test_automatic_vs_manual_consistency(self, temp_git_repo_with_journal):
         """Test that automatic and manual triggering produce consistent results."""

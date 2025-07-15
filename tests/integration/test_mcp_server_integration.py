@@ -37,7 +37,7 @@ def test_full_workflow_success(tmp_path):
     # 3. Test MCP operations (operational functionality)
     # Note: In real usage, these would be called via MCP server
     # For integration testing, we test the handler functions directly
-    from mcp_commit_story.server import handle_journal_new_entry, handle_journal_add_reflection
+    from mcp_commit_story.server import handle_journal_add_reflection
     from mcp_commit_story.config import Config
     from unittest.mock import patch
     
@@ -54,36 +54,13 @@ def test_full_workflow_success(tmp_path):
         'telemetry': {'enabled': False}
     })
     
-    # Test journal/new-entry MCP operation
+    # Test preserved MCP operations (journal/add-reflection)
     import asyncio
     async def test_mcp_operations():
         # Patch config loading to use test directory
         with patch("mcp_commit_story.server.load_config", lambda: test_config), \
              patch("mcp_commit_story.reflection_core.load_config", lambda: test_config), \
              patch("mcp_commit_story.journal_handlers.load_config", lambda: test_config):
-            
-            # Mock git context for new entry
-            git_context = {
-                "metadata": {
-                    "hash": "abc123",
-                    "author": "Test User",
-                    "date": "2025-01-01T12:00:00Z",
-                    "message": "Integration test commit"
-                },
-                "diff_summary": "Added test.py",
-                "changed_files": ["test.py"],
-                "file_stats": {"test.py": {"additions": 1, "deletions": 0}},
-                "commit_context": {}
-            }
-            
-            new_entry_request = {
-                "git": git_context,
-                "chat": None,
-                "terminal": None
-            }
-            
-            result = await handle_journal_new_entry(new_entry_request)
-            assert result["status"] == "success", f"New entry failed: {result.get('error')}"
             
             # Test journal/add-reflection MCP operation
             reflection_request = {

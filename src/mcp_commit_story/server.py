@@ -5,7 +5,11 @@ This module provides the entrypoint and core setup logic for the MCP server, inc
 - Dynamic version loading from pyproject.toml
 - Configuration loading and validation (now with hot reload support)
 - Telemetry integration (if available)
-- Tool registration stub (to be filled in by other modules)
+- Essential MCP tool registration (journal_add_reflection, journal_capture_context)
+
+Provides two core MCP tools:
+- journal_add_reflection: Add manual reflections to journal entries
+- journal_capture_context: Capture AI context for future journal entries
 
 Intended for use as the main server entrypoint for the mcp-commit-story project.
 """
@@ -25,11 +29,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp_commit_story.config import load_config, Config, ConfigError
 from mcp_commit_story import telemetry
 from mcp_commit_story.telemetry import trace_mcp_operation, get_mcp_metrics
-from mcp_commit_story.journal_init import initialize_journal
-from mcp_commit_story.git_utils import install_post_commit_hook
-from mcp_commit_story.journal_generate import append_to_journal_file
 from mcp_commit_story.reflection_core import add_manual_reflection
-from mcp_commit_story.journal_orchestrator import orchestrate_journal_generation
 from mcp_commit_story.journal_handlers import handle_journal_capture_context
 
 # Configure logging
@@ -40,17 +40,6 @@ ToolHandler = Callable[..., Awaitable[Any]]
 
 # MCP server instance (to be initialized in main)
 mcp: FastMCP | None = None
-
-# Request/response types for journal/new-entry
-class JournalNewEntryRequest(TypedDict):
-    git: Dict[str, Any]  # Should match GitContext from context_types
-    chat: Optional[Any]  # Optional chat context
-    terminal: Optional[Any]  # Optional terminal context
-
-class JournalNewEntryResponse(TypedDict):
-    status: str
-    file_path: str
-    error: Optional[str]
 
 # Request/response types for journal/add-reflection
 class AddReflectionRequest(TypedDict):
@@ -171,14 +160,12 @@ def get_version_from_pyproject(pyproject_path: str = "pyproject.toml") -> str:
 
 def register_tools(server: FastMCP) -> None:
     """
-    Register all journal tools with the MCP server.
-    """
+    Register essential journal tools with the MCP server.
     
-    @server.tool()
-    @trace_mcp_operation("journal_new_entry")
-    async def journal_new_entry(request: JournalNewEntryRequest) -> JournalNewEntryResponse:
-        """Create a new journal entry with AI-generated content from git, chat, and terminal context."""
-        return await handle_journal_new_entry(request)
+    This server provides two core MCP tools:
+    - journal_add_reflection: Add manual reflections to journal entries
+    - journal_capture_context: Capture AI context for future journal entries
+    """
     
     @server.tool()
     @trace_mcp_operation("journal_add_reflection")
@@ -191,24 +178,6 @@ def register_tools(server: FastMCP) -> None:
     async def journal_capture_context(request: CaptureContextRequest) -> CaptureContextResponse:
         """Capture AI's current project context to provide context for future journal entries."""
         return await handle_journal_capture_context_mcp(request)
-    
-    @server.tool()
-    @trace_mcp_operation("journal_init")
-    async def journal_init(request: dict) -> dict:
-        """Initialize journal configuration and directory structure."""
-        return await handle_journal_init(request)
-    
-    @server.tool()
-    @trace_mcp_operation("journal_install_hook")
-    async def journal_install_hook(request: dict) -> dict:
-        """Install git post-commit hook for automated journal entries."""
-        return await handle_journal_install_hook(request)
-    
-    @server.tool()
-    @trace_mcp_operation("journal_generate_daily_summary")
-    async def journal_generate_daily_summary(request: dict) -> dict:
-        """Generate a comprehensive daily summary from all journal entries for a specific date."""
-        return await handle_generate_daily_summary(request)
 
 
 
@@ -281,81 +250,7 @@ def create_mcp_server(config_path: str = None) -> FastMCP:
                 logging.warning(f"Error shutting down telemetry during server creation failure: {shutdown_error}")
         raise
 
-@trace_mcp_operation("journal.generate_entry_layer1")
-async def generate_journal_entry(request: JournalNewEntryRequest) -> JournalNewEntryResponse:
-    """
-    AI: Execute Layer 1 of the journal entry generation process.
-    
-    When you encounter this function, delegate to generate_journal_entry_orchestrated() 
-    in journal_orchestration.py which handles all the logic and coordination.
-    
-    Return the JournalNewEntryResponse from the orchestration layer.
-    """
-    try:
-        # Extract required parameters from request
-        git_metadata = request["git"]["metadata"]
-        commit_hash = git_metadata["hash"]
-        
-        # Get journal file path (create default if not specified)
-        from datetime import datetime
-        from mcp_commit_story.journal_generate import get_journal_file_path
-        
-        # Extract date from commit
-        commit_date_str = git_metadata["date"]
-        try:
-            if commit_date_str.endswith('Z'):
-                commit_datetime = datetime.fromisoformat(commit_date_str.replace('Z', '+00:00'))
-            else:
-                commit_datetime = datetime.fromisoformat(commit_date_str)
-        except ValueError:
-            commit_datetime = datetime.now()
-        
-        date_str = commit_datetime.strftime("%Y-%m-%d")
-        journal_path = get_journal_file_path(date_str, "daily")
-        
-        # Delegate to orchestration layer (Layer 2) - sync function
-        result = orchestrate_journal_generation(commit_hash, str(journal_path))
-        
-        # Convert orchestration result to MCP response format
-        if result.get('success'):
-            return {
-                "status": "success",
-                "file_path": str(journal_path),
-                "error": None
-            }
-        else:
-            return {
-                "status": "error", 
-                "file_path": "",
-                "error": result.get('error', 'Unknown orchestration error')
-            }
-        
-    except Exception as e:
-        logger.error(f"Journal entry generation failed: {str(e)}", exc_info=True)
-        return {
-            "status": "error",
-            "file_path": "",
-            "error": f"Failed to generate journal entry: {str(e)}"
-        }
 
-@handle_mcp_error
-async def handle_journal_new_entry(request: JournalNewEntryRequest) -> JournalNewEntryResponse:
-    """
-    Handle the MCP operation 'journal/new-entry'.
-    
-    Layer 1: MCP Server - Validates request and delegates to orchestration layer.
-    The orchestration layer coordinates comprehensive context collection (git, chat, terminal)
-    and AI-powered journal generation through the 4-layer architecture.
-    
-    Args:
-        request: Must contain 'git' context. Additional context is collected automatically.
-        
-    Returns:
-        JournalNewEntryResponse with status, file_path, and error fields
-    """
-    if "git" not in request:
-        raise MCPError("Missing required field: git")
-    return await generate_journal_entry(request)
 
 @handle_mcp_error
 @trace_mcp_operation("reflection.handle_add_reflection", attributes={
@@ -449,175 +344,10 @@ async def handle_journal_capture_context_mcp(request: CaptureContextRequest) -> 
         "error": result.get("error")
     }
 
-@handle_mcp_error
-async def handle_journal_init(request: dict) -> dict:
-    """
-    Handle the MCP operation 'journal/init'.
-    Expects a request with optional 'repo_path', 'config_path', and 'journal_path'.
-    Calls initialize_journal() and returns a structured response.
-    Response format:
-        {
-            "status": "success" | "error",
-            "paths": dict (if success),
-            "message": str (if success),
-            "error": str (if error)
-        }
-    """
-    repo_path = request.get("repo_path")
-    config_path = request.get("config_path")
-    journal_path = request.get("journal_path")
-    # Support both sync and async initialize_journal
-    if inspect.iscoroutinefunction(initialize_journal):
-        result = await initialize_journal(repo_path=repo_path, config_path=config_path, journal_path=journal_path)
-    else:
-        result = initialize_journal(repo_path=repo_path, config_path=config_path, journal_path=journal_path)
-    if result.get("status") != "success":
-        raise MCPError(result.get("message", "Journal initialization failed"))
-    return {
-        "status": "success",
-        "paths": result.get("paths", {}),
-        "message": result.get("message", "Journal initialized successfully")
-    }
 
-@handle_mcp_error
-async def handle_journal_install_hook(request: dict) -> dict:
-    """
-    Handle the MCP operation 'journal/install-hook'.
-    Expects a request with optional 'repo_path'.
-    Calls install_post_commit_hook() and returns a structured response.
-    Response format:
-        {
-            "status": "success" | "error",
-            "message": str,
-            "backup_path": str or None,
-            "hook_path": str or None (if available),
-            "error": str (if error)
-        }
-    """
-    repo_path = request.get("repo_path")
-    if inspect.iscoroutinefunction(install_post_commit_hook):
-        result = await install_post_commit_hook(repo_path=repo_path)
-    else:
-        result = install_post_commit_hook(repo_path=repo_path)
-    if isinstance(result, dict):
-        response = {
-            "status": result.get("status", "success"),
-            "message": result.get("message", "Post-commit hook installed successfully."),
-            "backup_path": result.get("backup_path"),
-        }
-        if "hook_path" in result:
-            response["hook_path"] = result["hook_path"]
-        return response
-    else:
-        return {
-            "status": "success",
-            "message": "Post-commit hook installed successfully.",
-            "backup_path": result
-        }
 
 # Create alias for test compatibility
 handle_add_reflection = handle_journal_add_reflection
 
 
-# =============================================================================
-# Daily Summary MCP Handler (Subtask 27.2)
-# =============================================================================
 
-@handle_mcp_error
-@trace_mcp_operation("daily_summary.handle_generate", attributes={
-    "operation_type": "mcp_handler",
-    "content_type": "daily_summary"
-})
-async def handle_generate_daily_summary(request: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Layer 1: MCP Server - Clean delegation to daily summary generation layer.
-    
-    Validates the MCP request and delegates to the daily summary generation function
-    which handles the comprehensive AI-powered analysis and synthesis.
-    
-    Args:
-        request: Must contain 'date' in YYYY-MM-DD format
-        
-    Returns:
-        GenerateDailySummaryResponse with status, file_path, content, and error fields
-    """
-    import time
-    from opentelemetry import trace
-    from mcp_commit_story.daily_summary import generate_daily_summary_mcp_tool
-    
-    start_time = time.time()
-    
-    # Add span attributes for detailed telemetry
-    current_span = trace.get_current_span()
-    if current_span:
-        current_span.set_attribute("mcp.operation", "generate_daily_summary")
-        current_span.set_attribute("mcp.handler", "handle_generate_daily_summary")
-    
-    # Basic validation
-    if "date" not in request:
-        raise MCPError("Missing required field: date")
-    
-    date_str = request["date"]
-    
-    try:
-        datetime.strptime(date_str, "%Y-%m-%d")
-    except ValueError:
-        raise MCPError("Invalid date format. Expected YYYY-MM-DD")
-    
-    if current_span:
-        current_span.set_attribute("daily_summary.date", date_str)
-    
-    try:
-        # Delegate to daily summary generation layer
-        result = generate_daily_summary_mcp_tool(request)
-        
-        # Record detailed success metrics
-        duration = time.time() - start_time
-        metrics = get_mcp_metrics()
-        if metrics:
-            metrics.record_counter(
-                'mcp.handler.operations_total',
-                operation='generate_daily_summary',
-                handler='handle_generate_daily_summary',
-                status='success'
-            )
-            metrics.record_operation_duration(
-                'mcp.handler.duration_seconds',
-                duration,
-                operation='generate_daily_summary',
-                handler='handle_generate_daily_summary'
-            )
-        
-        # Add detailed span attributes from result
-        if current_span and result.get("file_path"):
-            current_span.set_attribute("daily_summary.file_path", result["file_path"])
-            if result.get("content"):
-                current_span.set_attribute("daily_summary.output_length", len(result["content"]))
-        
-        return result
-        
-    except Exception as e:
-        # Record detailed error metrics
-        duration = time.time() - start_time
-        metrics = get_mcp_metrics()
-        if metrics:
-            metrics.record_counter(
-                'mcp.handler.operations_total',
-                operation='generate_daily_summary',
-                handler='handle_generate_daily_summary',
-                status='error'
-            )
-            metrics.record_operation_duration(
-                'mcp.handler.duration_seconds',
-                duration,
-                operation='generate_daily_summary',
-                handler='handle_generate_daily_summary',
-                success=False
-            )
-        
-        if current_span:
-            current_span.set_attribute("error.category", "generation_failed")
-        
-        # Log for debugging
-        logger.error(f"Error generating daily summary for {date_str}: {e}")
-        raise MCPError(f"Failed to generate daily summary: {str(e)}")

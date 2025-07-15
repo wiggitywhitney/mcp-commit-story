@@ -119,7 +119,7 @@ Signal usage removed from git hook worker, direct calls implemented, telemetry m
 
 ---
 
-## Subtask 69.3: Remove Obsolete MCP Tools from Server [pending]
+## Subtask 69.3: Remove Obsolete MCP Tools from Server [done]
 ### Dependencies: 69.2
 ### Description: Remove 4 obsolete MCP tools from server.py while preserving the 2 essential ones, fix broken tests.
 
@@ -146,20 +146,23 @@ Signal usage removed from git hook worker, direct calls implemented, telemetry m
    - Run tests: `python -m pytest`
 
 #### VERIFICATION CHECKLIST
-[ ] MCP tool `journal_new_entry` removed from server.py
-[ ] MCP tool `journal_init` removed from server.py
-[ ] MCP tool `journal_install_hook` removed from server.py
-[ ] MCP tool `journal_generate_daily_summary` removed from server.py
-[ ] Function `generate_daily_summary_mcp_tool()` removed from daily_summary.py
-[ ] Essential MCP tools preserved: `journal_add_reflection`, `journal_capture_context`
-[ ] All broken tests fixed
-[ ] Test mocks updated to reflect remaining MCP tools only
-[ ] Server.py module docstring updated to reflect current tool set
-[ ] Unused imports removed from server.py
-[ ] MCP server starts successfully without obsolete tools
-[ ] Full test suite passes
-[ ] All subtask requirements verified complete
-[ ] MARK COMPLETE
+[X] MCP tool `journal_new_entry` removed from server.py
+[X] MCP tool `journal_init` removed from server.py
+[X] MCP tool `journal_install_hook` removed from server.py
+[X] MCP tool `journal_generate_daily_summary` removed from server.py
+[X] Function `generate_daily_summary_mcp_tool()` removed from daily_summary.py
+[X] Essential MCP tools preserved: `journal_add_reflection`, `journal_capture_context`
+[X] All broken tests fixed
+[X] Test mocks updated to reflect remaining MCP tools only
+[X] Server.py module docstring updated to reflect current tool set
+[X] Unused imports removed from server.py
+[X] MCP server starts successfully without obsolete tools
+[X] Full test suite passes
+[X] All subtask requirements verified complete
+[X] MARK COMPLETE
+
+### Subtask 69.3 Completed - 2025-07-14 20:01 CDT
+Removed 4 obsolete MCP tools (journal_new_entry, journal_init, journal_install_hook, journal_generate_daily_summary), preserved 2 essential ones (journal_add_reflection, journal_capture_context), fixed all broken tests, and updated server configuration.
 
 ---
 
