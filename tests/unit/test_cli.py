@@ -182,3 +182,64 @@ def test_cli_is_setup_only():
     
     # Should mention MCP in help text
     assert "MCP" in result.stdout or "setup" in result.stdout.lower() 
+
+def test_install_hook_background_flag():
+    """Test that install-hook command accepts --background flag."""
+    from mcp_commit_story.cli import cli
+    from click.testing import CliRunner
+    from unittest.mock import patch, Mock
+    
+    runner = CliRunner()
+    
+    # Mock the install function to avoid actual file operations
+    with patch('mcp_commit_story.cli.install_post_commit_hook') as mock_install:
+        mock_install.return_value = True
+        
+        # Test with background flag
+        result = runner.invoke(cli, ['install-hook', '--background'])
+        
+        assert result.exit_code == 0
+        
+        # Verify the install function was called with background=True
+        mock_install.assert_called_once_with(None, background=True, timeout=30)
+        
+        # Verify the output mentions background mode
+        assert 'background mode' in result.output
+
+
+def test_install_hook_background_flag_with_timeout():
+    """Test that install-hook command accepts --background and --timeout flags."""
+    from mcp_commit_story.cli import cli
+    from click.testing import CliRunner
+    from unittest.mock import patch, Mock
+    
+    runner = CliRunner()
+    
+    # Mock the install function to avoid actual file operations
+    with patch('mcp_commit_story.cli.install_post_commit_hook') as mock_install:
+        mock_install.return_value = True
+        
+        # Test with background flag and custom timeout
+        result = runner.invoke(cli, ['install-hook', '--background', '--timeout', '45'])
+        
+        assert result.exit_code == 0
+        
+        # Verify the install function was called with correct parameters
+        mock_install.assert_called_once_with(None, background=True, timeout=45)
+        
+        # Verify the output mentions background mode
+        assert 'background mode' in result.output
+
+
+def test_install_hook_help_includes_background():
+    """Test that install-hook help includes documentation for --background flag."""
+    from mcp_commit_story.cli import cli
+    from click.testing import CliRunner
+    
+    runner = CliRunner()
+    result = runner.invoke(cli, ['install-hook', '--help'])
+    
+    assert result.exit_code == 0
+    assert '--background' in result.output
+    assert 'background' in result.output.lower()
+    assert '--timeout' in result.output 

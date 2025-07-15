@@ -179,6 +179,7 @@ with open(file_path, "a") as f:
 
 ### Hook Installation
 - `mcp-commit-story-setup install-hook` command
+- Supports background mode with `--background` flag to prevent blocking commits
 - Checks for existing hooks and handles conflicts
 - Creates hook that implements recursion prevention logic
 - Backs up existing hooks before modification
@@ -203,10 +204,26 @@ The hook uses a Python worker pattern for reliable background processing:
 - **Git timestamp consistency**: Uses git commit timestamps throughout system
 
 #### Example Generated Hook
+
+**Synchronous Mode (Default)**
 ```sh
 #!/bin/sh
 # Git hook with direct journal generation and summary coordination
 python -m mcp_commit_story.git_hook_worker "$PWD" >/dev/null 2>&1 || true
+```
+
+**Background Mode**
+```sh
+#!/bin/sh
+# Get the current commit hash
+COMMIT_HASH=$(git rev-parse HEAD)
+
+# Spawn background journal worker (detached from git process)
+nohup python -m mcp_commit_story.background_journal_worker \
+    --commit-hash "$COMMIT_HASH" \
+    --repo-path "$PWD" \
+    --timeout 30 \
+    >/dev/null 2>&1 &
 ```
 
 #### Worker Module Features

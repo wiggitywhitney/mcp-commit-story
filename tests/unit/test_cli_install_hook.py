@@ -57,8 +57,9 @@ def test_cli_install_hook_output_format(monkeypatch):
 @patch('mcp_commit_story.cli.install_post_commit_hook')
 def test_cli_install_hook_with_backup(mock_install):
     runner = CliRunner()
-    mock_install.return_value = "/path/to/backup"  # Simulate backup created
+    mock_install.return_value = True  # Simulate successful installation
     result = runner.invoke(cli, ['install-hook'])
     data = json.loads(result.output)
     assert data["status"] == "success"
-    assert data["result"]["backup_path"] == "/path/to/backup" 
+    assert "synchronous mode" in data["result"]["message"]
+    assert data["result"]["background_mode"] == False 

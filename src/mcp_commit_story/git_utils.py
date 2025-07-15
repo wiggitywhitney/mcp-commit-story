@@ -265,7 +265,7 @@ def get_commit_diff_summary(commit) -> str:
     return "\n".join(summary_lines)
 
 
-def generate_hook_content(command: str = None) -> str:
+def generate_hook_content(command: str = None, background: bool = False, timeout: int = 30) -> str:
     """
     Generate the content for a portable Git post-commit hook script.
 
@@ -273,6 +273,9 @@ def generate_hook_content(command: str = None) -> str:
         command (str, optional): Custom command to run in the hook. 
                                If None, uses enhanced Python worker for daily summary triggering.
                                If provided, uses legacy behavior for backwards compatibility.
+        background (bool, optional): If True, spawn journal generation in background 
+                                   to avoid blocking git commits. Defaults to False.
+        timeout (int, optional): Timeout in seconds for background worker. Defaults to 30.
 
     Returns:
         str: The complete hook script content as a string.
@@ -280,6 +283,7 @@ def generate_hook_content(command: str = None) -> str:
     Design:
         - Uses '#!/bin/sh' for maximum portability.
         - Default behavior: Calls Python worker for journal entries + daily summary triggering.
+        - Background mode: Spawns background worker that doesn't block git operations.
         - Custom command: Uses legacy behavior for backwards compatibility.
         - Runs the specified command, redirecting all output to /dev/null.
         - Appends '|| true' to ensure the hook never blocks a commit, even on error.
@@ -288,6 +292,19 @@ def generate_hook_content(command: str = None) -> str:
     if command is not None:
         # Legacy behavior for backwards compatibility
         return f"#!/bin/sh\n{command} >/dev/null 2>&1 || true\n"
+    elif background:
+        # Background mode - spawn detached background worker
+        return f'''#!/bin/sh
+# Get the current commit hash
+COMMIT_HASH=$(git rev-parse HEAD)
+
+# Spawn background journal worker (detached from git process)
+nohup python -m mcp_commit_story.background_journal_worker \\
+    --commit-hash "$COMMIT_HASH" \\
+    --repo-path "$PWD" \\
+    --timeout {timeout} \\
+    >/dev/null 2>&1 &
+'''
     else:
         # Enhanced behavior with Python worker for daily summary triggering
         return f'#!/bin/sh\npython -m mcp_commit_story.git_hook_worker "$PWD" >/dev/null 2>&1 || true\n'
@@ -314,38 +331,72 @@ def backup_existing_hook(hook_path: str) -> Optional[str]:
     return backup_path
 
 
-def install_post_commit_hook(repo_path: str = None) -> Optional[str]:
+def install_post_commit_hook(repo_path: str = None, background: bool = False, timeout: int = 30) -> bool:
     """
     Install or replace the post-commit hook in the given repo's .git/hooks directory.
 
     Args:
         repo_path (str, optional): Path to the repo. Defaults to current directory.
+        background (bool, optional): If True, install hook that runs journal generation 
+                                   in background to avoid blocking git commits. Defaults to False.
+        timeout (int, optional): Timeout in seconds for background worker. Defaults to 30.
 
     Returns:
-        str or None: Path to the backup file if a backup was made, otherwise None.
+        bool: True if hook was installed successfully, False otherwise.
 
     Raises:
         FileNotFoundError: If the hooks directory does not exist.
         PermissionError: If the hooks directory is not writable.
     """
     import stat
+    from .telemetry import get_mcp_metrics
+    
     if repo_path is None:
         repo_path = os.getcwd()
+    
+    # Record telemetry
+    metrics = get_mcp_metrics()
+    if metrics:
+        metrics.record_counter(
+            'git_hook.install_total',
+            attributes={
+                'background_mode': str(background).lower(),
+                'timeout': str(timeout)
+            }
+        )
+    
     hooks_dir = os.path.join(repo_path, '.git', 'hooks')
     if not os.path.isdir(hooks_dir):
         raise FileNotFoundError(f"Hooks directory not found: {hooks_dir}")
     if not os.access(hooks_dir, os.W_OK):
         raise PermissionError(f"Hooks directory is not writable: {hooks_dir}")
+    
     hook_path = os.path.join(hooks_dir, 'post-commit')
     backup_path = None
     if os.path.exists(hook_path):
         backup_path = backup_existing_hook(hook_path)
-    hook_content = generate_hook_content()
+    
+    # Generate hook content with background mode support
+    hook_content = generate_hook_content(background=background, timeout=timeout)
+    
     with open(hook_path, 'w') as f:
         f.write(hook_content)
+    
+    # Make hook executable
     st = os.stat(hook_path)
     os.chmod(hook_path, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-    return backup_path
+    
+    # Record success telemetry
+    if metrics:
+        metrics.record_counter(
+            'git_hook.install_success_total',
+            attributes={
+                'background_mode': str(background).lower(),
+                'had_backup': str(backup_path is not None).lower()
+            }
+        )
+    
+    return True
 
 
 def get_commits_since_last_entry(repo, journal_path: str) -> list:

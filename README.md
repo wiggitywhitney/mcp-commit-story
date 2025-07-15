@@ -115,7 +115,9 @@ Over time, Bonnie's journal became a resource for performance reviews, onboardin
 
 ## Background Generation: Capture Now, Process Silently
 
-MCP Commit Story uses a git hook to automatically generate journal entries and daily summaries in the background after each commit. The system collects git context, extracts relevant AI chat history, loads recent journal entries, and includes your project's README to provide comprehensive context to a fresh AI agent that always understands your project's purpose and goals. This generates rich, contextually-aware journal entries without interrupting your workflow. You maintain full control by adding manual reflections or capturing your AI assistant's current context when needed.
+MCP Commit Story uses a git hook to automatically generate journal entries and daily summaries in the background after each commit. The system collects git context, extracts relevant AI chat history, loads recent journal entries, and includes your project's README to provide comprehensive context to a fresh AI agent that always understands your project's purpose and goals. This generates rich, contextually-aware journal entries without interrupting your workflow.
+
+The git hook supports both synchronous and background modes. Background mode ensures git commits complete immediately while journal generation continues asynchronously, preventing workflow disruption. You maintain full control by adding manual reflections or capturing your AI assistant's current context when needed.
 
 ---
 

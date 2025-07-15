@@ -15,8 +15,10 @@ from mcp_commit_story.git_utils import (
     backup_existing_hook,
     install_post_commit_hook,
     get_commits_since_last_entry,
-    get_previous_commit_info  # NEW: Import the function we're about to implement
+    get_previous_commit_info,  # NEW: Import the function we're about to implement
+    generate_hook_content  # NEW: Import the function we're about to test
 )
+# TelemetryCollector import removed - using mock approach instead
 from mcp_commit_story.context_collection import collect_git_context
 
 # TDD: Test that GitPython is installed and can instantiate a Repo object
@@ -736,3 +738,125 @@ def test_get_previous_commit_info_first_commit_integration(git_repo):
     
     # Assert
     assert result is None 
+
+
+def test_generate_hook_content_background_mode():
+    """Test that generate_hook_content creates background hook when background=True."""
+    hook_content = generate_hook_content(background=True)
+    
+    # Should contain shebang
+    assert hook_content.startswith("#!/bin/sh\n")
+    
+    # Should get commit hash
+    assert "COMMIT_HASH=$(git rev-parse HEAD)" in hook_content
+    
+    # Should spawn background worker with nohup
+    assert "nohup python -m mcp_commit_story.background_journal_worker" in hook_content
+    assert "--commit-hash \"$COMMIT_HASH\"" in hook_content
+    assert "--repo-path \"$PWD\"" in hook_content
+    
+    # Should redirect output and run in background
+    assert ">/dev/null 2>&1 &" in hook_content
+    
+    # Should not contain the synchronous git_hook_worker call
+    assert "git_hook_worker" not in hook_content
+
+
+def test_generate_hook_content_sync_mode_default():
+    """Test that generate_hook_content still defaults to synchronous mode."""
+    hook_content = generate_hook_content()
+    
+    # Should contain the synchronous worker call (existing behavior)
+    assert "python -m mcp_commit_story.git_hook_worker" in hook_content
+    assert "background_journal_worker" not in hook_content
+
+
+def test_generate_hook_content_background_mode_with_timeout():
+    """Test that background hook includes timeout parameter."""
+    hook_content = generate_hook_content(background=True, timeout=45)
+    
+    # Should include timeout parameter
+    assert "--timeout 45" in hook_content
+
+
+def test_generate_hook_content_background_mode_default_timeout():
+    """Test that background hook uses default timeout when not specified."""
+    hook_content = generate_hook_content(background=True)
+    
+    # Should include default timeout
+    assert "--timeout 30" in hook_content
+
+
+@patch('mcp_commit_story.git_utils.os.chmod')
+@patch('mcp_commit_story.git_utils.os.path.exists')
+def test_install_post_commit_hook_background_mode(mock_exists, mock_chmod, tmp_path):
+    """Test that install_post_commit_hook can install background hooks."""
+    from mcp_commit_story.git_utils import install_post_commit_hook
+    
+    # Setup
+    repo_path = tmp_path / "test_repo"
+    repo_path.mkdir()
+    git_dir = repo_path / ".git"
+    git_dir.mkdir()
+    hooks_dir = git_dir / "hooks"
+    hooks_dir.mkdir()
+    
+    mock_exists.return_value = False  # No existing hook
+    
+    # Execute
+    result = install_post_commit_hook(str(repo_path), background=True)
+    
+    # Verify
+    assert result is True
+    hook_path = hooks_dir / "post-commit"
+    assert hook_path.exists()
+    
+    # Check hook content
+    hook_content = hook_path.read_text()
+    assert "background_journal_worker" in hook_content
+    assert "nohup" in hook_content
+    
+    # Verify chmod was called to make executable
+    mock_chmod.assert_called_once()
+
+
+def test_install_post_commit_hook_background_mode_with_telemetry(tmp_path):
+    """Test that background hook installation includes telemetry tracking."""
+    from mcp_commit_story.git_utils import install_post_commit_hook
+    from mcp_commit_story.telemetry import get_mcp_metrics
+    from unittest.mock import Mock
+    
+    # Setup
+    repo_path = tmp_path / "test_repo"
+    repo_path.mkdir()
+    git_dir = repo_path / ".git"
+    git_dir.mkdir()
+    hooks_dir = git_dir / "hooks"
+    hooks_dir.mkdir()
+    
+    # Mock telemetry to verify it's called correctly
+    mock_metrics = Mock()
+    
+    with patch('mcp_commit_story.telemetry.get_mcp_metrics', return_value=mock_metrics):
+        result = install_post_commit_hook(str(repo_path), background=True)
+    
+    # Verify operation succeeded
+    assert result is True
+    
+    # Verify telemetry was recorded with correct attributes
+    mock_metrics.record_counter.assert_any_call(
+        'git_hook.install_total',
+        attributes={
+            'background_mode': 'true',
+            'timeout': '30'
+        }
+    )
+    
+    # Verify success telemetry was recorded
+    mock_metrics.record_counter.assert_any_call(
+        'git_hook.install_success_total',
+        attributes={
+            'background_mode': 'true',
+            'had_backup': 'false'
+        }
+    ) 

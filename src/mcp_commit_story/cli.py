@@ -61,7 +61,7 @@ def cli():
     
     Setup Commands:
     - journal-init: Initialize journal configuration and directory structure
-    - install-hook: Install git post-commit hook for automated journal entries
+    - install-hook: Install git post-commit hook for automated journal entries (supports --background mode)
     """
     pass
 
@@ -89,13 +89,17 @@ def journal_init(repo_path, config_path, journal_path):
 
 @cli.command('install-hook')
 @click.option('--repo-path', type=click.Path(), default=None, help='Path to git repository (default: current directory)')
-def install_hook(repo_path):
+@click.option('--background', is_flag=True, default=False, help='Run journal generation in background to avoid blocking git commits')
+@click.option('--timeout', type=int, default=30, help='Timeout in seconds for background worker (default: 30)')
+def install_hook(repo_path, background, timeout):
     """
     Install or replace the git post-commit hook for MCP Journal system.
+    
+    With --background flag, journal generation runs in background to avoid blocking git commits.
     Returns JSON output matching the approved CLI contract.
     """
     try:
-        backup_path = install_post_commit_hook(repo_path)
+        success = install_post_commit_hook(repo_path, background=background, timeout=timeout)
     except FileNotFoundError as e:
         output = {
             "status": "error",
@@ -128,11 +132,14 @@ def install_hook(repo_path):
         }
         print(json.dumps(output, indent=2))
         return ERROR_CODES["general"]
+    
+    mode_description = "background" if background else "synchronous"
     result = {
         "status": "success",
         "result": {
-            "message": "Post-commit hook installed successfully.",
-            "backup_path": backup_path
+            "message": f"Post-commit hook installed successfully ({mode_description} mode).",
+            "background_mode": background,
+            "timeout": timeout if background else None
         }
     }
     print(json.dumps(result, indent=2))
