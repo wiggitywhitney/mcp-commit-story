@@ -8,6 +8,7 @@ import tempfile
 import os
 from pathlib import Path
 from unittest.mock import patch
+import json
 
 # Sample markdown for a daily note entry
 DAILY_NOTE_MD = '''
@@ -832,3 +833,121 @@ def test_file_diffs_integration_with_all_generators():
         assert 'mood' in result_tone
         assert 'discussion_notes' in result_discussion
         assert 'commit_metadata' in result_metadata 
+
+
+# Tests for Technical Synopsis JSON Output Fix
+
+@patch('mcp_commit_story.journal_generate.invoke_ai')
+def test_technical_synopsis_json_object_converted_to_readable_text(mock_invoke_ai):
+    """Test that when AI returns JSON object with technical_synopsis structure, function returns readable text instead of JSON string."""
+    # Mock AI returning structured JSON response
+    structured_response = {
+        "technical_synopsis": {
+            "overview": "Implemented user authentication system with JWT validation",
+            "implementation_details": [
+                "Created UserAuthentication class with token validation methods",
+                "Added JWT secret key configuration to environment variables",
+                "Integrated bcrypt for password hashing"
+            ],
+            "impact": "Enhanced security by adding proper authentication flow"
+        }
+    }
+    mock_invoke_ai.return_value = json.dumps(structured_response)
+    
+    ctx = JournalContext(
+        chat=None,
+        git={
+            'metadata': {
+                'hash': 'abc123',
+                'author': 'Alice <alice@example.com>',
+                'date': '2025-05-24 12:00:00',
+                'message': 'Add user authentication',
+            },
+            'diff_summary': 'auth.py: added',
+            'changed_files': ['src/auth.py'],
+            'file_stats': {'source': 1, 'config': 0, 'docs': 0, 'tests': 0},
+            'commit_context': {'size_classification': 'small', 'is_merge': False}
+        },
+        journal=None
+    )
+    
+    result = journal.generate_technical_synopsis_section(ctx)
+    
+    # Should return readable text, not JSON string
+    technical_synopsis = result['technical_synopsis']
+    assert isinstance(technical_synopsis, str)
+    
+    # Should NOT contain JSON artifacts like curly braces, square brackets, or quotes around keys
+    assert not technical_synopsis.startswith('{')
+    assert not technical_synopsis.endswith('}')
+    assert '"overview"' not in technical_synopsis
+    assert '"implementation_details"' not in technical_synopsis
+    assert '"impact"' not in technical_synopsis
+    
+    # Should contain the actual content in readable form
+    assert "user authentication system" in technical_synopsis.lower()
+    assert "jwt validation" in technical_synopsis.lower()
+
+
+@patch('mcp_commit_story.journal_generate.invoke_ai')
+def test_technical_synopsis_plain_text_response_unchanged(mock_invoke_ai):
+    """Test that plain text responses still work unchanged."""
+    # Mock AI returning plain text response
+    plain_text_response = "Implemented comprehensive user authentication with JWT tokens and bcrypt password hashing."
+    mock_invoke_ai.return_value = plain_text_response
+    
+    ctx = JournalContext(
+        chat=None,
+        git={
+            'metadata': {
+                'hash': 'def456',
+                'author': 'Bob <bob@example.com>',
+                'date': '2025-05-24 14:00:00',
+                'message': 'Add authentication',
+            },
+            'diff_summary': 'auth.py: added',
+            'changed_files': ['src/auth.py'],
+            'file_stats': {'source': 1, 'config': 0, 'docs': 0, 'tests': 0},
+            'commit_context': {'size_classification': 'small', 'is_merge': False}
+        },
+        journal=None
+    )
+    
+    result = journal.generate_technical_synopsis_section(ctx)
+    
+    # Should return the same plain text
+    assert result['technical_synopsis'] == plain_text_response
+
+
+@patch('mcp_commit_story.journal_generate.invoke_ai')
+def test_technical_synopsis_malformed_json_fallback(mock_invoke_ai):
+    """Test edge case: malformed JSON still gets reasonable fallback."""
+    # Mock AI returning malformed JSON
+    malformed_response = '{"technical_synopsis": {"overview": "Fixed bug", "implementation_details": [incomplete'
+    mock_invoke_ai.return_value = malformed_response
+    
+    ctx = JournalContext(
+        chat=None,
+        git={
+            'metadata': {
+                'hash': 'ghi789',
+                'author': 'Charlie <charlie@example.com>',
+                'date': '2025-05-24 16:00:00',
+                'message': 'Fix bug',
+            },
+            'diff_summary': 'bug.py: modified',
+            'changed_files': ['src/bug.py'],
+            'file_stats': {'source': 1, 'config': 0, 'docs': 0, 'tests': 0},
+            'commit_context': {'size_classification': 'small', 'is_merge': False}
+        },
+        journal=None
+    )
+    
+    result = journal.generate_technical_synopsis_section(ctx)
+    
+    # Should return some reasonable fallback text instead of crashing
+    technical_synopsis = result['technical_synopsis']
+    assert isinstance(technical_synopsis, str)
+    assert len(technical_synopsis) > 0  # Should not be empty
+    # Should contain the original malformed response as fallback
+    assert malformed_response in technical_synopsis 

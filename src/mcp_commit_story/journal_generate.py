@@ -196,8 +196,8 @@ def _parse_ai_response(response: str, expected_field: str, fallback_value: Any =
                     elif 'text' in field_value:
                         return field_value['text']
                     else:
-                        # Fallback to JSON string representation
-                        return json.dumps(field_value)
+                        # Convert structured fields into flowing paragraph text
+                        return _convert_structured_dict_to_text(field_value)
                 
                 # Special handling for string field values when parse_as_list=True
                 if parse_as_list and isinstance(field_value, str):
@@ -229,6 +229,56 @@ def _parse_ai_response(response: str, expected_field: str, fallback_value: Any =
         return [line.strip() for line in lines if line.strip()]
     else:
         return response
+
+
+def _convert_structured_dict_to_text(data: dict) -> str:
+    """
+    Convert structured JSON object into flowing paragraph text.
+    
+    Handles common patterns like overview, implementation_details, impact
+    and converts them into readable natural language.
+    
+    Args:
+        data: Dictionary containing structured data
+        
+    Returns:
+        Readable text representation
+    """
+    parts = []
+    
+    # Handle overview/summary fields
+    for overview_key in ['overview', 'summary', 'description']:
+        if overview_key in data and isinstance(data[overview_key], str):
+            parts.append(data[overview_key])
+            break
+    
+    # Handle implementation details (list of items)
+    for details_key in ['implementation_details', 'details', 'items', 'tasks']:
+        if details_key in data:
+            details = data[details_key]
+            if isinstance(details, list):
+                if details:  # Only add if list is not empty
+                    detail_text = ". ".join(str(item).strip() for item in details if str(item).strip())
+                    if detail_text:
+                        parts.append(detail_text)
+            elif isinstance(details, str):
+                parts.append(details)
+            break
+    
+    # Handle impact/conclusion fields  
+    for impact_key in ['impact', 'conclusion', 'result', 'outcome']:
+        if impact_key in data and isinstance(data[impact_key], str):
+            parts.append(data[impact_key])
+            break
+    
+    # If we found structured content, join with periods
+    if parts:
+        # Join parts and ensure proper sentence endings
+        text = ". ".join(part.rstrip('.') for part in parts if part.strip())
+        return text + "." if text and not text.endswith('.') else text
+    
+    # Fallback: if no recognized structure, use JSON representation
+    return json.dumps(data)
 
 
 def _parse_tone_mood_response(response: str) -> Dict[str, str]:
