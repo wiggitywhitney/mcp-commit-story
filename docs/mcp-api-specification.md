@@ -50,11 +50,8 @@ Clients (such as editors or agents) should be able to connect using a configurat
 
 The server exposes these operations for journal management:
 
-1. **`journal/new-entry`** - Manual journal entry creation from git, chat, and terminal context
-2. **`journal/add-reflection`** - Add user reflection to today's journal entry  
-3. **`journal/capture-context`** - Capture AI context and save to journal
-4. **`journal/init`** - Initialize journal directory structure
-5. **`journal/install-hook`** - Install git post-commit hook
+1. **`journal/add-reflection`** - Add user reflection to today's journal entry  
+2. **`journal/capture-context`** - Capture AI context and save to journal
 
 Each operation is instrumented with appropriate traces to monitor performance and error rates.
 
@@ -62,114 +59,8 @@ Each operation is instrumented with appropriate traces to monitor performance an
 
 ## Operation Details
 
-### journal/new-entry 
 
-**Purpose**: Manual journal entry creation from comprehensive development context.
 
-**Note**: Journal entries are primarily created automatically via git post-commit hooks. This operation provides manual journal generation when needed (e.g., for missed commits, batch processing, or custom workflows).
-
-**Automatic vs Manual Generation**:
-- **Automatic** (Primary): Git hooks → `git_hook_worker.py` → direct journal generation
-- **Manual** (This operation): MCP tools → `journal/new-entry` → same journal generation logic
-
-**Implementation Status**: Complete with comprehensive TypedDict integration, full test coverage, and proper error handling.
-
-**Parameters**:
-- `git: Dict[str, Any]` (required) - Git context information including commit hash, message, files changed, etc.
-- `chat: Optional[Any]` (optional) - Chat history context from development session
-- `terminal: Optional[Any]` (optional) - Terminal command history context
-
-**Implementation Details**:
-- Integrates with `generate_journal_entry()` for context collection and entry generation
-- Uses `save_journal_entry()` for file operations and persistence  
-- Implements comprehensive TypedDict validation for all workflow data structures
-- Includes journal-only commit detection to prevent recursion
-- Provides structured error responses with telemetry integration
-- Supports automatic directory creation following on-demand patterns
-
-**Returns**:
-```json
-{
-  "status": "success", 
-  "file_path": "journal/daily/2025-01-15.md",
-  "error": null
-}
-```
-
-**Skipped Commits Response**:
-```json
-{
-  "status": "skipped",
-  "file_path": "",
-  "error": null
-}
-```
-
-**Error Response**:
-```json
-{
-  "status": "error",
-  "file_path": "",
-  "error": "Detailed error message"
-}
-```
-
-**Example Request**:
-```json
-{
-  "git": {
-    "commit_hash": "abc123",
-    "commit_message": "Implement user authentication",
-    "files_changed": ["src/auth.py", "tests/test_auth.py"],
-    "insertions": 45,
-    "deletions": 12
-  },
-  "chat": {
-    "messages": [
-      {"speaker": "Human", "text": "Let's implement JWT authentication"},
-      {"speaker": "Agent", "text": "I'll help you set up JWT tokens..."}
-    ]
-  },
-  "terminal": {
-    "commands": ["npm test", "git add .", "git commit -m 'Implement user authentication'"]
-  }
-}
-```
-
-### journal/init
-**Purpose**: Initialize journal in current repository
-
-**Parameters**:
-- `repo_path: str` (optional) - Path to the git repository (defaults to current directory)
-- `config_path: str` (optional) - Path for the config file (defaults to .mcp-commit-storyrc.yaml in repo root)
-- `journal_path: str` (optional) - Path for the journal directory (defaults to journal/ in repo root)
-
-**Behavior**:
-- Create initial journal directory structure
-- Generate default configuration file
-- Install git post-commit hook (with user confirmation)
-- Return initialization status and created paths
-
-**Returns**:
-```json
-{
-  "status": "success",
-  "paths": {
-    "config": "/path/to/.mcp-commit-storyrc.yaml",
-    "journal": "/path/to/journal"
-  },
-  "message": "Journal initialized successfully"
-}
-```
-
-**Example Request**:
-```json
-{
-  "repo_path": "/path/to/my-project",
-  "config_path": "/path/to/my-project/.mcp-commit-storyrc.yaml",
-  "journal_path": "/path/to/my-project/journal"
-}
-```
 
 ### journal/add-reflection
 **Purpose**: Add manual reflection to a specific date's journal
@@ -200,33 +91,7 @@ Each operation is instrumented with appropriate traces to monitor performance an
 }
 ```
 
-### journal/install-hook
-**Purpose**: Install git post-commit hook
 
-**Parameters**:
-- `repo_path: str` (optional) - Path to git repository (defaults to current directory)
-
-**Behavior**:
-- Check for existing hooks and handle conflicts
-- Create hook with recursion prevention logic
-- Back up existing hooks before modification
-
-**Returns**:
-```json
-{
-  "status": "success",
-  "message": "Post-commit hook installed successfully.",
-  "backup_path": "/path/to/.git/hooks/post-commit.backup.20250115-143022",
-  "hook_path": "/path/to/.git/hooks/post-commit"
-}
-```
-
-**Example Request**:
-```json
-{
-  "repo_path": "/path/to/my-project"
-}
-```
 
 ### journal/capture-context ✅ **FULLY IMPLEMENTED**
 **Purpose**: Capture AI-generated project knowledge and store it in the daily journal

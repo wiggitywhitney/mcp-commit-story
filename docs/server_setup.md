@@ -117,60 +117,8 @@ The MCP server exposes journal operations such as `journal/add-reflection` and `
 
 All errors are returned as a dict with `status: "error"` and an `error` message, never as a raw exception. See the engineering spec for full type details.
 
-## Journal Operations: journal/init
 
-> **Note:** The MCP operation is named `journal/init`, while the CLI command is `journal-init` for clarity and consistency. The CLI command uses a hyphen to follow namespaced conventions and avoid ambiguity with other potential 'init' commands.
 
-The MCP server exposes the `journal/init` operation for initializing the journal system in a repository. This operation sets up the required directory structure, generates a default configuration file, and validates the repository state.
-
-- **Request:**
-  ```python
-  {
-      "repo_path": "/path/to/repo",      # Optional, defaults to current directory
-      "config_path": "/path/to/config",   # Optional, defaults to .mcp-commit-storyrc.yaml in repo root
-      "journal_path": "/path/to/journal"  # Optional, defaults to journal/ in repo root
-  }
-  ```
-- **Response:**
-  ```python
-  {
-      "status": "success",    # or "error"
-      "paths": {                # Dict of created/validated paths
-          "journal": "/path/to/journal",
-          "config": "/path/to/.mcp-commit-storyrc.yaml"
-      },
-      "message": "Journal initialized successfully",  # or error message
-      "error": None            # Error message if status == "error"
-  }
-  ```
-
-- All errors are returned as a dict with `status: "error"` and an `error` message, never as a raw exception.
-- The handler supports both sync and async initialization logic and uses the `handle_mcp_error` decorator for robust error handling.
-- See [src/mcp_commit_story/server.py](../src/mcp_commit_story/server.py) for implementation details.
-
-## Journal Operations: journal/install-hook
-
-The MCP server exposes the `journal/install-hook` operation for installing or replacing the Git post-commit hook in a repository. This operation automates hook installation, backup, and error handling for robust integration with Git workflows.
-
-- **Request:**
-  ```python
-  {
-      "repo_path": "/path/to/repo"  # Optional, defaults to current directory
-  }
-  ```
-- **Response:**
-  ```python
-  {
-      "status": "success",    # or "error"
-      "message": "Post-commit hook installed successfully.",
-      "backup_path": "/path/to/backup"  # Path to backup if existing hook was replaced, or None
-      "hook_path": "/path/to/.git/hooks/post-commit"  # (if available)
-      "error": None            # Error message if status == "error"
-  }
-  ```
-- All errors are returned as a dict with `status: "error"` and an `error` message, never as a raw exception.
-- The handler supports both sync and async monkeypatching for testability and uses the `handle_mcp_error` decorator for robust error handling.
-- See [src/mcp_commit_story/server.py](../src/mcp_commit_story/server.py) for implementation details.
 
 ## More Information
 - See `docs/ai_function_pattern.md` for function design guidelines.

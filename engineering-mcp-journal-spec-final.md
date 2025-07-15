@@ -174,11 +174,6 @@ class MCPCommitStoryServer:
     def __init__(self):
         self.tools = [
             Tool(
-                name="journal_new_entry",
-                description="Generate journal entry from git commit and chat history",
-                inputSchema=JOURNAL_NEW_ENTRY_SCHEMA
-            ),
-            Tool(
                 name="journal_add_reflection",
                 description="Add manual reflection to journal",
                 inputSchema=JOURNAL_ADD_REFLECTION_SCHEMA
@@ -187,23 +182,14 @@ class MCPCommitStoryServer:
                 name="journal_capture_context", 
                 description="Capture AI knowledge for future journal context",
                 inputSchema=JOURNAL_CAPTURE_CONTEXT_SCHEMA
-            ),
-            Tool(
-                name="journal_init",
-                description="Initialize journal in repository", 
-                inputSchema=JOURNAL_INIT_SCHEMA
             )
         ]
     
     async def handle_tool_call(self, tool_name: str, arguments: dict) -> ToolResult:
-        if tool_name == "journal_new_entry":
-            return await self.journal_new_entry(**arguments)
-        elif tool_name == "journal_add_reflection":
+        if tool_name == "journal_add_reflection":
             return await self.journal_add_reflection(**arguments)
         elif tool_name == "journal_capture_context":
             return await self.journal_capture_context(**arguments)
-        elif tool_name == "journal_init":
-            return await self.journal_init(**arguments)
 ```
 
 ### Tool Schema

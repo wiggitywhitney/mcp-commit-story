@@ -241,7 +241,7 @@ The CLI setup commands are comprehensively tested in `tests/unit/test_cli_limita
 
 - **[Architecture](architecture.md)** - Complete system design overview
 - **[MCP API Specification](mcp-api-specification.md)** - Operational features reference
-- **[Journal Init](journal_init.md)** - Detailed initialization documentation
+- **[Journal Behavior](journal-behavior.md)** - Detailed initialization documentation
 - **[Server Setup](server_setup.md)** - MCP server configuration
 
 ## Implementation Details

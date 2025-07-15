@@ -57,10 +57,10 @@ All MCP tools are automatically instrumented with tracing:
 
 ```python
 @server.tool()
-@trace_mcp_operation("journal_new_entry")
-async def journal_new_entry(request: JournalNewEntryRequest) -> JournalNewEntryResponse:
-    \"\"\"Create a new journal entry with AI-generated content.\"\"\"
-    return await handle_journal_new_entry(request)
+@trace_mcp_operation("journal_add_reflection")
+async def journal_add_reflection(request: JournalAddReflectionRequest) -> JournalAddReflectionResponse:
+    \"\"\"Add manual reflection to journal entry.\"\"\"
+    return await handle_journal_add_reflection(request)
 ```
 
 This provides:
@@ -105,7 +105,7 @@ All logs are automatically enhanced with trace correlation:
   "message": "Processing journal entry request",
   "otelSpanID": "abc123def456",
   "otelTraceID": "789xyz012uvw",
-  "tool_name": "journal_new_entry",
+  "tool_name": "journal_add_reflection",
   "user_id": "user123"
 }
 ```
@@ -282,17 +282,17 @@ assert_performance_within_bounds(collector, "journal.generate_summary", max_dura
 These tests validate telemetry across complete MCP tool execution chains:
 
 ```python
-def test_journal_new_entry_generates_expected_spans(patch_telemetry_for_testing):
-    """Test that journal new-entry generates expected telemetry spans."""
+def test_journal_add_reflection_generates_expected_spans(patch_telemetry_for_testing):
+    """Test that journal add-reflection generates expected telemetry spans."""
     collector = patch_telemetry_for_testing
     
     # Execute MCP tool chain
-    result = await handle_journal_new_entry(test_request)
+    result = await handle_journal_add_reflection(test_request)
     
     # Validate telemetry was captured
-    assert_operation_traced(collector, "journal.new_entry")
-    assert_trace_continuity(collector, "journal.new_entry", [
-        "git.context_collection",
+    assert_operation_traced(collector, "journal.add_reflection")
+    assert_trace_continuity(collector, "journal.add_reflection", [
+        "journal.file_operations",
         "ai.journal_generation",
         "file.journal_write"
     ])

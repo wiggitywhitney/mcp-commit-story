@@ -73,9 +73,9 @@ The MCP server provides **interactive tools only**:
 - **journal/capture-context**: Capture AI knowledge for future journal context
 - **journal/generate-summary**: "What did I do yesterday?" or "Help me report July's work to my boss"
 
-### Setup Operations  
-- **journal/init**: Initialize journal structure
-- **journal/install-hook**: Install git hooks
+### Manual Operations  
+- **journal/add-reflection**: Add manual reflections
+- **journal/capture-context**: Capture AI context
 
 **Key Point**: The MCP server is NOT required for core journal generation - it runs independently in the background.
 
@@ -193,7 +193,7 @@ Each AI generator has a docstring prompt and returns a placeholder for AI execut
    - **AI Calls**: AI generators via executor
 6. Assembly → sections combined into complete journal entry
 7. Save → journal entry written to daily file
-8. Summary coordination → create signals for summary generation when applicable
+8. Summary coordination → direct summary generation when applicable
 ```
 
 The system provides complete chronologically-ordered chat history with timestamps and session names directly from the chat history system.

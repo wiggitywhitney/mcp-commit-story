@@ -23,7 +23,7 @@ This directory contains the complete technical documentation for the MCP Commit 
 - **[Testing Standards](testing_standards.md)** - Testing approaches, standards, and quality requirements
 - **[On-Demand Directory Pattern](on-demand-directory-pattern.md)** - File system organization and directory creation patterns
 - **[AI Function Pattern](ai_function_pattern.md)** - Patterns for AI-powered functionality
-- **[Journal Init](journal_init.md)** - Journal initialization process and configuration
+- **[Journal Behavior](journal-behavior.md)** - Journal initialization process and configuration
 - **[Server Setup](server_setup.md)** - MCP server setup and deployment
 
 ## Quick Navigation
@@ -41,7 +41,7 @@ This directory contains the complete technical documentation for the MCP Commit 
 
 ### For Journal Configuration
 1. See [Journal Behavior](journal-behavior.md) for configuration options
-2. Check [Journal Init](journal_init.md) for setup process
+2. Check [Journal Behavior](journal-behavior.md) for setup process
 3. Reference [On-Demand Directory Pattern](on-demand-directory-pattern.md) for file organization
 
 ### For Core System Understanding

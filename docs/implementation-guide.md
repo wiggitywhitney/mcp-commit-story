@@ -198,7 +198,7 @@ The hook uses a Python worker pattern for reliable background processing:
 - **Primary hook**: Bash script that triggers Python worker module
 - **Python worker**: `git_hook_worker.py` module handles all journal logic
 - **Direct generation**: Journal entries created immediately via `journal_workflow` module
-- **Summary coordination**: Creates signals for daily/weekly/monthly summary generation
+- **Summary coordination**: Triggers daily/weekly/monthly summary generation when applicable
 - **Error handling**: Graceful degradation with warning logs, never blocks git operations
 - **Git timestamp consistency**: Uses git commit timestamps throughout system
 
@@ -211,7 +211,7 @@ python -m mcp_commit_story.git_hook_worker "$PWD" >/dev/null 2>&1 || true
 
 #### Worker Module Features
 - **Direct journal generation**: Calls `journal_workflow.handle_journal_entry_creation()` immediately
-- **Summary coordination**: Creates signals for MCP-based summary generation when appropriate
+- **Summary coordination**: Triggers MCP-based summary generation when appropriate
 - **Timestamp consistency**: Uses `commit.committed_datetime.isoformat()` for all logging
 - **Comprehensive logging**: Structured logging with git commit timestamps in `.git/hooks/mcp-commit-story.log`
 - **Error resilience**: Never blocks git operations, logs warnings on failures
@@ -242,7 +242,7 @@ The git hook worker (`git_hook_worker.py`) executes this workflow on every commi
    └─ Summary Coordination (when applicable)
       ├─ Check if daily summary should be generated
       ├─ Check for weekly/monthly/quarterly triggers
-      └─ Create signals for MCP-based summary generation
+      └─ Trigger MCP-based summary generation
 ```
 
 #### Direct Journal Generation Flow
@@ -546,8 +546,7 @@ Integration tests for hook execution directly write a debug post-commit hook to 
 4. Add OpenTelemetry initialization
 
 ### Feature Development
-5. Add `journal/init` command and initialization flow
-6. Add git integration and journal generation
+5. Add git integration and journal generation
 7. Create CLI interface with Click
 8. Add configuration system  
 9. Implement decision detection in chat history

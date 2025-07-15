@@ -38,7 +38,7 @@ Yearly Summary (2025)
 
 ### Overview
 
-The Daily Summary MCP Tool (`journal/generate-daily-summary`) automatically generates comprehensive daily summaries from journal entries using AI. This tool synthesizes a full day's worth of development work into structured summaries with 8 standardized sections.
+The Daily Summary system automatically generates comprehensive daily summaries from journal entries using AI. This tool synthesizes a full day's worth of development work into structured summaries with 8 standardized sections.
 
 ### Key Features
 
@@ -136,7 +136,6 @@ This feature ensures that all user reflections are preserved in daily summaries,
 
 #### Core Functions
 
-- **`generate_daily_summary_mcp_tool()`** - Main MCP handler
 - **`generate_daily_summary()`** - Core AI generation logic  
 - **`load_journal_entries_for_date()`** - Loads entries for specified date
 - **`save_daily_summary()`** - Saves summary to markdown file
@@ -378,10 +377,10 @@ python -m pytest tests/unit/test_summary_source_links.py -v
 
 ### Daily Summary Generation
 ```python
-from mcp_commit_story.daily_summary import generate_daily_summary_mcp_tool
+from mcp_commit_story.daily_summary import generate_daily_summary
 
-request = {"date": "2025-01-15"}
-response = generate_daily_summary_mcp_tool(request)
+# Generate daily summary for specific date
+summary = generate_daily_summary("2025-01-15")
 
 if response["status"] == "success":
     print(f"Summary saved to: {response['file_path']}")
@@ -423,11 +422,10 @@ summary = generate_daily_summary(entries, "2025-06-06", config)
 - Integrates with `get_journal_file_path()` utilities
 - Follows established file path patterns
 
-### MCP Server
-- Registered as `journal/generate-daily-summary` tool (implemented)
-- Future tools: `journal/generate-weekly-summary`, `journal/generate-monthly-summary`, etc.
-- Exposed through FastMCP server architecture
-- Consistent error handling with other MCP tools
+### Standalone Generation
+- Direct function calls for programmatic generation
+- Future tools: weekly summaries, monthly summaries, etc.
+- Consistent error handling with other journal functions
 
 ### Configuration
 - Uses `load_config()` for configuration management

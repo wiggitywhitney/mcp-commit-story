@@ -425,10 +425,10 @@ if diffs is None:
 
 ### MCP Server Integration
 
-Context collection functions are called from MCP operations:
-- `journal/new-entry`: Primary context collection entry point
-- Error handling preserves MCP operation success
-- Telemetry data flows to MCP server monitoring
+Context collection functions are called from core journal operations:
+- **Git hook operations**: Primary context collection entry point
+- Error handling preserves journal operation success
+- Telemetry data flows to system monitoring
 
 ### AI Generation Pipeline
 
