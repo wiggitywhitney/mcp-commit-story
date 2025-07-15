@@ -42,7 +42,7 @@ When functionality is removed, handle broken tests as follows:
 
 ---
 
-## Subtask 69.1: Remove All Signal Infrastructure Files
+## Subtask 69.1: Remove All Signal Infrastructure Files [done]
 ### Dependencies: None
 ### Description: Remove all signal-related files and fix any import failures.
 
@@ -65,20 +65,23 @@ When functionality is removed, handle broken tests as follows:
    - Run tests: `python -m pytest`
 
 #### VERIFICATION CHECKLIST
-[ ] File `src/mcp_commit_story/signal_management.py` removed
-[ ] File `tests/unit/test_signal_file_management.py` removed
-[ ] File `tests/unit/test_signal_file_cleanup.py` removed
-[ ] File `tests/unit/test_minimal_signal_state.py` removed
-[ ] File `tests/unit/test_git_hook_signal_replacement.py` removed
-[ ] All import errors fixed
-[ ] All test dependencies fixed
-[ ] Full test suite passes
-[ ] All subtask requirements verified complete
-[ ] MARK COMPLETE
+[X] File `src/mcp_commit_story/signal_management.py` removed
+[X] File `tests/unit/test_signal_file_management.py` removed
+[X] File `tests/unit/test_signal_file_cleanup.py` removed
+[X] File `tests/unit/test_minimal_signal_state.py` removed
+[X] File `tests/unit/test_git_hook_signal_replacement.py` removed
+[X] All import errors fixed
+[X] All test dependencies fixed
+[X] Full test suite passes
+[X] All subtask requirements verified complete
+[X] MARK COMPLETE
+
+### Subtask 69.1 Completed - 2025-07-14 19:44 CDT
+Signal infrastructure files completely removed, all import failures fixed, and full test suite passes.
 
 ---
 
-## Subtask 69.2: Remove Signal Usage from Git Hook Worker
+## Subtask 69.2: Remove Signal Usage from Git Hook Worker [done]
 ### Dependencies: 69.1
 ### Description: Remove signal imports and signal creation functions from git_hook_worker.py, fix broken tests.
 
@@ -100,20 +103,23 @@ When functionality is removed, handle broken tests as follows:
    - Run tests: `python -m pytest`
 
 #### VERIFICATION CHECKLIST
-[ ] Signal imports removed from `src/mcp_commit_story/git_hook_worker.py`
-[ ] Functions removed: `create_tool_signal()`, `create_tool_signal_safe()`, `signal_creation_telemetry()`
-[ ] Daily/period summary triggering updated to use direct calls
-[ ] All broken tests fixed
-[ ] Test mocks updated to reflect new direct call approach
-[ ] All signal-related telemetry metrics replaced with direct call metrics
-[ ] Module-level docstring updated to remove signal architecture references
-[ ] Full test suite passes
-[ ] All subtask requirements verified complete
-[ ] MARK COMPLETE
+[X] Signal imports removed from `src/mcp_commit_story/git_hook_worker.py`
+[X] Functions removed: `create_tool_signal()`, `create_tool_signal_safe()`, `signal_creation_telemetry()`
+[X] Daily/period summary triggering updated to use direct calls
+[X] All broken tests fixed
+[X] Test mocks updated to reflect new direct call approach
+[X] All signal-related telemetry metrics replaced with direct call metrics
+[X] Module-level docstring updated to remove signal architecture references
+[X] Full test suite passes
+[X] All subtask requirements verified complete
+[X] MARK COMPLETE
+
+### Subtask 69.2 Completed - 2025-07-14 19:44 CDT
+Signal usage removed from git hook worker, direct calls implemented, telemetry metrics fixed, and full test suite passes.
 
 ---
 
-## Subtask 69.3: Remove Obsolete MCP Tools from Server
+## Subtask 69.3: Remove Obsolete MCP Tools from Server [pending]
 ### Dependencies: 69.2
 ### Description: Remove 4 obsolete MCP tools from server.py while preserving the 2 essential ones, fix broken tests.
 
@@ -157,7 +163,7 @@ When functionality is removed, handle broken tests as follows:
 
 ---
 
-## Subtask 69.4: Telemetry Verification
+## Subtask 69.4: Telemetry Verification [pending]
 ### Dependencies: 69.3
 ### Description: Verify that signal removal doesn't break telemetry functionality and that preserved MCP tools still have proper telemetry.
 
@@ -189,7 +195,7 @@ When functionality is removed, handle broken tests as follows:
 
 ---
 
-## Subtask 69.5: Integration Testing and Final Cleanup
+## Subtask 69.5: Integration Testing and Final Cleanup [pending]
 ### Dependencies: 69.4
 ### Description: Verify end-to-end functionality and clean up any remaining signal references.
 
@@ -228,7 +234,7 @@ When functionality is removed, handle broken tests as follows:
 
 ---
 
-## Subtask 69.6: Documentation Updates
+## Subtask 69.6: Documentation Updates [pending]
 ### Dependencies: 69.5
 ### Description: Update all documentation to remove signal architecture references and obsolete MCP tool references.
 

@@ -202,8 +202,12 @@ class TestDailySummaryStandaloneIntegration:
                             # SystemExit(0) is expected from the main function
                             assert e.code == 0
                         
-                        # Verify standalone function was called with correct date
-                        mock_standalone.assert_called_once_with("2025-01-05")
+                        # Verify standalone function was called with correct date and additional parameters
+                        mock_standalone.assert_called_once()
+                        call_args = mock_standalone.call_args
+                        assert call_args[0][0] == "2025-01-05"  # First argument is the date
+                        assert str(repo_dir) in call_args[0][1]  # Second argument contains repo path  
+                        assert isinstance(call_args[0][2], dict)  # Third argument is commit metadata
     
     def test_trigger_logic_preservation(self, temp_git_repo_with_journal, mock_config, sample_journal_entries):
         """Test trigger logic preservation: file-creation-based detection, period boundaries."""

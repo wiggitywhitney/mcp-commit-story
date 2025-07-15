@@ -50,8 +50,8 @@ def temp_git_repo_with_journal(tmp_path):
 @pytest.fixture
 def mock_mcp_server():
     """Mock MCP server responses for testing."""
-    with patch('mcp_commit_story.git_hook_worker.create_tool_signal_safe') as mock_call:
-        mock_call.return_value = "path/to/signal/file.json"
+    with patch('mcp_commit_story.git_hook_worker.period_summary_placeholder') as mock_call:
+        mock_call.return_value = True
         yield mock_call
 
 

@@ -5,7 +5,6 @@ This module is called by the enhanced git post-commit hook to handle:
 - Direct journal generation with bridge to journal_workflow 
 - File-creation-based daily summary triggering
 - Period summary boundary detection  
-- MCP server communication for summary generation
 - Background journal generation with detached processes
 - Graceful error handling that never blocks git operations
 
@@ -370,57 +369,8 @@ def extract_commit_metadata(repo_path: str) -> Dict[str, Any]:
 
 
 @handle_errors_gracefully
-def signal_creation_telemetry(tool_name: str, success: bool, duration_ms: Optional[float] = None, error_type: Optional[str] = None) -> None:
-    """Record telemetry for signal creation operations."""
-    try:
-        from mcp_commit_story.telemetry import get_mcp_metrics
-        
-        metrics = get_mcp_metrics()
-        if not metrics:
-            return
-        
-        # Record operation count
-        labels = {
-            "tool_name": tool_name,
-            "success": "true" if success else "false"
-        }
-        
-        if error_type:
-            labels["error_type"] = error_type
-        
-        metrics.git_hook_signal_creation_total.add(1, labels)
-        
-        # Record duration if provided
-        if duration_ms is not None:
-            metrics.git_hook_signal_creation_duration_seconds.record(duration_ms / 1000.0, labels)
-    
-    except Exception as e:
-        # Silent failure - don't break git operations for telemetry
-        pass
-
-
-@handle_errors_gracefully
-def daily_summary_telemetry(success: bool, duration_ms: Optional[float] = None, error_type: Optional[str] = None) -> None:
-    """Record telemetry for git hook daily summary operations.
-    
-    ## Telemetry Patterns for Git Hook Daily Summary Integration
-    
-    ### Metrics Recorded
-    - `git_hook.daily_summary_trigger_total` (counter) - Git hook trigger events
-      - Labels: success="true|false", error_type (optional)
-    - `git_hook.daily_summary_duration_seconds` (histogram) - Time from trigger to completion
-      - Labels: success="true|false", error_type (optional)
-    
-    ### Error Categorization
-    - "ai_generation_error" - AI service failures
-    - "unknown_error" - Other errors
-    - No error_type label for successful operations
-    
-    ### Integration with Standalone Generation
-    - Complements daily_summary_standalone.py telemetry
-    - Records git hook specific metrics (trigger events, hook duration)
-    - Maintains consistent labeling scheme for cross-module correlation
-    """
+def daily_summary_telemetry(success: bool, duration_ms: Optional[float] = None, error_type: Optional[str] = None, entries_count: Optional[int] = None) -> None:
+    """Record telemetry for daily summary generation operations."""
     try:
         from mcp_commit_story.telemetry import get_mcp_metrics
         
@@ -441,262 +391,44 @@ def daily_summary_telemetry(success: bool, duration_ms: Optional[float] = None, 
         # Record duration if provided
         if duration_ms is not None:
             metrics.git_hook_daily_summary_duration_seconds.record(duration_ms / 1000.0, labels)
+        
+        # Record entries count if provided
+        if entries_count is not None:
+            metrics.git_hook_daily_summary_entries_count.record(entries_count, labels)
     
     except Exception as e:
         # Silent failure - don't break git operations for telemetry
         pass
 
 
-def create_tool_signal(tool_name: str, parameters: Dict[str, Any], commit_metadata: Dict[str, Any], repo_path: str) -> Optional[str]:
-    """Create a signal file for MCP tool execution.
-    
-    Approved design: Complete replacement of call_mcp_tool() with generic signal creation
-    that works for any MCP tool type while maintaining comprehensive telemetry.
-    
-    Args:
-        tool_name: Name of the MCP tool (e.g., "journal_new_entry")
-        parameters: Parameters to pass to the tool
-        commit_metadata: Git commit metadata following approved standard scope
-        repo_path: Path to the git repository
-        
-    Returns:
-        Path to created signal file if successful, None if failed
-        
-    Raises:
-        ValueError: For parameter validation errors (allows tests to check validation)
-    """
-    import time
-    
-    start_time = time.time()
-    
-    # Validate inputs - these should raise for tests
-    if not tool_name or not isinstance(tool_name, str):
-        raise ValueError("tool_name must be a non-empty string")
-    if parameters is None or not isinstance(parameters, dict):
-        raise ValueError("parameters must be a dictionary")
-    if commit_metadata is None or not isinstance(commit_metadata, dict):
-        raise ValueError("commit_metadata must be a dictionary")
-    if not repo_path or not isinstance(repo_path, str):
-        raise ValueError("repo_path must be a non-empty string")
-    
-    try:
-        from mcp_commit_story.signal_management import ensure_signal_directory, create_signal_file
-        
-        # Ensure signal directory exists
-        signal_directory = ensure_signal_directory(repo_path)
-        
-        # Create signal file using existing signal management
-        signal_file_path = create_signal_file(
-            signal_directory=signal_directory,
-            tool_name=tool_name,
-            parameters=parameters,
-            commit_metadata=commit_metadata
-        )
-        
-        # Record success telemetry
-        duration_ms = (time.time() - start_time) * 1000
-        signal_creation_telemetry(tool_name, success=True, duration_ms=duration_ms)
-        
-        log_hook_activity(f"Signal created for {tool_name}: {signal_file_path}", "info", repo_path)
-        return signal_file_path
-        
-    except Exception as e:
-        # Check if it's a graceful degradation error
-        error_type = "unknown_error"
-        if hasattr(e, 'graceful_degradation') and e.graceful_degradation:
-            error_type = "graceful_degradation"
-        elif "permission" in str(e).lower():
-            error_type = "permission_error"
-        elif "space" in str(e).lower():
-            error_type = "disk_space_error"
-        
-        duration_ms = (time.time() - start_time) * 1000
-        signal_creation_telemetry(tool_name, success=False, error_type=error_type, duration_ms=duration_ms)
-        
-        log_hook_activity(f"Signal creation failed for {tool_name}: {str(e)}", "error", repo_path)
-        return None
-
-
-@handle_errors_gracefully  
-def create_tool_signal_safe(tool_name: str, parameters: Dict[str, Any], commit_metadata: Dict[str, Any], repo_path: str) -> Optional[str]:
-    """Safe wrapper for create_tool_signal that handles all errors gracefully for use in main().
-    
-    This version catches validation errors to ensure git operations never fail.
-    """
-    try:
-        return create_tool_signal(tool_name, parameters, commit_metadata, repo_path)
-    except ValueError as e:
-        # Parameter validation errors - log and continue for graceful degradation in git hooks
-        log_hook_activity(f"Signal creation validation error for {tool_name}: {str(e)}", "error", repo_path)
-        signal_creation_telemetry(tool_name, success=False, error_type="validation_error")
-        return None
-
-
 @handle_errors_gracefully
-def spawn_background_journal_generation(commit_hash: str, repo_path: str = None) -> Dict[str, Any]:
+def period_summary_placeholder(period: str, date: str, commit_metadata: Dict[str, Any], repo_path: str) -> bool:
     """
-    Spawn background journal generation process for the given commit.
+    Placeholder for period summary generation.
     
-    Spawns background journal generation process using these design principles:
-    - Detached background process execution
-    - Immediate return (no blocking)
-    - Silent failure with telemetry capture
-    - Emergency bypass mechanism via environment variable
-    - 30-second max delay (generous since background)
+    This function logs the period summary request but does not create signals.
+    In the future, this could be replaced with direct summary generation calls.
     
     Args:
-        commit_hash: Git commit hash to generate journal entry for
-        repo_path: Path to git repository (defaults to current directory)
+        period: The period type (weekly, monthly, quarterly, yearly)
+        date: The date for the summary
+        commit_metadata: Git commit metadata
+        repo_path: Path to the repository
         
     Returns:
-        Dict with status and process information:
-        - background_spawned: Normal background execution
-        - emergency_synchronous_complete: Emergency bypass completed
-        - error: Failed to spawn (should be rare)
+        bool: Always returns True to indicate successful placeholder execution
     """
-    if repo_path is None:
-        repo_path = os.getcwd()
-    
     try:
-        # Check for emergency bypass mechanism
-        if os.environ.get('MCP_JOURNAL_EMERGENCY_BYPASS', '').lower() == 'true':
-            log_hook_activity("Emergency bypass activated - running synchronous journal generation", "info", repo_path)
-            return _run_emergency_synchronous_generation(commit_hash, repo_path)
+        log_hook_activity(f"Period summary placeholder triggered for {period} summary on {date}", "info", repo_path)
         
-        # Normal background execution path
-        log_hook_activity(f"Spawning background journal generation for commit {commit_hash[:8]}", "info", repo_path)
+        # Future implementation could call summary generation directly here
+        # For now, this is a placeholder to maintain git hook workflow
         
-        # Create background process command
-        python_executable = sys.executable
-        script_path = os.path.join(os.path.dirname(__file__), 'background_journal_worker.py')
-        
-        # Command to run in background
-        cmd = [
-            python_executable,
-            script_path,
-            '--commit-hash', commit_hash,
-            '--repo-path', repo_path
-        ]
-        
-        # Spawn detached background process
-        if os.name == 'nt':  # Windows
-            # Windows detached process
-            process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                stdin=subprocess.DEVNULL,
-                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
-            )
-        else:  # Unix/Linux/macOS
-            # Unix detached process
-            process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                stdin=subprocess.DEVNULL,
-                preexec_fn=os.setsid  # Create new session
-            )
-        
-        log_hook_activity(f"Background journal generation spawned with PID {process.pid}", "info", repo_path)
-        
-        return {
-            'status': 'background_spawned',
-            'process_id': process.pid,
-            'commit_hash': commit_hash
-        }
+        return True
         
     except Exception as e:
-        # Silent failure with telemetry
-        error_msg = f"Failed to spawn background journal generation: {str(e)}"
-        log_hook_activity(error_msg, "error", repo_path)
-        
-        # Record telemetry for monitoring
-        _record_background_spawn_telemetry(False, str(e))
-        
-        return {
-            'status': 'error',
-            'error': error_msg,
-            'commit_hash': commit_hash
-        }
-
-
-def _run_emergency_synchronous_generation(commit_hash: str, repo_path: str) -> Dict[str, Any]:
-    """
-    Run journal generation synchronously for emergency bypass.
-    
-    Args:
-        commit_hash: Git commit hash to generate journal entry for
-        repo_path: Path to git repository
-        
-    Returns:
-        Dict with emergency completion status
-    """
-    try:
-        start_time = time.time()
-        
-        # Import and run journal generation synchronously
-        from mcp_commit_story.journal_orchestrator import orchestrate_journal_generation
-        from mcp_commit_story.journal_generate import get_journal_file_path
-        from datetime import datetime
-        
-        # Get journal file path
-        date_str = datetime.now().strftime("%Y-%m-%d")
-        journal_path = get_journal_file_path(date_str, "daily")
-        
-        # Run synchronous generation
-        result = orchestrate_journal_generation(commit_hash, str(journal_path))
-        
-        execution_time = time.time() - start_time
-        
-        if result.get('success'):
-            log_hook_activity(f"Emergency synchronous journal generation completed in {execution_time:.2f}s", "info", repo_path)
-            return {
-                'status': 'emergency_synchronous_complete',
-                'execution_time': execution_time,
-                'journal_path': str(journal_path)
-            }
-        else:
-            error_msg = result.get('error', 'Unknown error in emergency generation')
-            log_hook_activity(f"Emergency synchronous journal generation failed: {error_msg}", "error", repo_path)
-            return {
-                'status': 'emergency_synchronous_error',
-                'error': error_msg,
-                'execution_time': execution_time
-            }
-            
-    except Exception as e:
-        error_msg = f"Emergency synchronous generation failed: {str(e)}"
-        log_hook_activity(error_msg, "error", repo_path)
-        return {
-            'status': 'emergency_synchronous_error',
-            'error': error_msg
-        }
-
-
-def _record_background_spawn_telemetry(success: bool, error_type: str = None) -> None:
-    """
-    Record telemetry for background process spawning.
-    
-    Args:
-        success: Whether the spawn was successful
-        error_type: Type of error if spawn failed
-    """
-    try:
-        from mcp_commit_story.telemetry import get_mcp_metrics
-        
-        metrics = get_mcp_metrics()
-        if metrics:
-            metrics.record_counter(
-                'background_journal_spawn_total',
-                attributes={
-                    'success': str(success).lower(),
-                    'error_type': error_type or 'none'
-                }
-            )
-    except Exception:
-        # Silent failure for telemetry - don't let telemetry issues block operations
-        pass
+        log_hook_activity(f"Period summary placeholder failed for {period}: {str(e)}", "warning", repo_path)
+        return False
 
 
 @handle_errors_gracefully
@@ -734,7 +466,6 @@ def generate_journal_entry_safe(repo_path: str) -> bool:
             current_span.set_attribute("error.type", "invalid_input")
             current_span.set_status(trace.Status(trace.StatusCode.ERROR, "Invalid repo path"))
             log_hook_activity(f"Invalid repo path: {repo_path}", "error", repo_path)
-            signal_creation_telemetry("journal_generation_direct", success=False, error_type="invalid_input")
             return False
         
         current_span.set_attribute("repo_path", repo_path)
@@ -746,7 +477,6 @@ def generate_journal_entry_safe(repo_path: str) -> bool:
             current_span.set_attribute("error.type", "git_repo_detection_failed")
             current_span.set_status(trace.Status(trace.StatusCode.ERROR, f"Git repository detection failed: {str(e)}"))
             log_hook_activity(f"Git repository detection failed: {str(e)}", "error", repo_path)
-            signal_creation_telemetry("journal_generation_direct", success=False, error_type="git_repo_detection_failed")
             return False
         
         # Get current commit
@@ -757,7 +487,6 @@ def generate_journal_entry_safe(repo_path: str) -> bool:
             current_span.set_attribute("error.type", "git_commit_retrieval_failed")
             current_span.set_status(trace.Status(trace.StatusCode.ERROR, f"Git commit retrieval failed: {str(e)}"))
             log_hook_activity(f"Git commit retrieval failed: {str(e)}", "error", repo_path)
-            signal_creation_telemetry("journal_generation_direct", success=False, error_type="git_commit_retrieval_failed")
             return False
         
         # Load configuration
@@ -767,7 +496,6 @@ def generate_journal_entry_safe(repo_path: str) -> bool:
             current_span.set_attribute("error.type", "config_loading_failed")
             current_span.set_status(trace.Status(trace.StatusCode.ERROR, f"Configuration loading failed: {str(e)}"))
             log_hook_activity(f"Configuration loading failed: {str(e)}", "error", repo_path)
-            signal_creation_telemetry("journal_generation_direct", success=False, error_type="config_loading_failed")
             return False
         
         # Generate and save journal entry
@@ -785,8 +513,6 @@ def generate_journal_entry_safe(repo_path: str) -> bool:
                     log_hook_activity(f"Journal entry generated successfully for commit {commit.hexsha}", "info", repo_path)
                     log_hook_activity(f"Journal entry saved to: {result.get('file_path', 'unknown path')}", "info", repo_path)
                 
-                # Record telemetry for successful journal generation (preserving legacy telemetry pattern)
-                signal_creation_telemetry("journal_generation_direct", success=True)
                 return True
             else:
                 error_msg = result.get('error', 'Unknown journal creation error')
@@ -795,8 +521,6 @@ def generate_journal_entry_safe(repo_path: str) -> bool:
                 current_span.set_status(trace.Status(trace.StatusCode.ERROR, error_msg))
                 log_hook_activity(f"Journal generation failed: {error_msg}", "error", repo_path)
                 
-                # Record telemetry for failed journal generation (preserving legacy telemetry pattern)
-                signal_creation_telemetry("journal_generation_direct", success=False, error_type="journal_generation_failed")
                 return False
                 
         except Exception as e:
@@ -804,8 +528,6 @@ def generate_journal_entry_safe(repo_path: str) -> bool:
             current_span.set_status(trace.Status(trace.StatusCode.ERROR, f"Journal generation failed: {str(e)}"))
             log_hook_activity(f"Journal generation failed: {str(e)}", "error", repo_path)
             
-            # Record telemetry for exception during journal generation (preserving legacy telemetry pattern)
-            signal_creation_telemetry("journal_generation_direct", success=False, error_type="journal_generation_failed")
             return False
             
     except Exception as e:
@@ -813,7 +535,6 @@ def generate_journal_entry_safe(repo_path: str) -> bool:
         current_span.set_attribute("error.type", "unexpected_error")
         current_span.set_status(trace.Status(trace.StatusCode.ERROR, f"Unexpected error: {str(e)}"))
         log_hook_activity(f"Unexpected error in generate_journal_entry_safe: {str(e)}", "error", repo_path)
-        signal_creation_telemetry("journal_generation_direct", success=False, error_type="unexpected_error")
         return False
 
 
@@ -859,14 +580,18 @@ def main() -> None:
             start_time = time.time()
             
             try:
-                result = generate_daily_summary_standalone(date_to_generate)
+                entries_count = generate_daily_summary_standalone(
+                    date_to_generate, 
+                    repo_path, 
+                    commit_metadata
+                )
                 duration_ms = (time.time() - start_time) * 1000.0
                 
-                if result:
-                    log_hook_activity(f"Daily summary generated directly for {date_to_generate}", "info", repo_path)
-                    daily_summary_telemetry(success=True, duration_ms=duration_ms)
+                if entries_count is not None:
+                    log_hook_activity(f"Daily summary generated directly for {date_to_generate} with {entries_count} entries", "info", repo_path)
+                    daily_summary_telemetry(success=True, duration_ms=duration_ms, entries_count=entries_count)
                 else:
-                    log_hook_activity(f"Daily summary generation skipped for {date_to_generate} (no entries)", "info", repo_path)
+                    log_hook_activity(f"Daily summary generated directly for {date_to_generate} (no entries)", "info", repo_path)
                     daily_summary_telemetry(success=True, duration_ms=duration_ms)  # No entries is still success
             except Exception as e:
                 duration_ms = (time.time() - start_time) * 1000.0
@@ -879,21 +604,22 @@ def main() -> None:
             
             for period, should_generate in period_triggers.items():
                 if should_generate:
-                    result = create_tool_signal_safe(
-                        f"generate_{period}_summary", 
-                        {"date": date_to_generate}, 
+                    result = period_summary_placeholder(
+                        period, 
+                        date_to_generate, 
                         commit_metadata, 
                         repo_path
                     )
                     if result:
-                        log_hook_activity(f"{period.title()} summary signal created: {result}", "info", repo_path)
+                        log_hook_activity(f"{period.title()} summary placeholder executed", "info", repo_path)
                     else:
-                        log_hook_activity(f"{period.title()} summary signal creation failed", "warning", repo_path)
+                        log_hook_activity(f"{period.title()} summary placeholder failed", "warning", repo_path)
         
         # 3. Always attempt to generate journal entry (maintains existing behavior)
         log_hook_activity("Generating journal entry directly", "info", repo_path)
         # Generate journal entry directly using our bridge function
         journal_success = generate_journal_entry_safe(repo_path)
+        
         if journal_success:
             log_hook_activity("Journal entry generated successfully", "info", repo_path)
         else:

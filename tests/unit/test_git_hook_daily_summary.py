@@ -70,17 +70,17 @@ class TestEnhancedGitHook:
 class TestGitHookWorker:
     """Test the git_hook_worker module functionality."""
     
-    @patch('mcp_commit_story.git_hook_worker.create_tool_signal_safe')
+    @patch('mcp_commit_story.git_hook_worker.period_summary_placeholder')
     @patch('mcp_commit_story.git_hook_worker.check_period_summary_triggers')
     @patch('mcp_commit_story.git_hook_worker.check_daily_summary_trigger')
-    def test_worker_main_basic_flow(self, mock_daily_check, mock_period_check, mock_signal_create):
+    def test_worker_main_basic_flow(self, mock_daily_check, mock_period_check, mock_period_placeholder):
         """Test git_hook_worker main function basic flow."""
         from mcp_commit_story.git_hook_worker import main
         
         # Mock the trigger functions
         mock_daily_check.return_value = None  # No daily summary needed
         mock_period_check.return_value = {'weekly': False, 'monthly': False, 'quarterly': False, 'yearly': False}
-        mock_signal_create.return_value = "/path/to/signal.json"  # Signal creation succeeds
+        mock_period_placeholder.return_value = True  # Period summary placeholder succeeds
         
         # Test that main function runs without error (graceful degradation)
         # Note: main() expects sys.argv to have repo path, so we can't easily test it fully here
@@ -96,8 +96,7 @@ class TestGitHookWorker:
             'main',  # Entry point called by hook
             'check_daily_summary_trigger',  # Uses should_generate_daily_summary
             'check_period_summary_triggers',  # Uses should_generate_period_summaries  
-            'create_tool_signal',  # Generic signal creation for any MCP tool
-            'create_tool_signal_safe',  # Safe wrapper for git hook context
+            'period_summary_placeholder',  # Placeholder for period summary generation
             'log_hook_activity',  # Logs to hook log file
             'handle_errors_gracefully'  # Error handling with graceful degradation
         ]
@@ -167,16 +166,16 @@ class TestGitHookWorkerLogic:
             assert isinstance(result, dict)
             assert all(key in result for key in ['weekly', 'monthly', 'quarterly', 'yearly'])
     
-    def test_signal_creation_with_fallback(self):
-        """Test that worker creates signals with graceful fallback."""
-        from mcp_commit_story.git_hook_worker import create_tool_signal_safe
+    def test_period_summary_placeholder(self):
+        """Test that worker uses period summary placeholder function."""
+        from mcp_commit_story.git_hook_worker import period_summary_placeholder
         
         # Test that the function exists and handles calls gracefully
         with tempfile.TemporaryDirectory() as temp_dir:
-            result = create_tool_signal_safe("test_tool", {"param": "value"}, {"hash": "test"}, temp_dir)
+            result = period_summary_placeholder("weekly", "2025-01-15", {"hash": "test"}, temp_dir)
             
-            # Should return string path or None, but not raise errors
-            assert result is None or isinstance(result, str)
+            # Should return boolean (True or False)
+            assert isinstance(result, bool)
     
     def test_error_logging_without_blocking_git(self):
         """Test that errors are logged but never block git operations."""
