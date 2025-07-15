@@ -467,63 +467,7 @@ def load_journal_entries_for_date(date_str: str, config: Dict) -> List[JournalEn
         return entries
 
 
-def _extract_manual_reflections(entries: List[JournalEntry]) -> List[str]:
-    """Extract manual reflections from journal entries.
-    
-    Manual reflections are identified by:
-    1. Content in the journal that was manually added via reflection tools
-    2. Discussion notes that contain explicit reflection patterns
-    3. Frustrations or roadblocks that express personal insights
-    
-    Args:
-        entries: List of journal entries to search
-        
-    Returns:
-        List of manual reflection strings found in the entries
-    """
-    reflections = []
-    
-    # Patterns that indicate manual reflections
-    reflection_patterns = [
-        r"I think\s+",
-        r"I realized\s+", 
-        r"I learned\s+",
-        r"My feeling is\s+",
-        r"Looking back\s+",
-        r"In hindsight\s+",
-        r"Personally\s+",
-        r"What struck me\s+",
-        r"I noticed\s+"
-    ]
-    
-    for entry in entries:
-        # Check discussion notes for manual reflections
-        if entry.discussion_notes:
-            for note in entry.discussion_notes:
-                if isinstance(note, dict) and note.get('speaker') == 'Human':
-                    text = note.get('text', '')
-                    if any(re.search(pattern, text, re.IGNORECASE) for pattern in reflection_patterns):
-                        reflections.append(f"[{entry.timestamp}] {text}")
-                elif isinstance(note, str):
-                    # Look for reflection patterns in string notes
-                    if any(re.search(pattern, note, re.IGNORECASE) for pattern in reflection_patterns):
-                        reflections.append(f"[{entry.timestamp}] {note}")
-        
-        # Check frustrations for reflective content
-        if entry.frustrations:
-            for frustration in entry.frustrations:
-                if any(re.search(pattern, frustration, re.IGNORECASE) for pattern in reflection_patterns):
-                    reflections.append(f"[{entry.timestamp}] {frustration}")
-    
-    # Remove duplicates while preserving order
-    seen = set()
-    unique_reflections = []
-    for reflection in reflections:
-        if reflection not in seen:
-            seen.add(reflection)
-            unique_reflections.append(reflection)
-    
-    return unique_reflections
+
 
 
 def extract_all_reflections_from_markdown(markdown_content: str) -> List[Dict[str, str]]:
@@ -1066,7 +1010,7 @@ def _generate_mock_daily_summary_response(entries: List[JournalEntry], date_str:
     
     return {
         "summary": summary,
-        "reflections": None,  # Will be handled by _extract_manual_reflections (timestamped personal entries)
+                    "reflections": None,  # Will be extracted from journal markdown (timestamped personal entries)
         "progress_made": progress_made,
         "key_accomplishments": all_accomplishments[:5],  # Limit to top 5
         "technical_progress": tech_synopsis,
@@ -1296,11 +1240,8 @@ def generate_daily_summary(journal_entries: List[JournalEntry], date_str: str, c
         DailySummary object with generated content
     """
     try:
-        # Extract reflections first (highest priority)
-        reflections = _extract_manual_reflections(journal_entries)
-        
-        # NEW: Extract full reflections from journal markdown file
-        full_reflections = extract_reflections_from_journal_file(date_str, config)
+        # Extract reflections from journal markdown file (markdown header method)
+        markdown_reflections = extract_reflections_from_journal_file(date_str, config)
         
         # Call AI to generate the summary
         ai_response = _call_ai_for_daily_summary(journal_entries, date_str, config)
@@ -1317,17 +1258,25 @@ def generate_daily_summary(journal_entries: List[JournalEntry], date_str: str, c
         
         # Only include optional sections if they have content
         ai_reflections = ai_response.get("reflections", []) or []
-        all_reflections = reflections + ai_reflections
+        
+        # Convert markdown reflections to string format for consistency with AI reflections
+        string_reflections = []
+        if markdown_reflections:
+            for reflection in markdown_reflections:
+                if isinstance(reflection, dict):
+                    timestamp = reflection.get('timestamp', '')
+                    content = reflection.get('content', '')
+                    if timestamp and content:
+                        string_reflections.append(f"[{timestamp}] {content}")
+                    elif content:
+                        string_reflections.append(content)
+        
+        # Combine markdown reflections with AI reflections
+        all_reflections = string_reflections + ai_reflections
         if all_reflections:
             summary_data["reflections"] = all_reflections
         else:
             summary_data["reflections"] = None
-        
-        # NEW: Add full reflections as separate REFLECTIONS section
-        if full_reflections:
-            summary_data["full_reflections"] = full_reflections
-        else:
-            summary_data["full_reflections"] = None
             
         challenges_overcome = ai_response.get("challenges_overcome", [])
         if challenges_overcome:

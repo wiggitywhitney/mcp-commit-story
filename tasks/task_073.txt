@@ -36,7 +36,7 @@
 
 ---
 
-## Subtask 73.1: Remove Duplicate Reflection Extraction Methods
+## Subtask 73.1: Remove Duplicate Reflection Extraction Methods [done]
 ### Dependencies: None
 ### Description: Remove inferior reflection extraction methods, keeping only the markdown header approach.
 
@@ -58,18 +58,18 @@
    - Run tests: `python -m pytest tests/unit/test_daily_summary.py`
 
 #### VERIFICATION CHECKLIST
-[ ] Function `_extract_manual_reflections()` removed from daily_summary.py
-[ ] AI-based reflection extraction methods removed (if any exist)
-[ ] Only `extract_reflections_from_journal_file()` remains for reflection extraction
-[ ] Tests for removed methods deleted completely (tests that only tested removed functionality)
-[ ] Tests that tested preserved functionality but used removed methods updated (mocks/imports fixed rather than deleted)
-[ ] All remaining tests pass
-[ ] All subtask requirements verified complete
-[ ] MARK COMPLETE
+[x] Function `_extract_manual_reflections()` removed from daily_summary.py
+[x] AI-based reflection extraction methods removed (if any exist)
+[x] Only `extract_reflections_from_journal_file()` remains for reflection extraction
+[x] Tests for removed methods deleted completely (tests that only tested removed functionality)
+[x] Tests that tested preserved functionality but used removed methods updated (mocks/imports fixed rather than deleted)
+[x] All remaining tests pass
+[x] All subtask requirements verified complete
+[x] MARK COMPLETE
 
 ---
 
-## Subtask 73.2: Implement Real AI Invocation
+## Subtask 73.2: Implement Real AI Invocation [in progress]
 ### Dependencies: 73.1
 ### Description: Replace mock AI responses with real AI invocation using the epic prompt.
 
@@ -103,7 +103,7 @@
 
 ---
 
-## Subtask 73.3: Consolidate Module Functionality
+## Subtask 73.3: Consolidate Module Functionality [pending]
 ### Dependencies: 73.2
 ### Description: Merge daily_summary_standalone.py functionality into daily_summary.py and deprecate standalone module.
 
@@ -142,7 +142,7 @@
 
 ---
 
-## Subtask 73.4: Fix Over-Mocking Test Patterns
+## Subtask 73.4: Fix Over-Mocking Test Patterns [pending]
 ### Dependencies: 73.3
 ### Description: Replace over-mocked tests with behavior-focused tests that mock only external dependencies.
 
@@ -176,7 +176,7 @@
 
 ---
 
-## Subtask 73.5: Integration Testing and Telemetry Verification
+## Subtask 73.5: Integration Testing and Telemetry Verification [pending]
 ### Dependencies: 73.4
 ### Description: Verify end-to-end functionality works correctly with real AI integration and consolidated module.
 
@@ -219,7 +219,7 @@
 
 ---
 
-## Subtask 73.6: Documentation Updates
+## Subtask 73.6: Documentation Updates [pending]
 ### Dependencies: 73.5
 ### Description: Update documentation to reflect consolidated approach and removal of duplicate functionality.
 
