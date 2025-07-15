@@ -93,7 +93,7 @@ class TestFormatReflection:
 
         result = format_reflection(reflection_text)
 
-        expected = "\n\n____\n\n### 3:30 PM — Reflection\n\nThis is a test reflection about my coding progress."
+        expected = "\n\n### 3:30 PM — Reflection\n\nThis is a test reflection about my coding progress."
         assert result == expected
     
     @patch('src.mcp_commit_story.reflection_core.datetime')
@@ -107,7 +107,7 @@ And contains various thoughts."""
 
         result = format_reflection(reflection_text)
 
-        expected = """\n\n____\n\n### 3:30 PM — Reflection\n\nThis is a multiline reflection.
+        expected = """\n\n### 3:30 PM — Reflection\n\nThis is a multiline reflection.
 It spans multiple lines.
 And contains various thoughts."""
         assert result == expected
@@ -119,7 +119,7 @@ And contains various thoughts."""
 
         result = format_reflection("")
 
-        expected = "\n\n____\n\n### 3:30 PM — Reflection\n\n"
+        expected = "\n\n### 3:30 PM — Reflection\n\n"
         assert result == expected
     
     @patch('src.mcp_commit_story.reflection_core.datetime')

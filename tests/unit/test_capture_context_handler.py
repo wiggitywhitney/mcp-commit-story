@@ -61,7 +61,6 @@ class TestCaptureContextHandler:
             content = written_content[0]
             assert "Test captured context" in content
             assert "AI Context Capture" in content
-            assert "____" in content  # Separator
 
     def test_context_capture_formatting(self):
         """Test that context capture formatting is correct."""
@@ -71,11 +70,10 @@ class TestCaptureContextHandler:
             
             result = format_ai_context_capture("Test knowledge")
             
-            # Verify format structure
-            assert "____" in result
+            # Verify format structure (no separator)
             assert "2:30 PM — AI Context Capture" in result
             assert "Test knowledge" in result
-            assert result.startswith("\n\n____\n\n")
+            assert result.startswith("\n\n###")
 
     def test_handle_empty_text_error(self):
         """Test error handling for empty text."""
@@ -173,7 +171,6 @@ class TestFormatAIContextCapture:
             
             result = format_ai_context_capture("Sample knowledge")
             
-            assert "____" in result
             assert "3:45 PM — AI Context Capture" in result
             assert "Sample knowledge" in result
 
@@ -217,8 +214,8 @@ class TestFormatAIContextCapture:
             
             result = format_ai_context_capture("Knowledge content")
             
-            # Check structure components
-            assert result.startswith("\n\n____\n\n")
+            # Check structure components (no separator)
+            assert result.startswith("\n\n###")
             assert "### 5:15 PM — AI Context Capture\n\n" in result
             assert result.endswith("Knowledge content")
 

@@ -16,13 +16,13 @@ class TestReflectionFormat:
     """Test the format_reflection function to ensure it includes the separator and unified header format."""
     
     def test_format_reflection_includes_separator(self):
-        """Test that format_reflection includes the separator at the beginning."""
+        """Test that format_reflection uses the correct header format."""
         test_reflection = "This is a test reflection"
         
         result = format_reflection(test_reflection)
         
-        # Should start with separator
-        assert result.startswith("\n\n____\n\n")
+        # Should start with header format (no separator)
+        assert result.startswith("\n\n###")
         
         # Should have the reflection content
         assert test_reflection in result
@@ -37,8 +37,8 @@ class TestReflectionFormat:
             
             result = format_reflection(test_reflection)
             
-            # Should include separator + unified header format
-            expected_header = "\n\n____\n\n### 2:30 PM — Reflection\n\n"
+            # Should include unified header format (no separator)
+            expected_header = "\n\n### 2:30 PM — Reflection\n\n"
             assert expected_header in result
             assert test_reflection in result
     
@@ -71,8 +71,7 @@ class TestReflectionFormat:
         # Original content should be preserved
         assert test_reflection in result
         
-        # Should have proper structure: separator + header + content
-        assert "\n\n____\n\n" in result
+        # Should have proper structure: header + content (no separator)
         assert "### " in result
         assert " — Reflection\n\n" in result
     
@@ -86,6 +85,6 @@ class TestReflectionFormat:
             
             result = format_reflection(test_reflection)
             
-            # Should have the complete expected structure
-            expected_structure = "\n\n____\n\n### 3:45 PM — Reflection\n\n" + test_reflection
+            # Should have the complete expected structure (no separator)
+            expected_structure = "\n\n### 3:45 PM — Reflection\n\n" + test_reflection
             assert result == expected_structure 
