@@ -432,10 +432,25 @@ def load_journal_entries_for_date(date_str: str, config: Dict) -> List[JournalEn
         # Use the established journal file path utility
         from mcp_commit_story.journal_generate import get_journal_file_path
         
-        journal_file_path = get_journal_file_path(date_str, "daily")
+        # Get relative path from utility function
+        relative_path = get_journal_file_path(date_str, "daily")
+        
+        # Get journal base path from configuration
+        journal_base_path = config.get("journal", {}).get("path", "")
+        
+        if not journal_base_path:
+            logger.error("No journal path found in config")
+            return entries
+        
+        # Remove double "journal/" prefix if present
+        if relative_path.startswith("journal/"):
+            relative_path = relative_path[8:]
+        
+        # Build full path using configuration
+        journal_file_path = os.path.join(journal_base_path, relative_path)
         
         if not os.path.exists(journal_file_path):
-            logger.info(f"No journal file found for date {date_str}")
+            logger.info(f"No journal file found for date {date_str} at {journal_file_path}")
             return entries
         
         # Read and parse the journal file
@@ -1344,7 +1359,21 @@ def save_daily_summary(summary: DailySummary, config: Dict) -> str:
         
         # Get the summary file path (summaries are stored in summaries/daily/)
         date_str = summary['date']
-        summary_path = get_journal_file_path(date_str, "daily_summary")
+        relative_path = get_journal_file_path(date_str, "daily_summary")
+        
+        # Get journal base path from configuration
+        journal_base_path = config.get("journal", {}).get("path", "")
+        
+        if not journal_base_path:
+            logger.error("No journal path found in config")
+            raise ValueError("No journal path found in config")
+        
+        # Remove double "journal/" prefix if present
+        if relative_path.startswith("journal/"):
+            relative_path = relative_path[8:]
+        
+        # Build full path using configuration
+        summary_path = os.path.join(journal_base_path, relative_path)
         
         # Ensure directory exists
         ensure_journal_directory(summary_path)
