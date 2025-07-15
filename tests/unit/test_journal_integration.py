@@ -2,7 +2,6 @@ import pytest
 from mcp_commit_story import journal_generate as journal
 from mcp_commit_story.context_types import JournalContext
 
-@pytest.mark.xfail(reason="Flaky test - AI response format variations affect round-trip parsing")
 def test_journal_entry_full_round_trip():
     # Fully populated context (terminal_commands removed per architectural decision)
     ctx = JournalContext(

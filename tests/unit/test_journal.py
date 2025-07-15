@@ -174,7 +174,6 @@ def test_generate_summary_section_handles_missing_git():
     assert result['summary'] == ""
 
 
-@pytest.mark.xfail(reason="AI behavior test - specific content filtering depends on AI model responses")
 def test_generate_summary_section_ignores_how_and_errors():
     ctx = JournalContext(
         chat={'messages': [
@@ -284,7 +283,6 @@ def test_generate_accomplishments_section_none_found():
     assert 'accomplishments' in result
 
 
-@pytest.mark.xfail(reason="Requires AI agent or mock AI")
 def test_generate_accomplishments_section_high_energy():
     ctx = JournalContext(
         chat={'messages': [
@@ -413,7 +411,6 @@ def test_generate_frustrations_section_empty_context():
     assert 'frustrations' in result
 
 
-@pytest.mark.xfail(reason="Requires AI agent or mock AI")
 def test_generate_frustrations_section_conflicting_signals():
     ctx = JournalContext(
         chat={'messages': [
@@ -435,7 +432,6 @@ def test_generate_frustrations_section_conflicting_signals():
     assert any('nightmare' in f.lower() or 'easy' not in f.lower() for f in result['frustrations'])
 
 
-@pytest.mark.xfail(reason="Requires AI agent or mock AI")
 def test_generate_frustrations_section_multiple_indicators():
     ctx = JournalContext(
         chat={'messages': [
