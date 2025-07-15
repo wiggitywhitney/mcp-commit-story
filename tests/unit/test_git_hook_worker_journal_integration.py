@@ -1,7 +1,7 @@
 """
 Test git_hook_worker journal integration functionality.
 
-This module tests the direct journal generation wrapper that replaces signal-based journal creation
+This module tests the direct journal generation wrapper functionality
 in git_hook_worker.py.
 """
 
@@ -330,7 +330,7 @@ def test_journal_entry_file_path_is_correct():
 
 
 class TestDailySummaryDirectIntegration:
-    """Test the direct daily summary generation integration (replacing signal creation)."""
+    """Test the direct daily summary generation integration."""
 
     @patch('mcp_commit_story.git_hook_worker.generate_daily_summary_standalone')
     @patch('mcp_commit_story.git_hook_worker.check_daily_summary_trigger')
@@ -346,7 +346,7 @@ class TestDailySummaryDirectIntegration:
                                                mock_setup_logging, mock_extract_metadata,
                                                mock_journal_safe, mock_period_triggers,
                                                mock_daily_trigger, mock_generate_standalone):
-        """Test git hook worker calls generate_daily_summary_standalone directly instead of creating signals."""
+        """Test git hook worker calls generate_daily_summary_standalone directly."""
         from mcp_commit_story.git_hook_worker import main
         
         # Mock filesystem checks
@@ -371,7 +371,7 @@ class TestDailySummaryDirectIntegration:
         # Run the main function
         main()
         
-        # Verify standalone generation was called instead of signal creation
+        # Verify standalone generation was called
         mock_generate_standalone.assert_called_once_with("2025-01-15", '/test/repo', {'hash': 'test123'})
         
         # Verify period summary placeholder was not called since no period summaries were triggered

@@ -1282,9 +1282,9 @@ class TestEndToEndTelemetryIntegration:
 
 class TestDirectJournalGenerationTelemetry:
     """
-    Test telemetry functionality for direct journal generation after signal replacement.
-    
-    This test class verifies that the signal-to-direct-call replacement preserved all
+    Test telemetry functionality for direct journal generation.
+
+This test class verifies that direct journal generation preserves all
     telemetry functionality, decorators, and performance characteristics as required
     by subtask 50.4.
     """
