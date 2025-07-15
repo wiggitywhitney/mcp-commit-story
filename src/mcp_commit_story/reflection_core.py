@@ -136,10 +136,10 @@ def format_reflection(reflection_text: str) -> str:
         Formatted reflection string with separator, H3 header, timestamp, and double newlines
         
     Format:
-        \n\n____\n\n### H:MM AM/PM — Reflection\n\n[reflection_text]
+        \n\n### H:MM AM/PM — Reflection\n\n[reflection_text]
     """
     timestamp = datetime.now().strftime("%I:%M %p").lstrip('0')
-    return f"\n\n____\n\n### {timestamp} — Reflection\n\n{reflection_text}"
+    return f"\n\n### {timestamp} — Reflection\n\n{reflection_text}"
 
 
 @trace_mcp_operation("reflection.add_to_journal", attributes={

@@ -35,7 +35,7 @@
         ]
       },
       "commit-story": {
-        "command": "python",
+        "command": "/Users/wiggitywhitney/Repos/mcp-commit-story/.venv/bin/python",
         "args": ["-m", "mcp_commit_story"],
         "cwd": "/Users/wiggitywhitney/Repos/mcp-commit-story",
         "env": {

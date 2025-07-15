@@ -96,10 +96,10 @@ def format_ai_context_capture(context_text: str) -> str:
         Formatted context capture string with separator and unified header
         
     Format:
-        \\n\\n____\\n\\n### H:MM AM/PM — AI Context Capture\\n\\n[context_text]
+        \\n\\n### H:MM AM/PM — AI Context Capture\\n\\n[context_text]
     """
     timestamp = datetime.now().strftime("%I:%M %p").lstrip('0')
-    return f"\n\n____\n\n### {timestamp} — AI Context Capture\n\n{context_text}"
+    return f"\n\n### {timestamp} — AI Context Capture\n\n{context_text}"
 
 
 def generate_ai_context_dump() -> str:
@@ -138,7 +138,7 @@ def handle_journal_capture_context(text: Optional[str] = None) -> Dict[str, Any]
         Dict with status, error (if any), and file_path
         
     Format:
-        \\n\\n____\\n\\n### H:MM AM/PM — AI Context Capture\\n\\n[text]
+        \\n\\n### H:MM AM/PM — AI Context Capture\\n\\n[text]
     """
     start_time = time.time()
     
