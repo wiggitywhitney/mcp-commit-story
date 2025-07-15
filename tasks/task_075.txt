@@ -1,0 +1,46 @@
+# Task ID: 75
+# Title: Fix Over-Mocking Anti-Pattern in Test Suite
+# Status: pending
+# Dependencies: None
+# Priority: medium
+# Description: Improve test quality by reducing over-mocking and focusing tests on behavior rather than implementation details
+
+# Requirements:
+- Identify test files with excessive function-level mocking that makes tests brittle
+- Replace over-mocked tests with behavior-focused tests that mock only external dependencies
+- Preserve test coverage while improving test maintainability and value
+- Establish clear guidelines for what should and shouldn't be mocked
+- Update test patterns to follow "mock external dependencies, test internal behavior" principle
+- Ensure tests remain valuable during refactoring by testing public interfaces rather than implementation
+
+# Notes:
+## Current Problem:
+The test suite uses extensive `@patch` decorators to mock every internal function, creating brittle tests that break during refactoring even when behavior is preserved. This pattern tests implementation rather than behavior, reducing test value and maintainability.
+
+## Examples of Over-Mocking:
+```python
+@patch('module.function_a')
+@patch('module.function_b') 
+@patch('module.function_c')
+def test_main_function(mock_c, mock_b, mock_a):
+    # Tests implementation, not behavior
+```
+
+## Better Pattern:
+```python
+@patch('module.external_api_call')  # Mock external dependency only
+def test_main_function(mock_api):
+    # Test real internal function interactions and behavior
+```
+
+## Design Decisions for Future Consideration:
+1. **Scope**: Should we fix all test files at once, or focus on specific modules first?
+2. **Mock boundaries**: What constitutes an "external dependency" vs "internal behavior"?
+3. **Coverage preservation**: How do we ensure refactored tests maintain the same coverage?
+4. **Pattern documentation**: Should we create testing guidelines as part of this task?
+5. **Integration with existing patterns**: How do we align with current TDD methodology while improving test quality?
+
+---
+
+# Subtasks
+[To be created after design decisions are made] 

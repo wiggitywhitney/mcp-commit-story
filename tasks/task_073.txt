@@ -3,31 +3,265 @@
 # Status: pending
 # Dependencies: 69
 # Priority: high
-# Description: Clean up the duplicated daily summary functionality between daily_summary.py and daily_summary_standalone.py. Currently there are two modules with overlapping functionality - one MCP-based and one standalone - which causes confusion and maintenance overhead.
+# Description: Consolidate daily_summary.py and daily_summary_standalone.py into a single module with real AI invocation using the epic prompt, removing duplicate reflection extraction methods and over-mocking test patterns.
 
 # Requirements:
-- Consolidate daily summary functionality into a single, clear module structure
-- Remove obsolete functions and tests that are no longer needed
-- Ensure all existing functionality (including new reflection extraction) works correctly
-- Maintain backward compatibility for any existing integrations
-- Update all references to use the consolidated approach
-- Remove code duplication between the two modules
+- [ ] Implement real AI invocation using the epic 200-line prompt from daily_summary.py
+- [ ] Consolidate daily_summary.py and daily_summary_standalone.py into single unified module
+- [ ] Remove duplicate reflection extraction methods (keep only markdown header extraction)
+- [ ] Update git hook integration to use consolidated standalone functionality
+- [ ] Fix over-mocking test patterns to focus on behavior rather than implementation
+- [ ] Preserve all existing trigger logic and scheduling functionality
+- [ ] Maintain comprehensive telemetry for daily summary operations
+- [ ] Update documentation to reflect consolidated approach
 
 # Notes:
-## Context:
-- `daily_summary.py` contains MCP-based daily summary generation with reflection extraction
-- `daily_summary_standalone.py` contains standalone daily summary generation with reflection extraction  
-- Both modules have overlapping functions like `generate_daily_summary()`, `_format_summary_as_markdown()`, etc.
-- The standalone version is what's actually used in practice
-- Recent reflection extraction feature was added to both modules, creating more duplication
+## Design Decisions Made:
+1. **AI Implementation**: Use real AI invocation with epic prompt (Option A) - non-negotiable requirement
+2. **Consolidation Approach**: Merge functionality into daily_summary.py, deprecate standalone module (Option A)
+3. **Reflection Extraction**: Keep only markdown header method (`extract_reflections_from_journal_file()`) - superior approach
+4. **Testing Strategy**: Replace over-mocking with behavior-focused tests that mock only external dependencies
+5. **Function Architecture**: Preserve main orchestration function with real AI delegation
 
-## Design Decisions for Future Consideration:
-1. **Primary module choice**: Should daily_summary_standalone.py be the primary module, or should functionality be merged back into daily_summary.py?
-2. **MCP functionality**: Should MCP-based daily summary generation be preserved, removed, or refactored?
-3. **Function consolidation**: Which functions should be shared between MCP and standalone approaches vs. which should be module-specific?
-4. **Backward compatibility**: Are there existing integrations that depend on the MCP-based daily_summary.py that need to be preserved?
-5. **Testing cleanup**: Which test files should be removed or consolidated?
-6. **AI Intelligence Requirement**: User wants summaries to be executed with intelligence and include AI prompts. One of the modules does this (daily_summary_standalone.py imports `_build_daily_summary_prompt` and `_generate_mock_daily_summary_response` from daily_summary.py).
+## Implementation Strategy:
+- Remove duplicate reflection extraction methods (manual patterns and AI-generated)
+- Replace mock AI responses with real invoke_ai() calls using epic prompt
+- Consolidate telemetry patterns from standalone module into main module
+- Update tests to mock external dependencies (file operations, AI calls) but test internal behavior
+- Preserve existing trigger logic, scheduling, and configuration loading
 
-# Subtasks:
-[To be created after design decisions are made] 
+---
+
+# Subtasks
+
+---
+
+## Subtask 73.1: Remove Duplicate Reflection Extraction Methods
+### Dependencies: None
+### Description: Remove inferior reflection extraction methods, keeping only the markdown header approach.
+
+### Details:
+
+#### Steps:
+1. **REMOVE DUPLICATE EXTRACTION METHODS**
+   - Remove `_extract_manual_reflections()` function from daily_summary.py
+   - Remove any AI-based reflection extraction if it exists
+   - Keep only `extract_reflections_from_journal_file()` (markdown header method)
+   - Update any callers to use the markdown header method only
+   - Run tests: `python -m pytest tests/unit/test_daily_summary.py`
+
+2. **UPDATE TESTS TO REMOVE DUPLICATE METHOD TESTS**
+   - Remove tests for `_extract_manual_reflections()` function completely (delete tests that only tested removed functionality)
+   - Remove any tests for AI-based reflection extraction methods (delete tests that only tested removed functionality)
+   - Update tests to focus only on markdown header extraction method
+   - Fix any tests that tested preserved functionality but happened to use removed methods (update mocks/imports rather than deleting)
+   - Run tests: `python -m pytest tests/unit/test_daily_summary.py`
+
+#### VERIFICATION CHECKLIST
+[ ] Function `_extract_manual_reflections()` removed from daily_summary.py
+[ ] AI-based reflection extraction methods removed (if any exist)
+[ ] Only `extract_reflections_from_journal_file()` remains for reflection extraction
+[ ] Tests for removed methods deleted completely (tests that only tested removed functionality)
+[ ] Tests that tested preserved functionality but used removed methods updated (mocks/imports fixed rather than deleted)
+[ ] All remaining tests pass
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
+
+---
+
+## Subtask 73.2: Implement Real AI Invocation
+### Dependencies: 73.1
+### Description: Replace mock AI responses with real AI invocation using the epic prompt.
+
+### Details:
+
+#### WRITE TESTS FIRST
+- Update `tests/unit/test_daily_summary.py` to test real AI integration
+- Test `generate_daily_summary()` function with real AI mock (mock invoke_ai, not the summary logic)
+- Test cases: successful AI generation, AI failure handling, prompt construction, response parsing
+- Mock only external AI dependency (`invoke_ai`) but test internal AI integration logic
+- RUN TESTS - VERIFY THEY FAIL
+
+#### IMPLEMENT FUNCTIONALITY
+- Update `generate_daily_summary()` in daily_summary.py to use real AI invocation
+- Replace mock response logic with actual `invoke_ai()` calls using the epic prompt
+- Use the 200-line sophisticated prompt that already exists in the module
+- Handle AI failures gracefully with proper error categorization
+- Preserve all existing telemetry and error handling patterns
+- RUN TESTS - VERIFY THEY PASS
+
+#### VERIFICATION CHECKLIST
+[ ] Function `generate_daily_summary()` uses real `invoke_ai()` calls
+[ ] Epic 200-line prompt is used for AI invocation
+[ ] Mock AI response logic completely removed
+[ ] AI failures handled gracefully with proper error categorization
+[ ] All existing telemetry patterns preserved
+[ ] Test file updated to mock `invoke_ai()` but test real integration logic
+[ ] Full test suite passes
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
+
+---
+
+## Subtask 73.3: Consolidate Module Functionality
+### Dependencies: 73.2
+### Description: Merge daily_summary_standalone.py functionality into daily_summary.py and deprecate standalone module.
+
+### Details:
+
+#### Steps:
+1. **MERGE FUNCTIONALITY FROM STANDALONE MODULE**
+   - Copy improved telemetry patterns from daily_summary_standalone.py to daily_summary.py
+   - Copy better error handling patterns from standalone module
+   - Merge any unique utility functions that don't duplicate existing ones
+   - Ensure main orchestration function supports both MCP and standalone usage
+   - Run tests: `python -m pytest`
+
+2. **UPDATE GIT HOOK INTEGRATION**
+   - Update git_hook_worker.py to call daily_summary.py functions directly
+   - Remove any references to daily_summary_standalone.py
+   - Ensure direct calls work correctly without signal infrastructure
+   - Run tests: `python -m pytest`
+
+3. **DEPRECATE STANDALONE MODULE**
+   - Add deprecation notice to daily_summary_standalone.py
+   - Update module to delegate to daily_summary.py functions
+   - Remove duplicate code, keep only delegation functions
+   - Run tests: `python -m pytest`
+
+#### VERIFICATION CHECKLIST
+[ ] Improved telemetry patterns merged from standalone module
+[ ] Better error handling patterns merged from standalone module
+[ ] Git hook worker updated to call daily_summary.py directly
+[ ] No references to daily_summary_standalone.py in git hook worker
+[ ] Standalone module deprecated with delegation to main module
+[ ] Duplicate code removed from standalone module
+[ ] Full test suite passes
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
+
+---
+
+## Subtask 73.4: Fix Over-Mocking Test Patterns
+### Dependencies: 73.3
+### Description: Replace over-mocked tests with behavior-focused tests that mock only external dependencies.
+
+### Details:
+
+#### WRITE TESTS FIRST
+- Identify tests in `tests/unit/test_daily_summary.py` with excessive function-level mocking
+- Rewrite tests to mock only external dependencies (file operations, AI calls, configuration)
+- Test real internal function interactions and behavior
+- Focus on testing public interfaces rather than implementation details
+- RUN TESTS - VERIFY THEY FAIL (due to changed mocking approach)
+
+#### IMPLEMENT TEST IMPROVEMENTS
+- Remove excessive `@patch` decorators for internal functions
+- Keep mocks only for external dependencies: file I/O, AI invocation, configuration loading
+- Test actual function behavior and return values rather than implementation
+- Ensure tests remain valuable during refactoring by testing behavior, not implementation
+- Update test assertions to verify behavior outcomes rather than function call patterns
+- RUN TESTS - VERIFY THEY PASS
+
+#### VERIFICATION CHECKLIST
+[ ] Excessive function-level mocking removed from tests
+[ ] Tests mock only external dependencies (file I/O, AI calls, configuration)
+[ ] Internal function interactions tested with real function calls
+[ ] Tests focus on behavior outcomes rather than implementation details
+[ ] Test coverage maintained or improved
+[ ] Tests remain valuable during refactoring
+[ ] Full test suite passes
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
+
+---
+
+## Subtask 73.5: Integration Testing and Telemetry Verification
+### Dependencies: 73.4
+### Description: Verify end-to-end functionality works correctly with real AI integration and consolidated module.
+
+### Details:
+
+#### Steps:
+1. **CREATE INTEGRATION TEST SUITE**
+   - Create `tests/integration/test_daily_summary_consolidation.py`
+   - Test complete daily summary generation workflow with real function integration
+   - Test git hook integration calls consolidated module correctly
+   - Test that reflection extraction works with real file operations
+   - Verify no dependency on removed standalone module
+
+2. **VERIFY TELEMETRY FUNCTIONALITY**
+   - Test that all telemetry metrics are recorded correctly
+   - Verify telemetry spans work with real AI integration
+   - Test error telemetry captures AI failures appropriately
+   - Ensure consolidated module maintains all telemetry patterns
+
+3. **TEST REAL AI INTEGRATION**
+   - Test daily summary generation with mocked but realistic AI responses
+   - Verify epic prompt is used correctly in AI calls
+   - Test error handling when AI calls fail
+   - Ensure AI response parsing works correctly
+
+#### VERIFICATION CHECKLIST
+[ ] Integration test file created: `tests/integration/test_daily_summary_consolidation.py`
+[ ] Complete daily summary workflow tested end-to-end
+[ ] Git hook integration verified with consolidated module
+[ ] Reflection extraction tested with real file operations
+[ ] No dependencies on removed standalone module
+[ ] All telemetry metrics recorded correctly
+[ ] Telemetry spans work with real AI integration
+[ ] Error telemetry captures AI failures appropriately
+[ ] Epic prompt used correctly in AI calls
+[ ] AI response parsing works correctly
+[ ] Full test suite passes
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
+
+---
+
+## Subtask 73.6: Documentation Updates
+### Dependencies: 73.5
+### Description: Update documentation to reflect consolidated approach and removal of duplicate functionality.
+
+### Details:
+
+#### Steps:
+1. **UPDATE MODULE DOCUMENTATION**
+   - Update daily_summary.py module docstring to reflect real AI integration
+   - Document consolidated functionality and removal of standalone module
+   - Update function docstrings to reflect real AI usage (no task references)
+   - Add documentation for unified reflection extraction approach
+
+2. **UPDATE IMPLEMENTATION DOCUMENTATION**
+   - Update any documentation that references daily_summary_standalone.py
+   - Update git hook documentation to reflect direct calls to daily_summary.py
+   - Remove any references to duplicate reflection extraction methods
+   - Update testing documentation to reflect behavior-focused test patterns
+
+3. **VERIFY DOCUMENTATION QUALITY**
+   - Ensure documentation is written for external readers with zero project knowledge
+   - Verify all examples are copy-pasteable and work correctly
+   - Remove any historical references to standalone module or duplicate methods
+   - Ensure documentation reflects current consolidated architecture
+
+#### VERIFICATION CHECKLIST
+[ ] Module docstring updated to reflect real AI integration
+[ ] Function docstrings updated for real AI usage (no task references)
+[ ] Documentation added for unified reflection extraction approach
+[ ] References to daily_summary_standalone.py removed from documentation
+[ ] Git hook documentation updated to reflect direct calls
+[ ] References to duplicate reflection extraction methods removed
+[ ] Testing documentation updated for behavior-focused patterns
+[ ] Documentation written for external readers with zero project knowledge
+[ ] All examples are copy-pasteable and work correctly
+[ ] No historical references to removed functionality
+[ ] Documentation reflects current consolidated architecture
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
+
+---
+
+## Task Completion
+
+Final verification:
+[ ] All requirements above completed 

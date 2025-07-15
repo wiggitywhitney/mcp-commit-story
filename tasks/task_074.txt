@@ -1,0 +1,53 @@
+# Task ID: 74
+# Title: Create Multi-Layered Entertaining Demo for Git Hook → Journal Workflow
+# Status: pending
+# Dependencies: 69
+# Priority: high
+# Description: Create an entertaining, multi-layered demo showing the complete git hook → journal workflow for codebase presentation, combining multiple demo elements to tell a cohesive story of progressive codebase cleanup
+
+# Requirements:
+- Create multiple demo elements that can be combined into a cohesive demonstration flow
+- Show git hook triggering journal entry creation through multiple commit cycles
+- Demonstrate chat integration with AI context capture workflow
+- Include manual reflection addition to show complete journal ecosystem
+- Make demo memorable, engaging, and fun for presentation audience
+- Ensure predictable, reliable results for live demonstration
+- Show before/after workflow states clearly at each stage
+- Demonstrate multiple aspects of the journal system (commits, AI chat, reflections, prompts)
+
+# Notes:
+## Initial Context:
+- Demo scheduled for tomorrow's presentation - 2025-07-14 22:09 CDT
+- Should demonstrate core value proposition of git hook → journal workflow
+- Multiple demo elements can be combined (not mutually exclusive)
+- Focus on showing concrete before/after states rather than just theory
+- Need to balance entertainment value with professional presentation requirements
+
+## Potential Demo Elements Identified:
+1. **Baklava References**: Hidden throughout codebase in comments, function names, documentation
+2. **Rick Roll Console Logs**: Console logs that spell out "Never gonna give you up" during journal generation
+3. **AI Prompt Modifications**: Temporary prompt changes (southern drawl, Office quotes, etc.)
+4. **Chat Integration**: Show AI conversation → context capture → journal integration
+5. **Manual Reflections**: Demonstrate reflection addition workflow
+6. **Progressive Cleanup**: Show multiple commit cycles of improvement
+
+## Success Criteria:
+- Demonstrates complete git hook → journal workflow end-to-end
+- Shows multiple system capabilities (commits, chat, reflections, AI customization)
+- Reliable and predictable for live presentation
+- Engaging and memorable for audience
+- Professional but entertaining tone
+
+# Design Decisions for Future Consideration:
+- Which specific demo elements to implement and in what combination
+- Optimal sequencing of demo phases for maximum impact
+- Where to place each type of demo element for best demonstration effect
+- How many commit cycles to show (balance between comprehensive and concise)
+- Whether to include AI prompt modification (currently not user-configurable)
+- What additional creative demo elements beyond the initial three options
+- Integration approach for chat → context capture → journal workflow
+
+---
+
+# Subtasks
+[To be created after design decisions made] 
