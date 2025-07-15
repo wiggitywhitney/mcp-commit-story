@@ -874,3 +874,220 @@ Some work done.
             reflections = extract_reflections_from_journal_file(date_str, config)
             
             assert len(reflections) == 0 
+
+
+class TestGenerateDailySummaryAIIntegration:
+    """Test generate_daily_summary function with real AI integration."""
+    
+    @patch('src.mcp_commit_story.daily_summary.invoke_ai')
+    @patch('src.mcp_commit_story.daily_summary.extract_reflections_from_journal_file')
+    @patch('mcp_commit_story.summary_utils.add_source_links_to_summary')
+    def test_generate_daily_summary_with_real_ai_success(self, mock_add_links, mock_extract_reflections, mock_invoke_ai):
+        """Test successful daily summary generation with real AI invocation."""
+        from src.mcp_commit_story.daily_summary import generate_daily_summary
+        from src.mcp_commit_story.journal.models import JournalEntry
+        
+        # Setup test data
+        entries = [
+            JournalEntry(
+                timestamp="2025-01-15 10:00:00",
+                commit_hash="abc123",
+                summary="Test work summary",
+                technical_synopsis="Technical implementation details",
+                accomplishments=["Fixed bug", "Added feature"],
+                frustrations=["Database timeout"],
+                discussion_notes=[{"speaker": "Human", "text": "Why did this approach work better?"}],
+                tone_mood={"mood": "focused", "indicators": ["steady progress"]}
+            )
+        ]
+        date_str = "2025-01-15"
+        config = {"ai": {"model": "claude-3-sonnet"}, "journal": {"path": "test-journal"}}
+        
+        # Mock AI response in expected format
+        mock_ai_response = """{
+            "summary": "Made significant progress on core functionality",
+            "progress_made": "Implemented new feature and fixed critical bug",
+            "key_accomplishments": ["Bug fix completed", "Feature enhancement"],
+            "technical_progress": "Resolved database timeout issue",
+            "challenges_overcome": ["Database performance problem"],
+            "learning_insights": ["Learned about connection pooling"],
+            "discussion_highlights": [{"speaker": "Human", "text": "Why did this approach work better?"}],
+            "tone_mood": {"mood": "focused", "indicators": ["steady progress"]},
+            "daily_metrics": {"commits": 1, "files_changed": 3}
+        }"""
+        
+        mock_invoke_ai.return_value = mock_ai_response
+        mock_extract_reflections.return_value = [{"timestamp": "10:30", "content": "Manual reflection"}]
+        mock_add_links.return_value = {"date": date_str, "summary": "Linked summary"}
+        
+        # Execute function
+        result = generate_daily_summary(entries, date_str, config)
+        
+        # Verify AI was called with proper prompt
+        mock_invoke_ai.assert_called_once()
+        call_args = mock_invoke_ai.call_args
+        prompt = call_args[0][0]
+        context = call_args[0][1]
+        
+        # Verify prompt contains epic prompt content
+        assert "AI Prompt for Daily Summary Generation" in prompt
+        assert "SIGNAL OVER NOISE" in prompt
+        assert "EXTERNAL READER ACCESSIBILITY GUIDELINES" in prompt
+        assert date_str in prompt
+        assert "Test work summary" in prompt
+        
+        # Verify context is properly structured
+        assert "date" in context
+        assert context["date"] == date_str
+        
+        # Verify reflection extraction was called
+        mock_extract_reflections.assert_called_once_with(date_str, config)
+        
+        # Verify result structure
+        assert result["date"] == date_str
+        mock_add_links.assert_called_once()
+
+    @patch('src.mcp_commit_story.daily_summary.invoke_ai')
+    @patch('src.mcp_commit_story.daily_summary.extract_reflections_from_journal_file')
+    def test_generate_daily_summary_ai_failure_handling(self, mock_extract_reflections, mock_invoke_ai):
+        """Test error handling when AI invocation fails."""
+        from src.mcp_commit_story.daily_summary import generate_daily_summary
+        from src.mcp_commit_story.journal.models import JournalEntry
+        
+        # Setup test data
+        entries = [JournalEntry(
+            timestamp="2025-01-15 10:00:00",
+            commit_hash="abc123",
+            summary="Test summary"
+        )]
+        date_str = "2025-01-15"
+        config = {"ai": {"model": "claude-3-sonnet"}, "journal": {"path": "test-journal"}}
+        
+        # Mock AI failure
+        mock_invoke_ai.side_effect = Exception("AI service unavailable")
+        mock_extract_reflections.return_value = []
+        
+        # Should raise the exception
+        with pytest.raises(Exception, match="AI service unavailable"):
+            generate_daily_summary(entries, date_str, config)
+        
+        # Verify AI was called
+        mock_invoke_ai.assert_called_once()
+
+    @patch('src.mcp_commit_story.daily_summary.invoke_ai')
+    @patch('src.mcp_commit_story.daily_summary.extract_reflections_from_journal_file')
+    def test_generate_daily_summary_invalid_ai_response(self, mock_extract_reflections, mock_invoke_ai):
+        """Test handling of invalid AI response format."""
+        from src.mcp_commit_story.daily_summary import generate_daily_summary
+        from src.mcp_commit_story.journal.models import JournalEntry
+        
+        # Setup test data
+        entries = [JournalEntry(
+            timestamp="2025-01-15 10:00:00",
+            commit_hash="abc123",
+            summary="Test summary"
+        )]
+        date_str = "2025-01-15"
+        config = {"ai": {"model": "claude-3-sonnet"}, "journal": {"path": "test-journal"}}
+        
+        # Mock invalid AI response
+        mock_invoke_ai.return_value = "invalid json response"
+        mock_extract_reflections.return_value = []
+        
+        # Should handle the error gracefully
+        with pytest.raises(Exception):  # JSON parsing error or similar
+            generate_daily_summary(entries, date_str, config)
+
+    @patch('src.mcp_commit_story.daily_summary.invoke_ai')
+    @patch('src.mcp_commit_story.daily_summary.extract_reflections_from_journal_file')
+    def test_prompt_construction_includes_epic_content(self, mock_extract_reflections, mock_invoke_ai):
+        """Test that the constructed prompt includes the epic prompt content."""
+        from src.mcp_commit_story.daily_summary import generate_daily_summary
+        from src.mcp_commit_story.journal.models import JournalEntry
+        
+        # Setup minimal test data
+        entries = []
+        date_str = "2025-01-15"
+        config = {"ai": {"model": "claude-3-sonnet"}, "journal": {"path": "test-journal"}}
+        
+        mock_invoke_ai.return_value = '{"summary": "test"}'
+        mock_extract_reflections.return_value = []
+        
+        # Execute function
+        generate_daily_summary(entries, date_str, config)
+        
+        # Verify prompt contains all key sections of epic prompt
+        call_args = mock_invoke_ai.call_args
+        prompt = call_args[0][0]
+        
+        expected_sections = [
+            "AI Prompt for Daily Summary Generation",
+            "SIGNAL OVER NOISE - CRITICAL FILTERING",
+            "PROJECT CONTEXT",
+            "ROUTINE PATTERNS TO FILTER OUT",
+            "SIGNAL TO CAPTURE",
+            "EXTERNAL READER ACCESSIBILITY GUIDELINES",
+            "SECTION REQUIREMENTS",
+            "## Summary",
+            "## Reflections", 
+            "## Progress Made",
+            "## Key Accomplishments",
+            "## Technical Progress",
+            "## Challenges Overcome",
+            "## Learning & Insights",
+            "## Discussion Highlights",
+            "## Tone/Mood",
+            "## Daily Metrics",
+            "ANTI-HALLUCINATION RULES"
+        ]
+        
+        for section in expected_sections:
+            assert section in prompt, f"Missing expected section: {section}"
+
+    @patch('src.mcp_commit_story.daily_summary.invoke_ai')
+    @patch('src.mcp_commit_story.daily_summary.extract_reflections_from_journal_file')
+    def test_journal_entries_formatted_for_ai(self, mock_extract_reflections, mock_invoke_ai):
+        """Test that journal entries are properly formatted in the AI prompt."""
+        from src.mcp_commit_story.daily_summary import generate_daily_summary
+        from src.mcp_commit_story.journal.models import JournalEntry
+        
+        # Setup test data with detailed entry
+        entries = [
+            JournalEntry(
+                timestamp="2025-01-15 10:00:00",
+                commit_hash="abc123",
+                summary="Implemented user authentication",
+                technical_synopsis="Added JWT token validation",
+                accomplishments=["Login flow", "Password validation"],
+                frustrations=["Database connection issues"],
+                discussion_notes=[
+                    {"speaker": "Human", "text": "Should we use sessions or tokens?"},
+                    {"speaker": "AI", "text": "Tokens provide better scalability"}
+                ],
+                tone_mood={"mood": "productive", "indicators": ["steady commits"]}
+            )
+        ]
+        date_str = "2025-01-15"
+        config = {"ai": {"model": "claude-3-sonnet"}, "journal": {"path": "test-journal"}}
+        
+        mock_invoke_ai.return_value = '{"summary": "test"}'
+        mock_extract_reflections.return_value = []
+        
+        # Execute function
+        generate_daily_summary(entries, date_str, config)
+        
+        # Verify formatted entries are in prompt
+        call_args = mock_invoke_ai.call_args
+        prompt = call_args[0][0]
+        
+        # Check that entry content is properly formatted
+        assert "Entry 1 - 2025-01-15 10:00:00 (Commit abc123)" in prompt
+        assert "Implemented user authentication" in prompt
+        assert "JWT token validation" in prompt
+        assert "Login flow" in prompt
+        assert "Database connection issues" in prompt
+        assert "Should we use sessions or tokens?" in prompt
+        assert "Tokens provide better scalability" in prompt
+        assert "productive" in prompt 
+
+ 

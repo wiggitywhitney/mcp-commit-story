@@ -7,9 +7,12 @@ based on journal file creation events, rather than maintaining state files.
 import os
 import re
 import logging
+import json
 from datetime import datetime, date, timedelta
 from typing import Optional, Dict, List
 from pathlib import Path
+
+from .ai_invocation import invoke_ai
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -615,33 +618,40 @@ def _call_ai_for_daily_summary(entries: List[JournalEntry], date_str: str, confi
         # Build the comprehensive AI prompt
         prompt = _build_daily_summary_prompt(journal_content, date_str)
         
-        # Call AI with the prompt (placeholder for actual AI integration)
-        # In a real implementation, this would call the configured AI model
-        # For now, we'll generate a more realistic mock response based on the entries
+        # Call AI with the prompt using real AI invocation
+        context = {
+            "date": date_str,
+            "entries_count": len(entries),
+            "operation": "daily_summary_generation"
+        }
         
-        from mcp_commit_story.journal_generate import log_ai_agent_interaction
-        log_ai_agent_interaction(prompt, None, debug_mode=True)
+        ai_response_text = invoke_ai(prompt, context)
         
-        # Generate a more realistic response based on actual entry content
-        response = _generate_mock_daily_summary_response(entries, date_str)
+        # Parse the AI response as JSON
+        try:
+            response = json.loads(ai_response_text)
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse AI response as JSON: {e}")
+            logger.error(f"AI response text: {ai_response_text}")
+            raise ValueError(f"AI returned invalid JSON response: {e}")
+        
+        # Validate response has required fields
+        if not isinstance(response, dict):
+            raise ValueError("AI response must be a JSON object")
+        
+        # Ensure required fields exist with defaults
+        required_fields = ["summary", "progress_made", "key_accomplishments", "daily_metrics"]
+        for field in required_fields:
+            if field not in response:
+                response[field] = "" if field != "key_accomplishments" and field != "daily_metrics" else ([] if field == "key_accomplishments" else {})
         
         logger.info(f"Generated daily summary for {date_str} from {len(entries)} entries")
         return response
         
     except Exception as e:
         logger.error(f"Error calling AI for daily summary: {e}")
-        # Return minimal response on error
-        return {
-            "summary": f"Summary generation failed for {date_str}",
-            "reflections": [],
-            "progress_made": "Unable to generate progress summary",
-            "key_accomplishments": [],
-            "technical_synopsis": "Unable to generate technical synopsis",
-            "challenges_and_learning": [],
-            "discussion_highlights": [],
-            "tone_mood": None,
-            "daily_metrics": {"commits": len(entries), "generation_error": True}
-        }
+        # Re-raise exceptions so callers can handle AI failures appropriately
+        raise
 
 
 def _format_entries_for_ai(entries: List[JournalEntry]) -> str:
