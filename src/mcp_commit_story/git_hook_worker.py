@@ -24,7 +24,7 @@ import git
 from . import journal_workflow
 from . import config
 from . import git_utils
-from .daily_summary_standalone import generate_daily_summary_standalone
+from .daily_summary import generate_daily_summary_standalone
 from .telemetry import trace_git_operation
 
 # Configure logging for hook operations

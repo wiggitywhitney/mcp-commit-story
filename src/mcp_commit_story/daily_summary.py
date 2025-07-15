@@ -408,9 +408,13 @@ def _yearly_summary_exists(date: date, summaries_path: Path) -> bool:
 # Daily Summary Generation Functions
 # =============================================================================
 
-from mcp_commit_story.telemetry import trace_mcp_operation
+from mcp_commit_story.telemetry import trace_mcp_operation, get_mcp_metrics
 from mcp_commit_story.journal_workflow_types import DailySummary
-from mcp_commit_story.journal_generate import JournalEntry
+from mcp_commit_story.journal_generate import JournalEntry, get_journal_file_path, ensure_journal_directory
+from mcp_commit_story.journal import JournalParser
+from mcp_commit_story.config import load_config
+from opentelemetry import trace
+import time
 
 
 def load_journal_entries_for_date(date_str: str, config: Dict) -> List[JournalEntry]:
@@ -1467,5 +1471,129 @@ def _format_summary_as_markdown(summary: DailySummary) -> str:
             lines.extend(["", source_links_section])
     
     return "\n".join(lines)
+
+
+# =============================================================================
+# Standalone Daily Summary Generation (Consolidated from standalone module)
+# =============================================================================
+
+@trace_mcp_operation("daily_summary.generate_standalone", attributes={
+    "operation_type": "standalone_generation",
+    "section_type": "daily_summary"
+})
+def generate_daily_summary_standalone(date: Optional[str] = None, repo_path: Optional[str] = None, commit_metadata: Optional[Dict] = None):
+    """Generate a daily summary without requiring MCP server.
+    
+    Loads journal entries for a date, processes them through AI, and saves
+    the summary to a markdown file.
+    
+    Args:
+        date: Date string in YYYY-MM-DD format. Defaults to today.
+        repo_path: Path to git repository (optional, for git hook integration)
+        commit_metadata: Commit metadata (optional, for git hook integration)
+        
+    Returns:
+        - If called with git hook parameters (repo_path or commit_metadata): Number of journal entries processed (int), or None if no entries found
+        - If called for regular usage: DailySummary object, or None if no entries found
+        
+    Raises:
+        Exception: If configuration loading, AI generation, or file saving fails.
+        
+    Example:
+        ```python
+        # Regular usage - returns DailySummary object
+        summary = generate_daily_summary_standalone()
+        summary = generate_daily_summary_standalone("2025-01-15")
+        
+        # Git hook usage - returns entry count (int)
+        entries_count = generate_daily_summary_standalone(date, repo_path, commit_metadata)
+        ```
+    """
+    start_time = time.time()
+    
+    # Set up telemetry
+    current_span = trace.get_current_span()
+    if current_span:
+        current_span.set_attribute("daily_summary.generation_type", "standalone")
+    
+    # Metrics counters
+    operations_total = 0
+    entry_count = 0
+    
+    try:
+        # Default to today if no date provided
+        if date is None:
+            date = datetime.now().strftime("%Y-%m-%d")
+        
+        if current_span:
+            current_span.set_attribute("summary.date", date)
+        
+        # Load configuration
+        operations_total += 1
+        config = load_config()
+        logger.info(f"Configuration loaded for daily summary generation for {date}")
+        
+        # Load journal entries for the date
+        operations_total += 1
+        journal_entries = load_journal_entries_for_date(date, config)
+        entry_count = len(journal_entries)
+        
+        if current_span:
+            current_span.set_attribute("summary.entry_count", entry_count)
+        
+        # Return None if no entries found
+        if not journal_entries:
+            logger.info(f"No journal entries found for {date}, skipping daily summary generation")
+            return None
+        
+        # Generate daily summary using AI
+        operations_total += 1
+        summary = generate_daily_summary(journal_entries, date, config)
+        logger.info(f"Daily summary generated for {date}")
+        
+        # Save summary to file
+        operations_total += 1
+        summary_path = save_daily_summary(summary, config)
+        logger.info(f"Daily summary saved to {summary_path}")
+        
+        # Record success telemetry
+        generation_duration = time.time() - start_time
+        
+        # Emit telemetry metrics
+        metrics = get_mcp_metrics()
+        if metrics:
+            # Generation duration histogram
+            metrics.record_histogram("daily_summary.generation_duration_seconds", generation_duration)
+            
+            # Operations counter with success label
+            metrics.record_counter("daily_summary.operations_total", 1, {"status": "success"})
+            
+            # Entry count histogram
+            metrics.record_histogram("daily_summary.entry_count", entry_count)
+            
+            # File operations counter
+            metrics.record_counter("daily_summary.file_operations_total", 1, {"operation": "save", "status": "success"})
+        
+        # Return appropriate type based on how function was called
+        if repo_path is not None or commit_metadata is not None:
+            # Git hook usage - return entry count
+            return entry_count
+        else:
+            # Regular usage - return DailySummary object
+            return summary
+        
+    except Exception as e:
+        # Record failure telemetry
+        generation_duration = time.time() - start_time
+        
+        # Emit error telemetry
+        metrics = get_mcp_metrics()
+        if metrics:
+            metrics.record_histogram("daily_summary.generation_duration_seconds", generation_duration)
+            metrics.record_counter("daily_summary.operations_total", 1, {"status": "failure"})
+            metrics.record_histogram("daily_summary.entry_count", entry_count)
+        
+        logger.error(f"Error in standalone daily summary generation for {date}: {e}")
+        raise 
 
 
