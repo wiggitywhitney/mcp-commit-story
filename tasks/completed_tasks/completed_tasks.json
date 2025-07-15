@@ -2596,6 +2596,16 @@
       ],
       "completed_date": "2025-07-14",
       "archived_from_main": true
+    },
+    {
+      "id": 69,
+      "title": "Clean Up Obsolete MCP and Signal Architecture",
+      "description": "Remove architectural bloat by eliminating signal-based code, redundant MCP tools, and unused infrastructure while preserving essential components for the remaining valuable MCP tools.",
+      "status": "done",
+      "dependencies": [],
+      "priority": "medium",
+      "completed_date": "2025-07-14",
+      "archived_from_main": true
     }
   ]
 }

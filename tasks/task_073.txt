@@ -1,7 +1,7 @@
 # Task ID: 73
 # Title: Consolidate Daily Summary Functionality
 # Status: pending
-# Dependencies: 69
+# Dependencies: None
 # Priority: high
 # Description: Consolidate daily_summary.py and daily_summary_standalone.py into a single module with real AI invocation using the epic prompt, removing duplicate reflection extraction methods and over-mocking test patterns.
 
