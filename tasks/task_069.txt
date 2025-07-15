@@ -166,7 +166,7 @@ Removed 4 obsolete MCP tools (journal_new_entry, journal_init, journal_install_h
 
 ---
 
-## Subtask 69.4: Telemetry Verification [pending]
+## Subtask 69.4: Telemetry Verification [done]
 ### Dependencies: 69.3
 ### Description: Verify that signal removal doesn't break telemetry functionality and that preserved MCP tools still have proper telemetry.
 
@@ -186,15 +186,18 @@ Removed 4 obsolete MCP tools (journal_new_entry, journal_init, journal_install_h
    - Ensure no orphaned telemetry code remains for removed functionality
 
 #### VERIFICATION CHECKLIST
-[ ] All existing telemetry tests pass
-[ ] MCP tool telemetry verified working: `journal_add_reflection`, `journal_capture_context`
-[ ] Git hook operations still record telemetry correctly
-[ ] Signal-specific telemetry metrics removed
-[ ] Telemetry tests updated to remove signal-related assertions
-[ ] No orphaned telemetry code remains for removed functionality
-[ ] Full test suite passes
-[ ] All subtask requirements verified complete
-[ ] MARK COMPLETE
+[X] All existing telemetry tests pass
+[X] MCP tool telemetry verified working: `journal_add_reflection`, `journal_capture_context`
+[X] Git hook operations still record telemetry correctly
+[X] Signal-specific telemetry metrics removed
+[X] Telemetry tests updated to remove signal-related assertions
+[X] No orphaned telemetry code remains for removed functionality
+[X] Full test suite passes
+[X] All subtask requirements verified complete
+[X] MARK COMPLETE
+
+### Subtask 69.4 Completed - 2025-07-14 20:16 CDT
+Signal-related telemetry metrics removed from telemetry.py, signal references cleaned up in git_hook_worker.py comments, all telemetry tests pass including MCP tools and git hook operations, and full test suite passes.
 
 ---
 

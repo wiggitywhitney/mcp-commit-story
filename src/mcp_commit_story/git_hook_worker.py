@@ -322,14 +322,14 @@ def count_commits_today(repo_path: str, date_str: str) -> int:
 
 @handle_errors_gracefully
 def extract_commit_metadata(repo_path: str) -> Dict[str, Any]:
-    """Extract commit metadata for signal creation and telemetry.
+    """Extract commit metadata for telemetry and summary generation.
     
     Args:
         repo_path: Path to the git repository
         
     Returns:
         Dictionary containing commit metadata following approved design.
-        Used for both signal creation (summaries) and telemetry tracking (direct journal generation).
+        Used for telemetry tracking and direct summary generation.
     """
     try:
         from mcp_commit_story.git_utils import get_repo, get_current_commit, get_commit_details
@@ -340,7 +340,7 @@ def extract_commit_metadata(repo_path: str) -> Dict[str, Any]:
         # Use existing git_utils function to get standard metadata
         commit_details = get_commit_details(commit)
         
-        # Convert to approved signal format
+        # Convert to approved metadata format
         # Extract files changed from the commit
         files_changed = []
         for file_path in commit.stats.files.keys():
@@ -406,7 +406,7 @@ def period_summary_placeholder(period: str, date: str, commit_metadata: Dict[str
     """
     Placeholder for period summary generation.
     
-    This function logs the period summary request but does not create signals.
+    This function logs the period summary request for future implementation.
     In the future, this could be replaced with direct summary generation calls.
     
     Args:
@@ -543,7 +543,7 @@ def main() -> None:
     
     Handles post-commit processing including:
     - Direct journal entry generation via generate_journal_entry_safe()
-    - Daily/period summary signal creation when appropriate
+    - Daily/period summary generation when appropriate
     - Comprehensive error handling to ensure git operations are never blocked
     
     Expected to be called as:
@@ -568,14 +568,14 @@ def main() -> None:
             log_hook_activity(f"Not a git repository: {repo_path}", "warning", repo_path)
             return
         
-        # Extract commit metadata once for signals and telemetry tracking
+        # Extract commit metadata once for telemetry tracking and summary generation
         commit_metadata = extract_commit_metadata(repo_path)
         
         # 1. Check if daily summary should be generated
         date_to_generate = check_daily_summary_trigger(repo_path)
         
         if date_to_generate:
-            # Generate daily summary directly (no signal creation)
+            # Generate daily summary directly
             import time
             start_time = time.time()
             

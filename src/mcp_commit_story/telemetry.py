@@ -1021,12 +1021,6 @@ class MCPMetrics:
         )
         
         # Git hook specific metrics
-        self.git_hook_signal_creation_total = self.meter.create_counter(
-            name="git_hook.signal_creation_total",
-            description="Total number of git hook signal creation operations",
-            unit="1"
-        )
-        
         self.git_hook_daily_summary_trigger_total = self.meter.create_counter(
             name="git_hook.daily_summary_trigger_total",
             description="Total number of git hook daily summary trigger operations",
@@ -1051,12 +1045,6 @@ class MCPMetrics:
         )
         
         # Git hook specific metrics
-        self.git_hook_signal_creation_duration_seconds = self.meter.create_histogram(
-            name="git_hook.signal_creation_duration_seconds",
-            description="Duration of git hook signal creation operations in seconds",
-            unit="s"
-        )
-        
         self.git_hook_daily_summary_duration_seconds = self.meter.create_histogram(
             name="git_hook.daily_summary_duration_seconds",
             description="Duration of git hook daily summary operations in seconds",
