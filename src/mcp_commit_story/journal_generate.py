@@ -210,7 +210,16 @@ def _parse_ai_response(response: str, expected_field: str, fallback_value: Any =
                 
                 return field_value
             else:
-                # Valid JSON but missing expected field - return fallback instead of whole response
+                # Valid JSON but missing expected field
+                # Check if this is a recognizable structure that can be converted to text
+                if not parse_as_list and isinstance(fallback_value, str):
+                    # Try to convert the whole JSON structure if it's recognizable
+                    converted_text = _convert_structured_dict_to_text(parsed_json)
+                    # Only use the converted text if it's not just a JSON dump fallback
+                    if not converted_text.startswith('{') and not converted_text.endswith('}'):
+                        return converted_text
+                
+                # If not convertible, return fallback instead of whole response
                 return fallback_value
         elif isinstance(parsed_json, list):
             # Handle case where AI returns JSON array directly (e.g., ["item1", "item2"])
@@ -246,30 +255,80 @@ def _convert_structured_dict_to_text(data: dict) -> str:
     """
     parts = []
     
-    # Handle overview/summary fields
-    for overview_key in ['overview', 'summary', 'description']:
-        if overview_key in data and isinstance(data[overview_key], str):
-            parts.append(data[overview_key])
-            break
+    # Handle commit metadata structure
+    if 'commit_message' in data:
+        parts.append(f"This commit: {data['commit_message']}")
+        
+        if 'changed_files' in data and isinstance(data['changed_files'], list):
+            if len(data['changed_files']) == 1:
+                parts.append(f"Modified {data['changed_files'][0]}")
+            elif len(data['changed_files']) <= 5:
+                parts.append(f"Modified {len(data['changed_files'])} files: {', '.join(data['changed_files'])}")
+            else:
+                parts.append(f"Modified {len(data['changed_files'])} files including {', '.join(data['changed_files'][:3])} and others")
+        
+        if 'file_modifications' in data and isinstance(data['file_modifications'], dict):
+            mod_descriptions = []
+            for file_path, description in data['file_modifications'].items():
+                if isinstance(description, str) and description.strip():
+                    mod_descriptions.append(f"{file_path}: {description}")
+            if mod_descriptions:
+                parts.append("Key changes: " + "; ".join(mod_descriptions))
     
-    # Handle implementation details (list of items)
-    for details_key in ['implementation_details', 'details', 'items', 'tasks']:
-        if details_key in data:
-            details = data[details_key]
-            if isinstance(details, list):
-                if details:  # Only add if list is not empty
-                    detail_text = ". ".join(str(item).strip() for item in details if str(item).strip())
-                    if detail_text:
-                        parts.append(detail_text)
-            elif isinstance(details, str):
-                parts.append(details)
-            break
+    # Handle test outcomes structure
+    elif 'test_outcomes' in data:
+        test_info = data['test_outcomes']
+        if isinstance(test_info, dict):
+            outcome_parts = []
+            if 'total_tests' in test_info:
+                outcome_parts.append(f"{test_info['total_tests']} total tests")
+            if 'failed' in test_info:
+                if test_info['failed'] == 0:
+                    outcome_parts.append("all passing")
+                else:
+                    outcome_parts.append(f"{test_info['failed']} failed")
+            if 'xfail' in test_info and test_info['xfail'] > 0:
+                outcome_parts.append(f"{test_info['xfail']} expected failures")
+            if 'coverage' in test_info:
+                outcome_parts.append(f"{test_info['coverage']} coverage")
+            
+            if outcome_parts:
+                parts.append("Test results: " + ", ".join(outcome_parts))
+        
+        if 'issues_addressed' in data and isinstance(data['issues_addressed'], list):
+            issues = []
+            for issue in data['issues_addressed']:
+                if isinstance(issue, dict) and 'issue' in issue and 'solution' in issue:
+                    issues.append(f"{issue['issue']}: {issue['solution']}")
+            if issues:
+                parts.append("Issues resolved: " + "; ".join(issues))
     
-    # Handle impact/conclusion fields  
-    for impact_key in ['impact', 'conclusion', 'result', 'outcome']:
-        if impact_key in data and isinstance(data[impact_key], str):
-            parts.append(data[impact_key])
-            break
+    # Handle original structured patterns (overview, implementation_details, impact)
+    elif any(key in data for key in ['overview', 'summary', 'description', 'implementation_details', 'details', 'items', 'tasks', 'impact', 'conclusion', 'result', 'outcome']):
+        # Handle overview/summary fields
+        for overview_key in ['overview', 'summary', 'description']:
+            if overview_key in data and isinstance(data[overview_key], str):
+                parts.append(data[overview_key])
+                break
+        
+        # Handle implementation details (list of items)
+        for details_key in ['implementation_details', 'details', 'items', 'tasks']:
+            if details_key in data:
+                details = data[details_key]
+                if isinstance(details, list):
+                    if details:  # Only add if list is not empty
+                        detail_text = ". ".join(str(item).strip() for item in details if str(item).strip())
+                        if detail_text:
+                            parts.append(detail_text)
+                elif isinstance(details, str):
+                    parts.append(details)
+                break
+        
+        # Handle impact/conclusion fields  
+        for impact_key in ['impact', 'conclusion', 'result', 'outcome']:
+            if impact_key in data and isinstance(data[impact_key], str):
+                parts.append(data[impact_key])
+                break
     
     # If we found structured content, join with periods
     if parts:

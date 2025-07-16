@@ -943,6 +943,122 @@ def test_technical_synopsis_json_object_converted_to_readable_text(mock_invoke_a
 
 
 @patch('mcp_commit_story.journal_generate.invoke_ai')
+def test_technical_synopsis_commit_metadata_structure_converted_to_text(mock_invoke_ai):
+    """Test that commit metadata JSON structures are converted to readable text."""
+    # Mock AI returning commit metadata structure (like what appeared in the journal)
+    commit_metadata_response = {
+        "commit_message": "Fix failing tests",
+        "changed_files": ["pytest.ini", "tests/integration/test_daily_summary_consolidation.py", "tests/test_journal_entry.py"],
+        "file_modifications": {
+            "pytest.ini": "Updated to include custom pytest mark registrations that resolve warnings related to AI dependent tests.",
+            "tests/integration/test_daily_summary_consolidation.py": "Modified mocking strategy for AI invocation to target the correct usage location.",
+            "tests/test_journal_entry.py": "Marked specific AI-dependent tests as expected to fail, adding docstrings explaining the purpose and variability."
+        }
+    }
+    mock_invoke_ai.return_value = json.dumps(commit_metadata_response)
+    
+    ctx = JournalContext(
+        chat=None,
+        git={
+            'metadata': {
+                'hash': 'def456',
+                'author': 'Bob <bob@example.com>',
+                'date': '2025-07-15 14:00:00',
+                'message': 'Fix failing tests',
+            },
+            'diff_summary': 'tests: modified',
+            'changed_files': ['pytest.ini', 'tests/integration/test_daily_summary_consolidation.py'],
+            'file_stats': {'source': 0, 'config': 1, 'docs': 0, 'tests': 2},
+            'commit_context': {'size_classification': 'medium', 'is_merge': False}
+        },
+        journal=None
+    )
+    
+    result = journal.generate_technical_synopsis_section(ctx)
+    
+    # Should return readable text, not JSON string
+    technical_synopsis = result['technical_synopsis']
+    assert isinstance(technical_synopsis, str)
+    
+    # Should NOT contain JSON artifacts
+    assert not technical_synopsis.startswith('{')
+    assert not technical_synopsis.endswith('}')
+    assert '"commit_message"' not in technical_synopsis
+    assert '"changed_files"' not in technical_synopsis
+    assert '"file_modifications"' not in technical_synopsis
+    
+    # Should contain meaningful content about the commit
+    assert "Fix failing tests" in technical_synopsis
+    assert "Modified 3 files" in technical_synopsis
+    assert "pytest.ini" in technical_synopsis
+    assert "Key changes:" in technical_synopsis
+
+
+@patch('mcp_commit_story.journal_generate.invoke_ai')
+def test_technical_synopsis_test_outcomes_structure_converted_to_text(mock_invoke_ai):
+    """Test that test outcomes JSON structures are converted to readable text."""
+    # Mock AI returning test outcomes structure
+    test_outcomes_response = {
+        "test_outcomes": {
+            "total_tests": 1329,
+            "failed": 0,
+            "xfail": 19,
+            "xpass": 4,
+            "coverage": "79%",
+            "execution_time": "2:55"
+        },
+        "issues_addressed": [
+            {
+                "issue": "AI Response Variability",
+                "solution": "Marked tests related to AI content generation as xfail, acknowledging the inherent variability in AI outputs."
+            },
+            {
+                "issue": "Mock Targeting Misalignment", 
+                "solution": "Corrected the target location of mocks for AI function calls to align with their use in the corresponding tests."
+            }
+        ]
+    }
+    mock_invoke_ai.return_value = json.dumps(test_outcomes_response)
+    
+    ctx = JournalContext(
+        chat=None,
+        git={
+            'metadata': {
+                'hash': 'ghi789',
+                'author': 'Charlie <charlie@example.com>',
+                'date': '2025-07-15 16:00:00',
+                'message': 'Fix test suite',
+            },
+            'diff_summary': 'tests: updated',
+            'changed_files': ['tests/unit/test_journal.py'],
+            'file_stats': {'source': 0, 'config': 0, 'docs': 0, 'tests': 1},
+            'commit_context': {'size_classification': 'small', 'is_merge': False}
+        },
+        journal=None
+    )
+    
+    result = journal.generate_technical_synopsis_section(ctx)
+    
+    # Should return readable text, not JSON string
+    technical_synopsis = result['technical_synopsis']
+    assert isinstance(technical_synopsis, str)
+    
+    # Should NOT contain JSON artifacts
+    assert not technical_synopsis.startswith('{')
+    assert not technical_synopsis.endswith('}')
+    assert '"test_outcomes"' not in technical_synopsis
+    assert '"issues_addressed"' not in technical_synopsis
+    
+    # Should contain meaningful content about test results
+    assert "1329 total tests" in technical_synopsis
+    assert "all passing" in technical_synopsis
+    assert "19 expected failures" in technical_synopsis
+    assert "79% coverage" in technical_synopsis
+    assert "Issues resolved:" in technical_synopsis
+    assert "AI Response Variability" in technical_synopsis
+
+
+@patch('mcp_commit_story.journal_generate.invoke_ai')
 def test_technical_synopsis_plain_text_response_unchanged(mock_invoke_ai):
     """Test that plain text responses still work unchanged."""
     # Mock AI returning plain text response
