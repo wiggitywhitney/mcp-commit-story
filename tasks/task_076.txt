@@ -1,0 +1,75 @@
+# Task ID: 76
+# Title: Cross-Workspace Installation and Troubleshooting
+# Status: pending
+# Dependencies: 70
+# Priority: high
+# Description: Manual installation and troubleshooting of MCP Commit Story in 2 additional local workspaces to identify and fix real-world deployment issues through hands-on testing and iterative problem-solving.
+
+# Requirements:
+- Manually install MCP Commit Story in 2 different local workspaces
+- Document and fix all problems encountered during installation and setup
+- Fix git hook .env file parsing issues that cause export errors with comments and malformed environment variables
+- Reduce excessive default configuration
+- Resolve MCP tool functionality issues including incorrect date handling and content generation failures
+- Create troubleshooting diagnostics for common installation and operational issues
+- Verify proper multi-workspace behavior through real-world testing
+- Establish reliable AI provider integration with proper fallback mechanisms
+- Create user-friendly error reporting and resolution guidance
+
+# Context:
+During initial cross-workspace deployment testing, multiple critical issues were discovered:
+
+1. **Git Hook Environment Issues**: Hook fails with `.env` parsing errors when file contains comments or complex formatting
+2. **MCP Tool Failures**: Both `journal/add-reflection` and `journal/capture-context` tools exhibit serious functionality issues
+3. **Date/Time Issues**: MCP responses show incorrect dates (Dec 19 2024 instead of July 16 2025) suggesting timestamp handling problems  
+4. **Content Generation Problems**: Tools appear to hallucinate content rather than creating actual reflections
+5. **Configuration Complexity**: Default configuration contains excessive detail that confuses initial setup
+
+These issues prevent successful deployment across multiple workspaces and significantly impact user experience.
+
+## Specific Error Examples:
+```bash
+# Git hook .env parsing errors:
+.git/hooks/post-commit: line 4: export: `#': not a valid identifier
+.git/hooks/post-commit: line 4: export: `Required:': not a valid identifier
+.git/hooks/post-commit: line 4: export: `Format:': not a valid identifier
+.git/hooks/post-commit: line 4: export: `sk-ant-api03-...': not a valid identifier
+.git/hooks/post-commit: line 4: export: `pplx-...': not a valid identifier
+```
+
+## MCP Tool Failure Patterns:
+- **Add reflection tool**: Reports success but creates no files, uses wrong dates (Dec 19 2024 instead of July 16 2025), generates hallucinated content
+- **Capture context tool**: Returns null errors, creates no journal entries
+- **Both tools**: Report successful file paths that don't correspond to actual file creation
+
+## Approach:
+This will be a **manual, hands-on troubleshooting exercise** where issues are discovered through real installation attempts and fixed iteratively as problems arise. The focus is on practical problem-solving rather than theoretical development.
+
+## Test Workspaces:
+- **Workspace 1**: vibe_practice (already partially tested - has known issues)
+- **Workspace 2**: [TBD - second local repository]  
+- **Workspace 3**: [TBD - third local repository]
+
+## Manual Testing Process:
+1. **Fresh Installation**: Install MCP Commit Story from scratch in each workspace
+2. **Document Issues**: Record every problem, error message, and unexpected behavior
+3. **Iterative Fixes**: Address issues one at a time based on real-world impact
+4. **Validation**: Test fixes across all workspaces to ensure consistency
+5. **Documentation**: Create practical troubleshooting guides based on actual problems encountered
+
+## Initial Constraints:
+- Should not break current working configurations during fixes
+- Must work reliably across different operating systems and workspace configurations
+- Focus on fixing critical blockers before addressing minor usability issues
+
+# Design Decisions for Future Consideration:
+
+## .env File Parsing Strategy
+## Configuration Simplification Approach
+## MCP Tool Debugging Strategy  
+## Workspace Isolation Testing
+## Installation Validation Framework
+## Error Reporting and resolution
+
+# Subtasks:
+[To be created in Phase 2 based on actual problems discovered during manual testing] 
