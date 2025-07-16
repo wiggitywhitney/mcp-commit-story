@@ -282,28 +282,28 @@ See `docs/telemetry.md` for comprehensive telemetry implementation patterns, tes
 ## Parent Task Design Checklist
 
 **Phase 1 - Initial Task Creation:**
-[ ] Create task file with complete header (ID, Title, Status, Dependencies, Priority, Description)
-[ ] Write clear Requirements section as bullet points (will convert to checklist in Phase 2)
-[ ] Add Notes section with initial context or constraints
-[ ] Include "Design Decisions for Future Consideration" section for open questions
-[ ] **Search codebase for similar implementations** to understand existing patterns
-[ ] **Verify existing utilities** before planning new functionality
-[ ] Leave Subtasks section empty or with placeholder
-[ ] Do NOT create subtasks yet
+- [ ] Create task file with complete header (ID, Title, Status, Dependencies, Priority, Description)
+- [ ] Write clear Requirements section as bullet points (will convert to checklist in Phase 2)
+- [ ] Add Notes section with initial context or constraints
+- [ ] Include "Design Decisions for Future Consideration" section for open questions
+- [ ] **Search codebase for similar implementations** to understand existing patterns
+- [ ] **Verify existing utilities** before planning new functionality
+- [ ] Leave Subtasks section empty or with placeholder
+- [ ] Do NOT create subtasks yet
 
 ## Subtask Planning Checklist
 
 **Phase 2 - Design Discussion and Subtask Creation:**
-[ ] Discuss design decisions [one question at a time](#essential-communication-pattern)
-[ ] Update Notes section with "Design Decisions Made" as choices are finalized
-[ ] Update Requirements section as understanding improves
-[ ] **Convert Requirements section to checklist format** once requirements are finalized
-[ ] **Check existing code patterns** for similar subtask implementations
-[ ] Create detailed subtasks only after design decisions are resolved
-[ ] Use TDD structure for core code changes (WRITE TESTS FIRST → IMPLEMENT → VERIFICATION CHECKLIST)
-[ ] Use simplified Steps structure for boilerplate tasks (integration testing, documentation, cleanup)
-[ ] Add verification checklists to ALL subtasks using "[ ]" format (not "- [ ]")
-[ ] Add "## Task Completion" section with "Final verification: [ ] All requirements above completed"
+- [ ] Discuss design decisions [one question at a time](#essential-communication-pattern)
+- [ ] Update Notes section with "Design Decisions Made" as choices are finalized
+- [ ] Update Requirements section as understanding improves
+- [ ] **Convert Requirements section to checklist format** once requirements are finalized
+- [ ] **Check existing code patterns** for similar subtask implementations
+- [ ] Create detailed subtasks only after design decisions are resolved
+- [ ] Use TDD structure for core code changes (WRITE TESTS FIRST → IMPLEMENT → VERIFICATION CHECKLIST)
+- [ ] Use simplified Steps structure for boilerplate tasks (integration testing, documentation, cleanup)
+- [ ] Add verification checklists to ALL subtasks using "[ ]" format (not "- [ ]")
+- [ ] Add "## Task Completion" section with "Final verification: [ ] All requirements above completed"
 
 ## Complete Task Example: Task 53
 
@@ -406,19 +406,19 @@ Final verification:
 When a task is completely finished, follow this archival process:
 
 **Step 1: Verify Completion**
-[ ] All requirements in the task are met (check the Requirements checklist)
-[ ] All subtasks are marked complete
-[ ] Full test suite passes
-[ ] All deliverables are working as specified
+- [ ] All requirements in the task are met (check the Requirements checklist)
+- [ ] All subtasks are marked complete
+- [ ] Full test suite passes
+- [ ] All deliverables are working as specified
 
 **Step 2: Archive Task File**
-[ ] Move task file from `tasks/task_XXX.md` to `tasks/completed_tasks/task_XXX.md`
-[ ] Preserve all task content and history in the archived file
+- [ ] Move task file from `tasks/task_XXX.md` to `tasks/completed_tasks/task_XXX.md`
+- [ ] Preserve all task content and history in the archived file
 
 **Step 3: Clean Up Dependencies**
-[ ] Search all active task files in `tasks/` directory for dependencies on the completed task
-[ ] Remove the completed task number from dependency lists of active tasks
-[ ] Update any task descriptions that reference the completed task if needed
+- [ ] Search all active task files in `tasks/` directory for dependencies on the completed task
+- [ ] Remove the completed task number from dependency lists of active tasks
+- [ ] Update any task descriptions that reference the completed task if needed
 
 This process ensures completed work is preserved while keeping active task dependencies clean and accurate.
 
