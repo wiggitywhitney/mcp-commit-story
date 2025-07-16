@@ -273,7 +273,7 @@ I'm really satisfied with how this bug fix turned out!
         })
         
         with patch("mcp_commit_story.daily_summary.load_config") as mock_load_config, \
-             patch("mcp_commit_story.ai_invocation.invoke_ai", return_value=mock_ai_response):
+             patch("mcp_commit_story.daily_summary.invoke_ai", return_value=mock_ai_response):
             
             mock_load_config.return_value = {
                 "journal": {"path": str(journal_path)},
@@ -308,7 +308,7 @@ I'm really satisfied with how this bug fix turned out!
         })
         
         with patch("mcp_commit_story.daily_summary.load_config") as mock_load_config, \
-             patch("mcp_commit_story.ai_invocation.invoke_ai", return_value=mock_ai_response), \
+             patch("mcp_commit_story.daily_summary.invoke_ai", return_value=mock_ai_response), \
              patch("mcp_commit_story.daily_summary.get_mcp_metrics") as mock_metrics:
             
             # Mock metrics recorder
@@ -363,7 +363,7 @@ class TestTelemetryVerification:
         """Test that telemetry spans are created correctly."""
         with patch("mcp_commit_story.daily_summary.trace.get_current_span") as mock_span, \
              patch("mcp_commit_story.daily_summary.load_config") as mock_config, \
-             patch("mcp_commit_story.ai_invocation.invoke_ai", return_value='{"summary": "test"}'):
+             patch("mcp_commit_story.daily_summary.invoke_ai", return_value='{"summary": "test"}'):
             
             mock_config.return_value = {
                 "journal": {"path": "/tmp/test"},

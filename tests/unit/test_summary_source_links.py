@@ -71,7 +71,11 @@ class TestDailySummarySourceLinks:
         # Setup: No journal file created
         mock_config = {"journal": {"path": str(tmp_path / "journal")}}
         
-        with patch('src.mcp_commit_story.daily_summary.load_journal_entries_for_date', return_value=[]):
+        # Mock AI response with minimal valid structure
+        mock_ai_response = '{"summary": "No journal entries found for this date.", "source_files": []}'
+        
+        with patch('src.mcp_commit_story.daily_summary.load_journal_entries_for_date', return_value=[]), \
+             patch('src.mcp_commit_story.daily_summary.invoke_ai', return_value=mock_ai_response):
             summary = generate_daily_summary([], "2025-06-06", mock_config)
         
         # Should still track that we looked for a source file
