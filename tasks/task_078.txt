@@ -1,0 +1,80 @@
+# Task ID: 78
+# Title: Improve AI Context Filtering to Better Detect Journal Entry Boundaries
+# Status: pending
+# Dependencies: 
+# Priority: high
+# Description: Fix the AI context filtering system to better distinguish between different commits when multiple commits happen in the same chat session, preventing duplicate or overlapping journal entries.
+# Details:
+This task addresses the problem identified in the July 17, 2025 reflection where the journal system created duplicate entries about the git hook system because the AI filtering was too permissive when multiple commits occurred in the same chat session.
+
+## Problem Analysis
+The current AI context filtering system in `ai_context_filter.py` is being too permissive about including chat history from the entire session when determining what's relevant to each commit. When multiple commits happen in the same chat window, the AI sees all previous discussion and incorrectly includes that context in subsequent commit journal entries.
+
+### Specific Issues:
+1. **Overly permissive filtering**: AI includes too much chat history from previous commits
+2. **Poor boundary detection**: AI doesn't effectively distinguish where one commit's work ends and another begins
+3. **Missing context about previous entries**: Journal generation prompts don't explicitly reference the last entry as a boundary reference
+
+## Solution Approach
+Improve the AI context filtering system to be more precise about conversation boundaries and provide better context to the AI about entry boundaries.
+
+### Key Improvements:
+1. **Make AI filtering less permissive**: Tighten the criteria for what chat context gets included in each journal entry
+2. **Enhance boundary detection**: Improve the AI prompt to better identify where current commit work begins
+3. **Add previous entry context**: Make it explicit in journal generation prompts that the last entry is provided as input so AI can intelligently determine boundaries between entries
+4. **Update AI chat filter prompt**: Improve the prompt to better understand entry boundaries and avoid overlap
+
+## Implementation Plan
+
+### Subtask 78.1: Analyze Current AI Filtering Behavior
+- Review the current AI filtering logic in `ai_context_filter.py`
+- Identify specific areas where the filtering is too permissive
+- Document the current prompt and its limitations
+- Test with real scenarios of multiple commits in same chat session
+
+### Subtask 78.2: Improve AI Context Filter Prompt
+- Update the AI prompt in `filter_chat_for_commit()` to be more restrictive
+- Add explicit instructions about avoiding overlap with previous entries
+- Improve confidence scoring criteria for boundary detection
+- Test with real data to ensure improvements
+
+### Subtask 78.3: Update Journal Generation Prompts
+- Modify journal generation prompts to explicitly reference the last entry as boundary context
+- Update prompts in `journal_generate.py` to include previous entry information
+- Ensure AI understands it should avoid duplicating content from previous entries
+- Test journal generation with improved prompts
+
+### Subtask 78.4: Integration Testing
+- Test the complete flow with multiple commits in same chat session
+- Verify that journal entries are properly bounded and don't overlap
+- Ensure no regression in single-commit scenarios
+- Validate that the system still works correctly with new chat sessions
+
+## Success Criteria
+- [ ] Journal entries for multiple commits in same chat session are properly bounded
+- [ ] No duplicate content between consecutive entries
+- [ ] AI filtering is more precise about what chat context to include
+- [ ] Previous entry context is properly utilized for boundary detection
+- [ ] No regression in single-commit or new-chat-session scenarios
+- [ ] Full test suite passes
+
+## Technical Considerations
+- The solution should work with the existing AI invocation patterns
+- Maintain backward compatibility with current journal file formats
+- Preserve the existing telemetry and error handling
+- Follow the established TDD approach for any new functionality
+
+## Dependencies
+- None identified at this time
+
+## Risk Assessment
+- **Low Risk**: Changes are focused on AI prompts and filtering logic
+- **Conservative Approach**: Can fall back to current behavior if improvements don't work
+- **Incremental**: Can implement and test each subtask independently
+
+## Definition of Done
+- All subtasks completed and tested
+- Journal entries properly bounded when multiple commits occur in same chat session
+- No duplicate or overlapping content between entries
+- Full test suite passes
+- Documentation updated to reflect improvements 
