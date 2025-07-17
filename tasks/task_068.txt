@@ -1,7 +1,7 @@
 # Task ID: 68
 # Title: Merge Orchestrator Telemetry into Workflow and Remove Orchestrator Layer
 # Status: pending
-# Dependencies: 50
+# Dependencies:
 # Priority: medium
 # Description: Consolidate telemetry and validation features from journal_orchestrator.py into journal_workflow.py, then remove the redundant orchestrator layer to simplify the architecture while preserving all observability benefits.
 # Details:

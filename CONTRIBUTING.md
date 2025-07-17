@@ -150,6 +150,7 @@ All subtasks must follow this exact pattern:
 Follow the established pattern from existing tasks:
 - **Subtask ID**: [TaskNumber].[SubtaskNumber] (e.g., 53.1, 53.2, 53.3)
 - **Title**: Descriptive name for the subtask
+- **Status**: Always create subtasks with `pending` status
 - **Dependencies**: Clear dependency relationships
 - **Description**: Brief overview of what the subtask accomplishes
 
@@ -199,6 +200,38 @@ See `docs/telemetry.md` for comprehensive telemetry implementation patterns, tes
 ### Core Principle
 **Write for a future developer with zero project knowledge who needs to understand and modify this system.**
 
+### AI Prompts vs Documentation
+**CRITICAL: Do not modify AI prompts when updating documentation!**
+
+AI prompts are embedded in docstrings but serve a completely different purpose than documentation:
+
+- **AI Prompts**: Functional code that controls AI behavior and generation
+  - Found in docstrings of AI generation functions
+  - Often contain specific instructions, formatting requirements, or behavioral guidelines
+  - **Must never be modified during documentation updates**
+  - Example: Prompts in `generate_summary_section()` or `generate_technical_synopsis_section()`
+
+- **Documentation**: Explanatory text for human developers
+  - Describes what functions do, their parameters, return values, and usage
+  - Should be updated when function behavior changes
+  - Example: Standard docstring documentation explaining function purpose
+
+**How to distinguish**: AI prompts have specific structural patterns documented in `docs/ai_function_pattern.md`:
+
+- **Pattern 1 AI prompts**: Found in function docstrings that get extracted with `inspect.getdoc()` and passed to `invoke_ai()`
+  - Functions like `generate_summary_section()`, `generate_accomplishments_section()`
+  - Docstrings contain comprehensive AI instructions, not function documentation
+  - Include anti-hallucination rules, output format requirements, and processing guidelines
+
+- **Pattern 2 AI prompts**: Constructed programmatically within function code
+  - Used for specialized processing like chat filtering or boundary detection
+  - Built with variables and context, not stored in docstrings
+  - Often use `@trace_mcp_operation` decorators
+
+- **Regular documentation**: Standard docstrings explaining function purpose, parameters, and return values
+  - Uses descriptive language ("This function generates...", "Returns a summary...")
+  - Contains Args/Returns sections and usage examples
+
 ### Required Elements
 - **Function-level docstrings** for all new functions following the core principle
 - **Module-level docstrings** for new modules explaining their purpose and approach
@@ -233,6 +266,49 @@ See `docs/telemetry.md` for comprehensive telemetry implementation patterns, tes
 - **Tests before implementation** - this is non-negotiable
 - **Test all error cases** - comprehensive error scenario coverage
 - **Integration tests** - verify end-to-end workflows work correctly
+
+### Test Failure Protocol
+**When tests fail during implementation, handle them one at a time:**
+
+1. **Identify the failing test** - Focus on a single test failure
+2. **Explain the failure** - Describe what the test is checking and why it's failing
+3. **Provide options** - Present 2-3 approaches to fix the issue with tradeoffs
+4. **Give recommendation** - State which approach you recommend and why
+5. **Wait for discussion** - Get developer feedback before implementing the fix
+6. **Fix and verify** - Implement the chosen solution and confirm the test passes
+7. **Repeat for next failure** - Move to the next failing test only after current one passes
+
+**Example format:**
+```
+Test failure: test_generate_summary_handles_empty_context
+
+This test is failing because the function doesn't handle empty JournalContext properly.
+
+Options:
+- Option A: Return empty SummarySection with default values
+  - Tradeoff: Safe fallback vs potential loss of error information
+- Option B: Raise descriptive exception for empty context
+  - Tradeoff: Explicit error handling vs additional exception handling needed
+
+My recommendation: Option A because graceful degradation matches the project's error handling philosophy.
+
+What's your preference?
+```
+
+### Task Status Management
+**IAI must update task status throughout implementation:**
+
+- **Mark parent task as `in progress`** when starting work on it
+- **Mark subtasks as `in progress`** when starting work on them
+- **Mark subtasks as `done`** immediately after finishing each one
+- **Mark parent task as `done`** when all subtasks are complete
+- **Use consistent status format** - exactly as shown: `pending`, `in progress`, `done`
+
+**Status tracking helps:**
+- Developer track progress across multiple subtasks
+- Identify which subtask is currently being worked on
+- Ensure no subtasks are forgotten or left incomplete
+- Maintain clear project momentum visibility
 
 ## Anti-Patterns to Avoid
 
@@ -300,6 +376,7 @@ See `docs/telemetry.md` for comprehensive telemetry implementation patterns, tes
 - [ ] **Convert Requirements section to checklist format** once requirements are finalized
 - [ ] **Check existing code patterns** for similar subtask implementations
 - [ ] Create detailed subtasks only after design decisions are resolved
+- [ ] **Create all subtasks with `pending` status** - never leave status blank
 - [ ] Use TDD structure for core code changes (WRITE TESTS FIRST → IMPLEMENT → VERIFICATION CHECKLIST)
 - [ ] Use simplified Steps structure for boilerplate tasks (integration testing, documentation, cleanup)
 - [ ] Add verification checklists to ALL subtasks using "[ ]" format (not "- [ ]")
@@ -329,10 +406,10 @@ The following example demonstrates the complete two-phase workflow, proper task 
 
 # Notes:
 ## Design Decisions Made:
-1. **Approach**: Create `daily_summary_standalone.py` with clean functions (Option B)
-2. **Function Scope**: Copy 5 MCP-free functions, skip MCP wrapper (Option B)  
-3. **Entry Point**: Create `generate_daily_summary_standalone(date=None)` (Option A)
-4. **Git Hook Integration**: Preserve existing trigger logic, replace signal calls with direct calls (Option A)
+1. **Approach**: Create `daily_summary_standalone.py` with clean functions
+2. **Function Scope**: Copy 5 MCP-free functions, skip MCP wrapper  
+3. **Entry Point**: Create `generate_daily_summary_standalone(date=None)`
+4. **Git Hook Integration**: Preserve existing trigger logic, replace signal calls with direct calls
 
 ## Implementation Strategy:
 - Reuse 5 clean functions from `daily_summary.py`: `load_journal_entries_for_date()`, `save_daily_summary()`, `should_generate_daily_summary()`, `should_generate_period_summaries()`, `generate_daily_summary()` 

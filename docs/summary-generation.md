@@ -136,13 +136,13 @@ This feature ensures that all user reflections are preserved in daily summaries,
 
 #### Core Functions
 
-- **`generate_daily_summary()`** - Core AI generation logic  
+- **`generate_daily_summary()`** - Core AI generation logic with real AI integration
 - **`load_journal_entries_for_date()`** - Loads entries for specified date
-- **`save_daily_summary()`** - Saves summary to markdown file
-- **`_extract_manual_reflections()`** - Extracts user reflections with regex
-- **`extract_all_reflections_from_markdown()`** - NEW: Extracts full reflections from markdown
-- **`extract_reflections_from_journal_file()`** - NEW: Loads and extracts reflections from files
-- **`format_reflections_section()`** - NEW: Formats reflections into markdown section
+- **`save_daily_summary()`** - Saves summary to markdown file  
+- **`extract_all_reflections_from_markdown()`** - Extracts full reflections from markdown content
+- **`extract_reflections_from_journal_file()`** - Loads and extracts reflections from files
+- **`format_reflections_section()`** - Formats reflections into markdown section
+- **`generate_daily_summary_standalone()`** - Standalone entry point for git hook integration
 
 #### AI Prompt Engineering
 

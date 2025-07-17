@@ -1,7 +1,15 @@
-"""Daily summary file-creation-based trigger system.
+"""Daily summary generation with real AI integration and consolidated functionality.
 
-This module provides functions to determine when daily summaries should be generated
-based on journal file creation events, rather than maintaining state files.
+This module provides comprehensive daily summary generation from journal entries using
+AI-powered synthesis. It includes file-creation-based triggering, reflection extraction,
+and both standalone and MCP-integrated summary generation workflows.
+
+Key features:
+- Real AI integration using invoke_ai() with sophisticated prompts
+- Consolidated standalone and MCP-based generation in a single module  
+- Unified reflection extraction using markdown header parsing
+- File-creation-based trigger system for automated summary generation
+- Comprehensive telemetry and error handling
 """
 
 import os

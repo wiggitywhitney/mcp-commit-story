@@ -185,6 +185,7 @@ except Exception as e:
 - ✅ Multi-step processing with custom validation logic
 - ✅ Functions requiring immediate processing with custom error handling
 - ✅ Specialized filtering, boundary detection, or data transformation
+- ✅ MCP tools requiring AI context capture or analysis
 - ✅ Production systems requiring custom reliability patterns
 
 ### Examples in the Codebase
@@ -200,6 +201,7 @@ except Exception as e:
 
 **Pattern 2 Usage:**
 - `ai_context_filter.py` - `filter_chat_for_commit()`
+- `journal_handlers.py` - `generate_ai_context_dump()` (MCP context_capture tool)
 - Boundary detection and chat filtering
 - Structured analysis with custom validation
 

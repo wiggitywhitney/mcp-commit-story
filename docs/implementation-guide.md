@@ -309,18 +309,16 @@ Located in `src/mcp_commit_story/daily_summary.py`:
 The daily summary system follows this complete workflow:
 
 1. **Trigger Detection**: Git hook worker checks for daily summary trigger using file-creation-based logic
-2. **MCP Communication**: Worker calls MCP server `generate_daily_summary` tool
-3. **Data Collection**: MCP tool collects all journal entries for the target date
-4. **Summary Generation**: AI-powered synthesis creates comprehensive daily summary
+2. **Direct Generation**: Worker calls consolidated `generate_daily_summary_standalone()` function  
+3. **Data Collection**: Function collects all journal entries for the target date
+4. **Summary Generation**: AI-powered synthesis creates comprehensive daily summary using real AI integration
 5. **File Creation**: Summary saved to `journal/summaries/daily/YYYY-MM-DD-summary.md`
 6. **Period Boundaries**: Check for weekly/monthly/quarterly summary triggers
 7. **Logging**: All operations logged for troubleshooting and audit
 
 #### Workflow Components Integration
 - **Git Hook Worker** (`git_hook_worker.py`): Orchestrates the entire process
-- **Daily Summary Logic** (`daily_summary.py`): Implements trigger detection and file management
-- **MCP Server** (`server.py`): Provides `handle_generate_daily_summary` tool
-- **Journal Generation** (`journal.py`): AI-powered content synthesis
+- **Daily Summary Logic** (`daily_summary.py`): Implements trigger detection, file management, and consolidated AI generation
 - **Configuration** (`config.py`): Journal path and summary settings
 
 #### Automatic vs Manual Triggering
