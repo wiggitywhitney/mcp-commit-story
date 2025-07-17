@@ -1,0 +1,42 @@
+# Task ID: 77
+# Title: Fix Git Hook Execution Sequence to Eliminate Race Conditions
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Reorder git hook operations to generate journal entries before checking summary triggers, eliminating file system race conditions and AI resource conflicts that cause inconsistent summary generation and poor-quality journal sections.
+
+# Requirements:
+- Move journal entry generation to execute before summary trigger checks in git_hook_worker.py
+- Eliminate file system race conditions where summary logic reads incomplete journal files
+- Prevent AI resource conflicts between concurrent journal generation and summary generation
+- Maintain all existing error handling and graceful degradation patterns
+- Preserve comprehensive telemetry for all operations in new sequence
+- Update background_journal_worker.py for sequence consistency across execution paths
+- Ensure period summary triggers (weekly/monthly/quarterly) work correctly in new sequence
+- Add sequence-specific integration tests to prevent regression
+- Update documentation to reflect new execution model
+
+# Notes:
+## Current Problem Analysis:
+- Git hook currently runs: (1) check summary triggers → (2) generate summaries → (3) generate journal entry
+- This causes race conditions where summary logic uses `os.path.getmtime` on files being written
+- AI resource conflicts occur when summary generation and journal generation run simultaneously
+- Results in poor-quality journal sections (thin Technical Synopsis, incomplete Accomplishments)
+- Exception handling masks timing failures with generic "No daily summary generation needed" messages
+
+## Implementation Context:
+- Git hook affects every commit - any bugs block development workflow
+- Complex error handling across 6 different phases, each with telemetry and graceful degradation
+- Two code paths need consistency: git_hook_worker.py and background_journal_worker.py
+- Current tests don't verify execution order or timing-sensitive behavior
+
+## Design Decisions for Future Consideration:
+- Error handling strategy: If journal generation fails, should summaries still run?
+- Failure isolation: Should summary generation failures block git operations?
+- Testing approach: How to test file system timing and AI resource conflicts?
+- Sequence validation: How to ensure both execution paths maintain consistent ordering?
+- Rollback strategy: How to safely deploy changes to critical git hook infrastructure?
+- Performance impact: Does sequential execution significantly increase git hook duration?
+
+# Subtasks:
+(To be created in Phase 2 after design discussion) 
