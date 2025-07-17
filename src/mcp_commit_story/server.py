@@ -85,10 +85,16 @@ def handle_mcp_error(func):
     - Provide consistent error formatting across all tools
     - Add metrics collection for operation tracking
     - Log errors appropriately for debugging
+    - Detect common validation errors (dict_type, Pydantic) and provide helpful guidance
+    
+    Enhanced error handling:
+    - Recognizes FastMCP/Pydantic validation errors by error message patterns
+    - Converts validation errors to user-friendly "bad-request" responses
+    - Includes example correct formats in error messages
     
     Returns:
         For successful operations: The original function's return value
-        For failed operations: {"status": "error", "error": "error_message"}
+        For failed operations: {"status": "error", "error": "error_message"} or {"status": "bad-request", "error": "helpful_guidance"}
     """
     import functools
     import time
@@ -132,16 +138,29 @@ def handle_mcp_error(func):
             return error_response
         
         except Exception as e:
-            # Unexpected error - log and convert to standardized response
-            error_response = {"status": "error", "error": f"Internal error: {str(e)}"}
+            # Check for common validation errors and provide helpful guidance
+            error_msg = str(e)
+            if "dict_type" in error_msg or "Input should be a valid dictionary" in error_msg:
+                # This is likely a validation error from FastMCP or Pydantic
+                error_response = {
+                    "status": "bad-request", 
+                    "error": f"Invalid input format. Expected a dictionary, got {type(e).__name__}. "
+                            f"Example correct format: {{'text': 'your context here'}} or {{'text': None}} for AI dump. "
+                            f"Original error: {error_msg}"
+                }
+                error_type = "validation_error"
+            else:
+                # Unexpected error - log and convert to standardized response
+                error_response = {"status": "error", "error": f"Internal error: {error_msg}"}
+                error_type = "internal_error"
             
             # Record failed operation metrics
             if metrics:
                 duration = time.time() - start_time
-                metrics.record_tool_call(operation_name, False, error_type="internal_error")
+                metrics.record_tool_call(operation_name, False, error_type=error_type)
                 metrics.record_operation_duration(operation_name, duration, success=False)
             
-            logging.error(f"Unexpected error in MCP operation {operation_name}: {e}")
+            logging.error(f"Error in MCP operation {operation_name}: {e}")
             return error_response
     
     return wrapper
@@ -332,8 +351,37 @@ async def handle_journal_add_reflection(request: AddReflectionRequest) -> AddRef
     "content_type": "ai_context"
 })
 async def handle_journal_capture_context_mcp(request: CaptureContextRequest) -> CaptureContextResponse:
-    """MCP handler for capturing AI context - lightweight delegation to implementation."""
-            # Note: text can be None to trigger a full context dump
+    """MCP handler for capturing AI context - lightweight delegation to implementation.
+    
+    Provides enhanced error handling for common input validation issues:
+    - Catches dict_type validation errors from FastMCP/Pydantic
+    - Provides helpful error messages with example correct formats
+    - Maintains backward compatibility with missing 'text' fields
+    
+    Args:
+        request: CaptureContextRequest with optional 'text' field
+            - {'text': 'your context here'} - captures specific text
+            - {'text': None} - triggers AI context dump
+            - {} - defaults to None, triggers AI context dump
+            
+    Returns:
+        CaptureContextResponse with status, file_path, and optional error
+        
+    Raises:
+        MCPError: For invalid input formats with helpful guidance
+    """
+    # Note: text can be None to trigger a full context dump
+    
+    # Validate request structure and provide helpful error messages
+    if not isinstance(request, dict):
+        raise MCPError(
+            f"Invalid request format. Expected a dictionary, got {type(request).__name__}. "
+            f"Example correct format: {{'text': 'your context here'}} or {{'text': None}} for AI dump",
+            status="bad-request"
+        )
+    
+    # Note: 'text' field is optional - if missing, defaults to None which triggers AI dump
+    # This maintains backward compatibility and allows for flexible usage
     
     # Call the actual implementation (sync function)
     result = handle_journal_capture_context(request.get("text"))

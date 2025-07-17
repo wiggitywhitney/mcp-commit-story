@@ -167,6 +167,37 @@ class TestCaptureContextMCPHandler:
             # Actual telemetry attributes are tested in integration tests
             assert result["status"] == "success"
 
+    @pytest.mark.asyncio
+    async def test_handle_capture_context_invalid_input_type(self):
+        """Test MCP handler with invalid input type provides helpful error message."""
+        # Test with string instead of dict (the error we encountered)
+        request = "invalid string input"
+        
+        result = await handle_journal_capture_context_mcp(request)
+        
+        assert result["status"] == "bad-request"
+        assert "Expected a dictionary" in result["error"]
+        assert "Example correct format" in result["error"]
+        assert "{'text': 'your context here'}" in result["error"]
+
+    @pytest.mark.asyncio
+    async def test_handle_capture_context_validation_error_handling(self):
+        """Test that validation errors from FastMCP/Pydantic are handled gracefully."""
+        # This test simulates the dict_type validation error we encountered
+        with patch('src.mcp_commit_story.server.handle_journal_capture_context') as mock_handler:
+            # Simulate the validation error that would be raised by FastMCP
+            validation_error = ValueError("Input should be a valid dictionary [type=dict_type, input_value='{\"text\": \"test\"}', input_type=str]")
+            mock_handler.side_effect = validation_error
+            
+            request = {"text": "test"}
+            
+            result = await handle_journal_capture_context_mcp(request)
+            
+            assert result["status"] == "bad-request"
+            assert "Invalid input format" in result["error"]
+            assert "Expected a dictionary" in result["error"]
+            assert "Example correct format" in result["error"]
+
 
 class TestCaptureContextMCPToolRegistration:
     """Test MCP tool registration for capture-context."""
