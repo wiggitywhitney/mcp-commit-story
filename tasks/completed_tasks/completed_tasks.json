@@ -2606,6 +2606,16 @@
       "priority": "medium",
       "completed_date": "2025-07-14",
       "archived_from_main": true
+    },
+    {
+      "id": 73,
+      "title": "Consolidate Daily Summary Functionality",
+      "description": "Consolidate daily_summary.py and daily_summary_standalone.py into a single module with real AI invocation using the epic prompt, removing duplicate reflection extraction methods and over-mocking test patterns.",
+      "status": "done",
+      "dependencies": [],
+      "priority": "high",
+      "completed_date": "2025-07-17",
+      "archived_from_main": true
     }
   ]
 }
