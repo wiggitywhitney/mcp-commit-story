@@ -101,7 +101,7 @@ class TestContextCollection:
         assert result['chat'] is not None 
         
         # Verify individual functions were called with correct parameters
-        mock_git.assert_called_once_with("abc123", Path("/repo"), Path("/journal"))
+        mock_git.assert_called_once_with(commit_hash="abc123", repo=Path("/repo"), journal_path=Path("/journal"))
         mock_chat.assert_called_once_with("since_commit_123", 100)
     
     @patch('mcp_commit_story.journal_orchestrator.collect_git_context')

@@ -4,13 +4,14 @@ Configuration module for MCP Journal.
 This module provides the Config class and helper functions for loading/saving configuration.
 """
 import os
+import re
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple, Union
 import yaml
 import logging
 
 # Import telemetry for configuration instrumentation
-from .telemetry import trace_config_operation, hash_sensitive_value
+from .telemetry import trace_config_operation, hash_sensitive_value, get_mcp_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,99 @@ DEFAULT_CONFIG = {
 class ConfigError(Exception):
     """Exception raised for configuration errors."""
     pass
+
+@trace_config_operation("env_interpolation") 
+def resolve_env_vars(config_data: Any) -> Any:
+    """
+    Resolve environment variables in configuration data.
+    
+    Supports ${VAR_NAME} syntax for environment variable interpolation.
+    Recursively processes nested dictionaries and lists.
+    
+    Args:
+        config_data: Configuration data to process (str, dict, list, or other)
+        
+    Returns:
+        Configuration data with environment variables resolved
+        
+    Raises:
+        ConfigError: If environment variable is missing or syntax is invalid
+    """
+    metrics = get_mcp_metrics()
+    
+    try:
+        if isinstance(config_data, str):
+            result = _resolve_env_vars_in_string(config_data)
+        elif isinstance(config_data, dict):
+            result = {key: resolve_env_vars(value) for key, value in config_data.items()}
+        elif isinstance(config_data, list):
+            result = [resolve_env_vars(item) for item in config_data]
+        else:
+            # Non-string, non-dict, non-list values pass through unchanged
+            result = config_data
+        
+        # Track successful interpolation (optional telemetry)
+        if metrics:
+            metrics.counter('config.env_interpolation_total', labels={'status': 'success'}).inc()
+        return result
+    except ConfigError:
+        # Track failed interpolation (optional telemetry)
+        if metrics:
+            metrics.counter('config.env_interpolation_total', labels={'status': 'failure'}).inc()
+        raise
+
+def _resolve_env_vars_in_string(text: str) -> str:
+    """
+    Resolve environment variables in a string using ${VAR_NAME} syntax.
+    
+    Args:
+        text: String that may contain environment variable references
+        
+    Returns:
+        String with environment variables resolved
+        
+    Raises:
+        ConfigError: If environment variable is missing or syntax is invalid
+    """
+    # Pattern to match ${VAR_NAME} where VAR_NAME contains only alphanumeric and underscore
+    pattern = r'\$\{([A-Za-z_][A-Za-z0-9_]*)\}'
+    
+    def replace_env_var(match):
+        var_name = match.group(1)
+        
+        # Validate environment variable name
+        if not var_name or not re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', var_name):
+            raise ConfigError(f"Invalid environment variable syntax: ${{{var_name}}}")
+        
+        # Get environment variable value
+        value = os.getenv(var_name)
+        if value is None:
+            raise ConfigError(f"Environment variable '{var_name}' not found")
+        
+        return value
+    
+    # Check for empty braces (special case)
+    if '${' in text and text.count('${}') > 0:
+        raise ConfigError("Invalid environment variable syntax: ${}")
+    
+    # Check for malformed ${...} patterns with invalid variable names
+    if '${' in text:
+        # Find all ${...} patterns
+        all_var_pattern = r'\$\{([^}]+)\}'
+        all_matches = re.findall(all_var_pattern, text)
+        for var_name in all_matches:
+            # Validate each variable name
+            if not re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', var_name):
+                raise ConfigError(f"Invalid environment variable syntax: ${{{var_name}}}")
+    
+    # Replace all valid environment variable references
+    # The replace_env_var function handles validation of individual variable names
+    try:
+        result = re.sub(pattern, replace_env_var, text)
+        return result
+    except ConfigError:
+        # Re-raise ConfigError without modification
+        raise
 
 class Config:
     """

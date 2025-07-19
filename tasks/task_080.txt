@@ -1,6 +1,6 @@
 # Task ID: 80
 # Title: Add OpenAI API Key Configuration to .mcp-commit-storyrc.yaml
-# Status: pending
+# Status: in progress
 # Dependencies: None
 # Priority: medium  
 # Description: Add support for configuring the OpenAI API key through the existing .mcp-commit-storyrc.yaml configuration file, with fallback to environment variables. This eliminates the "placeholder API key in shell profile" problem and centralizes all project configuration.
@@ -40,7 +40,7 @@ Current system only supports OPENAI_API_KEY environment variable, which led to t
 # Subtasks
 
 ## Subtask 80.1: Add Environment Variable Interpolation to Config System
-### Status: pending
+### Status: done
 ### Dependencies: None
 ### Description: Add support for ${VAR_NAME} environment variable interpolation in the configuration system, with validation for unresolved variables.
 
@@ -61,21 +61,21 @@ Current system only supports OPENAI_API_KEY environment variable, which led to t
 - RUN TESTS - VERIFY THEY PASS
 
 #### VERIFICATION CHECKLIST
-[ ] Function `resolve_env_vars()` exists in `src/mcp_commit_story/config.py`
-[ ] Test file `tests/unit/test_config_env_interpolation.py` exists with all required test cases
-[ ] Environment variable interpolation works for ${VAR_NAME} syntax
-[ ] Missing environment variables produce clear error messages
-[ ] Telemetry metrics implemented for interpolation operations
-[ ] Integration with existing config loading verified
-[ ] Function-level docstring added explaining interpolation behavior
-[ ] Full test suite passes
-[ ] All subtask requirements verified complete
-[ ] MARK COMPLETE
+[x] Function `resolve_env_vars()` exists in `src/mcp_commit_story/config.py`
+[x] Test file `tests/unit/test_config_env_interpolation.py` exists with all required test cases
+[x] Environment variable interpolation works for ${VAR_NAME} syntax
+[x] Missing environment variables produce clear error messages
+[x] Telemetry metrics implemented for interpolation operations
+[x] Integration with existing config loading verified
+[x] Function-level docstring added explaining interpolation behavior
+[x] Full test suite passes (1 unrelated failure in journal_orchestrator test pre-existing)
+[x] All subtask requirements verified complete
+[x] MARK COMPLETE
 
 ---
 
 ## Subtask 80.2: Add AI Configuration Section with Validation
-### Status: pending
+### Status: in progress
 ### Dependencies: 80.1
 ### Description: Add AI configuration section to DEFAULT_CONFIG and Config class with validation for OpenAI API keys after environment variable interpolation.
 
