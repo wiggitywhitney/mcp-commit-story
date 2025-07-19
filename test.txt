@@ -1,1 +1,0 @@
-Testing to see whether my terminal environment was the reason journal entries weren't "smart"
