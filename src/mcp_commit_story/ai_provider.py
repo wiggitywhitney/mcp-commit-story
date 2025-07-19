@@ -80,12 +80,50 @@ class OpenAIProvider:
             return content if content is not None else ""
             
         except Exception as e:
-            # Log the actual error details for debugging
-            print(f"OpenAI API Error: {e}")
-            print(f"Error type: {type(e).__name__}")
+            # Enhanced error logging for intermittent failure diagnosis
+            import os
+            import logging
+            logger = logging.getLogger(__name__)
+            
+            # Log comprehensive error details
+            logger.error(f"=== OpenAI API Error Details ===")
+            logger.error(f"Full error: {e}")
+            logger.error(f"Error type: {type(e).__name__}")
+            logger.error(f"Error module: {type(e).__module__}")
+            
+            # Log response details if available
             if hasattr(e, 'response'):
-                print(f"Response status: {getattr(e.response, 'status_code', 'N/A')}")
-                print(f"Response text: {getattr(e.response, 'text', 'N/A')}")
+                response = e.response
+                logger.error(f"Response status: {getattr(response, 'status_code', 'N/A')}")
+                logger.error(f"Response reason: {getattr(response, 'reason', 'N/A')}")
+                logger.error(f"Response headers: {getattr(response, 'headers', 'N/A')}")
+                logger.error(f"Response text: {getattr(response, 'text', 'N/A')[:300]}")
+            
+            # Log environment context during failure
+            logger.error(f"Working directory: {os.getcwd()}")
+            logger.error(f"PATH: {os.environ.get('PATH', 'N/A')[:200]}...")
+            logger.error(f"PYTHONPATH: {os.environ.get('PYTHONPATH', 'N/A')}")
+            logger.error(f"OPENAI_API_KEY set: {bool(os.environ.get('OPENAI_API_KEY'))}")
+            logger.error(f"API key length: {len(os.environ.get('OPENAI_API_KEY', ''))}")
+            
+            # Log system context
+            import time
+            logger.error(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+            logger.error(f"Process PID: {os.getpid()}")
+            
+            # Log prompt/context sizes for debugging large payload issues
+            logger.error(f"Prompt size: {prompt_size:,} characters")
+            logger.error(f"Context size: {context_size:,} characters")
+            
+            # Print to console for immediate visibility during git hooks
+            print(f"=== ENHANCED AI ERROR LOG ===")
+            print(f"Error: {e}")
+            print(f"Type: {type(e).__name__}")
+            print(f"Time: {time.strftime('%H:%M:%S')}")
+            print(f"Working dir: {os.getcwd()}")
+            if hasattr(e, 'response'):
+                print(f"HTTP Status: {getattr(e.response, 'status_code', 'N/A')}")
+            print(f"================================")
             
             # Graceful degradation - return empty string on any error
             # This allows journal generation to continue with programmatic sections
