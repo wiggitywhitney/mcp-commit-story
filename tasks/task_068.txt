@@ -309,107 +309,179 @@
 # Subtasks:
 ## 1. Migrate Telemetry Infrastructure [pending]
 ### Dependencies: None
-### Description: Extract and migrate all telemetry functions and patterns from journal_orchestrator.py to journal_workflow.py, preserving all observability features.
+### Description: Extract and migrate all telemetry functions and patterns from journal_orchestrator.py to journal_workflow.py, preserving all observability features and enhancing generate_journal_entry() with comprehensive telemetry.
 ### Details:
-#### Steps:
 
-1. **ANALYZE ORCHESTRATOR TELEMETRY**
-   - Document all telemetry functions in `journal_orchestrator.py`
-   - Document all telemetry patterns and usage
-   - Document all metrics being captured
-   - Create telemetry feature inventory
+#### WRITE TESTS FIRST
+- Create `tests/unit/test_journal_workflow_telemetry.py`
+- Test `log_telemetry_event()` function migrated to workflow context
+- Test `_time_function_execution()` wrapper function for individual section timing
+- Test enhanced `generate_journal_entry()` with telemetry collection:
+  - Successful telemetry capture for all section generators
+  - Individual function timing metrics (`ai_function_times` dict)
+  - Success/failure counters (`successful_ai_functions`, `failed_ai_functions`)
+  - Overall execution timing (`execution_time`)
+  - Structured telemetry events (`orchestration.start`, `ai_function_call`, etc.)
+- Test telemetry integration with existing `get_mcp_metrics()` infrastructure
+- Test telemetry fallback to logging when metrics unavailable
+- Test error scenarios: telemetry system failure, individual section timing failures
+- RUN TESTS - VERIFY THEY FAIL
 
-2. **MIGRATE TELEMETRY FUNCTIONS**
-   - Copy `log_telemetry_event()` function to `journal_workflow.py`
-   - Copy all telemetry helper functions
-   - Update imports and dependencies
-   - Ensure telemetry configuration is preserved
+#### IMPLEMENT FUNCTIONALITY
+- Migrate `log_telemetry_event()` function from `journal_orchestrator.py` to `journal_workflow.py`
+- Implement `_time_function_execution()` wrapper function for section timing:
+  ```python
+  def _time_function_execution(func_name, func, *args, **kwargs):
+      start_time = time.time()
+      try:
+          result = func(*args, **kwargs)
+          execution_time = time.time() - start_time
+          log_telemetry_event("function_execution", 
+              {"function": func_name, "status": "success", "execution_time": execution_time})
+          return result, execution_time
+      except Exception as e:
+          execution_time = time.time() - start_time
+          log_telemetry_event("function_execution",
+              {"function": func_name, "status": "failure", "execution_time": execution_time, "error": str(e)})
+          raise
+  ```
+- Enhance `generate_journal_entry()` function with telemetry collection:
+  - Add overall execution timing around entire function
+  - Add individual timing around each section generator call
+  - Add success/failure counters for section generation
+  - Add structured telemetry events for workflow phases
+  - Preserve existing interface (commit, config, debug) → Optional[JournalEntry]
+- Migrate telemetry patterns: `get_mcp_metrics()` integration, counter recording, event logging
+- Handle all error cases identified in tests with proper telemetry categorization
+- Include comprehensive telemetry with specific metrics:
+  - `journal.workflow.execution_duration_seconds` (histogram)
+  - `journal.workflow.section_generation_total` (counter with section/status labels)
+  - `journal.workflow.operations_total` (counter with success/failure labels)
+- Add telemetry spans with `@trace_mcp_operation("journal.workflow.generate_entry_enhanced")`
+- RUN TESTS - VERIFY THEY PASS
 
-3. **ADD TELEMETRY TO WORKFLOW LOOP**
-   - Add individual function timing around each AI generator call
-   - Add success/failure counters for each function
-   - Add structured telemetry events for key workflow phases
-   - Add overall execution timing
-
-4. **VERIFY TELEMETRY FUNCTIONALITY**
-   - Test that all metrics are captured correctly
-   - Test that telemetry events are logged properly
-   - Test that timing metrics are accurate
-   - Verify telemetry integrates properly with existing infrastructure
-
-5. **DOCUMENT AND COMPLETE**
-   - Update docstrings to reflect enhanced telemetry
-   - Document new telemetry patterns for future developers
-   - **MARK COMPLETE**
+#### VERIFICATION CHECKLIST
+[ ] Function `log_telemetry_event()` exists in `src/mcp_commit_story/journal_workflow.py`
+[ ] Function `_time_function_execution()` exists in `src/mcp_commit_story/journal_workflow.py`
+[ ] Enhanced `generate_journal_entry()` includes comprehensive telemetry collection
+[ ] Test file `tests/unit/test_journal_workflow_telemetry.py` exists with all required test cases
+[ ] All telemetry metrics implemented: `journal.workflow.execution_duration_seconds`, `journal.workflow.section_generation_total`, `journal.workflow.operations_total`
+[ ] Telemetry spans implemented with `@trace_mcp_operation("journal.workflow.generate_entry_enhanced")`
+[ ] Integration with existing `get_mcp_metrics()` infrastructure verified
+[ ] Function-level docstrings added for all new telemetry functions (following documentation standards: no task references, external reader accessible)
+[ ] Enhanced workflow maintains exact same interface: `(commit, config, debug=False) -> Optional[JournalEntry]`
+[ ] Full test suite passes
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
 
 ## 2. Migrate Validation Infrastructure [pending]
 ### Dependencies: 68.1
-### Description: Extract and migrate all validation functions and patterns from journal_orchestrator.py to journal_workflow.py, preserving all type checking and fallback logic.
+### Description: Extract and migrate all validation functions and patterns from journal_orchestrator.py to journal_workflow.py, preserving all type checking and fallback logic, and integrating validation into the enhanced workflow loop.
 ### Details:
-#### Steps:
 
-1. **ANALYZE ORCHESTRATOR VALIDATION**
-   - Document `validate_section_result()` function and all validators
-   - Document test vs production validator differences
-   - Document fallback logic and error handling patterns
-   - Create validation feature inventory
+#### WRITE TESTS FIRST
+- Create `tests/unit/test_journal_workflow_validation.py`
+- Test `validate_section_result()` function migrated to workflow context
+- Test validation with all section types from orchestrator:
+  - Summary section validation (required 'content' key, string fallback)
+  - Technical synopsis validation (required 'content' key, string fallback)
+  - Accomplishments validation (required 'items' key, list fallback)
+  - Frustrations validation (required 'items' key, list fallback)
+  - Tone mood validation (required 'content' key, None fallback)
+  - Discussion notes validation (required 'items' key, list fallback)
+  - Commit metadata validation (required 'metadata' key, dict fallback)
+- Test enhanced `generate_journal_entry()` with validation integration:
+  - Successful validation for valid section results
+  - Fallback logic application for invalid section results
+  - Validation error telemetry logging
+  - Graceful degradation - continues processing when individual sections fail validation
+- Test validator dictionaries (`test_validators`, `section_validators`) migration
+- Test fallback logic and error handling patterns from orchestrator
+- Test edge cases: None results, non-dict results, missing required keys
+- RUN TESTS - VERIFY THEY FAIL
 
-2. **MIGRATE VALIDATION FUNCTIONS**
-   - Copy `validate_section_result()` function to `journal_workflow.py`
-   - Copy all validator dictionaries (`test_validators`, `section_validators`)
-   - Copy fallback logic and error handling patterns
-   - Update imports and dependencies
+#### IMPLEMENT FUNCTIONALITY
+- Migrate `validate_section_result()` function from `journal_orchestrator.py` to `journal_workflow.py`
+- Migrate validator dictionaries and fallback patterns:
+  ```python
+  def validate_section_result(section_name, result, schema=None):
+      """Validate a section result against its expected schema"""
+      if result is None:
+          log_telemetry_event("validation_failure", {"section": section_name, "reason": "null_result"})
+          return False
+      if not isinstance(result, dict):
+          log_telemetry_event("validation_failure", {"section": section_name, "reason": "not_dict"})
+          return False
+      # Schema-specific validation and required keys checking
+      return True
+  ```
+- Integrate validation into enhanced `generate_journal_entry()` workflow loop:
+  - Call `validate_section_result()` after each section generator call
+  - Apply fallback logic for validation failures
+  - Add validation error telemetry with section-specific categorization
+  - Preserve graceful degradation behavior from orchestrator
+- Migrate all fallback logic and error handling patterns from orchestrator
+- Handle all error cases identified in tests with proper validation categorization
+- Include validation telemetry with specific metrics:
+  - `journal.workflow.validation_total` (counter with section/status labels)
+  - `journal.workflow.fallback_applied_total` (counter with section labels)
+- RUN TESTS - VERIFY THEY PASS
 
-3. **ADD VALIDATION TO WORKFLOW LOOP**
-   - Call `validate_section_result()` on each AI generator result
-   - Implement fallback logic for validation failures
-   - Add validation error telemetry
-   - Preserve graceful degradation behavior
-
-4. **VERIFY VALIDATION FUNCTIONALITY**
-   - Test validation with all section types
-   - Test fallback behavior for invalid/missing data
-   - Test required keys checking
-   - Verify validation integrates properly with workflow
-
-5. **DOCUMENT AND COMPLETE**
-   - Update docstrings to reflect enhanced validation
-   - Document validation patterns for future developers
-   - **MARK COMPLETE**
+#### VERIFICATION CHECKLIST
+[ ] Function `validate_section_result()` exists in `src/mcp_commit_story/journal_workflow.py`
+[ ] All validator dictionaries migrated: `test_validators`, `section_validators`
+[ ] Enhanced `generate_journal_entry()` integrates validation in workflow loop
+[ ] Test file `tests/unit/test_journal_workflow_validation.py` exists with all required test cases
+[ ] All validation metrics implemented: `journal.workflow.validation_total`, `journal.workflow.fallback_applied_total`
+[ ] Fallback logic preserved for all section types with correct fallback values
+[ ] Graceful degradation behavior maintained from orchestrator
+[ ] Function-level docstrings added for all new validation functions (following documentation standards: no task references, external reader accessible)
+[ ] Enhanced workflow continues to return valid JournalEntry objects even with validation failures
+[ ] Full test suite passes
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
 
 ## 3. Enhanced Workflow Integration Testing [pending]
 ### Dependencies: 68.1, 68.2
-### Description: Verify the enhanced journal_workflow.py maintains all functionality while providing comprehensive telemetry and validation.
+### Description: Verify the enhanced journal_workflow.py maintains all functionality while providing comprehensive telemetry and validation, and ensure Task 50 compatibility is preserved.
 ### Details:
+
 #### Steps:
 
 1. **CREATE COMPREHENSIVE INTEGRATION TESTS**
-   - Test end-to-end journal generation with enhanced workflow
-   - Test all telemetry features are working correctly
-   - Test all validation features are working correctly
-   - Test error scenarios and graceful degradation
+   - Create `tests/integration/test_enhanced_journal_workflow.py`
+   - Test end-to-end journal generation with enhanced workflow including telemetry and validation
+   - Test all telemetry features are working correctly in real workflow scenarios
+   - Test all validation features are working correctly with actual section generators
+   - Test error scenarios and graceful degradation with both telemetry and validation
 
 2. **VERIFY TASK 50 COMPATIBILITY**
-   - Test that enhanced workflow maintains same interface as original
-   - Test that git hook integration still works
-   - Test that all callers continue to work correctly
-   - Verify no breaking changes in public API
+   - Test that enhanced workflow maintains exact same interface: `(commit, config, debug=False) -> Optional[JournalEntry]`
+   - Test that git hook integration in `git_hook_worker.py` still works with enhanced workflow
+   - Test that all existing callers continue to work correctly without modification
+   - Verify no breaking changes in public API - all existing tests still pass
 
 3. **FUNCTIONALITY VERIFICATION**
-   - Compare enhanced workflow output to original workflow
-   - Verify all sections are generated correctly
-   - Verify all telemetry data is captured
-   - Ensure no functionality is lost
+   - Compare enhanced workflow output to original workflow - verify identical JournalEntry results
+   - Verify all sections are generated correctly with added telemetry and validation
+   - Verify all telemetry data is captured without affecting journal entry quality
+   - Ensure no functionality is lost during telemetry and validation integration
 
-4. **DOCUMENT AND COMPLETE**
-   - Document integration test results
-   - Update workflow documentation with enhanced features
+4. **PERFORMANCE AND OBSERVABILITY VERIFICATION**
+   - Verify telemetry collection doesn't significantly impact performance
+   - Test that validation logic doesn't break existing graceful degradation
+   - Confirm enhanced observability provides actionable metrics and error categorization
+
+5. **DOCUMENT AND COMPLETE**
+   - Document integration test results and enhanced workflow capabilities
+   - Update workflow documentation with enhanced telemetry and validation features
    - **MARK COMPLETE**
 
 ## 4. Remove Orchestrator Layer [pending]
 ### Dependencies: 68.1, 68.2, 68.3
 ### Description: Remove journal_orchestrator.py and clean up all references after successful migration to enhanced workflow.
 ### Details:
+
 #### Steps:
 
 1. **IDENTIFY ALL ORCHESTRATOR REFERENCES**
@@ -418,68 +490,70 @@
    - Search documentation for orchestrator references
    - Create cleanup checklist
 
-2. **UPDATE ALL CALLERS**
-   - Change imports from `journal_orchestrator` to `journal_workflow`
-   - Update function calls to use workflow equivalents
+2. **UPDATE ALL CALLERS (if any exist)**
+   - Change imports from `journal_orchestrator` to `journal_workflow` 
+   - Update function calls to use enhanced workflow equivalents
    - Update any configuration that references orchestrator
    - Test all changes work correctly
 
-3. **REMOVE ORCHESTRATOR FILE**
+3. **REMOVE ORCHESTRATOR FILE AND TESTS**
    - Delete `src/mcp_commit_story/journal_orchestrator.py`
    - Remove from imports in `__init__.py` if present
-   - Remove any orchestrator-specific tests
+   - Remove `tests/test_journal_orchestrator.py`
    - Clean up any orchestrator-specific configuration
 
 4. **DOCUMENTATION CLEANUP**
    - Remove orchestrator references from all documentation
-   - Update architecture documentation to reflect single workflow layer
-   - Update any diagrams or flow descriptions
+   - Update architecture documentation to reflect single enhanced workflow layer
+   - Update `docs/architecture.md` to remove Layer 2 orchestration references
+   - Update `engineering-mcp-journal-spec-final.md` to reflect simplified architecture
    - Ensure no historical references remain
 
 5. **FINAL VERIFICATION**
    - Run full test suite to ensure nothing broke
    - Verify no import errors or missing references
-   - Test git hook integration end-to-end
-   - Verify enhanced workflow is working correctly
+   - Test git hook integration end-to-end with enhanced workflow
+   - Verify enhanced workflow is working correctly in production scenario
 
 6. **DOCUMENT AND COMPLETE**
-   - Document removal completion
-   - Update task status to reflect clean architecture
+   - Document removal completion and architecture simplification
+   - Update task status to reflect clean single-layer architecture
    - **MARK COMPLETE**
 
 ## 5. Documentation and Architecture Updates [pending]
 ### Dependencies: 68.1, 68.2, 68.3, 68.4
 ### Description: Update all documentation to reflect the enhanced single-layer architecture and new telemetry/validation capabilities.
 ### Details:
+
 #### Steps:
 
 1. **UPDATE ARCHITECTURE DOCUMENTATION**
-   - Update `architecture.md` to reflect single workflow layer
-   - Remove any orchestrator layer references
-   - Document enhanced telemetry and validation features
-   - Update architectural diagrams if present
+   - Update `docs/architecture.md` to reflect single enhanced workflow layer
+   - Remove any orchestrator layer references from architecture diagrams
+   - Document enhanced telemetry and validation features in workflow layer
+   - Update architectural flow descriptions to show direct workflow usage
 
 2. **UPDATE DEVELOPER DOCUMENTATION**
-   - Document new telemetry capabilities in workflow
-   - Document validation features and fallback logic
-   - Update any code examples to use enhanced workflow
-   - Write as if enhanced workflow has always existed
+   - Update `docs/journal-core.md` to document new telemetry capabilities in workflow
+   - Document validation features and fallback logic in enhanced workflow
+   - Update any code examples to use enhanced workflow functions
+   - Write as if enhanced workflow has always existed (no historical references)
 
 3. **UPDATE IMPLEMENTATION GUIDES**
-   - Update any guides that reference orchestrator
-   - Document how to use enhanced workflow features
-   - Update troubleshooting guides for new telemetry
-   - Ensure guides reflect current architecture
+   - Update any guides that reference orchestrator patterns
+   - Document how to use enhanced workflow telemetry and validation features
+   - Update troubleshooting guides to reference new telemetry capabilities
+   - Ensure guides reflect current simplified architecture
 
 4. **COMPREHENSIVE DOCUMENTATION SEARCH**
-   - Search all .md files for orchestrator references
-   - Update any remaining architectural descriptions
-   - Update any code examples or snippets
-   - Remove any deprecated patterns
+   - Search all .md files for orchestrator references and update
+   - Update any remaining architectural descriptions to reflect single workflow layer
+   - Update any code examples or snippets to use enhanced workflow
+   - Remove any deprecated orchestrator patterns from documentation
 
-5. **FINAL VERIFICATION**
-   - Verify documentation is consistent with codebase
-   - Ensure new developers can understand enhanced workflow
-   - Test that all examples and code snippets work
+5. **FINAL VERIFICATION AND COMPLETION**
+   - Verify documentation is consistent with simplified codebase architecture
+   - Ensure new developers can understand enhanced workflow from documentation
+   - Test that all examples and code snippets work with enhanced workflow
    - **MARK COMPLETE**
 
