@@ -35,9 +35,9 @@
         ]
       },
       "commit-story": {
-        "command": "/Users/wiggitywhitney/Repos/mcp-commit-story/.venv/bin/python",
+        "command": "/Users/whitney.lee/.pyenv/shims/python",
         "args": ["-m", "mcp_commit_story"],
-        "cwd": "/Users/wiggitywhitney/Repos/mcp-commit-story",
+        "cwd": "/Users/whitney.lee/Documents/Repositories/mcp-commit-story",
         "env": {
           "LOG_LEVEL": "INFO"
         }
