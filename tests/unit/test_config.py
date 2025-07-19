@@ -219,6 +219,7 @@ def test_load_config_with_precedence():
     default_config = {
         'journal': {'path': 'default_journal/'},
         'git': {'exclude_patterns': ['default/*.log']},
+        'ai': {'openai_api_key': ''},
         'telemetry': {'enabled': True}
     }
     

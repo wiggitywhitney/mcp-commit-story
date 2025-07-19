@@ -27,6 +27,9 @@ DEFAULT_CONFIG = {
     'git': {
         'exclude_patterns': ['journal/**', '.mcp-commit-storyrc.yaml']
     },
+    'ai': {
+        'openai_api_key': ''
+    },
     'telemetry': {
         'enabled': False,
         'service_name': 'mcp-commit-story',
@@ -83,12 +86,12 @@ def resolve_env_vars(config_data: Any) -> Any:
         
         # Track successful interpolation (optional telemetry)
         if metrics:
-            metrics.counter('config.env_interpolation_total', labels={'status': 'success'}).inc()
+            metrics.record_counter('config.env_interpolation_total', 1, {'status': 'success'})
         return result
     except ConfigError:
         # Track failed interpolation (optional telemetry)
         if metrics:
-            metrics.counter('config.env_interpolation_total', labels={'status': 'failure'}).inc()
+            metrics.record_counter('config.env_interpolation_total', 1, {'status': 'failure'})
         raise
 
 def _resolve_env_vars_in_string(text: str) -> str:
@@ -158,11 +161,17 @@ class Config:
     def __init__(self, config_data: Optional[Dict[str, Any]] = None, config_path: Optional[str] = None):
         self._config_path = config_path
         config_data = config_data or {}
-        # Strict validation: validate raw config_data before merging with defaults
-        validate_config(config_data)
+        
+        # Resolve environment variables before merging and validation
+        config_data = resolve_env_vars(config_data)
+        
+        # Merge with defaults first, then validate the complete config
         import copy
         base = copy.deepcopy(DEFAULT_CONFIG)
         merged = merge_configs(base, config_data)
+        
+        # Strict validation: validate merged config with all required fields
+        validate_config(merged)
         # Type checks and population for journal
         journal = merged.get('journal', {})
         if not isinstance(journal, dict):
@@ -179,6 +188,18 @@ class Config:
             raise ConfigError("'git.exclude_patterns' must be a list")
         self._git = {**base['git'], **git}
         self._git_exclude_patterns = self._git['exclude_patterns']
+        # Type checks and population for ai
+        ai = merged.get('ai', {})
+        if not isinstance(ai, dict):
+            raise ConfigError("'ai' section must be a dict")
+        if 'openai_api_key' in ai and not isinstance(ai['openai_api_key'], str):
+            raise ConfigError("'ai.openai_api_key' must be a string")
+        self._ai = {**base['ai'], **ai}
+        self._ai_openai_api_key = self._ai['openai_api_key']
+        
+        # Validate AI configuration after environment variable resolution
+        self._validate_ai_config()
+        
         # Type checks and population for telemetry
         telemetry = merged.get('telemetry', {})
         if not isinstance(telemetry, dict):
@@ -191,6 +212,7 @@ class Config:
         self._config_dict = {
             'journal': self._journal,
             'git': self._git,
+            'ai': self._ai,
             'telemetry': self._telemetry
         }
 
@@ -215,6 +237,16 @@ class Config:
         self._git_exclude_patterns = value
         self._git['exclude_patterns'] = value
     @property
+    def ai_openai_api_key(self) -> str:
+        """Get the OpenAI API key."""
+        return self._ai_openai_api_key
+    @ai_openai_api_key.setter
+    def ai_openai_api_key(self, value: str):
+        if not isinstance(value, str):
+            raise ConfigError("OpenAI API key must be a string")
+        self._ai_openai_api_key = value
+        self._ai['openai_api_key'] = value
+    @property
     def telemetry_enabled(self) -> bool:
         """Get whether telemetry is enabled."""
         return self._telemetry_enabled
@@ -230,6 +262,7 @@ class Config:
         d = copy.deepcopy(DEFAULT_CONFIG)
         d['journal'].update(self._journal)
         d['git'].update(self._git)
+        d['ai'].update(self._ai)
         d['telemetry'].update(self._telemetry)
         return d
     def to_dict(self) -> Dict[str, Any]:
@@ -262,6 +295,54 @@ class Config:
         validate_config(config_data)
         # Re-init with new data
         self.__init__(config_data, config_path=self._config_path)
+
+    def _validate_ai_config(self):
+        """
+        Validate AI configuration section with graceful degradation.
+        
+        Only validates when AI section is explicitly provided with non-empty values.
+        Empty/missing AI config is allowed - AI features will fail gracefully at runtime.
+        
+        Raises:
+            ConfigError: If AI configuration is explicitly provided but invalid
+        """
+        metrics = get_mcp_metrics()
+        
+        # Get the API key - may be empty string from defaults
+        api_key = self._ai.get('openai_api_key', '')
+        
+        # Graceful degradation: allow empty/missing API keys
+        # AI features will fail at runtime with clear warnings
+        if not api_key or api_key.strip() == '':
+            if metrics:
+                metrics.record_counter('config.ai_validation_total', 1, {'status': 'success'})
+            return
+        
+        try:
+            # Only validate if API key is explicitly provided
+            # Check for placeholder values
+            placeholder_patterns = [
+                'your-openai-api-key-here',
+                'your_openai_api_key_here', 
+                'placeholder',
+                'change-me',
+                'change_me'
+            ]
+            
+            api_key_lower = api_key.lower().strip()
+            for pattern in placeholder_patterns:
+                if pattern in api_key_lower:
+                    raise ConfigError(f"OpenAI API key appears to be a placeholder: '{api_key}'. Please set a valid API key.")
+            
+            # Track successful validation
+            if metrics:
+                metrics.record_counter('config.ai_validation_total', 1, {'status': 'success'})
+                
+        except ConfigError:
+            # Track failed validation
+            if metrics:
+                metrics.record_counter('config.ai_validation_total', 1, {'status': 'failure'})
+            raise
 
 def get_config_value(config: Any, key_path: str, default: Any = None) -> Any:
     """
@@ -339,20 +420,25 @@ def validate_config(config: Dict[str, Any]) -> Dict[str, Any]:
     Raises:
         ConfigError: If configuration is invalid
     """
-    # Required fields and their types
-    validations = {
+    # Core required fields and their types (strict validation)
+    required_validations = {
         'journal.path': (str, 'Journal path is required and must be a string'),
         'git.exclude_patterns': (list, 'Git exclude patterns must be a list'),
         'telemetry.enabled': (bool, 'Telemetry enabled flag must be a boolean')
     }
     
-    # Check each required field
-    for key_path, (expected_type, error_msg) in validations.items():
+    # Check each core required field
+    for key_path, (expected_type, error_msg) in required_validations.items():
         value = get_config_value(config, key_path)
         if value is None:
             raise ConfigError(f"Missing required config: {key_path}")
         if not isinstance(value, expected_type):
             raise ConfigError(f"{error_msg} (got {type(value).__name__})")
+    
+    # AI section: graceful degradation - only validate if present and non-empty
+    api_key = get_config_value(config, 'ai.openai_api_key')
+    if api_key is not None and not isinstance(api_key, str):
+        raise ConfigError("'ai.openai_api_key' must be a string")
     
     return config
 

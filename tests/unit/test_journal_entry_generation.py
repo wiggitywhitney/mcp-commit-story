@@ -98,7 +98,7 @@ class TestGenerateJournalEntry:
         
         # Verify context collection was called with correct GitPython commit parameters
         mock_collect_chat_history.assert_called_once_with(since_commit='abc123def456', max_messages_back=150)
-        mock_collect_git_context.assert_called_once_with(commit_hash='abc123def456', journal_path='test-journal')
+        mock_collect_git_context.assert_called_once_with(commit_hash='abc123def456', repo='.', journal_path='test-journal')
         
         # Verify all section generators were called (7 AI functions total, down from 8 after removing terminal)
         for mock_generator in [mock_summary, mock_technical_synopsis, mock_accomplishments,
