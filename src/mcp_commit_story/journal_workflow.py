@@ -76,7 +76,7 @@ def generate_journal_entry(commit, config, debug=False) -> Optional[JournalEntry
     try:
         if debug:
             logger.debug("Collecting git context")
-        context_data['git_context'] = collect_git_context(commit_hash=commit.hexsha, journal_path=journal_path)
+        context_data['git_context'] = collect_git_context(commit_hash=commit.hexsha, repo='.', journal_path=journal_path)
     except Exception as e:
         logger.error(f"Failed to collect git context: {e}")
         # Create minimal git context from commit object

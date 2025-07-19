@@ -1,0 +1,231 @@
+# Task ID: 80
+# Title: Add OpenAI API Key Configuration to .mcp-commit-storyrc.yaml
+# Status: pending
+# Dependencies: None
+# Priority: medium  
+# Description: Add support for configuring the OpenAI API key through the existing .mcp-commit-storyrc.yaml configuration file, with fallback to environment variables. This eliminates the "placeholder API key in shell profile" problem and centralizes all project configuration.
+
+# Requirements:
+- [ ] Add AI configuration section to DEFAULT_CONFIG in config.py with 'ai.openai_api_key' structure
+- [ ] Implement environment variable interpolation in config system (${VAR_NAME} syntax)
+- [ ] Update Config class to handle new AI section with validation after interpolation
+- [ ] Modify OpenAIProvider to accept configuration and use config-only approach (no environment variable fallback)
+- [ ] Update ai_invocation.py to load and pass configuration to OpenAIProvider
+- [ ] Add validation for placeholder API key values and unresolved environment variables
+- [ ] Ensure configuration follows existing patterns and validation standards
+- [ ] Update documentation to recommend config file approach with env var interpolation examples
+- [ ] Add comprehensive telemetry for configuration loading and AI provider initialization
+
+# Notes:
+## Problem Context:
+Current system only supports OPENAI_API_KEY environment variable, which led to the placeholder key issue discovered on 2025-07-19. Users set placeholder values in shell profiles and forget to replace them with real keys, resulting in silent AI failures.
+
+## Existing Infrastructure Analysis:
+- Robust configuration system already exists with Config class, load_config(), validation
+- AI provider currently only checks os.getenv('OPENAI_API_KEY') 
+- Multiple modules successfully use load_config() pattern (server.py, journal_handlers.py, git_hook_worker.py)
+- Config system supports nested sections with validation (journal, git, telemetry)
+- Merge logic handles precedence: local config > global config > defaults
+
+## Design Decisions Made:
+1. **Config structure**: Top-level 'ai' section for future provider support
+2. **API key configuration**: 'openai_api_key' key name for clarity
+3. **Scope**: API key only (no model configuration to keep it simple)
+4. **Environment variables**: Config file only approach, no fallback to environment variables
+5. **Environment variable interpolation**: Support ${OPENAI_API_KEY} syntax in config files
+6. **Validation timing**: Validate after interpolation at config load time for fail-fast UX
+
+---
+
+# Subtasks
+
+## Subtask 80.1: Add Environment Variable Interpolation to Config System
+### Status: pending
+### Dependencies: None
+### Description: Add support for ${VAR_NAME} environment variable interpolation in the configuration system, with validation for unresolved variables.
+
+#### WRITE TESTS FIRST
+- Create `tests/unit/test_config_env_interpolation.py`
+- Test `resolve_env_vars()` function for environment variable interpolation
+- Test cases: valid env var resolution, missing env var handling, literal string passthrough, nested config resolution, invalid syntax handling
+- Test integration with existing config loading and validation
+- RUN TESTS - VERIFY THEY FAIL
+
+#### IMPLEMENT FUNCTIONALITY
+- Add `resolve_env_vars()` function to `src/mcp_commit_story/config.py`
+- Implement ${VAR_NAME} syntax parsing and os.getenv() resolution
+- Integrate with config loading pipeline to resolve variables after YAML parsing
+- Add recursive resolution for nested configuration structures
+- Handle missing environment variables with clear error messages
+- Add telemetry: `config.env_interpolation_total` (counter) with success/failure labels
+- RUN TESTS - VERIFY THEY PASS
+
+#### VERIFICATION CHECKLIST
+[ ] Function `resolve_env_vars()` exists in `src/mcp_commit_story/config.py`
+[ ] Test file `tests/unit/test_config_env_interpolation.py` exists with all required test cases
+[ ] Environment variable interpolation works for ${VAR_NAME} syntax
+[ ] Missing environment variables produce clear error messages
+[ ] Telemetry metrics implemented for interpolation operations
+[ ] Integration with existing config loading verified
+[ ] Function-level docstring added explaining interpolation behavior
+[ ] Full test suite passes
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
+
+---
+
+## Subtask 80.2: Add AI Configuration Section with Validation
+### Status: pending
+### Dependencies: 80.1
+### Description: Add AI configuration section to DEFAULT_CONFIG and Config class with validation for OpenAI API keys after environment variable interpolation.
+
+#### WRITE TESTS FIRST
+- Create `tests/unit/test_config_ai_section.py`
+- Test AI section in DEFAULT_CONFIG and Config class initialization
+- Test cases: valid API key configuration, missing API key handling, placeholder key detection, environment variable interpolation in AI config, invalid AI section structure
+- Test validation after environment variable resolution
+- RUN TESTS - VERIFY THEY FAIL
+
+#### IMPLEMENT FUNCTIONALITY
+- Add 'ai' section to DEFAULT_CONFIG in `src/mcp_commit_story/config.py`
+- Update Config class __init__ to handle AI section with type validation
+- Add AI section to Config.as_dict() and _config_dict
+- Implement validation for resolved openai_api_key values (not empty, not placeholder)
+- Add clear error messages for API key validation failures
+- Add telemetry: `config.ai_validation_total` (counter) with success/failure labels
+- RUN TESTS - VERIFY THEY PASS
+
+#### VERIFICATION CHECKLIST
+[ ] AI section added to DEFAULT_CONFIG with openai_api_key field
+[ ] Config class handles AI section initialization and validation
+[ ] Test file `tests/unit/test_config_ai_section.py` exists with all required test cases
+[ ] API key validation works after environment variable interpolation
+[ ] Placeholder API key detection ("your-openai-api-key-here") works
+[ ] Telemetry metrics implemented for AI config validation
+[ ] Clear error messages for missing/invalid API keys
+[ ] AI section included in Config.as_dict() and dict-like access
+[ ] Function-level docstrings added for new validation methods
+[ ] Full test suite passes
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
+
+---
+
+## Subtask 80.3: Update OpenAI Provider for Config-Based API Keys
+### Status: pending
+### Dependencies: 80.2
+### Description: Modify OpenAIProvider to accept configuration object and use config-only approach for API key loading with comprehensive error handling.
+
+#### WRITE TESTS FIRST
+- Create `tests/unit/test_openai_provider_config.py`
+- Test OpenAIProvider constructor with config parameter
+- Test cases: valid config with API key, missing config parameter, missing AI section, missing API key in config, config with resolved environment variables
+- Test backward compatibility and error handling
+- RUN TESTS - VERIFY THEY FAIL
+
+#### IMPLEMENT FUNCTIONALITY
+- Update `OpenAIProvider.__init__()` in `src/mcp_commit_story/ai_provider.py` to accept config parameter
+- Remove environment variable fallback (config-only approach)
+- Add config structure validation and API key extraction
+- Update error messages to guide users to config file setup
+- Add telemetry: `ai.provider_initialization_total` (counter) with success/failure labels
+- Update existing unit tests in `test_openai_provider.py` for new config interface
+- RUN TESTS - VERIFY THEY PASS
+
+#### VERIFICATION CHECKLIST
+[ ] OpenAIProvider constructor accepts config parameter
+[ ] Test file `tests/unit/test_openai_provider_config.py` exists with all required test cases
+[ ] Environment variable fallback removed (config-only approach)
+[ ] Config structure validation implemented with clear error messages
+[ ] API key extraction from config.ai.openai_api_key works
+[ ] Telemetry metrics implemented for provider initialization
+[ ] Existing tests updated for new config interface
+[ ] Error messages guide users to config file setup
+[ ] Function-level docstring updated to reflect config-based approach
+[ ] Full test suite passes
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
+
+---
+
+## Subtask 80.4: Update AI Invocation to Use Config-Based Provider
+### Status: pending
+### Dependencies: 80.3
+### Description: Update ai_invocation.py to load configuration and pass it to OpenAIProvider, ensuring consistent config-based approach throughout the AI pipeline.
+
+#### WRITE TESTS FIRST
+- Create `tests/unit/test_ai_invocation_config.py`
+- Test `invoke_ai()` function with config loading integration
+- Test cases: successful AI invocation with config, config loading failure handling, OpenAIProvider initialization with config, retry logic with config-based errors
+- Test integration with existing telemetry and error handling
+- RUN TESTS - VERIFY THEY FAIL
+
+#### IMPLEMENT FUNCTIONALITY
+- Update `invoke_ai()` function in `src/mcp_commit_story/ai_invocation.py` to load config
+- Pass config object to OpenAIProvider constructor
+- Update error handling for config-related failures
+- Ensure config loading doesn't break retry logic or telemetry
+- Add telemetry: `ai.config_load_in_invocation_total` (counter) for config loading operations
+- Update existing tests for new config integration
+- RUN TESTS - VERIFY THEY PASS
+
+#### VERIFICATION CHECKLIST
+[ ] `invoke_ai()` function loads config using load_config()
+[ ] Test file `tests/unit/test_ai_invocation_config.py` exists with all required test cases
+[ ] Config object passed to OpenAIProvider constructor
+[ ] Config loading errors handled with appropriate retry/failure logic
+[ ] Existing retry logic and telemetry preserved
+[ ] Telemetry metrics implemented for config loading in AI invocation
+[ ] Error handling updated for config-related failures
+[ ] Existing tests updated for config integration
+[ ] Function-level docstring updated to reflect config dependency
+[ ] Full test suite passes
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
+
+---
+
+## Subtask 80.5: Integration Testing and Documentation Updates
+### Status: pending
+### Dependencies: 80.1, 80.2, 80.3, 80.4
+### Description: Test complete end-to-end config-based AI workflow and update documentation to recommend config file approach with environment variable interpolation examples.
+
+#### INTEGRATION TESTING
+- Create `tests/integration/test_config_based_ai_integration.py`
+- Test complete workflow: config loading → environment variable interpolation → AI section validation → OpenAI provider initialization → AI invocation
+- Test scenarios: literal API key in config, environment variable interpolation, missing config file, invalid API key, missing environment variables
+- Verify telemetry collection throughout the pipeline
+- Test with actual .mcp-commit-storyrc.yaml config file loading
+
+#### DOCUMENTATION UPDATES
+- Update `docs/ai-provider-setup.md` to recommend config file approach
+- Add examples of literal API keys and environment variable interpolation
+- Update troubleshooting section with config-specific guidance
+- Update `.mcp-commit-storyrc.yaml.example` with AI section
+- Add setup instructions for environment variable interpolation
+
+#### VERIFICATION CHECKLIST
+[ ] Integration test created covering complete workflow
+[ ] All test scenarios pass: literal keys, env var interpolation, error cases
+[ ] Telemetry validation throughout the config-based AI pipeline
+[ ] Documentation updated with config file examples
+[ ] Environment variable interpolation examples added
+[ ] Troubleshooting guidance updated for config approach
+[ ] Example config file includes AI section
+[ ] Full test suite passes with no regressions
+[ ] All subtask requirements verified complete
+[ ] MARK COMPLETE
+
+---
+
+## Task Completion
+
+Final verification:
+[ ] All requirements above completed
+[ ] Environment variable interpolation implemented in config system
+[ ] AI configuration section added with validation
+[ ] OpenAI provider uses config-only approach
+[ ] AI invocation pipeline updated for config integration
+[ ] Complete end-to-end workflow tested and documented
+[ ] Documentation updated to recommend config file approach
+[ ] Full test suite passes with comprehensive coverage 

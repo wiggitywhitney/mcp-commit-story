@@ -245,7 +245,7 @@ def collect_all_context_data(
     
     # 1. Git context (Python implementation - most reliable)
     try:
-        git_context = collect_git_context(commit_hash, repo_path, journal_path)
+        git_context = collect_git_context(commit_hash=commit_hash, repo=repo_path, journal_path=journal_path)
         logger.info("Git context collection successful")
     except Exception as e:
         logger.warning(f"Git context collection failed: {e}")
