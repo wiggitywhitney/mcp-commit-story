@@ -252,6 +252,49 @@ AI prompts are embedded in docstrings but serve a completely different purpose t
 - **Assumed knowledge** - No insider team decisions or project history
 - **Personal references** - No names, meetings, or timeline details
 
+### External Reader Accessibility Guidelines
+Write summaries that can be understood by someone outside the project who has no prior context.
+Use specific, concrete language that explains real problems and solutions rather than abstract buzzwords.
+
+#### ❌ AVOID Abstract Corporate Speak:
+- "Revolutionary Implementation Gap Solution"
+- "Sophisticated AI prompting" 
+- "Architectural maturity"
+- "Systematic progression from infrastructure through breakthrough innovation"
+- "Comprehensive optimization initiatives"
+- "Strategic refactoring paradigms"
+
+#### ✅ USE Specific, Concrete Problems and Solutions:
+- "Fixed Empty AI Function Problem: For months, the AI functions were supposed to generate rich journal content but were just returning empty stubs with TODO comments"
+- "Made Git Hooks Actually Trigger Summaries: Previous git hook implementation was broken - it would install the hooks but they wouldn't actually generate summaries when you committed code"
+- "Built smart calendar logic that can detect when summary periods have been crossed and backfill missing summaries"
+- "Solved the 'I haven't committed in a week but still want summaries' problem by adding a file-watching trigger system"
+
+#### AVOID MEANINGLESS TASK REFERENCES:
+- ❌ "Completed task 61.2" (meaningless to external readers and future you)
+- ❌ "Finished subtask 45.3" (internal organizational noise)
+- ✅ "Fixed the database connection detection problem - the system can now automatically find and connect to Cursor's SQLite databases on different platforms"
+- ✅ "Solved the cursor chat integration issue by implementing proper message filtering"
+
+#### The improved approach:
+- Explains real problems readers can understand
+- Uses concrete language about what was built and why it matters  
+- Avoids buzzwords that don't convey actual meaning
+- Connects to developer experience that feels authentic and relatable
+- Makes the summary valuable for conference talks, documentation, or future reference
+
+#### NEVER ESTIMATE TIME PERIODS:
+- ❌ "spent weeks building" / "months of development work" / "after days of debugging" / "hours of research"
+- ✅ "built the feature" / "completed the development work" / "finished debugging" / "researched the problem"
+
+ONLY mention time periods if explicitly stated in journal entries with direct quotes.
+
+#### MOST DAYS ARE ORDINARY PROGRESS:
+- ❌ "pivotal day" / "landmark moment" / "breakthrough day" / "game-changing" / "revolutionary" / "transformative" / "monumental" / "historic" / "massive milestone" / "significant achievement" / "major accomplishment"
+- ✅ "completed the work" / "made progress" / "finished implementing" / "figured out the problem" / "got the feature working" / "solved the issue"
+
+Reserve dramatic language only for genuinely exceptional circumstances with clear evidence.
+
 ### Quality Test
 **Could a new developer use this documentation successfully without asking questions?**
 

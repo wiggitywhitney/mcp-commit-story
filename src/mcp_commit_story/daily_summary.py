@@ -828,6 +828,18 @@ The improved approach:
 - Connects to developer experience that feels authentic and relatable
 - Makes the summary valuable for conference talks, documentation, or future reference
 
+NEVER ESTIMATE TIME PERIODS:
+❌ "spent weeks building" / "months of development work" / "after days of debugging" / "hours of research"
+✅ "built the feature" / "completed the development work" / "finished debugging" / "researched the problem"
+
+ONLY mention time periods if explicitly stated in journal entries with direct quotes.
+
+MOST DAYS ARE ORDINARY PROGRESS:
+❌ "pivotal day" / "landmark moment" / "breakthrough day" / "game-changing" / "revolutionary" / "transformative" / "monumental" / "historic" / "massive milestone" / "significant achievement" / "major accomplishment"
+✅ "completed the work" / "made progress" / "finished implementing" / "figured out the problem" / "got the feature working" / "solved the issue"
+
+Reserve dramatic language only for genuinely exceptional circumstances with clear evidence.
+
 SECTION REQUIREMENTS:
 
 ## Summary
