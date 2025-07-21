@@ -9,6 +9,7 @@ import pytest
 import os
 from unittest.mock import Mock, patch, MagicMock
 from src.mcp_commit_story.ai_provider import OpenAIProvider
+from src.mcp_commit_story.config import Config
 
 
 class TestOpenAIProvider:
@@ -16,18 +17,14 @@ class TestOpenAIProvider:
     
     def setup_method(self):
         """Set up test fixtures before each test method."""
-        # Mock environment variable for API key
-        self.api_key_patcher = patch.dict(os.environ, {'OPENAI_API_KEY': 'test-api-key'})
-        self.api_key_patcher.start()
-        
-    def teardown_method(self):
-        """Clean up after each test method."""
-        self.api_key_patcher.stop()
+        # Create mock config with API key
+        self.mock_config = Mock(spec=Config)
+        self.mock_config.ai_openai_api_key = 'test-api-key'
     
     @patch('src.mcp_commit_story.ai_provider.openai.OpenAI')
     def test_provider_initialization_with_api_key(self, mock_openai_class):
         """Test that provider initializes correctly with API key."""
-        provider = OpenAIProvider()
+        provider = OpenAIProvider(config=self.mock_config)
         
         # Verify OpenAI client was created with correct API key
         mock_openai_class.assert_called_once_with(api_key='test-api-key')
@@ -35,9 +32,11 @@ class TestOpenAIProvider:
     
     def test_provider_initialization_without_api_key(self):
         """Test that provider raises error when API key is missing."""
-        with patch.dict(os.environ, {}, clear=True):
-            with pytest.raises(ValueError, match="OPENAI_API_KEY environment variable is required"):
-                OpenAIProvider()
+        mock_config = Mock(spec=Config)
+        mock_config.ai_openai_api_key = ""
+        
+        with pytest.raises(ValueError, match="OpenAI API key not configured in .mcp-commit-storyrc.yaml"):
+            OpenAIProvider(config=mock_config)
     
     @patch('src.mcp_commit_story.ai_provider.openai.OpenAI')
     def test_call_method_basic_functionality(self, mock_openai_class):
@@ -50,7 +49,7 @@ class TestOpenAIProvider:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai_class.return_value = mock_client
         
-        provider = OpenAIProvider()
+        provider = OpenAIProvider(config=self.mock_config)
         
         # Test the call
         prompt = "Test prompt"
@@ -81,7 +80,7 @@ class TestOpenAIProvider:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai_class.return_value = mock_client
         
-        provider = OpenAIProvider()
+        provider = OpenAIProvider(config=self.mock_config)
         
         # Use actual docstring from journal.py
         prompt = """
@@ -117,7 +116,7 @@ class TestOpenAIProvider:
         mock_client.chat.completions.create.side_effect = Exception("Request timeout")
         mock_openai_class.return_value = mock_client
         
-        provider = OpenAIProvider()
+        provider = OpenAIProvider(config=self.mock_config)
         
         # Test graceful degradation
         result = provider.call("test prompt", {"test": "context"})
@@ -133,7 +132,7 @@ class TestOpenAIProvider:
         mock_client.chat.completions.create.side_effect = Exception("API Error: Rate limit exceeded")
         mock_openai_class.return_value = mock_client
         
-        provider = OpenAIProvider()
+        provider = OpenAIProvider(config=self.mock_config)
         
         # Test graceful degradation
         result = provider.call("test prompt", {"test": "context"})
@@ -152,7 +151,7 @@ class TestOpenAIProvider:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai_class.return_value = mock_client
         
-        provider = OpenAIProvider()
+        provider = OpenAIProvider(config=self.mock_config)
         
         result = provider.call("test prompt", {"test": "context"})
         
@@ -169,7 +168,7 @@ class TestOpenAIProvider:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai_class.return_value = mock_client
         
-        provider = OpenAIProvider()
+        provider = OpenAIProvider(config=self.mock_config)
         provider.call("test", {})
         
         # Verify timeout was set correctly
@@ -186,7 +185,7 @@ class TestOpenAIProvider:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai_class.return_value = mock_client
         
-        provider = OpenAIProvider()
+        provider = OpenAIProvider(config=self.mock_config)
         provider.call("test", {})
         
         # Verify model was set correctly
@@ -203,7 +202,7 @@ class TestOpenAIProvider:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai_class.return_value = mock_client
         
-        provider = OpenAIProvider()
+        provider = OpenAIProvider(config=self.mock_config)
         prompt = "System instruction"
         context = {"key": "value"}
         provider.call(prompt, context)

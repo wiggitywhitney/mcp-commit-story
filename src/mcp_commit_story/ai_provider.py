@@ -8,7 +8,12 @@ degradation when AI is unavailable.
 
 import os
 import openai
-from typing import Dict, Any
+import logging
+from typing import Dict, Any, Optional
+from mcp_commit_story.config import Config
+from mcp_commit_story.telemetry import get_mcp_metrics
+
+logger = logging.getLogger(__name__)
 
 
 class OpenAIProvider:
@@ -19,20 +24,57 @@ class OpenAIProvider:
     and returns string responses. Handles errors gracefully by returning
     empty strings, allowing the journal generation to continue with
     programmatic sections only.
+    
+    The provider requires a Config object containing the OpenAI API key in the
+    ai.openai_api_key field. This key should be configured in the project's
+    .mcp-commit-storyrc.yaml file, either directly or using environment variable
+    interpolation (${OPENAI_API_KEY}).
+    
+    Example configuration:
+        ai:
+          openai_api_key: "sk-..."
+        # OR using environment variable:
+        ai:
+          openai_api_key: "${OPENAI_API_KEY}"
     """
     
-    def __init__(self):
+    def __init__(self, config: Optional[Config] = None):
         """
         Initialize the OpenAI provider.
         
+        Args:
+            config: Config object containing OpenAI API key configuration.
+                   The key should be configured in the ai.openai_api_key field
+                   of the .mcp-commit-storyrc.yaml file.
+            
         Raises:
-            ValueError: If OPENAI_API_KEY environment variable is not set.
+            ValueError: If config is not provided or API key is not configured
+            
+        Example:
+            >>> config = load_config()  # Load from .mcp-commit-storyrc.yaml
+            >>> provider = OpenAIProvider(config=config)
         """
-        api_key = os.getenv('OPENAI_API_KEY')
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY environment variable is required")
+        metrics = get_mcp_metrics()
         
-        self.client = openai.OpenAI(api_key=api_key)
+        try:
+            if config is None:
+                raise ValueError("config parameter is required")
+            
+            api_key = config.ai_openai_api_key
+            if not api_key:
+                raise ValueError("OpenAI API key not configured in .mcp-commit-storyrc.yaml")
+            
+            self.client = openai.OpenAI(api_key=api_key)
+            
+            # Record successful initialization
+            if metrics:
+                metrics.record_counter('ai.provider_initialization_total', 1, {'status': 'success'})
+                
+        except Exception as e:
+            # Record failed initialization
+            if metrics:
+                metrics.record_counter('ai.provider_initialization_total', 1, {'status': 'failure'})
+            raise
     
     def call(self, prompt: str, context: Dict[str, Any]) -> str:
         """
@@ -50,7 +92,7 @@ class OpenAIProvider:
             String response from OpenAI, or empty string if any error occurs
             
         Examples:
-            >>> provider = OpenAIProvider()
+            >>> provider = OpenAIProvider(config=config)
             >>> prompt = "Generate a summary of these changes"
             >>> context = {"git": {"message": "Fix bug in auth"}}
             >>> response = provider.call(prompt, context)
@@ -103,8 +145,6 @@ class OpenAIProvider:
             logger.error(f"Working directory: {os.getcwd()}")
             logger.error(f"PATH: {os.environ.get('PATH', 'N/A')[:200]}...")
             logger.error(f"PYTHONPATH: {os.environ.get('PYTHONPATH', 'N/A')}")
-            logger.error(f"OPENAI_API_KEY set: {bool(os.environ.get('OPENAI_API_KEY'))}")
-            logger.error(f"API key length: {len(os.environ.get('OPENAI_API_KEY', ''))}")
             
             # Log system context
             import time
