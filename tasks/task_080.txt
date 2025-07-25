@@ -149,7 +149,7 @@ Current system only supports OPENAI_API_KEY environment variable, which led to t
 ---
 
 ## Subtask 80.4: Update AI Invocation to Use Config-Based Provider
-### Status: pending
+### Status: done
 ### Dependencies: 80.3
 ### Description: Update ai_invocation.py to load configuration and pass it to OpenAIProvider, ensuring consistent config-based approach throughout the AI pipeline.
 
@@ -172,18 +172,18 @@ Current system only supports OPENAI_API_KEY environment variable, which led to t
 - RUN TESTS - VERIFY THEY PASS
 
 #### VERIFICATION CHECKLIST
-[ ] `invoke_ai()` function loads config using load_config()
-[ ] Test file `tests/unit/test_ai_invocation_config.py` exists with all required test cases
-[ ] Config object passed to OpenAIProvider constructor
-[ ] Config loading errors handled with appropriate retry/failure logic
-[ ] Existing retry logic and telemetry preserved
-[ ] Telemetry metrics implemented for config loading in AI invocation
-[ ] Error handling updated for config-related failures
-[ ] Existing tests updated for config integration
-[ ] Function-level docstring updated to reflect config dependency
-[ ] Full test suite passes
-[ ] All subtask requirements verified complete
-[ ] MARK COMPLETE
+[x] `invoke_ai()` function loads config using load_config()
+[x] Test file `tests/unit/test_ai_invocation_config.py` exists with all required test cases
+[x] Config object passed to OpenAIProvider constructor
+[x] Config loading errors handled with appropriate retry/failure logic
+[x] Existing retry logic and telemetry preserved
+[x] Telemetry metrics implemented for config loading in AI invocation
+[x] Error handling updated for config-related failures
+[x] Existing tests updated for config integration
+[x] Function-level docstring updated to reflect config dependency
+[x] Full test suite passes
+[x] All subtask requirements verified complete
+[x] MARK COMPLETE
 
 ---
 
