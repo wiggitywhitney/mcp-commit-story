@@ -1,19 +1,24 @@
-# MCP Journal Configuration (EXAMPLE)
-# This file contains configuration options for the MCP Journal tool
+# Example configuration file for MCP Commit Story
+# Copy this file to .mcp-commit-storyrc.yaml in your project root
 
-# Journal settings
+# Journal configuration
 journal:
-  # Base path for all journal files (relative to repo root)
-  path: "journal/"
+  # Directory for journal files (relative to project root)
+  path: journal/
 
-# Git repository settings
+# Git configuration
 git:
-  # Files to exclude from analysis in journal entries
+  # Files to exclude from git processing
   exclude_patterns:
-    - "journal/**"        # Ignore journal directory to prevent recursion
-    - ".mcp-journalrc.yaml"  # Ignore config file itself
+    - journal/**
+    - .mcp-commit-storyrc.yaml
 
-# Telemetry settings
+# AI configuration
+ai:
+  # OpenAI API key - use environment variable interpolation for security
+  openai_api_key: "${OPENAI_API_KEY}"
+
+# Telemetry configuration
 telemetry:
-  # Whether to collect telemetry
+  # Enable/disable telemetry collection
   enabled: false
